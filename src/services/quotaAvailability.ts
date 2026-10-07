@@ -47,9 +47,14 @@ export function quotaAvailability(file: AuthFile, quota: QuotaState | undefined,
     return { ...base, kind, groups, uncertainty: kind === 'unknown' ? 'incomplete' : undefined, blockers: groups.flatMap(group => group.blockers), recoveryAt };
   }
   if (providerForFile(file) === 'xai') {
-    const reason = quota.rows.length && quota.rows.every(row => row.scope === 'paid') ? 'paidQuota'
-      : quota.rows.every(row => row.remainingPercent === null) ? 'notReported' : 'unmapped';
-    return { ...base, kind: 'unknown', reason };
+    // The weekly budget (or a real monthly cap) limits the account; product rows split that same budget.
+    const limits = quota.rows.filter(row => row.scope === 'account' && typeof row.remainingPercent === 'number');
+    const onDemandLeft = quota.rows.some(row => row.scope === 'paid' && (row.remainingPercent ?? 0) > 0);
+    if (!limits.length || (onDemandLeft && limits.some(row => row.remainingPercent === 0))) {
+      const reason = quota.rows.length && quota.rows.every(row => row.scope === 'paid' && row.remainingPercent === null) ? 'paidQuota'
+        : quota.rows.every(row => row.remainingPercent === null) ? 'notReported' : 'unmapped';
+      return { ...base, kind: 'unknown', reason };
+    }
   }
   const account = quota.rows.filter(row => row.scope === 'account');
   const model = quota.rows.filter(row => row.scope === 'model');

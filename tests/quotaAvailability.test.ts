@@ -115,8 +115,29 @@ describe('Grok availability explanations',()=>{
   it('separates paid credentials from proven chat access',()=>{
     expect(quotaAvailability(grok,q({mode:'paid-info'}),now)).toMatchObject({kind:'unknown',reason:'paidQuota'});
   });
-  it('does not infer a global limit from unvalidated billing constraints',()=>{
-    expect(quotaAvailability(grok,q({config:{monthlyLimit:1000,used:0}}),now)).toMatchObject({kind:'unknown',reason:'unmapped'});
+  const week=(used:number,products:{product:string;usagePercent:number}[]=[])=>({config:{
+    currentPeriod:{type:'weekly',end:new Date(now+47*3600000).toISOString()},creditUsagePercent:used,productUsage:products}});
+  it('treats the weekly budget as the account limit',()=>{
+    const state=quotaAvailability(grok,q(week(4,[{product:'GrokBuild',usagePercent:3},{product:'GrokChat',usagePercent:1}])),now);
+    expect(state).toMatchObject({kind:'available'});
+  });
+  it('reads product rows as a split of the weekly budget, not separate limits',()=>{
+    expect(quotaAvailability(grok,q(week(40,[{product:'GrokBuild',usagePercent:100}])),now).kind).toBe('available');
+  });
+  it('an exhausted week reports when it comes back',()=>{
+    expect(quotaAvailability(grok,q(week(100)),now)).toMatchObject({kind:'exhausted',recoveryAt:now+47*3600000});
+  });
+  it('does not call the account exhausted while on-demand money is left',()=>{
+    const state=quotaAvailability(grok,q({weekly:week(100),monthly:{config:{onDemandCap:{val:500},onDemandUsed:{val:100}}}}),now);
+    expect(state).toMatchObject({kind:'unknown',reason:'unmapped'});
+  });
+  it('ignores a monthly row without a real dollar cap',()=>{
+    const state=quotaAvailability(grok,q({weekly:week(4),monthly:{config:{monthlyLimit:{val:0},used:{val:0},billingPeriodEnd:new Date(now+24*86400000).toISOString()}}}),now);
+    expect(state.kind).toBe('available');
+  });
+  it('a monthly cap with real money is an account limit',()=>{
+    expect(quotaAvailability(grok,q({config:{monthlyLimit:1000,used:0}}),now).kind).toBe('available');
+    expect(quotaAvailability(grok,q({config:{monthlyLimit:1000,used:1000}}),now).kind).toBe('exhausted');
   });
   it('stale and disabled states supersede provider explanations',()=>{
     expect(quotaAvailability(grok,q({mode:'paid-info'}),now,true).reason).toBeUndefined();

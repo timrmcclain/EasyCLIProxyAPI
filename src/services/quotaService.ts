@@ -548,6 +548,7 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
     if (billing.periodType === 'weekly'
       && (billing.usagePercent !== null || billing.periodEnd || billing.productUsage.length > 0)) {
       rows.push({
+        scope: 'account',
         label: quotaText('quota.service.weekly'),
         remainingPercent: remainingFromUsedPercent(billing.usagePercent),
         ...weeklyReset,
@@ -568,6 +569,7 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
     };
     if (billing.onDemandCapCents !== null && billing.onDemandCapCents > 0) {
       rows.push({
+        scope: 'paid',
         label: quotaText('quota.service.onDemand'),
         remainingPercent: remainingFromUsedPercent(billing.onDemandUsedPercent),
         detail: amount(billing.onDemandCapCents, billing.onDemandUsedCents),
@@ -575,6 +577,8 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
     }
     if (billing.monthlyLimitCents !== null || billing.usedCents !== null || billing.billingPeriodEnd) {
       rows.push({
+        // A $0 cap carries no allowance on weekly plans; only a real cap limits the account.
+        ...(billing.monthlyLimitCents !== null && billing.monthlyLimitCents > 0 ? { scope: 'account' as const } : {}),
         label: quotaText('quota.service.monthlyIncluded'),
         remainingPercent: remainingFromUsedPercent(billing.usedPercent),
         detail: amount(billing.monthlyLimitCents, billing.includedUsedCents),
