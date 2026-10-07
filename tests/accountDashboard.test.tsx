@@ -77,4 +77,9 @@ describe('account dashboard evidence', () => {
     expect(html).toMatch(/<input[^>]*disabled/);
     expect(html).not.toContain('>Active<');
   });
+  it('explains an empty successful quota once', () => {
+    const html = render({ status: 'success', rows: [], fetchedAt: now });
+    expect(html).toContain('did not report enough limits to confirm availability');
+    expect(html).not.toContain('did not report usage limits');
+  });
 });

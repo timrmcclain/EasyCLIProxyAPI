@@ -286,7 +286,8 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
       {summary.health.message && <p className="ad-card-note">{privateText(summary.health.message, hideEmails)}</p>}</div>
     <div className="ad-quota-list" aria-busy={quota.status === 'loading'}>
       {quota.status === 'error' ? <p className="ad-card-note ad-error">{t('accountDashboard.quotaError')}</p> : null}
-      {!quota.rows.length && quota.status !== 'error' ? <p className="ad-card-note">{!providerForFile(file) ? t('ledger.unsupportedQuota') : summary.health.disabled ? t('accountDashboard.disabled') : quota.status === 'loading' ? t('accountDashboard.checking') : quota.status === 'success' ? t('accountDashboard.noLimits') : t('accountDashboard.notChecked')}</p> : null}
+      {/* The availability notice already explains an incomplete success; don't repeat it. */}
+      {!quota.rows.length && quota.status !== 'error' && !(quota.status === 'success' && availability.uncertainty === 'incomplete') ? <p className="ad-card-note">{!providerForFile(file) ? t('ledger.unsupportedQuota') : summary.health.disabled ? t('accountDashboard.disabled') : quota.status === 'loading' ? t('accountDashboard.checking') : quota.status === 'success' ? t('accountDashboard.noLimits') : t('accountDashboard.notChecked')}</p> : null}
       {shownRows.map((row, index) => {
         const percent = remaining(row.remainingPercent);
         const overdue = row.resetAtMs !== undefined && row.resetAtMs <= now;
