@@ -5,7 +5,7 @@ import { quotaAvailability } from '../services/quotaAvailability';
 import { fileName, quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
 import { recoveryEvents, recoveredAccounts, failureIdentity } from '../services/overviewInsights';
 import { resetCountdown } from '../services/accountDashboard';
-import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
+import { readOverviewAlertsPreference } from '../services/dashboardPreferences';
 import { requestClient, privateText, type DashboardRequest } from '../services/dashboardActivity';
 import { failureKind } from '../services/connectionPresentation';
 import { isRecord, managementApi } from '../services/managementApi';
@@ -14,6 +14,7 @@ type Props = { files: AuthFile[]; quotas: Record<string, QuotaState>; now: numbe
 export function RecoveryTimeline({ files, quotas, now, stale, labelFor }: Props) {
   const { t } = useI18n();
   const events = recoveryEvents(files, quotas, now, stale);
+  if (!events.length) return null;
   return <details className="ux-insight"><summary>{t('ux.recovery')} · {events.length}</summary><p>{t('ux.recoveryHint')}</p>
     {events.length ? <ol className="ux-recovery">{events.map((event, i) => <li key={`${quotaKey(event.file)}-${i}`}>
       <strong>{labelFor(event.file)}</strong><span>{event.group || t(event.includedOnly ? 'ux.renewal' : 'ux.expected')}</span>
@@ -64,7 +65,7 @@ function CandidateModels({ file }: { file: AuthFile }) {
 
 export function OverviewAlerts({ files, quotas, now, stale, labelFor, items, activityStale }: Props & { items: DashboardRequest[] | undefined; activityStale: boolean }) {
   const { t } = useI18n();
-  const [enabled, setEnabled] = useState(() => readDashboardPreference('overviewAlerts', ['true', 'false'], 'false') === 'true');
+  const [enabled] = useState(() => readOverviewAlertsPreference());
   const previous = useRef<Record<string, string>>({});
   const seen = useRef(new Set<string>());
   const initialized = useRef(false);
@@ -89,7 +90,9 @@ export function OverviewAlerts({ files, quotas, now, stale, labelFor, items, act
     grouped.forEach((item, key) => messages.push({ key, text: `${t('ux.failed', { client: requestClient(item) ?? t('ledger.unknownClient') })} ${t(`ux.${failureKind(item)}`)}` }));
     if (messages.length) setAlerts(current => [...current.filter(a => !messages.some(b => b.key === a.key)), ...messages].slice(-5));
   }, [files, quotas, now, stale, items, activityStale, enabled, labelFor, t]);
-  return <div className="ux-alerts"><label><input type="checkbox" checked={enabled} onChange={event => { setEnabled(event.target.checked); setAlerts([]); saveDashboardPreference('overviewAlerts', String(event.target.checked)); }} />{t('ux.alerts')}</label><small>{t('ux.alertHint')}</small>
-    {enabled && alerts.length > 0 && <div role="status" aria-live="polite"><ul>{alerts.map(a => <li key={a.key}>{a.text}</li>)}</ul><button className="secondary-button compact-button" onClick={() => navigateHelp('agents')}>{t('ux.reviewConnection')}</button><button className="secondary-button compact-button" onClick={() => setAlerts([])}>{t('ux.dismissAlerts')}</button></div>}
+  // The on/off switch lives in Settings → App preferences; Overview only shows alerts that need attention.
+  if (!enabled || !alerts.length) return null;
+  return <div className="ux-alerts">
+    <div role="status" aria-live="polite"><ul>{alerts.map(a => <li key={a.key}>{a.text}</li>)}</ul><button className="secondary-button compact-button" onClick={() => navigateHelp('agents')}>{t('ux.reviewConnection')}</button><button className="secondary-button compact-button" onClick={() => setAlerts([])}>{t('ux.dismissAlerts')}</button></div>
   </div>;
 }

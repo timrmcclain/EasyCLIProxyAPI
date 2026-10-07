@@ -9,3 +9,12 @@ export function readDashboardPreference<T extends string>(key: string, allowed: 
 export function saveDashboardPreference(key: string, value: string): void {
   try { localStorage.setItem(`personal.${key}`, value); } catch { /* Keep the current view usable without persistence. */ }
 }
+
+/** Overview alerts are off unless turned on in Settings → App preferences. */
+export function readOverviewAlertsPreference(): boolean {
+  return readDashboardPreference('overviewAlerts', ['true', 'false'], 'false') === 'true';
+}
+
+export function saveOverviewAlertsPreference(enabled: boolean): void {
+  saveDashboardPreference('overviewAlerts', String(enabled));
+}

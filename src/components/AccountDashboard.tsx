@@ -196,6 +196,18 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
       </select>
     </div>
     <div className="quota-workflow-tools"><input type="search" aria-label={t('availability.search')} placeholder={t('availability.search')} value={search} onChange={event => setSearch(event.target.value)} /><select aria-label={t('availability.all')} value={stateFilter} onChange={event => { const value = event.target.value as typeof stateFilter; setStateFilter(value); saveDashboardPreference('quotaState', value); }}><option value="all">{t('availability.all')}</option><option value="available">{t('availability.known')}</option><option value="attention">{t('availability.attention')}</option></select><button type="button" className="secondary-button compact-button" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button><span className="quota-result-count" role="status">{t('availability.results', { shown: visible.length, total: files.length })}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>
+    <details className="quota-ledger-notes"><summary>{t('quotaLedger.notes')}</summary><div className="ad-toolbar">
+      <div className="ad-routing"><span className={`ad-dot ${ready ? 'online' : ''}`} />{ready ? t('accountDashboard.online') : t('accountDashboard.offline')}
+        <span>{t('accountDashboard.routing', { strategy: routing?.routingStrategy ?? '—' })}</span>
+        <span>{t('accountDashboard.affinity', { state: routing ? routing.routingSessionAffinity ? t('accountDashboard.on') : t('accountDashboard.off') : '—' })}</span></div>
+      <label className="ad-sort"><ArrowDownWideNarrow size={14} aria-hidden="true" /><span>{t('accountDashboard.sort')}</span>
+        <select aria-label={t('accountDashboard.sort')} value={sort} onChange={(event) => { setSort(event.target.value as typeof sort); saveDashboardPreference('quotaSort', event.target.value); }}><option value="priority">{t('accountDashboard.prioritySort')}</option><option value="reset">{t('accountDashboard.resetSort')}</option><option value="recovery">{t('availability.recovery')}</option></select>
+      </label>
+    </div>
+    <p className="ledger-snapshot">{t('ledger.snapshot', { count: activity?.items.length ?? 0 })}{activity ? ` · ${t('accountDashboard.checked', { time: new Date(activity.checkedAt).toLocaleTimeString() })}` : ''}</p>
+    <div className="ad-footnote"><span>{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.loading')} · {t('accountDashboard.cadence')}</span>
+      <span>{t('accountDashboard.routingHint')}</span></div>
+    </details>
     <div className="quota-provider-summary">
       {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
         const accounts = files.filter((file) => dashboardProvider(file) === provider);
@@ -215,30 +227,17 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
         columns={columns}
         disabled={!ready || saving || loading || refreshingKey !== null || Boolean(error)} onSave={savePriority} onRefresh={refreshAccount} refreshing={refreshingKey === quotaKey(file)} stale={!ready || Boolean(error)} />)}
       </section> : null; })}
-      {!visible.length && files.length > 0 && <div className="ad-notice quota-no-results" role="status"><strong>{t('availability.noMatches')}</strong><span>{t('availability.adjustFilters')}</span></div>}
+      {!visible.length && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
     </div>
     <RecoveryTimeline files={files} quotas={quotas} now={now} stale={!ready || Boolean(error)} labelFor={labelFor} />
     <OverviewAlerts key={String(hideEmails)} files={files} quotas={quotas} now={now} stale={!ready || Boolean(error)} labelFor={labelFor} items={activity?.items} activityStale={activityError || !ready || Boolean(error)} />
-    <section className="ledger-evidence" aria-label={t('ledger.latest')}>
+    <section className="ledger-evidence" aria-label={t('ledger.latest')} title={t('ledger.evidenceHint')}>
       <span className="ledger-evidence-label"><Activity size={16} aria-hidden="true" />{t('ledger.latest')}</span>
       {latest ? <><strong>{requestClient(latest) ?? t('ledger.unknownClient')} <span aria-hidden="true">→</span> {latestFile ? labelFor(latestFile) : t('ledger.unmatched')}</strong>
         <span>{privateText(latest.model, hideEmails)} · <time dateTime={latest.timestamp}>{new Date(latest.timestamp).toLocaleString()}</time></span></>
         : <strong>{activity ? t('ledger.noSuccess') : t('ledger.waiting')}</strong>}
       {(!ready || activityError || Boolean(error)) && <span role="status">{t('ledger.stale')}</span>}
-      <small>{t('ledger.evidenceHint')}</small>
     </section>
-    <details className="quota-ledger-notes"><summary>{t('quotaLedger.notes')}</summary><div className="ad-toolbar">
-      <div className="ad-routing"><span className={`ad-dot ${ready ? 'online' : ''}`} />{ready ? t('accountDashboard.online') : t('accountDashboard.offline')}
-        <span>{t('accountDashboard.routing', { strategy: routing?.routingStrategy ?? '—' })}</span>
-        <span>{t('accountDashboard.affinity', { state: routing ? routing.routingSessionAffinity ? t('accountDashboard.on') : t('accountDashboard.off') : '—' })}</span></div>
-      <label className="ad-sort"><ArrowDownWideNarrow size={14} aria-hidden="true" /><span>{t('accountDashboard.sort')}</span>
-        <select aria-label={t('accountDashboard.sort')} value={sort} onChange={(event) => { setSort(event.target.value as typeof sort); saveDashboardPreference('quotaSort', event.target.value); }}><option value="priority">{t('accountDashboard.prioritySort')}</option><option value="reset">{t('accountDashboard.resetSort')}</option><option value="recovery">{t('availability.recovery')}</option></select>
-      </label>
-    </div>
-    <p className="ledger-snapshot">{t('ledger.snapshot', { count: activity?.items.length ?? 0 })}{activity ? ` · ${t('accountDashboard.checked', { time: new Date(activity.checkedAt).toLocaleTimeString() })}` : ''}</p>
-    <div className="ad-footnote"><span>{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.loading')} · {t('accountDashboard.cadence')}</span>
-      <span>{t('accountDashboard.routingHint')}</span></div>
-    </details>
   </section>;
 }
 

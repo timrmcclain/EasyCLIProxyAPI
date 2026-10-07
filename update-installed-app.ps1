@@ -55,7 +55,15 @@ New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
 Copy-Item -LiteralPath $TargetExe -Destination (Join-Path $BackupDir 'EasyCLIProxyAPI.exe') -Force
 
 Write-Host 'Installing new build...'
-Copy-Item -LiteralPath $NewExe -Destination $TargetExe -Force
+# Windows can keep the exe locked briefly after the process exits (e.g. a virus scan), so retry for up to 15 seconds.
+$deadline = (Get-Date).AddSeconds(15)
+while ($true) {
+    try { Copy-Item -LiteralPath $NewExe -Destination $TargetExe -Force; break }
+    catch {
+        if ((Get-Date) -ge $deadline) { throw }
+        Start-Sleep -Milliseconds 500
+    }
+}
 
 Write-Host 'Relaunching...'
 Start-Process -FilePath $TargetExe -WorkingDirectory $InstallDir

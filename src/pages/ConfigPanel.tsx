@@ -1,3 +1,4 @@
+import { readOverviewAlertsPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
 import { FormEvent, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -32,8 +33,7 @@ import {
   Power,
   Terminal,
   Trash2,
-  X,
-} from 'lucide-react';
+  X, Bell } from 'lucide-react';
 import { useCoreRuntime, type CoreStatus } from '../coreRuntime';
 import { useI18n } from '../i18n';
 import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
@@ -214,6 +214,7 @@ export function ConfigPanelPage() {
   );
   const [activeSubpage, setActiveSubpage] = useState<ConfigSubpage>('general');
   const [showPluginAdvanced, setShowPluginAdvanced] = useState(false);
+  const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
   const [settingsSearch, setSettingsSearch] = useState('');
   const [dirtyTemplateGroups, setDirtyTemplateGroups] = useState<readonly string[]>([]);
   const [sensitiveWordsDirty, setSensitiveWordsDirty] = useState(false);
@@ -1065,7 +1066,7 @@ export function ConfigPanelPage() {
     { category: 'routing', target: 'config-native-routing', title: st('nativeRouting'), context: '', keywords: [t('config.network.sessionAffinity'), t('config.network.sessionTtl'), t('config.routing.title'), 'session affinity ttl routing strategy round-robin 会话 粘性 加权 轮询'].join(' ') },
     { category: 'routing', target: 'config-native-retry', title: st('nativeRetry'), context: '', keywords: [t('config.network.disableCooling'), t('config.network.requestRetry'), t('config.network.maxRetryCredentials'), t('config.network.maxRetryInterval'), t('config.network.streamingBootstrapRetries'), 'retry retries cooldown 重试 冷却 流式 失败 fallback'].join(' ') },
     { category: 'diagnostics', target: 'config-native-logging', title: t('config.diagnostics.title'), context: '', keywords: [t('config.diagnostics.debug.title'), t('config.diagnostics.commercial.title'), t('config.diagnostics.fileLogging.title'), t('config.diagnostics.usage.title'), t('config.diagnostics.maxSize.title'), t('config.diagnostics.errorFiles.title'), t('config.diagnostics.redisRetention.title'), 'debug commercial-mode logging logs usage statistics redis retention 日志 调试 商业模式 用量 统计 留存 文件 容量'].join(' ') },
-    { category: 'software', target: 'config-native-software', title: t('config.software.title'), context: '', keywords: [t('config.software.autostart'), t('config.software.startCoreOnLaunch'), t('config.software.silentStart'), t('config.software.closeBehavior'), t('config.software.defaultTerminal'), 'startup autostart silent tray close terminal 软件 自启动 启动 静默 托盘 关闭 终端'].join(' ') },
+    { category: 'software', target: 'config-native-software', title: t('config.software.title'), context: '', keywords: [t('config.software.autostart'), t('config.software.startCoreOnLaunch'), t('config.software.silentStart'), t('config.software.closeBehavior'), t('config.software.defaultTerminal'), t('ux.alerts'), 'startup autostart silent tray close terminal alerts notify 软件 自启动 启动 静默 托盘 关闭 终端'].join(' ') },
     { category: 'aliases', target: 'config-native-aliases', title: t('app.nav.thinkingAliases'), context: '', keywords: 'thinking reasoning speed aliases effort 思考 推理 速度 别名 模型' },
     { category: 'requests', target: 'config-native-sensitive-words', title: t('config.sensitiveWords.title'), context: '', keywords: 'sensitive words filters antigravity devin 敏感词 内容 过滤' },
   ];
@@ -2121,6 +2122,30 @@ export function ConfigPanelPage() {
                       onChange={(event) => {
                         setSoftwareSavedStatusVisible(false);
                         setSoftwareSilentStartDraft(event.currentTarget.checked);
+                      }}
+                    />
+                    <span className="switch-track" />
+                  </label>
+                </div>
+                <div className="config-software-setting-row">
+                  <div className="config-software-setting-copy">
+                    <span className="config-software-setting-icon" aria-hidden="true">
+                      <Bell size={18} />
+                    </span>
+                    <div>
+                      <span className="config-field-label"><strong>{t('ux.alerts')}</strong><SettingsHelp label={t('ux.alerts')}>{t('ux.alertHint')}</SettingsHelp></span>
+                    </div>
+                  </div>
+                  <label className="switch-control" title={t('ux.alerts')}>
+                    {/* A display preference stored on this computer, so it applies at once rather than through Save. */}
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-label={t('ux.alerts')}
+                      checked={overviewAlerts}
+                      onChange={(event) => {
+                        setOverviewAlerts(event.currentTarget.checked);
+                        saveOverviewAlertsPreference(event.currentTarget.checked);
                       }}
                     />
                     <span className="switch-track" />

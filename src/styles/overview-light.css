@@ -3,7 +3,7 @@
 .quota-workflow-tools input { flex:1; min-width:0; }
 .quota-workflow-tools { align-items:center; flex-wrap:wrap; }
 .quota-result-count { color:var(--text-secondary); font-size:12px; white-space:nowrap; }
-.quota-no-results { display:flex; flex-direction:column; gap:6px; padding:20px; border:1px dashed var(--border-primary); border-radius:10px; }
+.quota-no-results { display:flex; align-items:center; gap:12px; padding:8px 0; font-size:13px; }
 .quota-no-results span { color:var(--text-secondary); }
 .quota-workflow-tools :is(input,select) { min-height:36px; border:1px solid var(--border-primary); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); padding:6px 12px; }
 .quota-account-states { display:flex; gap:6px; margin:16px 0 12px; }
@@ -117,7 +117,7 @@
 .account-dashboard.quota-ledger .ad-account-details:not([open]) { height:0; }
 .account-dashboard.quota-ledger .ad-account-details > summary { position:absolute; right:0; top:64px; min-height:24px; padding:3px 0; font-size:11px; color:var(--text-tertiary); }
 .account-dashboard.quota-ledger .ad-account-details[open] { border-top:1px dashed var(--border-primary); padding:14px 0 0; margin-top:14px; }
-.quota-ledger .quota-ledger-notes { border-top:1px solid var(--border-primary); padding-top:8px; color:var(--text-secondary); font-size:11px; }
+.quota-ledger .quota-ledger-notes { margin:4px 0 8px; color:var(--text-secondary); font-size:11px; }
 .quota-ledger .quota-ledger-notes > summary { padding:8px 0; cursor:pointer; }
 .quota-ledger .quota-ledger-notes .ad-toolbar { border:0; }
 .account-dashboard.quota-ledger.quota-layout-compact .ad-card { min-height:88px; padding:12px 0 16px; }
