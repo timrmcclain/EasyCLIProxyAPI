@@ -6,11 +6,24 @@ import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import {
   checkCoreModelsHealth,
   type CoreHealthModel,
-  type CoreModelHealthResult,
 } from '../services/coreHealthCheck';
+import {
+  CORE_HEALTH_AUTO_INTERVAL_MS,
+  CORE_HEALTH_AUTO_START_DELAY_MS,
+  CORE_HEALTH_AUTO_TICK_MS,
+  isAutoCheckDue,
+  pickAutoCheckModels,
+  pruneHealthResults,
+  readAutoCheckState,
+  readStoredHealthResults,
+  saveAutoCheckState,
+  saveStoredHealthResults,
+  type StoredHealthResult,
+} from '../services/coreHealthAuto';
 import './CoreHealthPanel.css';
 
-type CheckedResult = CoreModelHealthResult & { checkedAt: number };
+type CheckedResult = StoredHealthResult;
+type CheckMode = 'manual' | 'auto';
 
 export type CoreHealthPanelProps = {
   coreReady: boolean;
@@ -29,13 +42,15 @@ export function CoreHealthPanel({
   const [open, setOpen] = useState(false);
   const dialogId = useId();
   const [search, setSearch] = useState('');
-  const [results, setResults] = useState<Record<string, CheckedResult>>({});
+  const [results, setResults] = useState<Record<string, CheckedResult>>(readStoredHealthResults);
+  const [autoEnabled, setAutoEnabled] = useState(() => readAutoCheckState().enabled);
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [active, setActive] = useState<Set<string>>(new Set());
   const [running, setRunning] = useState(false);
   const [stopped, setStopped] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const controllerRef = useRef<AbortController | null>(null);
+  const runModeRef = useRef<CheckMode | null>(null);
   const mountedRef = useRef(true);
   const modelIds = JSON.stringify(models.map((model) => model.name));
   const canCheck = coreReady && !modelsLoading && !modelsError && models.length > 0;
@@ -50,17 +65,21 @@ export function CoreHealthPanel({
 
   useEffect(() => {
     controllerRef.current?.abort();
-    setResults({});
+    // Completed results survive restarts; only models no longer published are dropped.
+    setResults(pruneHealthResults(readStoredHealthResults(), models));
     setPending(new Set());
     setActive(new Set());
     setProgress({ done: 0, total: 0 });
     setStopped(false);
   }, [coreReady, contextKey, modelIds]);
 
-  const runChecks = useCallback(async (targets: CoreHealthModel[]) => {
-    if (!open || !canCheck || controllerRef.current || targets.length === 0) return;
+  useEffect(() => { saveStoredHealthResults(results); }, [results]);
+
+  const runChecks = useCallback(async (targets: CoreHealthModel[], mode: CheckMode = 'manual') => {
+    if ((mode === 'manual' && !open) || !canCheck || controllerRef.current || targets.length === 0) return;
     const controller = new AbortController();
     controllerRef.current = controller;
+    runModeRef.current = mode;
     setRunning(true);
     setStopped(false);
     setProgress({ done: 0, total: targets.length });
@@ -76,8 +95,14 @@ export function CoreHealthPanel({
       }, controller.signal, (model) => {
         if (!controller.signal.aborted) setActive((current) => new Set(current).add(model.name));
       });
+      if (mode === 'auto' && !controller.signal.aborted) {
+        saveAutoCheckState({ ...readAutoCheckState(), lastRunAt: Date.now() });
+      }
     } finally {
-      if (controllerRef.current === controller) controllerRef.current = null;
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+        runModeRef.current = null;
+      }
       if (mountedRef.current) {
         setRunning(false);
         setPending(new Set());
@@ -85,6 +110,25 @@ export function CoreHealthPanel({
       }
     }
   }, [canCheck, open]);
+
+  const autoTargets = useMemo(() => pickAutoCheckModels(models), [modelIds]);
+  const runChecksRef = useRef(runChecks);
+  runChecksRef.current = runChecks;
+  useEffect(() => {
+    if (!autoEnabled || !canCheck || autoTargets.length === 0) return;
+    const tick = () => {
+      if (isAutoCheckDue(readAutoCheckState(), Date.now())) void runChecksRef.current(autoTargets, 'auto');
+    };
+    const first = setTimeout(tick, CORE_HEALTH_AUTO_START_DELAY_MS);
+    const timer = setInterval(tick, CORE_HEALTH_AUTO_TICK_MS);
+    return () => { clearTimeout(first); clearInterval(timer); };
+  }, [autoEnabled, canCheck, autoTargets]);
+
+  const toggleAuto = (enabled: boolean) => {
+    setAutoEnabled(enabled);
+    saveAutoCheckState({ ...readAutoCheckState(), enabled });
+    if (!enabled && runModeRef.current === 'auto') controllerRef.current?.abort();
+  };
 
   const stopChecks = () => {
     controllerRef.current?.abort();
@@ -94,7 +138,8 @@ export function CoreHealthPanel({
   };
 
   const close = () => {
-    if (controllerRef.current) stopChecks();
+    // Scheduled checks continue in the background; only a manual run belongs to the dialog.
+    if (controllerRef.current && runModeRef.current === 'manual') stopChecks();
     setOpen(false);
   };
   const dialogRef = useDialogFocusTrap<HTMLElement>({ active: open, onEscape: close });
@@ -109,6 +154,10 @@ export function CoreHealthPanel({
   const latency = (value?: number) => value === undefined ? '—' : `${formatNumber(value)} ms`;
 
   const summary = t('home.health.summary', { healthy, failed, unchecked: Math.max(0, models.length - healthy - failed) });
+  const lastCheckedAt = Object.values(results).reduce((latest, result) => Math.max(latest, result.checkedAt), 0);
+  const entryStatus = !coreReady ? t('home.health.offline')
+    : healthy + failed === 0 ? t(autoEnabled ? 'home.health.idleAuto' : 'home.health.idle')
+      : `${t('home.health.entrySummary', { healthy, failed })} · ${formatDate(lastCheckedAt, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
   const dialog = (
     <div className="config-dialog-backdrop core-health-backdrop" onMouseDown={(event) => {
       if (event.target === event.currentTarget) {
@@ -137,6 +186,10 @@ export function CoreHealthPanel({
 
       <div className="core-health-toolbar">
         <label className="core-health-search"><Search size={15} aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder={t('apiAccess.health.search')} aria-label={t('apiAccess.health.search')} /></label>
+        <label className="core-health-auto" title={autoTargets.map((model) => model.name).join(', ')}>
+          <input type="checkbox" checked={autoEnabled} onChange={(event) => toggleAuto(event.currentTarget.checked)} />
+          <span>{t('home.health.auto', { count: autoTargets.length, hours: CORE_HEALTH_AUTO_INTERVAL_MS / 3_600_000 })}</span>
+        </label>
       </div>
 
       <div className="core-health-overview" aria-live="polite">
@@ -180,7 +233,7 @@ export function CoreHealthPanel({
         <button type="button" className="secondary-button core-health-open" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} aria-controls={dialogId} aria-describedby={`${dialogId}-entry-status`} title={summary}>
           <Activity size={16} aria-hidden="true" /><span>{t('home.health.title')}</span>{!compact && <ChevronRight size={14} aria-hidden="true" />}
         </button>
-        <span id={`${dialogId}-entry-status`} className="core-health-entry-status" aria-live="polite">{!coreReady ? t('home.health.offline') : healthy + failed > 0 ? summary : t('home.health.idle')}</span>
+        <span id={`${dialogId}-entry-status`} className="core-health-entry-status" aria-live="polite">{entryStatus}</span>
       </div>
       {open && typeof document !== 'undefined' ? createPortal(dialog, document.body) : null}
     </>

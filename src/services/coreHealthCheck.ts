@@ -6,7 +6,7 @@ import {
   type ProviderModelHealthResult,
 } from './providerHealthCheck';
 
-export type CoreHealthModel = { name: string; displayName?: string };
+export type CoreHealthModel = { name: string; displayName?: string; provider?: string };
 export type CoreModelHealthResult = ProviderModelHealthResult;
 
 export async function checkCoreModelHealth(model: string): Promise<CoreModelHealthResult> {

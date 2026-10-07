@@ -339,6 +339,8 @@ pub(crate) struct CoreHealthModel {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider: Option<String>,
 }
 
 async fn fetch_core_models(port: u16, api_key: &str) -> Result<Vec<CoreHealthModel>, String> {
@@ -378,7 +380,12 @@ fn parse_core_models(payload: &serde_json::Value) -> Result<Vec<CoreHealthModel>
             .map(str::trim)
             .filter(|display| !display.is_empty() && *display != name)
             .map(str::to_string);
-        models.push(CoreHealthModel { name: name.to_string(), display_name });
+        // Lets scheduled checks pick one inexpensive model per provider.
+        let provider = entry.get("owned_by").and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|provider| !provider.is_empty())
+            .map(str::to_string);
+        models.push(CoreHealthModel { name: name.to_string(), display_name, provider });
     }
     Ok(models)
 }

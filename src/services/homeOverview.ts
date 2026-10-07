@@ -105,7 +105,8 @@ export function normalizeHomeModels(payload: unknown): CoreHealthModel[] {
     const name = item.name.trim();
     if (models.has(name)) continue;
     const displayName = readString(item, 'displayName');
-    models.set(name, { name, ...(displayName ? { displayName } : {}) });
+    const provider = readString(item, 'provider').trim();
+    models.set(name, { name, ...(displayName ? { displayName } : {}), ...(provider ? { provider } : {}) });
   }
   return [...models.values()];
 }

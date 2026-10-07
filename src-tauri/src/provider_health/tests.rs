@@ -140,12 +140,14 @@ async fn core_health_probe_rejects_invalid_model_and_port_without_a_request() {
 
 #[tokio::test]
 async fn core_health_model_list_preserves_all_provider_models() {
-    let body = r#"{"data":[{"id":"gpt-test"},{"id":"claude-test"},{"id":"gemini-test"},{"id":"custom-alias"},{"id":"Foo","alias":"metadata-alias"},{"id":"foo"},{"id":"Foo"}]}"#;
+    let body = r#"{"data":[{"id":"gpt-test","owned_by":"openai"},{"id":"claude-test","owned_by":" "},{"id":"gemini-test"},{"id":"custom-alias"},{"id":"Foo","alias":"metadata-alias"},{"id":"foo"},{"id":"Foo"}]}"#;
     let (port, server) = mock_core_response("200 OK", "application/json", body, "").await;
     let config = probe_config(port);
     let models = fetch_core_models(config.port, effective_agent_api_key(&config)).await.unwrap();
     assert_eq!(models.iter().map(|model| model.name.as_str()).collect::<Vec<_>>(),
         vec!["gpt-test", "claude-test", "gemini-test", "custom-alias", "Foo", "foo"]);
+    assert_eq!(models.iter().map(|model| model.provider.as_deref()).collect::<Vec<_>>(),
+        vec![Some("openai"), None, None, None, None, None]);
     let request = server.await.unwrap();
     assert!(request.starts_with("GET /v1/models HTTP/1.1\r\n"));
     assert!(request.to_ascii_lowercase().contains("authorization: bearer test-client-access-key\r\n"));

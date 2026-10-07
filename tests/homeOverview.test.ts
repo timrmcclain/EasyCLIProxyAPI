@@ -64,12 +64,12 @@ describe('home overview aggregation', () => {
 
   it('preserves exposed aliases and case-sensitive model IDs while removing duplicate IDs', () => {
     expect(normalizeHomeModels([
-      { name: ' prefix/Model-A ', displayName: 'Model A', isAlias: true },
+      { name: ' prefix/Model-A ', displayName: 'Model A', provider: 'openai', isAlias: true },
       { name: 'prefix/Model-A' },
       { name: 'prefix/model-a' },
       { name: 'custom-alias', displayName: '' },
     ])).toEqual([
-      { name: 'prefix/Model-A', displayName: 'Model A' },
+      { name: 'prefix/Model-A', displayName: 'Model A', provider: 'openai' },
       { name: 'prefix/model-a' },
       { name: 'custom-alias' },
     ]);
