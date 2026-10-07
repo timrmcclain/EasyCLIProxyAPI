@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plug, RefreshCw, Undo2 } from 'lucide-react';
+import { useConfirmation } from '../components/ConfirmationDialog';
 import { useI18n } from '../i18n';
 import { connectorDynamicText, connectorText, type ConnectorTextKey } from '../i18n/connectors';
 import {
@@ -31,12 +32,19 @@ export function ConnectorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [undoing, setUndoing] = useState(false);
+  const [checkedAt, setCheckedAt] = useState<Date | null>(null);
+  // Bumped on every successful reload so cards drop stale edits and test results.
+  const [reloadCount, setReloadCount] = useState(0);
+  const unsavedCards = useRef(new Set<string>());
+  const { askConfirmation, confirmationDialog } = useConfirmation();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       setOverview(await connectorsApi.overview());
+      setCheckedAt(new Date());
+      setReloadCount(count => count + 1);
     } catch (loadError) {
       setError(errorText(loadError));
     } finally {
@@ -45,6 +53,25 @@ export function ConnectorsPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  const refresh = async () => {
+    if (unsavedCards.current.size > 0) {
+      const confirmed = await askConfirmation({
+        title: ct('discardTitle'),
+        message: ct('discardMessage'),
+        confirmText: ct('discardConfirm'),
+        variant: 'danger',
+      });
+      if (!confirmed) return;
+    }
+    setNotice(null);
+    await load();
+  };
+
+  const setCardUnsaved = useCallback((id: string, unsaved: boolean) => {
+    if (unsaved) unsavedCards.current.add(id);
+    else unsavedCards.current.delete(id);
+  }, []);
 
   const undo = async () => {
     setUndoing(true);
@@ -73,8 +100,13 @@ export function ConnectorsPage() {
               {overview.lastChange ? ` (${connectorDynamicText(`${overview.lastChange}_name`, locale)})` : ''}
             </button>
           ) : null}
-          <button type="button" className="secondary-button" disabled={loading} onClick={() => void load()}>
-            <RefreshCw size={16} aria-hidden="true" />{ct('refresh')}
+          {checkedAt ? (
+            <span className="connectors-checked" aria-live="polite">
+              {ct('checkedAt')} {checkedAt.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
+            </span>
+          ) : null}
+          <button type="button" className="secondary-button" disabled={loading} aria-busy={loading} onClick={() => void refresh()}>
+            <RefreshCw size={16} aria-hidden="true" className={loading ? 'spin' : undefined} />{loading ? ct('refreshing') : ct('refresh')}
           </button>
         </div>
       </header>
@@ -91,15 +123,25 @@ export function ConnectorsPage() {
           <ConnectorCard
             key={item.id}
             item={item}
+            reloadCount={reloadCount}
+            onUnsavedChange={setCardUnsaved}
             onSaved={(next) => { setOverview(next); setError(null); setNotice(ct('saved')); }}
           />
         ))}
       </div>
+      {confirmationDialog}
     </div>
   );
 }
 
-function ConnectorCard({ item, onSaved }: { item: ConnectorOverviewItem; onSaved: (overview: ConnectorOverview) => void }) {
+type ConnectorCardProps = {
+  item: ConnectorOverviewItem;
+  reloadCount: number;
+  onUnsavedChange: (id: string, unsaved: boolean) => void;
+  onSaved: (overview: ConnectorOverview) => void;
+};
+
+function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: ConnectorCardProps) {
   const { locale } = useI18n();
   const ct = (key: ConnectorTextKey) => connectorText(key, locale);
   const dt = (key: string) => connectorDynamicText(key, locale);
@@ -109,12 +151,37 @@ function ConnectorCard({ item, onSaved }: { item: ConnectorOverviewItem; onSaved
   const [saveError, setSaveError] = useState<string | null>(null);
   const [tests, setTests] = useState<Partial<Record<ConnectorTarget, TestState>>>({});
 
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const previousItem = useRef(item);
+  const seenReload = useRef(reloadCount);
+  const justSaved = useRef(false);
+
+  // A reload (Refresh) resets the card. Another card's save also delivers a new
+  // item; keep this card's unsaved edits then instead of silently dropping them.
   useEffect(() => {
-    setDraft(draftFromItem(item));
-    setEditingSecrets(false);
-  }, [item]);
+    const reloaded = seenReload.current !== reloadCount;
+    seenReload.current = reloadCount;
+    const hadUnsaved = draftChanged(previousItem.current, draftRef.current);
+    previousItem.current = item;
+    if (reloaded) {
+      setTests({});
+      setSaveError(null);
+    }
+    if (reloaded || justSaved.current || !hadUnsaved) {
+      setDraft(draftFromItem(item));
+      setEditingSecrets(false);
+    }
+    justSaved.current = false;
+  }, [item, reloadCount]);
 
   const changed = draftChanged(item, draft);
+
+  useEffect(() => {
+    onUnsavedChange(item.id, changed);
+  }, [item.id, changed, onUnsavedChange]);
+
+  useEffect(() => () => onUnsavedChange(item.id, false), [item.id, onUnsavedChange]);
   const missing = missingSecrets(item, draft);
   const unavailable = item.unavailableReason ? dt(`unavailable_${item.unavailableReason}`) : null;
   const note = dt(`${item.id}_note`);
@@ -124,7 +191,9 @@ function ConnectorCard({ item, onSaved }: { item: ConnectorOverviewItem; onSaved
     setSaving(true);
     setSaveError(null);
     try {
-      onSaved(await connectorsApi.apply(item.id, draft));
+      const next = await connectorsApi.apply(item.id, draft);
+      justSaved.current = true;
+      onSaved(next);
       setTests({});
     } catch (error) {
       const secret = missingSecretFromError(error);
