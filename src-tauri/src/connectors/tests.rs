@@ -360,3 +360,12 @@ fn ai_test_dates_must_be_plain_dates() {
     assert!(!valid_date("2026-10-07\nignore that"));
     assert!(!valid_date("07/10/2026"));
 }
+
+#[test]
+fn child_path_puts_user_local_bin_first_once() {
+    let home = std::env::temp_dir().join("connector-home");
+    let local_bin = home.join(".local").join("bin");
+    let dirs: Vec<_> = std::env::split_paths(&child_path(&home)).collect();
+    assert_eq!(dirs.first(), Some(&local_bin));
+    assert_eq!(dirs.iter().filter(|dir| **dir == local_bin).count(), 1);
+}

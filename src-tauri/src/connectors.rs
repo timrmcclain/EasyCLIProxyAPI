@@ -163,6 +163,22 @@ impl Runtimes {
     }
 }
 
+/// PATH for programs the app starts, with the user's `~/.local/bin` (where uv
+/// and Claude Code install) added. Apps launched from the Start menu or tray
+/// often lack it, so a bare `uvx` in a hand-written entry would not be found.
+fn child_path(home: &Path) -> std::ffi::OsString {
+    let local_bin = home.join(".local").join("bin");
+    let mut dirs = vec![local_bin.clone()];
+    if let Some(paths) = std::env::var_os("PATH") {
+        dirs.extend(std::env::split_paths(&paths).filter(|dir| *dir != local_bin));
+    }
+    std::env::join_paths(dirs).unwrap_or_else(|_| std::env::var_os("PATH").unwrap_or_default())
+}
+
+fn user_home() -> Option<PathBuf> {
+    std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(PathBuf::from)
+}
+
 fn find_on_path(program: &str) -> Vec<PathBuf> {
     let names: Vec<String> = if cfg!(windows) {
         vec![format!("{program}.exe"), program.to_string()]
@@ -1017,6 +1033,9 @@ fn test_stdio(entry: &Value) -> ConnectorTestResult {
         .unwrap_or_default();
     let mut process = Command::new(command);
     process.args(&args).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    if let Some(home) = user_home() {
+        process.env("PATH", child_path(&home));
+    }
     if let Some(env) = entry.get("env").and_then(Value::as_object) {
         for (key, value) in env {
             if let Some(value) = value.as_str() {
@@ -1314,6 +1333,7 @@ fn run_ai_test(claude: &Path, home: &Path, args: &[String]) -> ConnectorTestResu
         }
     }
     process.env("MCP_CONNECTION_NONBLOCKING", "false");
+    process.env("PATH", child_path(home));
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
