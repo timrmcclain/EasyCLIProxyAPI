@@ -212,13 +212,45 @@ fn changing_access_keeps_the_stored_token() {
 
 #[test]
 fn microsoft_365_uses_the_built_in_desktop_connector() {
+    const TENANT: &str = "11111111-2222-3333-4444-555555555555";
+    const CLIENT: &str = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
     let temp = TempDir::new("m365");
     let locations = locations(&temp.0);
-    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", true, true, None, &[])).unwrap();
+    let ids = [("MICROSOFT_TENANT_ID", TENANT), ("MICROSOFT_CLIENT_ID", CLIENT)];
+    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", true, true, None, &ids)).unwrap();
     let desktop = current_entry(&locations, ConnectorId::Microsoft365, Target::Desktop).unwrap().unwrap();
-    assert_eq!(desktop, json!({ "name": "Microsoft-365", "server": "microsoft365" }));
+    assert_eq!(desktop, json!({ "name": "Microsoft-365", "server": "microsoft365", "tenantId": TENANT, "clientId": CLIENT }));
     let code = current_entry(&locations, ConnectorId::Microsoft365, Target::Code).unwrap().unwrap();
     assert_eq!(code, json!({ "type": "http", "url": MICROSOFT_365_URL }));
+
+    // Rebuilding the entry later keeps the stored IDs.
+    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", false, true, None, &[])).unwrap();
+    let desktop = current_entry(&locations, ConnectorId::Microsoft365, Target::Desktop).unwrap().unwrap();
+    assert_eq!(desktop["clientId"], CLIENT);
+}
+
+#[test]
+fn microsoft_365_needs_its_ids_only_for_claude_desktop() {
+    let temp = TempDir::new("m365-ids");
+    let locations = locations(&temp.0);
+    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", true, false, None, &[])).unwrap();
+    assert!(current_entry(&locations, ConnectorId::Microsoft365, Target::Code).unwrap().is_some());
+
+    let error = apply_change(&locations, &runtimes(&temp.0), request("microsoft365", true, true, None, &[])).unwrap_err();
+    assert_eq!(error, "missing_secret:MICROSOFT_TENANT_ID");
+    assert!(current_entry(&locations, ConnectorId::Microsoft365, Target::Desktop).unwrap().is_none());
+
+    let bad = [("MICROSOFT_TENANT_ID", "onecompany.com"), ("MICROSOFT_CLIENT_ID", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")];
+    let error = apply_change(&locations, &runtimes(&temp.0), request("microsoft365", true, true, None, &bad)).unwrap_err();
+    assert_eq!(error, "invalid_secret:MICROSOFT_TENANT_ID");
+    let bad = [("MICROSOFT_TENANT_ID", "organizations"), ("MICROSOFT_CLIENT_ID", "not-a-guid")];
+    let error = apply_change(&locations, &runtimes(&temp.0), request("microsoft365", true, true, None, &bad)).unwrap_err();
+    assert_eq!(error, "invalid_secret:MICROSOFT_CLIENT_ID");
+    assert!(current_entry(&locations, ConnectorId::Microsoft365, Target::Desktop).unwrap().is_none());
+
+    let item = overview(&locations, &runtimes(&temp.0)).unwrap().connectors.into_iter().find(|item| item.id == "microsoft365").unwrap();
+    assert!(item.secrets_desktop_only);
+    assert!(!item.secrets_configured);
 }
 
 #[test]

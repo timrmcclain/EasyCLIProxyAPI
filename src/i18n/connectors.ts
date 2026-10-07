@@ -100,6 +100,30 @@ const messages = {
     'The Microsoft 365 connector is an app Anthropic has already registered, so there is no test-user list. Many companies, though, require an admin to approve new apps: your company\'s Microsoft 365 admin approves it once for the whole company in the Microsoft Entra admin center (Enterprise applications → Admin consent requests). Users at other companies need their own admin to do the same.',
     'Microsoft 365 コネクタは Anthropic が登録済みのアプリなので、テストユーザー一覧はありません。ただし多くの会社では新しいアプリに管理者の承認が必要です。会社の Microsoft 365 管理者が Microsoft Entra 管理センターで会社全体に対して 1 回承認します（エンタープライズ アプリケーション → 管理者の同意要求）。他社のユーザーは各社の管理者の承認が必要です。',
   ],
+  microsoftDesktopGuideTitle: ['在 Claude Desktop 中使用', 'Using it in Claude Desktop', 'Claude Desktop で使う'],
+  microsoftDesktopGuideRegister: [
+    '在 Microsoft Entra 中新建应用注册（名称随意，例如 Claude Desktop），帐户类型选“仅此组织目录中的帐户”。',
+    'In Microsoft Entra, create a new app registration (any name, for example Claude Desktop) for "Accounts in this organizational directory only".',
+    'Microsoft Entra で新しいアプリの登録を作成します（名前は任意、例: Claude Desktop）。アカウントの種類は「この組織ディレクトリのみのアカウント」を選びます。',
+  ],
+  microsoftDesktopGuideRedirect: [
+    '在“身份验证”中添加“移动和桌面应用程序”平台，重定向 URI 填 ms-appx-web://Microsoft.AAD.BrokerPlugin/{客户端 ID} 和 http://localhost。',
+    'Under Authentication, add the "Mobile and desktop applications" platform with the redirect URIs ms-appx-web://Microsoft.AAD.BrokerPlugin/{client ID} and http://localhost.',
+    '「認証」で「モバイル アプリケーションとデスクトップ アプリケーション」プラットフォームを追加し、リダイレクト URI に ms-appx-web://Microsoft.AAD.BrokerPlugin/{クライアント ID} と http://localhost を入力します。',
+  ],
+  microsoftDesktopGuidePermissions: [
+    '在“API 权限”中添加 Microsoft Graph 委托权限：User.Read、Mail.Read、Calendars.Read、Files.Read.All、Sites.Read.All、Chat.Read，然后点击“授予管理员同意”。',
+    'Under API permissions, add the Microsoft Graph delegated permissions User.Read, Mail.Read, Calendars.Read, Files.Read.All, Sites.Read.All and Chat.Read, then press "Grant admin consent".',
+    '「API のアクセス許可」で Microsoft Graph の委任されたアクセス許可 User.Read、Mail.Read、Calendars.Read、Files.Read.All、Sites.Read.All、Chat.Read を追加し、「管理者の同意を与えます」を押します。',
+  ],
+  microsoftDesktopGuideIds: [
+    '把“概述”页上的目录（租户）ID 和应用程序（客户端）ID 填到下面，保存后重新启动 Claude Desktop，再在其中登录。',
+    'Copy the Directory (tenant) ID and Application (client) ID from the Overview page into the fields below, save, then restart Claude Desktop and sign in there.',
+    '「概要」ページのディレクトリ（テナント）ID とアプリケーション（クライアント）ID を下の欄に入力して保存し、Claude Desktop を再起動してサインインします。',
+  ],
+  openAppRegistrations: ['打开应用注册', 'Open App registrations', 'アプリの登録を開く'],
+  desktopLoginSettings: ['Claude Desktop 登录设置', 'Claude Desktop login settings', 'Claude Desktop のログイン設定'],
+  invalidSecret: ['格式不正确：', 'This doesn\'t look right:', '形式が正しくありません:'],
   openEntra: ['打开 Microsoft Entra 管理中心', 'Open Microsoft Entra admin center', 'Microsoft Entra 管理センターを開く'],
   unavailable_uvx: ['需要 uv（Python 工具运行器），当前未安装。', 'Needs uv (the Python tool runner), which is not installed.', 'uv（Python ツールランナー）が必要ですが、インストールされていません。'],
   unavailable_playwright: ['未安装 Playwright MCP。', 'Playwright MCP is not installed.', 'Playwright MCP がインストールされていません。'],
@@ -125,6 +149,8 @@ const messages = {
   GOOGLE_OAUTH_CLIENT_ID: ['Google OAuth 客户端 ID', 'Google OAuth client ID', 'Google OAuth クライアント ID'],
   GOOGLE_OAUTH_CLIENT_SECRET: ['Google OAuth 客户端密钥', 'Google OAuth client secret', 'Google OAuth クライアントシークレット'],
   GITHUB_TOKEN: ['GitHub 个人访问令牌', 'GitHub personal access token', 'GitHub 個人アクセストークン'],
+  MICROSOFT_TENANT_ID: ['目录（租户）ID', 'Directory (tenant) ID', 'ディレクトリ（テナント）ID'],
+  MICROSOFT_CLIENT_ID: ['应用程序（客户端）ID', 'Application (client) ID', 'アプリケーション（クライアント）ID'],
 } as const;
 
 export type ConnectorTextKey = keyof typeof messages;

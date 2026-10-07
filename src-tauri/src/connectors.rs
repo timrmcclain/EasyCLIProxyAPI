@@ -105,13 +105,48 @@ impl ConnectorId {
         match self {
             ConnectorId::Google => &["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"],
             ConnectorId::GitHub => &["GITHUB_TOKEN"],
+            ConnectorId::Microsoft365 => &["MICROSOFT_TENANT_ID", "MICROSOFT_CLIENT_ID"],
             _ => &[],
         }
     }
 
-    fn needs_secrets(self) -> bool {
-        !self.secret_names().is_empty()
+    /// The secrets one target's entry needs. Claude Code reaches Microsoft 365
+    /// through Anthropic's hosted connector, which needs none.
+    fn secrets_for(self, target: Target) -> &'static [&'static str] {
+        match (self, target) {
+            (ConnectorId::Microsoft365, Target::Code) => &[],
+            _ => self.secret_names(),
+        }
     }
+
+    fn secrets_desktop_only(self) -> bool {
+        self.secrets_for(Target::Code).is_empty() && !self.secret_names().is_empty()
+    }
+}
+
+/// Values Claude Desktop accepts for a built-in Microsoft 365 entry's tenantId.
+const MICROSOFT_TENANT_ALIASES: [&str; 3] = ["organizations", "common", "consumers"];
+
+fn is_guid(value: &str) -> bool {
+    let parts: Vec<&str> = value.split('-').collect();
+    parts.len() == 5
+        && parts.iter().zip([8, 4, 4, 4, 12]).all(|(part, len)| part.len() == len && part.chars().all(|c| c.is_ascii_hexdigit()))
+}
+
+/// Claude Desktop drops a built-in Microsoft 365 entry whose IDs are malformed
+/// without saying so, so they are checked before anything is written.
+fn check_microsoft_ids(secrets: &BTreeMap<String, String>) -> Result<(), String> {
+    if let Some(tenant) = secrets.get("MICROSOFT_TENANT_ID").map(|value| value.trim()) {
+        if !is_guid(tenant) && !MICROSOFT_TENANT_ALIASES.contains(&tenant.to_ascii_lowercase().as_str()) {
+            return Err("invalid_secret:MICROSOFT_TENANT_ID".to_string());
+        }
+    }
+    if let Some(client) = secrets.get("MICROSOFT_CLIENT_ID").map(|value| value.trim()) {
+        if !is_guid(client) {
+            return Err("invalid_secret:MICROSOFT_CLIENT_ID".to_string());
+        }
+    }
+    Ok(())
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -282,8 +317,14 @@ fn build_entry(
         }
         ConnectorId::Microsoft365 => match target {
             Target::Code => http_entry(target, name, MICROSOFT_365_URL, None),
-            // Claude Desktop's built-in connector: Microsoft sign-in, read set by default.
-            Target::Desktop => json!({ "name": name, "server": "microsoft365" }),
+            // Claude Desktop's built-in connector signs in through the user's own
+            // Entra app registration and asks for its default read set.
+            Target::Desktop => json!({
+                "name": name,
+                "server": "microsoft365",
+                "tenantId": secret("MICROSOFT_TENANT_ID")?,
+                "clientId": secret("MICROSOFT_CLIENT_ID")?,
+            }),
         },
         ConnectorId::GitHub => {
             let url = if access == "full" { GITHUB_URL } else { GITHUB_READONLY_URL };
@@ -344,6 +385,13 @@ fn secrets_from_entry(id: ConnectorId, entry: &Value) -> BTreeMap<String, String
                 .filter(|token| !token.is_empty() && !token.contains("${"));
             if let Some(token) = token {
                 secrets.insert("GITHUB_TOKEN".to_string(), token.to_string());
+            }
+        }
+        ConnectorId::Microsoft365 => {
+            for (key, field) in [("MICROSOFT_TENANT_ID", "tenantId"), ("MICROSOFT_CLIENT_ID", "clientId")] {
+                if let Some(value) = entry.get(field).and_then(Value::as_str).filter(|value| !value.trim().is_empty()) {
+                    secrets.insert(key.to_string(), value.trim().to_string());
+                }
             }
         }
         _ => {}
@@ -776,6 +824,7 @@ pub(crate) struct ConnectorOverviewItem {
     access_levels: Vec<&'static str>,
     secret_names: Vec<&'static str>,
     secrets_configured: bool,
+    secrets_desktop_only: bool,
     unavailable_reason: Option<&'static str>,
     claude_code: ConnectorTargetState,
     claude_desktop: ConnectorTargetState,
@@ -855,6 +904,7 @@ fn overview(locations: &Locations, runtimes: &Runtimes) -> Result<ConnectorOverv
             access_levels: id.access_levels().to_vec(),
             secret_names: id.secret_names().to_vec(),
             secrets_configured: id.secret_names().iter().all(|name| secrets.contains_key(*name)),
+            secrets_desktop_only: id.secrets_desktop_only(),
             unavailable_reason: runtimes.unavailable_reason(id),
             claude_code: target_state(id, Target::Code, code.as_ref(), &locations.home),
             claude_desktop: target_state(id, Target::Desktop, desktop.as_ref(), &locations.home),
@@ -899,6 +949,9 @@ fn apply_change(locations: &Locations, runtimes: &Runtimes, request: ConnectorCh
     secrets.extend(request.secrets.into_iter().filter(|(key, value)| {
         id.secret_names().contains(&key.as_str()) && !value.trim().is_empty()
     }));
+    if id == ConnectorId::Microsoft365 && request.claude_desktop {
+        check_microsoft_ids(&secrets)?;
+    }
 
     // Build everything first so a missing secret or program changes nothing.
     let mut plan: Vec<(Target, PathBuf, Option<Value>, Option<Value>)> = Vec::new();
@@ -909,11 +962,9 @@ fn apply_change(locations: &Locations, runtimes: &Runtimes, request: ConnectorCh
         }
         let file = locations.target_file(target)?;
         let next = if wanted {
-            if id.needs_secrets() {
-                for name in id.secret_names() {
-                    if !secrets.contains_key(*name) {
-                        return Err(format!("missing_secret:{name}"));
-                    }
+            for name in id.secrets_for(target) {
+                if !secrets.contains_key(*name) {
+                    return Err(format!("missing_secret:{name}"));
                 }
             }
             Some(build_entry(id, target, &access, &secrets, runtimes)?)

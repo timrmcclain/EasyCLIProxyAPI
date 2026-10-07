@@ -15,6 +15,8 @@ export type ConnectorOverviewItem = {
   accessLevels: string[];
   secretNames: string[];
   secretsConfigured: boolean;
+  /** The secrets are only needed for the Claude Desktop entry. */
+  secretsDesktopOnly: boolean;
   unavailableReason: string | null;
   claudeCode: ConnectorTargetState;
   claudeDesktop: ConnectorTargetState;
@@ -59,9 +61,14 @@ export function draftChanged(item: ConnectorOverviewItem, draft: ConnectorDraft)
     || Object.values(draft.secrets).some(value => value.trim() !== '');
 }
 
+/** Whether the targets this draft turns on need the connector's secrets. */
+export function secretsWanted(item: ConnectorOverviewItem, draft: ConnectorDraft) {
+  return item.secretsDesktopOnly ? draft.claudeDesktop : draft.claudeCode || draft.claudeDesktop;
+}
+
 /** Secrets the user still has to enter before this draft can be saved. */
 export function missingSecrets(item: ConnectorOverviewItem, draft: ConnectorDraft) {
-  if (item.secretsConfigured || !(draft.claudeCode || draft.claudeDesktop)) return [];
+  if (item.secretsConfigured || !secretsWanted(item, draft)) return [];
   return item.secretNames.filter(name => !draft.secrets[name]?.trim());
 }
 
@@ -71,6 +78,16 @@ export function missingSecretFromError(error: unknown) {
   const match = /missing_secret:([A-Z0-9_]+)/.exec(text);
   return match ? match[1] : null;
 }
+
+/** Backend errors of the form "invalid_secret:NAME" name a malformed value. */
+export function invalidSecretFromError(error: unknown) {
+  const text = error instanceof Error ? error.message : String(error);
+  const match = /invalid_secret:([A-Z0-9_]+)/.exec(text);
+  return match ? match[1] : null;
+}
+
+/** Secrets that are identifiers rather than credentials, so they can be shown while typing. */
+export const plainSecretNames: readonly string[] = ['MICROSOFT_TENANT_ID', 'MICROSOFT_CLIENT_ID'];
 
 export const connectorsApi = {
   overview: () => invoke<ConnectorOverview>('get_connector_overview'),

@@ -11,7 +11,10 @@ import {
   draftChanged,
   draftFromItem,
   localDate,
+  invalidSecretFromError,
   missingSecretFromError,
+  plainSecretNames,
+  secretsWanted,
   missingSecrets,
   type ConnectorDraft,
   type ConnectorId,
@@ -33,6 +36,7 @@ const guideLinks = {
   googleAudience: 'https://console.cloud.google.com/auth/audience',
   googleBranding: 'https://console.cloud.google.com/auth/branding',
   entra: 'https://entra.microsoft.com/',
+  entraAppRegistrations: 'https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade/quickStartType~/null/sourceType/Microsoft_AAD_IAM',
 } as const;
 
 function openLink(url: string) {
@@ -202,7 +206,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
   const missing = missingSecrets(item, draft);
   const unavailable = item.unavailableReason ? dt(`unavailable_${item.unavailableReason}`) : null;
   const note = dt(`${item.id}_note`);
-  const showSecrets = item.secretNames.length > 0 && (editingSecrets || (!item.secretsConfigured && (draft.claudeCode || draft.claudeDesktop)));
+  const showSecrets = item.secretNames.length > 0 && (editingSecrets || (!item.secretsConfigured && secretsWanted(item, draft)));
 
   const save = async () => {
     setSaving(true);
@@ -215,7 +219,12 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       setAiTest(null);
     } catch (error) {
       const secret = missingSecretFromError(error);
-      setSaveError(secret ? `${ct('missingSecret')} ${dt(secret)}` : errorText(error));
+      const invalid = invalidSecretFromError(error);
+      setSaveError(
+        secret ? `${ct('missingSecret')} ${dt(secret)}`
+          : invalid ? `${ct('invalidSecret')} ${dt(invalid)}`
+            : errorText(error),
+      );
     } finally {
       setSaving(false);
     }
@@ -324,6 +333,17 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           <p>{ct('microsoftGuideBody')} <GuideLink url={guideLinks.entra} label={ct('openEntra')} /></p>
         </details>
       ) : null}
+      {item.id === 'microsoft365' ? (
+        <details className="connector-guide">
+          <summary>{ct('microsoftDesktopGuideTitle')}</summary>
+          <ol>
+            <li>{ct('microsoftDesktopGuideRegister')} <GuideLink url={guideLinks.entraAppRegistrations} label={ct('openAppRegistrations')} /></li>
+            <li>{ct('microsoftDesktopGuideRedirect')}</li>
+            <li>{ct('microsoftDesktopGuidePermissions')}</li>
+            <li>{ct('microsoftDesktopGuideIds')}</li>
+          </ol>
+        </details>
+      ) : null}
 
       {item.accessLevels.length > 0 ? (
         <label className="connector-field">
@@ -341,7 +361,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       {item.secretNames.length > 0 ? (
         <div className="connector-secrets">
           <div className="connector-secrets-status">
-            <span>{ct('loginSettings')}: <strong>{item.secretsConfigured ? ct('configured') : ct('notConfigured')}</strong></span>
+            <span>{item.secretsDesktopOnly ? ct('desktopLoginSettings') : ct('loginSettings')}: <strong>{item.secretsConfigured ? ct('configured') : ct('notConfigured')}</strong></span>
             {item.secretsConfigured && !editingSecrets ? (
               <button type="button" className="secondary-button compact-button" onClick={() => setEditingSecrets(true)}>{ct('change')}</button>
             ) : null}
@@ -352,7 +372,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
                 <label key={name} className="connector-field">
                   <span>{dt(name)}</span>
                   <input
-                    type="password"
+                    type={plainSecretNames.includes(name) ? 'text' : 'password'}
                     autoComplete="off"
                     spellCheck={false}
                     value={draft.secrets[name] ?? ''}

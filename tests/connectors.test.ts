@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { draftChanged, draftFromItem, missingSecretFromError, missingSecrets, type ConnectorOverviewItem } from '../src/services/connectors';
+import { draftChanged, draftFromItem, invalidSecretFromError, missingSecretFromError, missingSecrets, type ConnectorOverviewItem } from '../src/services/connectors';
 
 function item(overrides: Partial<ConnectorOverviewItem> = {}): ConnectorOverviewItem {
   return {
@@ -7,6 +7,7 @@ function item(overrides: Partial<ConnectorOverviewItem> = {}): ConnectorOverview
     accessLevels: ['readonly', 'drafts', 'full'],
     secretNames: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'],
     secretsConfigured: true,
+    secretsDesktopOnly: false,
     unavailableReason: null,
     claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: true },
     claudeDesktop: { enabled: false, access: null, builtIn: false, signedIn: null },
@@ -45,6 +46,25 @@ describe('connector drafts', () => {
     expect(missingSecrets(fresh, { ...off, claudeCode: true })).toEqual(['GITHUB_TOKEN']);
     expect(missingSecrets(fresh, { ...off, claudeCode: true, secrets: { GITHUB_TOKEN: 'token' } })).toEqual([]);
     expect(missingSecrets(item(), { ...draftFromItem(item()), claudeDesktop: true })).toEqual([]);
+  });
+
+  test('Microsoft 365 asks for its IDs only when Claude Desktop is turned on', () => {
+    const m365 = item({
+      id: 'microsoft365',
+      accessLevels: [],
+      secretNames: ['MICROSOFT_TENANT_ID', 'MICROSOFT_CLIENT_ID'],
+      secretsConfigured: false,
+      secretsDesktopOnly: true,
+      claudeCode: { enabled: false, access: null, builtIn: false, signedIn: null },
+    });
+    const off = draftFromItem(m365);
+    expect(missingSecrets(m365, { ...off, claudeCode: true })).toEqual([]);
+    expect(missingSecrets(m365, { ...off, claudeDesktop: true })).toEqual(['MICROSOFT_TENANT_ID', 'MICROSOFT_CLIENT_ID']);
+  });
+
+  test('reads the malformed secret name from backend errors', () => {
+    expect(invalidSecretFromError(new Error('invalid_secret:MICROSOFT_CLIENT_ID'))).toBe('MICROSOFT_CLIENT_ID');
+    expect(invalidSecretFromError('missing_secret:GITHUB_TOKEN')).toBeNull();
   });
 
   test('reads the missing secret name from backend errors', () => {
