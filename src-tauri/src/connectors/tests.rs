@@ -369,3 +369,35 @@ fn child_path_puts_user_local_bin_first_once() {
     assert_eq!(dirs.first(), Some(&local_bin));
     assert_eq!(dirs.iter().filter(|dir| **dir == local_bin).count(), 1);
 }
+
+#[test]
+fn desktop_only_connector_gets_a_temporary_code_entry() {
+    let dir = TempDir::new("temporary-entry");
+    let locations = locations(&dir.0);
+    let desktop = json!({ "name": "GitHub", "transport": "http", "url": GITHUB_READONLY_URL, "headers": { "Authorization": "Bearer token-value" } });
+    let path = locations.target_file(Target::Desktop).unwrap();
+    let text = write_entry(&read_text(&path).unwrap(), Container::DesktopServers, "GitHub", Some(&desktop)).unwrap();
+    fs::write(&path, text).unwrap();
+
+    let entry = temporary_code_entry(&locations, ConnectorId::GitHub).unwrap().unwrap();
+    assert_eq!(entry["type"], "http");
+    assert_eq!(entry["url"], GITHUB_READONLY_URL);
+    assert_eq!(entry["headers"]["Authorization"], "Bearer token-value");
+    assert!(temporary_code_entry(&locations, ConnectorId::Firecrawl).unwrap().is_none());
+}
+
+#[test]
+fn desktop_only_microsoft_365_asks_for_a_claude_code_sign_in_without_changing_settings() {
+    let dir = TempDir::new("m365-desktop-only");
+    let locations = locations(&dir.0);
+    let path = locations.target_file(Target::Desktop).unwrap();
+    let desktop = json!({ "name": "Microsoft-365", "server": "microsoft365" });
+    let text = write_entry(&read_text(&path).unwrap(), Container::DesktopServers, "Microsoft-365", Some(&desktop)).unwrap();
+    fs::write(&path, text).unwrap();
+
+    let result = ai_test(&locations, ConnectorId::Microsoft365, "2026-10-07");
+    assert_eq!(result.status, "needsSignIn");
+    assert_eq!(result.message.as_deref(), Some("desktopOnly"));
+    assert_eq!(read_text(&locations.code_config()).unwrap(), CODE_CONFIG);
+    assert!(!locations.connector_data().exists() || fs::read_dir(locations.connector_data()).unwrap().count() == 0);
+}

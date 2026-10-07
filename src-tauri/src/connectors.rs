@@ -1379,20 +1379,49 @@ fn run_ai_test(claude: &Path, home: &Path, args: &[String]) -> ConnectorTestResu
     }
 }
 
+/// The Claude Code entry a connector would get, built from its Claude Desktop
+/// settings, for a connector that is only on in Claude Desktop.
+fn temporary_code_entry(locations: &Locations, id: ConnectorId) -> Result<Option<Value>, String> {
+    let Some(desktop) = current_entry(locations, id, Target::Desktop)? else { return Ok(None) };
+    let access = access_from_entry(id, &desktop).unwrap_or_else(|| "read".to_string());
+    let secrets = existing_secrets(locations, id)?;
+    let runtimes = Runtimes::detect(&locations.home, &locations.local_app_data);
+    build_entry(id, Target::Code, &access, &secrets, &runtimes).map(Some)
+}
+
+/// Deletes the one-off connector file when the test ends; it may hold the
+/// connector's login settings.
+struct TemporaryFile(PathBuf);
+
+impl Drop for TemporaryFile {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.0);
+    }
+}
+
 fn ai_test(locations: &Locations, id: ConnectorId, today: &str) -> ConnectorTestResult {
     let failed = |message: &str| ConnectorTestResult { status: "failed", tool_count: None, message: Some(message.to_string()) };
-    let Some(server) = code_entry_key(locations, id) else {
-        return failed("Turn this connector on for Claude Code first");
+    // A connector that is only on in Claude Desktop is tested with a one-off
+    // copy handed to this run alone; the user's Claude Code settings are not changed.
+    let (server, temporary) = match code_entry_key(locations, id) {
+        Some(server) => (server, None),
+        None => match temporary_code_entry(locations, id) {
+            Ok(Some(entry)) => (id.entry_name(Target::Code).to_string(), Some(entry)),
+            Ok(None) => return failed("Turn this connector on for Claude Code or Claude Desktop first"),
+            Err(error) => return failed(&error),
+        },
     };
     // Without a saved sign-in the run could only hand back a link that stops
-    // working when it exits, so say so without spending a request.
+    // working when it exits, so say so without spending a request. Claude
+    // Desktop's Microsoft sign-in is held by Claude Desktop and cannot be reused.
     let signed_in = match id {
         ConnectorId::Google => google_signed_in(&locations.home),
         ConnectorId::Microsoft365 => code_oauth_signed_in(&locations.home, &server),
         _ => true,
     };
     if !signed_in {
-        return ConnectorTestResult { status: "needsSignIn", tool_count: None, message: None };
+        let message = (id == ConnectorId::Microsoft365 && temporary.is_some()).then(|| "desktopOnly".to_string());
+        return ConnectorTestResult { status: "needsSignIn", tool_count: None, message };
     }
     let email = google_account(&locations.home);
     let Some((tools, prompt)) = ai_test_plan(id, &server, email.as_deref(), today) else {
@@ -1401,7 +1430,20 @@ fn ai_test(locations: &Locations, id: ConnectorId, today: &str) -> ConnectorTest
     let Some(claude) = find_claude_code(&locations.home) else {
         return failed("Claude Code is not installed");
     };
-    run_ai_test(&claude, &locations.home, &ai_test_args(&tools, &prompt))
+    let mut args = ai_test_args(&tools, &prompt);
+    let _cleanup = match temporary {
+        Some(entry) => {
+            let path = locations.connector_data().join(format!("ai-test-{}.json", std::process::id()));
+            let config = json!({ "mcpServers": { server.clone(): entry } });
+            if let Err(error) = fs::create_dir_all(locations.connector_data()).and_then(|_| fs::write(&path, config.to_string())) {
+                return failed(&format!("Could not prepare the test: {error}"));
+            }
+            args.extend(["--mcp-config".to_string(), path.to_string_lossy().to_string(), "--strict-mcp-config".to_string()]);
+            Some(TemporaryFile(path))
+        }
+        None => None,
+    };
+    run_ai_test(&claude, &locations.home, &args)
 }
 
 // ---------------------------------------------------------------------------
@@ -1480,7 +1522,12 @@ pub(crate) async fn ai_test_connector(app: tauri::AppHandle, id: String, today: 
     if !valid_date(&today) {
         return Err(format!("Invalid date: {today}"));
     }
-    let hidden = current_entry(&locations, id, Target::Code)?.map(|entry| hidden_values(&entry)).unwrap_or_default();
+    let mut hidden = Vec::new();
+    for target in [Target::Code, Target::Desktop] {
+        if let Some(entry) = current_entry(&locations, id, target)? {
+            hidden.extend(hidden_values(&entry));
+        }
+    }
     let result = tauri::async_runtime::spawn_blocking(move || ai_test(&locations, id, &today))
         .await
         .map_err(|error| error.to_string())?;

@@ -43,6 +43,11 @@ if (-not (Test-Path -LiteralPath $TargetExe -PathType Leaf)) {
 Write-Host 'Stopping EasyCLIProxyAPI (GUI only -- cli-proxy-api is left running)...'
 Get-Process -Name 'EasyCLIProxyAPI' -ErrorAction SilentlyContinue |
     ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
+# Wait for the GUI to exit and release its exe (up to 15 seconds).
+$deadline = (Get-Date).AddSeconds(15)
+while ((Get-Process -Name 'EasyCLIProxyAPI' -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) {
+    Start-Sleep -Milliseconds 250
+}
 Start-Sleep -Seconds 1
 
 Write-Host "Backing up current exe to $BackupDir"

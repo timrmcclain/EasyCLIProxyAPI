@@ -240,7 +240,9 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       setAiTest({ running: false, error: errorText(error) });
     }
   };
-  const aiTestable = aiTestableConnectors.includes(item.id as ConnectorId) && item.claudeCode.enabled;
+  const aiTestable = aiTestableConnectors.includes(item.id as ConnectorId) && (item.claudeCode.enabled || item.claudeDesktop.enabled);
+  // Only on in Claude Desktop: the test hands Claude Code a one-off copy.
+  const aiTestDesktopOnly = !item.claudeCode.enabled;
 
   const accessLabel = (level: string) => {
     if (level === 'readonly') return ct('accessReadonly');
@@ -302,7 +304,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           <button type="button" className="secondary-button compact-button" disabled={aiTest?.running || saving} aria-busy={aiTest?.running} onClick={() => void runAiTest()}>
             <Sparkles size={14} aria-hidden="true" />{aiTest?.running ? ct('aiTesting') : ct('aiTest')}
           </button>
-          {aiTest && !aiTest.running ? <AiTestLine test={aiTest} connectorId={item.id} /> : <p className="connector-hint">{ct('aiTestHint')}</p>}
+          {aiTest && !aiTest.running ? <AiTestLine test={aiTest} connectorId={item.id} /> : <p className="connector-hint">{ct('aiTestHint')}{aiTestDesktopOnly ? <> {ct('aiTestDesktopCopy')}</> : null}</p>}
         </div>
       ) : null}
 
@@ -413,7 +415,7 @@ function AiTestLine({ test, connectorId }: { test: TestState; connectorId: strin
   const result = test.result;
   if (!result) return null;
   if (result.status === 'ok') return <p className="connector-test ok">{ct('aiTestOk')} {result.message}</p>;
-  if (result.status === 'needsSignIn') return <p className="connector-test warn">{ct('aiTestNeedsSignIn')}</p>;
+  if (result.status === 'needsSignIn') return <p className="connector-test warn">{ct(result.message === 'desktopOnly' ? 'aiTestMicrosoftDesktopOnly' : 'aiTestNeedsSignIn')}</p>;
   // Google's "Access blocked" (403 access_denied) means the account is not a test user yet.
   const blocked = connectorId === 'google' && /access_denied|access blocked|403/i.test(result.message ?? '');
   return (

@@ -64,6 +64,16 @@ const messages = {
     'Sign in first: ask Claude something that uses this connector in Claude Code or Claude Desktop, and complete the sign-in it shows.',
     '先にサインインが必要です。Claude Code または Claude Desktop でこのコネクタを使う質問をし、表示されるサインインを完了してください。',
   ],
+  aiTestDesktopCopy: [
+    '此连接器只在 Claude Desktop 中开启，测试会给 Claude Code 一个临时副本，不会更改你的设置。',
+    'It is only on in Claude Desktop, so the test gives Claude Code a one-off copy; your settings are not changed.',
+    'Claude Desktop でのみオンのため、テストでは Claude Code に一時的なコピーを渡します。設定は変更されません。',
+  ],
+  aiTestMicrosoftDesktopOnly: [
+    'Claude Desktop 的 Microsoft 登录保存在 Claude Desktop 中，无法在此重用。要在这里测试，Claude Code 需要单独登录一次：打开 Claude Code 开关并保存，然后在终端运行 claude，输入 /mcp，选择 Microsoft 365 并登录。也可以直接在 Claude Desktop 中问“我今天收到了几封邮件？”来确认它可用。',
+    "Claude Desktop keeps its Microsoft sign-in to itself, so it can't be reused here. To test here, Claude Code needs its own one-time sign-in: turn on the Claude Code switch and Save, then in a terminal run claude, type /mcp, pick Microsoft 365 and sign in. Or just ask Claude Desktop \"how many emails did I get today?\" to confirm it works there.",
+    'Claude Desktop の Microsoft サインインは Claude Desktop 内に保存されるため、ここでは再利用できません。ここでテストするには Claude Code で一度サインインが必要です：Claude Code のスイッチをオンにして保存し、ターミナルで claude を実行して /mcp と入力、Microsoft 365 を選んでサインインします。または Claude Desktop で「今日は何通メールが届いた？」と聞いて動作を確認できます。',
+  ],
   aiTestFailed: ['AI 测试失败：', 'AI test failed:', 'AI テスト失敗：'],
   googleGuideTitle: ['Google 设置清单（避免“访问被阻止”）', 'Google setup checklist (avoids "Access blocked")', 'Google 設定チェックリスト（「アクセスをブロック」を防ぐ）'],
   googleGuideClient: [
