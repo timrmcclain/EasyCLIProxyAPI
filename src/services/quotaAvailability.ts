@@ -12,7 +12,12 @@ export function quotaAvailability(file: AuthFile, quota: QuotaState | undefined,
   const base = { blockers: [] as QuotaRow[], updating: quota?.status === 'loading' };
   if (health.disabled) return { ...base, kind: 'disabled' };
   if (stale) return { ...base, kind: 'unknown', uncertainty: 'offline' };
-  if (health.tone === 'error') return { ...base, kind: 'unavailable' };
+  if (health.tone === 'error') {
+    // A quota pause still has a reported reset; other pauses (expired token, challenge) do not promise one.
+    const quotaPause = health.label === 'authFiles.health.reason.quota' || health.label === 'authFiles.health.reason.credentialQuota';
+    const reported = quotaPause ? quotaAvailability({ ...file, status: 'active', unavailable: false, status_message: '', statusMessage: '' }, quota, now) : undefined;
+    return { ...base, kind: 'unavailable', recoveryAt: reported?.kind === 'exhausted' ? reported.recoveryAt : undefined };
+  }
   if (quota?.status === 'error') return { ...base, kind: 'unknown', uncertainty: 'checkFailed' };
   if (!quota?.fetchedAt || quota.status === 'idle') return { ...base, kind: 'unknown', uncertainty: 'notChecked' };
   if (now - quota.fetchedAt > QUOTA_FRESH_MS || quota.fetchedAt > now + 60_000) return { ...base, kind: 'unknown', uncertainty: 'stale' };

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { quotaAvailability, quotaPercent } from '../src/services/quotaAvailability';
+import { recoveryEvents } from '../src/services/overviewInsights';
+import { quotaKey } from '../src/services/quotaService';
 import { quotaRowsFor, type QuotaState } from '../src/services/quotaService';
 const now = 1800000000000;
 const file = { provider:'claude', status:'active' };
@@ -119,5 +121,29 @@ describe('Grok availability explanations',()=>{
   it('stale and disabled states supersede provider explanations',()=>{
     expect(quotaAvailability(grok,q({mode:'paid-info'}),now,true).reason).toBeUndefined();
     expect(quotaAvailability({...grok,disabled:true},q({mode:'paid-info'}),now).kind).toBe('disabled');
+  });
+});
+
+describe('accounts the proxy paused',()=>{
+  const reset=now+2*3600000;
+  const exhausted:QuotaState={ status:'success', fetchedAt:now, rows:quotaRowsFor('claude',{
+    five_hour:{ utilization:0, resets_at:null }, seven_day:{ utilization:100, resets_at:new Date(reset).toISOString() },
+  }) };
+  it('keeps the reported reset when the pause is for quota',()=>{
+    const paused={ provider:'claude', status:'error', unavailable:true, status_message:'quota exhausted' };
+    const result=quotaAvailability(paused,exhausted,now);
+    expect(result.kind).toBe('unavailable');
+    expect(result.recoveryAt).toBe(reset);
+    expect(recoveryEvents([paused],{ [quotaKey(paused)]:exhausted },now).map(event=>event.at)).toEqual([reset]);
+  });
+  it('does not promise a reset when the pause has another cause',()=>{
+    const paused={ provider:'claude', status:'error', unavailable:true, status_message:'token expired' };
+    const result=quotaAvailability(paused,exhausted,now);
+    expect(result.kind).toBe('unavailable');
+    expect(result.recoveryAt).toBeUndefined();
+  });
+  it('ignores stale quota data for a paused account',()=>{
+    const paused={ provider:'claude', status:'error', unavailable:true, status_message:'quota exhausted' };
+    expect(quotaAvailability(paused,{ ...exhausted, fetchedAt:now-60*60_000 },now).recoveryAt).toBeUndefined();
   });
 });
