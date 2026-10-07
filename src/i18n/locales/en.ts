@@ -104,6 +104,7 @@ export const en: Record<MessageKey, string> = {
   'quotaLedger.reporting': '{count} of {total} accounts reporting this limit',
 
   'app.nav.plugins': 'Plugins',
+  'app.nav.connectors': 'Connectors',
   ...homeEn,
   ...authFileListEn,
   'apiAccess.entries.addKey': 'Add API Key',

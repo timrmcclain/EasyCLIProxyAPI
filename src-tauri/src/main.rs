@@ -7,6 +7,7 @@ mod claude_catalog;
 mod codex_catalog;
 mod codex_sessions;
 mod configuration_watcher;
+mod connectors;
 mod core_config;
 mod core_runtime;
 mod desktop_theme;
@@ -2726,6 +2727,10 @@ fn main() {
             clear_core_management_secret_key,
             management_api::management_request,
             plugin_finder::ask_plugin_finder,
+            connectors::get_connector_overview,
+            connectors::apply_connector_change,
+            connectors::undo_connector_change,
+            connectors::test_connector,
             plugins::get_plugin_support,
             plugins::get_plugin_resource_url,
             provider_health::provider_health_probe,

@@ -1179,6 +1179,25 @@ export function createBrowserMockRuntime(
         { name: 'gemini-3-pro', displayName: 'Gemini 3 Pro', contextWindow: 1_000_000, inputModalities: ['text', 'image'] },
         { name: 'deepseek-chat', displayName: 'DeepSeek Chat', contextWindow: 64_000, inputModalities: ['text'] },
       ];
+      case 'get_connector_overview':
+      case 'apply_connector_change':
+      case 'undo_connector_change': {
+        const off = { enabled: false, access: null, builtIn: false, signedIn: null };
+        return {
+          desktopProfile: 'EasyCLIProxyAPI',
+          canUndo: false,
+          lastChange: null,
+          connectors: [
+            { id: 'google', accessLevels: ['readonly', 'drafts', 'full'], secretNames: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: false }, claudeDesktop: { enabled: true, access: 'full', builtIn: false, signedIn: false } },
+            { id: 'microsoft365', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'github', accessLevels: ['readonly', 'full'], secretNames: ['GITHUB_TOKEN'], secretsConfigured: false, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'playwright', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
+            { id: 'windows', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
+            { id: 'firecrawl', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: null, builtIn: false, signedIn: null }, claudeDesktop: off },
+          ],
+        };
+      }
+      case 'test_connector': return { status: 'ok', toolCount: 74, message: null };
       case 'ask_plugin_finder': return JSON.stringify({
         matches: [{ id: 'request-inspector', why: 'Browser demo: shows what each request contains so you can see what is happening.', changes: 'Requests are sampled and their metadata is shown on a status page.', risk: 'Captured metadata may include prompt details; keep secret redaction on.' }],
         note: 'This is a canned browser demo answer.',

@@ -16,6 +16,7 @@ import {
   LogIn,
   Network,
   PackageOpen,
+  Plug,
   Puzzle,
   ServerCog,
   Settings,
@@ -34,6 +35,7 @@ import { AgentsPage } from './pages/AgentsPage';
 import { EasyModePage } from './pages/EasyModePage';
 import { UsageRecordsPage } from './pages/UsageRecordsPage';
 import { PluginsPage } from './pages/PluginsPage';
+import { ConnectorsPage } from './pages/ConnectorsPage';
 import { languageOptions, useI18n } from './i18n';
 import { AppUpdateDialog, AppUpdateProvider, useAppUpdate } from './appUpdate';
 import { appUpdateIndicatorState } from './appUpdateModel';
@@ -96,6 +98,12 @@ const pages = [
     labelKey: 'app.nav.plugins',
     icon: Puzzle,
     component: PluginsPage,
+  },
+  {
+    id: 'connectors',
+    labelKey: 'app.nav.connectors',
+    icon: Plug,
+    component: ConnectorsPage,
   },
   {
     id: 'config',

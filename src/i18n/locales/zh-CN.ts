@@ -103,6 +103,7 @@ export const zhCN = {
   'quotaLedger.reporting': '{total} 个账户中有 {count} 个报告此额度',
 
   'app.nav.plugins': '插件',
+  'app.nav.connectors': '连接器',
   ...homeZhCN,
   ...authFileListZhCN,
   'apiAccess.entries.addKey': '添加 API Key',

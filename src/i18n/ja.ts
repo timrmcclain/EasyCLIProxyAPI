@@ -104,6 +104,7 @@ export const jaOverrides = {
   'quotaLedger.reporting': '{total} 件中 {count} 件がこの利用枠を報告',
 
   'app.nav.plugins': 'プラグイン',
+  'app.nav.connectors': 'コネクタ',
   ...homeJa,
   ...authFileListJa,
   'apiAccess.entries.addKey': 'API キーを追加',
