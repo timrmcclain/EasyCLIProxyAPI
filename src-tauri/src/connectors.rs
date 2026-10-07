@@ -1167,6 +1167,224 @@ async fn test_http(entry: &Value) -> ConnectorTestResult {
 }
 
 // ---------------------------------------------------------------------------
+// Test with AI
+//
+// Runs one Claude Code prompt in the background that must call the connector
+// and answer with a single RESULT line. The run gets no built-in tools, refuses
+// anything not pre-approved (`dontAsk`), and pre-approves only named read-only
+// tools, so it cannot send, edit or delete regardless of the user's own
+// permission mode.
+
+const AI_TEST_TIMEOUT: Duration = Duration::from_secs(240);
+const AI_TEST_MESSAGE_LIMIT: usize = 300;
+
+/// The account the Google connector signed in with: its credential file is
+/// named after the address.
+fn google_account(home: &Path) -> Option<String> {
+    let mut accounts: Vec<String> = fs::read_dir(home.join(".google_workspace_mcp/credentials"))
+        .ok()?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|ext| ext == "json"))
+        .filter_map(|path| path.file_stem().and_then(|stem| stem.to_str()).map(str::to_string))
+        .filter(|stem| stem.contains('@'))
+        .collect();
+    accounts.sort();
+    accounts.into_iter().next()
+}
+
+/// The entry's actual key in `~/.claude.json`; hand-made entries may differ in
+/// case from the name this app writes, and tool names are built from the key.
+fn code_entry_key(locations: &Locations, id: ConnectorId) -> Option<String> {
+    let value: Value = serde_json::from_str(&read_text(&locations.code_config()).ok()?).ok()?;
+    let wanted = id.entry_name(Target::Code);
+    value
+        .get("mcpServers")?
+        .as_object()?
+        .keys()
+        .find(|key| names_match(key, wanted))
+        .cloned()
+}
+
+const AI_TEST_RESULT_RULES: &str = "Do not include any personal details, message contents, titles, names or addresses in your answer. \
+Do not create, send, change or delete anything. \
+Finish with exactly one line in one of these forms:\n\
+RESULT: PASS - <a few words, for example \"3 events today\">\n\
+RESULT: SIGNIN - <a few words>   (when the tools say a sign-in or authorisation is needed)\n\
+RESULT: FAIL - <a few words on what went wrong>";
+
+/// Tools the AI test may use and the question it asks. `None` for connectors
+/// whose test would act on the computer or spend paid credits.
+fn ai_test_plan(id: ConnectorId, server: &str, google_email: Option<&str>, today: &str) -> Option<(Vec<String>, String)> {
+    let tool = |name: &str| format!("mcp__{server}__{name}");
+    let (tools, task) = match id {
+        ConnectorId::Google => (
+            vec![tool("list_calendars"), tool("get_events")],
+            format!(
+                "Use the Google Calendar tools with user_google_email={} to count the events on the primary calendar for {today} (local time).",
+                google_email.unwrap_or("the signed-in account")
+            ),
+        ),
+        ConnectorId::GitHub => (
+            vec![tool("get_me")],
+            "Use the GitHub get_me tool to confirm which account is connected, then report only how many public repositories it has.".to_string(),
+        ),
+        // Anthropic's Microsoft 365 connector only offers read and search
+        // tools, so the whole server is allowed; its tool names are not
+        // listed until after sign-in.
+        ConnectorId::Microsoft365 => (
+            vec![format!("mcp__{server}")],
+            format!("Use the Microsoft 365 tools to count the Outlook emails received on {today}."),
+        ),
+        ConnectorId::Playwright | ConnectorId::Windows | ConnectorId::Firecrawl => return None,
+    };
+    Some((tools, format!("{task}\n\n{AI_TEST_RESULT_RULES}")))
+}
+
+/// Turns the run's output into a test result. Only the RESULT line is shown.
+fn parse_ai_test_output(output: &str, exit_ok: bool) -> ConnectorTestResult {
+    let shorten = |text: &str| {
+        let text = text.trim().trim_start_matches(['-', ':', ' ']).trim();
+        let mut short: String = text.chars().take(AI_TEST_MESSAGE_LIMIT).collect();
+        if text.chars().count() > AI_TEST_MESSAGE_LIMIT {
+            short.push('…');
+        }
+        short
+    };
+    let result_line = output
+        .lines()
+        .rev()
+        .map(|line| line.trim().trim_matches('*').trim())
+        .find_map(|line| line.strip_prefix("RESULT:"));
+    let Some(rest) = result_line else {
+        let detail = tail_lines(output, 3);
+        let message = if detail.is_empty() {
+            if exit_ok { "Claude did not give a result".to_string() } else { "Claude Code did not run".to_string() }
+        } else {
+            shorten(&detail)
+        };
+        return ConnectorTestResult { status: "failed", tool_count: None, message: Some(message) };
+    };
+    let rest = rest.trim();
+    let (status, detail) = if let Some(detail) = rest.strip_prefix("PASS") {
+        ("ok", detail)
+    } else if let Some(detail) = rest.strip_prefix("SIGNIN") {
+        ("needsSignIn", detail)
+    } else {
+        ("failed", rest.strip_prefix("FAIL").unwrap_or(rest))
+    };
+    let detail = shorten(detail);
+    ConnectorTestResult { status, tool_count: None, message: Some(detail).filter(|text| !text.is_empty()) }
+}
+
+fn find_claude_code(home: &Path) -> Option<PathBuf> {
+    [home.join(".local/bin/claude.exe"), home.join(".local/bin/claude")]
+        .into_iter()
+        .chain(find_on_path("claude"))
+        .find(|path| path.is_file())
+}
+
+fn ai_test_args(tools: &[String], prompt: &str) -> Vec<String> {
+    vec![
+        "-p".to_string(),
+        prompt.to_string(),
+        "--permission-mode".to_string(),
+        "dontAsk".to_string(),
+        "--tools".to_string(),
+        String::new(),
+        "--allowedTools".to_string(),
+        tools.join(","),
+        "--model".to_string(),
+        "haiku".to_string(),
+        "--no-session-persistence".to_string(),
+        "--output-format".to_string(),
+        "text".to_string(),
+    ]
+}
+
+fn run_ai_test(claude: &Path, home: &Path, args: &[String]) -> ConnectorTestResult {
+    let mut process = Command::new(claude);
+    process.args(args).current_dir(home).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    // A parent Claude session's variables would make this run expect that
+    // session to sign it in; the user's own Claude Code settings apply instead.
+    for (key, _) in std::env::vars_os() {
+        let key = key.to_string_lossy();
+        if key.starts_with("CLAUDE") || key.starts_with("ANTHROPIC") || key.starts_with("MCP_") {
+            process.env_remove(key.as_ref());
+        }
+    }
+    process.env("MCP_CONNECTION_NONBLOCKING", "false");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        process.creation_flags(0x0800_0000);
+    }
+    let mut child = match process.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            return ConnectorTestResult { status: "failed", tool_count: None, message: Some(format!("Could not start Claude Code: {error}")) }
+        }
+    };
+    let collect = |stream: Option<Box<dyn std::io::Read + Send>>| {
+        std::thread::spawn(move || {
+            let mut text = String::new();
+            if let Some(mut stream) = stream {
+                let _ = std::io::Read::read_to_string(&mut stream, &mut text);
+            }
+            text
+        })
+    };
+    let stdout = collect(child.stdout.take().map(|s| Box::new(s) as Box<dyn std::io::Read + Send>));
+    let stderr = collect(child.stderr.take().map(|s| Box::new(s) as Box<dyn std::io::Read + Send>));
+    let deadline = Instant::now() + AI_TEST_TIMEOUT;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break Some(status),
+            Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(250)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                break None;
+            }
+        }
+    };
+    let output = stdout.join().unwrap_or_default();
+    let errors = stderr.join().unwrap_or_default();
+    match status {
+        None => ConnectorTestResult { status: "failed", tool_count: None, message: Some("Claude did not finish within 4 minutes".to_string()) },
+        Some(status) => {
+            let combined = if output.contains("RESULT:") { output } else { format!("{output}\n{errors}") };
+            parse_ai_test_output(&combined, status.success())
+        }
+    }
+}
+
+fn ai_test(locations: &Locations, id: ConnectorId, today: &str) -> ConnectorTestResult {
+    let failed = |message: &str| ConnectorTestResult { status: "failed", tool_count: None, message: Some(message.to_string()) };
+    let Some(server) = code_entry_key(locations, id) else {
+        return failed("Turn this connector on for Claude Code first");
+    };
+    // Without a saved sign-in the run could only hand back a link that stops
+    // working when it exits, so say so without spending a request.
+    let signed_in = match id {
+        ConnectorId::Google => google_signed_in(&locations.home),
+        ConnectorId::Microsoft365 => code_oauth_signed_in(&locations.home, &server),
+        _ => true,
+    };
+    if !signed_in {
+        return ConnectorTestResult { status: "needsSignIn", tool_count: None, message: None };
+    }
+    let email = google_account(&locations.home);
+    let Some((tools, prompt)) = ai_test_plan(id, &server, email.as_deref(), today) else {
+        return failed("Test with AI is not available for this connector");
+    };
+    let Some(claude) = find_claude_code(&locations.home) else {
+        return failed("Claude Code is not installed");
+    };
+    run_ai_test(&claude, &locations.home, &ai_test_args(&tools, &prompt))
+}
+
+// ---------------------------------------------------------------------------
 // Commands
 
 fn locations_for(app: &tauri::AppHandle) -> Result<Locations, String> {
@@ -1231,6 +1449,28 @@ pub(crate) async fn test_connector(app: tauri::AppHandle, id: String, target: St
             .map_err(|error| error.to_string())?
     };
     Ok(redact_result(result, &hidden))
+}
+
+/// `today` is the page's local date (YYYY-MM-DD); it goes into the prompt, so
+/// anything else is rejected.
+#[tauri::command]
+pub(crate) async fn ai_test_connector(app: tauri::AppHandle, id: String, today: String) -> Result<ConnectorTestResult, String> {
+    let locations = locations_for(&app)?;
+    let id = ConnectorId::parse(&id)?;
+    if !valid_date(&today) {
+        return Err(format!("Invalid date: {today}"));
+    }
+    let hidden = current_entry(&locations, id, Target::Code)?.map(|entry| hidden_values(&entry)).unwrap_or_default();
+    let result = tauri::async_runtime::spawn_blocking(move || ai_test(&locations, id, &today))
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(redact_result(result, &hidden))
+}
+
+fn valid_date(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    bytes.len() == 10
+        && bytes.iter().enumerate().all(|(index, byte)| if index == 4 || index == 7 { *byte == b'-' } else { byte.is_ascii_digit() })
 }
 
 /// Values a connector entry carries in its environment or headers. A failing

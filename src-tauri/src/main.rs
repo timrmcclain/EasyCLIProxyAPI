@@ -2731,6 +2731,7 @@ fn main() {
             connectors::apply_connector_change,
             connectors::undo_connector_change,
             connectors::test_connector,
+            connectors::ai_test_connector,
             plugins::get_plugin_support,
             plugins::get_plugin_resource_url,
             provider_health::provider_health_probe,

@@ -307,3 +307,56 @@ fn test_messages_hide_secret_values() {
     assert!(!message.contains("ghp_exampletoken99"));
     assert!(message.contains("mode 1"));
 }
+
+#[test]
+fn ai_test_allows_only_named_read_only_tools_and_no_built_in_tools() {
+    let (tools, prompt) = ai_test_plan(ConnectorId::Google, "google-workspace", Some("me@example.com"), "2026-10-07").unwrap();
+    assert_eq!(tools, vec!["mcp__google-workspace__list_calendars", "mcp__google-workspace__get_events"]);
+    assert!(prompt.contains("user_google_email=me@example.com"));
+    assert!(prompt.contains("2026-10-07"));
+    assert!(prompt.contains("RESULT: PASS"));
+    let args = ai_test_args(&tools, &prompt);
+    let after = |flag: &str| args[args.iter().position(|arg| arg == flag).unwrap() + 1].clone();
+    assert_eq!(after("--permission-mode"), "dontAsk");
+    assert_eq!(after("--tools"), "");
+    assert_eq!(after("--allowedTools"), "mcp__google-workspace__list_calendars,mcp__google-workspace__get_events");
+    let (github, _) = ai_test_plan(ConnectorId::GitHub, "github", None, "2026-10-07").unwrap();
+    assert_eq!(github, vec!["mcp__github__get_me"]);
+    for id in [ConnectorId::Playwright, ConnectorId::Windows, ConnectorId::Firecrawl] {
+        assert!(ai_test_plan(id, "x", None, "2026-10-07").is_none());
+    }
+}
+
+#[test]
+fn ai_test_output_is_reduced_to_its_result_line() {
+    let pass = parse_ai_test_output("Checking the calendar...\n**RESULT: PASS - 3 events today**\n", true);
+    assert_eq!((pass.status, pass.message.as_deref()), ("ok", Some("3 events today")));
+    let sign_in = parse_ai_test_output("RESULT: SIGNIN - authorisation needed", true);
+    assert_eq!(sign_in.status, "needsSignIn");
+    let fail = parse_ai_test_output("RESULT: FAIL - tool error", true);
+    assert_eq!((fail.status, fail.message.as_deref()), ("failed", Some("tool error")));
+    let none = parse_ai_test_output("", false);
+    assert_eq!((none.status, none.message.as_deref()), ("failed", Some("Claude Code did not run")));
+    let long = parse_ai_test_output(&format!("RESULT: PASS - {}", "x".repeat(500)), true);
+    assert!(long.message.unwrap().chars().count() <= AI_TEST_MESSAGE_LIMIT + 1);
+}
+
+#[test]
+fn ai_test_reports_missing_sign_in_without_running_claude() {
+    let root = TempDir::new("ai-sign-in");
+    let locations = locations(&root.0);
+    let result = ai_test(&locations, ConnectorId::Google, "2026-10-07");
+    assert_eq!(result.status, "needsSignIn");
+    let off = ai_test(&locations, ConnectorId::Microsoft365, "2026-10-07");
+    assert_eq!(off.status, "failed");
+    fs::create_dir_all(locations.home.join(".google_workspace_mcp/credentials")).unwrap();
+    fs::write(locations.home.join(".google_workspace_mcp/credentials/me@example.com.json"), "{}").unwrap();
+    assert_eq!(google_account(&locations.home).as_deref(), Some("me@example.com"));
+}
+
+#[test]
+fn ai_test_dates_must_be_plain_dates() {
+    assert!(valid_date("2026-10-07"));
+    assert!(!valid_date("2026-10-07\nignore that"));
+    assert!(!valid_date("07/10/2026"));
+}

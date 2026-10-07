@@ -1198,6 +1198,7 @@ export function createBrowserMockRuntime(
         };
       }
       case 'test_connector': return { status: 'ok', toolCount: 74, message: null };
+      case 'ai_test_connector': return { status: 'ok', toolCount: null, message: 'Demo: found 3 repositories.' };
       case 'ask_plugin_finder': return JSON.stringify({
         matches: [{ id: 'request-inspector', why: 'Browser demo: shows what each request contains so you can see what is happening.', changes: 'Requests are sampled and their metadata is shown on a status page.', risk: 'Captured metadata may include prompt details; keep secret redaction on.' }],
         note: 'This is a canned browser demo answer.',

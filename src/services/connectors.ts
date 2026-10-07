@@ -85,4 +85,14 @@ export const connectorsApi = {
   }),
   undo: () => invoke<ConnectorOverview>('undo_connector_change'),
   test: (id: ConnectorId, target: ConnectorTarget) => invoke<ConnectorTestResult>('test_connector', { id, target }),
+  aiTest: (id: ConnectorId, today: string) => invoke<ConnectorTestResult>('ai_test_connector', { id, today }),
 };
+
+/** Connectors whose Claude Code entry can be checked with a real, read-only AI request. */
+export const aiTestableConnectors: readonly ConnectorId[] = ['google', 'microsoft365', 'github'];
+
+/** The local calendar date as YYYY-MM-DD, which the AI test asks about. */
+export function localDate(date = new Date()) {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}

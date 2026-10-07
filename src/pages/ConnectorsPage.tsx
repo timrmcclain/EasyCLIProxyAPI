@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Plug, RefreshCw, Undo2 } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { ExternalLink, Plug, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { useI18n } from '../i18n';
 import { connectorDynamicText, connectorText, type ConnectorTextKey } from '../i18n/connectors';
 import {
+  aiTestableConnectors,
   connectorsApi,
   connectorTargets,
   draftChanged,
   draftFromItem,
+  localDate,
   missingSecretFromError,
   missingSecrets,
   type ConnectorDraft,
+  type ConnectorId,
   type ConnectorOverview,
   type ConnectorOverviewItem,
   type ConnectorTarget,
@@ -22,6 +26,17 @@ type TestState = { running: boolean; result?: ConnectorTestResult; error?: strin
 
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+const guideLinks = {
+  googleClients: 'https://console.cloud.google.com/auth/clients',
+  googleAudience: 'https://console.cloud.google.com/auth/audience',
+  googleBranding: 'https://console.cloud.google.com/auth/branding',
+  entra: 'https://entra.microsoft.com/',
+} as const;
+
+function openLink(url: string) {
+  void invoke('open_external_url', { url }).catch(() => undefined);
 }
 
 export function ConnectorsPage() {
@@ -150,6 +165,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [tests, setTests] = useState<Partial<Record<ConnectorTarget, TestState>>>({});
+  const [aiTest, setAiTest] = useState<TestState | null>(null);
 
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -166,6 +182,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
     previousItem.current = item;
     if (reloaded) {
       setTests({});
+      setAiTest(null);
       setSaveError(null);
     }
     if (reloaded || justSaved.current || !hadUnsaved) {
@@ -195,6 +212,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       justSaved.current = true;
       onSaved(next);
       setTests({});
+      setAiTest(null);
     } catch (error) {
       const secret = missingSecretFromError(error);
       setSaveError(secret ? `${ct('missingSecret')} ${dt(secret)}` : errorText(error));
@@ -212,6 +230,17 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       setTests(current => ({ ...current, [target]: { running: false, error: errorText(error) } }));
     }
   };
+
+  const runAiTest = async () => {
+    setAiTest({ running: true });
+    try {
+      const result = await connectorsApi.aiTest(item.id as ConnectorId, localDate());
+      setAiTest({ running: false, result });
+    } catch (error) {
+      setAiTest({ running: false, error: errorText(error) });
+    }
+  };
+  const aiTestable = aiTestableConnectors.includes(item.id as ConnectorId) && item.claudeCode.enabled;
 
   const accessLabel = (level: string) => {
     if (level === 'readonly') return ct('accessReadonly');
@@ -267,6 +296,32 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           );
         })}
       </div>
+
+      {aiTestable ? (
+        <div className="connector-ai-test">
+          <button type="button" className="secondary-button compact-button" disabled={aiTest?.running || saving} aria-busy={aiTest?.running} onClick={() => void runAiTest()}>
+            <Sparkles size={14} aria-hidden="true" />{aiTest?.running ? ct('aiTesting') : ct('aiTest')}
+          </button>
+          {aiTest && !aiTest.running ? <AiTestLine test={aiTest} connectorId={item.id} /> : <p className="connector-hint">{ct('aiTestHint')}</p>}
+        </div>
+      ) : null}
+
+      {item.id === 'google' ? (
+        <details className="connector-guide">
+          <summary>{ct('googleGuideTitle')}</summary>
+          <ol>
+            <li>{ct('googleGuideClient')} <GuideLink url={guideLinks.googleClients} label={ct('openClients')} /></li>
+            <li>{ct('googleGuideTestUser')} <GuideLink url={guideLinks.googleAudience} label={ct('openAudience')} /></li>
+            <li>{ct('googleGuidePublish')} <GuideLink url={guideLinks.googleBranding} label={ct('openBranding')} /></li>
+          </ol>
+        </details>
+      ) : null}
+      {item.id === 'microsoft365' ? (
+        <details className="connector-guide">
+          <summary>{ct('microsoftGuideTitle')}</summary>
+          <p>{ct('microsoftGuideBody')} <GuideLink url={guideLinks.entra} label={ct('openEntra')} /></p>
+        </details>
+      ) : null}
 
       {item.accessLevels.length > 0 ? (
         <label className="connector-field">
@@ -341,4 +396,30 @@ function TestLine({ test }: { test: TestState }) {
   if (result.status === 'needsSignIn') return <p className="connector-test warn">{ct('testNeedsSignIn')}</p>;
   if (result.status === 'builtIn') return <p className="connector-test">{ct('testBuiltIn')}</p>;
   return <p className="connector-test failed">{ct('testFailed')} {result.message}</p>;
+}
+
+function GuideLink({ url, label }: { url: string; label: string }) {
+  return (
+    <button type="button" className="connector-guide-link" onClick={() => openLink(url)}>
+      {label}<ExternalLink size={12} aria-hidden="true" />
+    </button>
+  );
+}
+
+function AiTestLine({ test, connectorId }: { test: TestState; connectorId: string }) {
+  const { locale } = useI18n();
+  const ct = (key: ConnectorTextKey) => connectorText(key, locale);
+  if (test.error) return <p className="connector-test failed">{ct('aiTestFailed')} {test.error}</p>;
+  const result = test.result;
+  if (!result) return null;
+  if (result.status === 'ok') return <p className="connector-test ok">{ct('aiTestOk')} {result.message}</p>;
+  if (result.status === 'needsSignIn') return <p className="connector-test warn">{ct('aiTestNeedsSignIn')}</p>;
+  // Google's "Access blocked" (403 access_denied) means the account is not a test user yet.
+  const blocked = connectorId === 'google' && /access_denied|access blocked|403/i.test(result.message ?? '');
+  return (
+    <p className="connector-test failed">
+      {ct('aiTestFailed')} {result.message}
+      {blocked ? <> {ct('googleGuideTestUser')} <GuideLink url={guideLinks.googleAudience} label={ct('openAudience')} /></> : null}
+    </p>
+  );
 }
