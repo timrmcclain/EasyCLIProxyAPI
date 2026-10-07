@@ -517,6 +517,8 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
             ?? relativeResetLabel(detail.reset_in ?? detail.resetIn ?? detail.ttl),
           resetAtMs: quotaResetFor(detail, ['reset_at', 'resetAt', 'reset_time', 'resetTime'], ['reset_in', 'resetIn', 'ttl']),
           detail: limit === null || limit < 0 ? undefined : `${usedValue ?? '—'} / ${limit}`,
+          // Kimi's weekly usage and rolling window both apply to the whole account.
+          scope: 'account',
         };
       })
       .filter((row): row is QuotaRow => row !== null);
@@ -915,7 +917,7 @@ async function loadQuotaSnapshot(file: AuthFile): Promise<QuotaState> {
       // softer "no quota reported yet" treatment instead of "unrecognized format".
       const parsed = parseBody(payload);
       if (isRecord(parsed) && Object.keys(parsed).length === 0) {
-        return { status: 'success', rows: [], plan: detectedPlan };
+        return { status: 'success', rows: [], plan: detectedPlan, fetchedAt: Date.now() };
       }
       return {
         status: 'error',

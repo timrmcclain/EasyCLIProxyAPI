@@ -168,3 +168,22 @@ describe('accounts the proxy paused',()=>{
     expect(quotaAvailability(paused,{ ...exhausted, fetchedAt:now-60*60_000 },now).recoveryAt).toBeUndefined();
   });
 });
+
+describe('Kimi availability',()=>{
+  const kimi={provider:'kimi',status:'active'};
+  const at=(hours:number)=>new Date(now+hours*3600000).toISOString();
+  const q=(payload:unknown):QuotaState=>({status:'success',fetchedAt:now,rows:quotaRowsFor('kimi',payload)});
+  const usage=(weekUsed:number,windowLeft:number)=>({
+    usage:{used:weekUsed,limit:100,reset_at:at(72)},
+    limits:[{window:{duration:300,timeUnit:'TIME_UNIT_MINUTE'},detail:{limit:100,remaining:windowLeft,reset_at:at(2)}}],
+  });
+  it('treats the weekly usage and 5-hour window as account limits',()=>{
+    expect(quotaAvailability(kimi,q(usage(30,80)),now).kind).toBe('available');
+  });
+  it('an empty 5-hour window blocks the account until it resets',()=>{
+    expect(quotaAvailability(kimi,q(usage(30,0)),now)).toMatchObject({kind:'exhausted',recoveryAt:now+2*3600000});
+  });
+  it('an empty page is a finished check that reported no limits',()=>{
+    expect(quotaAvailability(kimi,{status:'success',fetchedAt:now,rows:[]},now)).toMatchObject({kind:'unknown',uncertainty:'incomplete'});
+  });
+});
