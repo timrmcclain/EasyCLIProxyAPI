@@ -213,7 +213,7 @@ function SortableProviderRow({
         {...attributes}
         {...listeners}
       >
-        <GripVertical size={17} aria-hidden="true" />
+        <GripVertical size={16} aria-hidden="true" />
       </button>
       {children}
     </article>
@@ -2266,7 +2266,7 @@ export function ApiProviderDialog({
       <form ref={providerDialogRef} className="config-dialog management-dialog api-provider-dialog" role="dialog" aria-modal="true" aria-labelledby="api-provider-dialog-title" onSubmit={(event) => void submit(event)}>
         <div className="config-dialog-heading">
           <div>
-            <Plus size={19} aria-hidden="true" />
+            <Plus size={20} aria-hidden="true" />
             <h2 id="api-provider-dialog-title">{t(definition.openAi
               ? editingRow ? 'apiAccess.entries.editProvider' : 'apiAccess.entries.addProvider'
               : editingRow ? 'apiAccess.entries.editKey' : 'apiAccess.entries.addKey')}</h2>
@@ -2299,7 +2299,7 @@ export function ApiProviderDialog({
           <div className="model-config-heading">
             <div><span>{t('apiAccess.models.title')}</span><small>{t('apiAccess.models.description')}</small></div>
             <button type="button" className="secondary-button compact-button" onClick={openModelDiscovery} disabled={busy}>
-              <RefreshCw size={15} />{t('apiAccess.models.fetch')}
+              <RefreshCw size={16} />{t('apiAccess.models.fetch')}
             </button>
           </div>
           {(draft.groupKeys?.length ?? 0) > 1 ? <label><span>{t('apiAccess.entries.discoveryKey')}</span><select value={draft.groupKeys!.some((key) => key.id === discoveryKeyId) ? discoveryKeyId : draft.groupKeys![0].id}
@@ -2471,7 +2471,7 @@ export function ApiProviderDialog({
             <div className="model-transfer-summary">
               <span role="status">{t('apiAccess.modelDialog.summary', { found: modelOptions.length, selected: selectedModels.length })}</span>
               <button type="button" className="secondary-button compact-button" onClick={() => void discoverModels()} disabled={modelLoading}>
-                <RefreshCw size={15} className={modelLoading ? 'spin' : ''} />{t('common.refresh')}
+                <RefreshCw size={16} className={modelLoading ? 'spin' : ''} />{t('common.refresh')}
               </button>
             </div>
 

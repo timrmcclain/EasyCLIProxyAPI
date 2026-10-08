@@ -68,7 +68,7 @@ export function AuthFileQuotaPanel({ quota, file, disabled, onRefresh, onReset, 
           title={t('quota.reset')}>{t(hasPendingClaudeReset(file) ? 'quota.claude.retry' : 'quota.reset')}</button> : null}
         {!compactLayout ? <button type="button" className="credential-quota-refresh" disabled={disabled || loading} onClick={onRefresh}
           title={disabled ? t('quota.fileDisabled') : t('authFiles.quota.refresh')}>
-          {loading ? <LoaderCircle size={13} className="spin" /> : <RefreshCw size={13} />}
+          {loading ? <LoaderCircle size={14} className="spin" /> : <RefreshCw size={14} />}
           {t(loading ? 'authFiles.quota.querying' : quota.status === 'idle' ? 'authFiles.quota.fetch' : 'common.refresh')}
         </button> : null}
       </div> : null}

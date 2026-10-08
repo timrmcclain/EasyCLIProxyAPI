@@ -26,7 +26,7 @@ export function AuthFileUsageSummary({ file }: { file: Record<string, unknown> }
       <div className="auth-file-usage-metrics">
         {metrics.map(({ key, Icon, value, label }) => (
           <span key={key} className={`auth-file-usage-metric ${key}`} role="img" title={label} aria-label={label}>
-            <Icon size={13} aria-hidden="true" />
+            <Icon size={14} aria-hidden="true" />
             <strong aria-hidden="true">{value}</strong>
           </span>
         ))}

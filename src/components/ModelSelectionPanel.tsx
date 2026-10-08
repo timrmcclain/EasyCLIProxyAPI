@@ -38,7 +38,7 @@ export function ModelSelectionPanel({ models, selected, loading, onMove }: Model
         </button>
       </div>
       <div className="model-transfer-search">
-        <Search size={15} aria-hidden="true" />
+        <Search size={16} aria-hidden="true" />
         <input ref={searchRef} value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder={searchLabel} aria-label={searchLabel} />
         {search ? (
           <button type="button" className="icon-button quiet" onClick={() => { setSearch(''); searchRef.current?.focus(); }} aria-label={t('apiAccess.modelDialog.clearSearch')}>

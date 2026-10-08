@@ -2495,7 +2495,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                             : t('agents.launchDirectory.recentItem')}</small>
                         </span>
                         <b>
-                          {active ? <Check size={15} aria-hidden /> : null}
+                          {active ? <Check size={16} aria-hidden /> : null}
                           {active
                             ? t('agents.launchDirectory.historySelected')
                             : t('agents.launchDirectory.historyUse')}
@@ -2543,7 +2543,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
         <div className="config-dialog-backdrop">
           <section ref={defaultDialogRef} className="config-dialog agent-restore-dialog" role="alertdialog" aria-modal="true" aria-labelledby="agent-default-title">
             <div className="config-dialog-heading">
-              <div><AlertTriangle size={19} /><h2 id="agent-default-title">{t('agents.default.title')}</h2></div>
+              <div><AlertTriangle size={20} /><h2 id="agent-default-title">{t('agents.default.title')}</h2></div>
             </div>
             <p>
               {t('agents.default.description', { name: activeDefinition.name })}
@@ -2567,7 +2567,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
         <div className="config-dialog-backdrop">
           <section ref={clearDialogRef} className="config-dialog agent-restore-dialog" role="alertdialog" aria-modal="true" aria-labelledby="agent-clear-title">
             <div className="config-dialog-heading">
-              <div><AlertTriangle size={19} /><h2 id="agent-clear-title">{selected === 'codex' ? t('agents.clear.title') : t('agents.clearIntegration.title', { name: activeDefinition.name })}</h2></div>
+              <div><AlertTriangle size={20} /><h2 id="agent-clear-title">{selected === 'codex' ? t('agents.clear.title') : t('agents.clearIntegration.title', { name: activeDefinition.name })}</h2></div>
             </div>
             <p>{t(selected === 'codex' ? 'agents.clear.description' : 'agents.clearIntegration.description')}</p>
             {clearError ? (
@@ -2588,7 +2588,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
         <div className="config-dialog-backdrop">
           <section ref={oauthRequiredDialogRef} className="config-dialog agent-restore-dialog" role="alertdialog" aria-modal="true" aria-labelledby="agent-oauth-login-required-title">
             <div className="config-dialog-heading">
-              <div><AlertTriangle size={19} /><h2 id="agent-oauth-login-required-title">{t('agents.oauthLoginRequired.title')}</h2></div>
+              <div><AlertTriangle size={20} /><h2 id="agent-oauth-login-required-title">{t('agents.oauthLoginRequired.title')}</h2></div>
             </div>
             <p>{oauthLoginRequiredDescription}</p>
             <div className={`config-dialog-actions${oauthLoginRequiredAction === 'launch' ? ' single-action' : ''}`}>

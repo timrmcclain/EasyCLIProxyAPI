@@ -61,7 +61,7 @@ export function HomeAccessPanel({ profiles, apiKey, keyError, ready, copiedField
         <div className="home-field-label">
           <span>{t('home.access.key')}</span>
           <button type="button" className="home-inline-link" onClick={() => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'config' }))}>
-            {t('home.access.manage')}<ArrowUpRight size={13} aria-hidden="true" />
+            {t('home.access.manage')}<ArrowUpRight size={14} aria-hidden="true" />
           </button>
         </div>
         <div className="home-copy-field">

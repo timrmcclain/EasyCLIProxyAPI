@@ -205,7 +205,7 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
         <div className="codex-catalog-body">
           <aside className="codex-catalog-sidebar">
             <div className="codex-catalog-search">
-              <Search size={15} aria-hidden />
+              <Search size={16} aria-hidden />
               <input value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder={t('agents.catalog.search')} />
             </div>
             <div className="codex-catalog-models" role="listbox" aria-label={t('agents.catalog.title')}>
@@ -233,7 +233,7 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
               }) : <div className="codex-catalog-state">{t('agents.catalog.empty')}</div>}
             </div>
             <button type="button" className="secondary-button codex-catalog-reload" onClick={() => void load()} disabled={loading || saving || dirty}>
-              <RefreshCw size={15} className={loading ? 'spin' : ''} />
+              <RefreshCw size={16} className={loading ? 'spin' : ''} />
               {t('agents.catalog.reload')}
             </button>
           </aside>
@@ -250,7 +250,7 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
                     </span>
                   </div>
                   <button type="button" className="secondary-button compact-button" onClick={restoreModel} disabled={!activeCustomized || saving}>
-                    <RotateCcw size={15} />{t('agents.catalog.resetModel')}
+                    <RotateCcw size={16} />{t('agents.catalog.resetModel')}
                   </button>
                 </div>
 
@@ -267,7 +267,7 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
                     <div className="codex-catalog-chips">
                       {codexReasoningEfforts.map((effort) => {
                         const checked = activeModel.configuration.supported_reasoning_levels.some((level) => level.effort === effort);
-                        return <label key={effort} className={checked ? 'selected' : ''}><input type="checkbox" checked={checked} onChange={(event) => toggleReasoning(effort, event.currentTarget.checked, activeModel.defaults.supported_reasoning_levels)} /><span>{checked ? <Check size={13} /> : null}{effort}</span></label>;
+                        return <label key={effort} className={checked ? 'selected' : ''}><input type="checkbox" checked={checked} onChange={(event) => toggleReasoning(effort, event.currentTarget.checked, activeModel.defaults.supported_reasoning_levels)} /><span>{checked ? <Check size={14} /> : null}{effort}</span></label>;
                       })}
                     </div>
                   </fieldset>

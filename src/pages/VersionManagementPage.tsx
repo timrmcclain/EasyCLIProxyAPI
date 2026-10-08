@@ -581,7 +581,7 @@ export function VersionManagementPage() {
               disabled={busy}
               onClick={() => void checkLatest(true)}
             >
-              <RefreshCw size={15} className={checkingLatest ? 'spin' : ''} aria-hidden="true" />
+              <RefreshCw size={16} className={checkingLatest ? 'spin' : ''} aria-hidden="true" />
               <span>{checkingLatest ? t('kernel.update.checking') : t('kernel.versions.check')}</span>
             </button>
 
@@ -592,7 +592,7 @@ export function VersionManagementPage() {
               disabled={!latestVersion || busy}
               onClick={() => setConfirmUpdateOpen(true)}
             >
-              <Download size={15} aria-hidden="true" />
+              <Download size={16} aria-hidden="true" />
               <span>{!coreInstalled ? t('kernel.versions.installLatestMissing') : t('kernel.versions.installLatest')}</span>
             </button>
 
@@ -603,7 +603,7 @@ export function VersionManagementPage() {
               disabled={!bundledCore || installDisabled}
               onClick={() => void installCore({ kind: 'bundled' })}
             >
-              <Package size={15} aria-hidden="true" />
+              <Package size={16} aria-hidden="true" />
               <span>{t('kernel.versions.installBundled')}</span>
             </button>
           </div>
@@ -716,7 +716,7 @@ export function VersionManagementPage() {
                       aria-label={t('kernel.versions.customMirrorRemove')}
                       onClick={() => void removeCustomMirror(url)}
                     >
-                      <Trash2 size={15} aria-hidden="true" />
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -779,7 +779,7 @@ export function VersionManagementPage() {
                   void installCore({ kind: 'release', version: latestVersion });
                 }}
               >
-                <Download size={15} aria-hidden="true" />
+                <Download size={16} aria-hidden="true" />
                 <span>{t('kernel.versions.installLatest')}</span>
               </button>
             </div>

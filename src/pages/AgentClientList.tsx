@@ -117,7 +117,7 @@ export function AgentClientList<Id extends string>({
         <strong>{t('agents.localClients')}</strong>
         <button type="button" className="icon-button quiet" onClick={onRefresh}
           disabled={loading || busy} title={t('agents.redetect')} aria-label={t('agents.redetect')}>
-          <RefreshCw size={15} className={loading ? 'spin' : ''} aria-hidden="true" />
+          <RefreshCw size={16} className={loading ? 'spin' : ''} aria-hidden="true" />
         </button>
       </div>
       {error ? <MessageNotice message={error} onDismiss={onDismissError} /> : null}
@@ -143,7 +143,7 @@ export function AgentClientList<Id extends string>({
         <small>{t('agents.clients.listed', { count: visibleClients.length })}</small>
         <button type="button" className="secondary-button compact-button" disabled={busy || loading}
           onClick={() => { setDraftIds(visibleIds); setQuery(''); setManaging(true); }}>
-          <SlidersHorizontal size={15} aria-hidden="true" />{t('agents.clients.manage')}
+          <SlidersHorizontal size={16} aria-hidden="true" />{t('agents.clients.manage')}
         </button>
       </div>
     </aside>

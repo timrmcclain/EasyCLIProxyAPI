@@ -54,7 +54,7 @@ export function ProviderGroupKeysEditor({ keys, disabled, onChange }: Props) {
           <button type="button" className="icon-button quiet danger"
             aria-label={t('apiAccess.entries.removeKey', { number: index + 1 })}
             onClick={() => onChange(keys.filter((item) => item.id !== draft.id))}>
-            <Trash2 size={15} />
+            <Trash2 size={16} />
           </button>
         </div>
         <details className="provider-key-settings">

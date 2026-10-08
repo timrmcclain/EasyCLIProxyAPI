@@ -142,7 +142,7 @@ export function AppUpdateDialog() {
                 {t('common.cancel')}
               </button>
               <button type="button" className="primary-button" onClick={() => void install()}>
-                <Download size={15} aria-hidden="true" />
+                <Download size={16} aria-hidden="true" />
                 {t('appUpdate.installNow')}
               </button>
             </div>
@@ -173,7 +173,7 @@ export function AppUpdateDialog() {
               onClick={() => void cancel()}
             >
               {task.cancellable ? t('appUpdate.cancelDownload') : (
-                <><RefreshCw size={15} className="spin" aria-hidden="true" /> {phaseLabel}</>
+                <><RefreshCw size={16} className="spin" aria-hidden="true" /> {phaseLabel}</>
               )}
             </button>
           </>

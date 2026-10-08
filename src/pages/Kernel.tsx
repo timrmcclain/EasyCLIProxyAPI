@@ -245,7 +245,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
               <h2>{t('kernel.control.title')}</h2>
               <p>{t(coreReady ? 'home.runtime.ready' : coreInstalled ? 'home.runtime.stopped' : 'home.runtime.notInstalled')}</p>
             </div>
-            <button type="button" className="icon-button quiet home-runtime-refresh" disabled={coreProcessBusy} onClick={() => void refreshStatus()} title={t('kernel.control.refresh')} aria-label={t('kernel.control.refresh')}><RefreshCw size={15} aria-hidden="true" /></button>
+            <button type="button" className="icon-button quiet home-runtime-refresh" disabled={coreProcessBusy} onClick={() => void refreshStatus()} title={t('kernel.control.refresh')} aria-label={t('kernel.control.refresh')}><RefreshCw size={16} aria-hidden="true" /></button>
           </div>
           <dl className="panel-detail-grid home-runtime-details">
             <div className="panel-detail-row" data-runtime="installation">
@@ -294,7 +294,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
                 )
               }
             >
-              {coreRunning ? <Square size={13} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+              {coreRunning ? <Square size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
               {coreProcessBusy ? t('common.processing') : coreRunning ? t('kernel.action.stop') : t('kernel.action.start')}
             </button>
             <button

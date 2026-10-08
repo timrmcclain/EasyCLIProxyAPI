@@ -226,7 +226,7 @@ export function AgentModelPicker({
           <button type="button" className="icon-button quiet" aria-label={editable.label}
             aria-haspopup="listbox" aria-expanded={open} aria-controls={listboxId}
             disabled={disabled} onClick={() => { setSearch(''); setOpen((current) => !current); }}>
-            <ChevronDown size={17} aria-hidden />
+            <ChevronDown size={16} aria-hidden />
           </button>
         </div>
       ) : <button
@@ -250,7 +250,7 @@ export function AgentModelPicker({
           </strong>
           {selectedAlias ? <small title={selectedAlias}>{selectedAlias}</small> : null}
         </span>
-        <ChevronDown size={17} aria-hidden />
+        <ChevronDown size={16} aria-hidden />
       </button>}
 
       {open ? (
@@ -263,7 +263,7 @@ export function AgentModelPicker({
             : { top: 0, left: 0, width: 0, height: 0, visibility: 'hidden' }}
         >
           {!editable ? <div className="agent-model-search">
-            <Search size={15} aria-hidden />
+            <Search size={16} aria-hidden />
             <input
               ref={searchRef}
               value={search}

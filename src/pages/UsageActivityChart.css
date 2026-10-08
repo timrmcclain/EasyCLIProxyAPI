@@ -6,9 +6,9 @@
   min-width: 0;
   flex-direction: column;
   gap: 12px;
-  padding: 17px 18px 14px;
+  padding: 16px 18px 14px;
   border: 1px solid var(--border-secondary);
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--bg-primary);
   color: var(--text-primary);
   box-shadow: 0 2px 6px rgb(0 0 0 / 2%);
@@ -24,8 +24,8 @@
 
 .usage-activity-title h3 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -41,7 +41,7 @@
   flex: none;
   flex-direction: column;
   align-items: flex-end;
-  gap: 7px;
+  gap: 8px;
 }
 
 .usage-activity-summary > strong {
@@ -67,7 +67,7 @@
 
 .usage-activity-legend > span,
 .usage-activity-tooltip div > span {
-  gap: 5px;
+  gap: 4px;
   white-space: nowrap;
 }
 
@@ -105,7 +105,7 @@
   width: 100%;
   height: 154px;
   overflow: visible;
-  border-radius: 5px;
+  border-radius: 6px;
   outline: none;
 }
 
@@ -139,10 +139,10 @@
   display: flex;
   width: min(224px, 100%);
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   padding: 10px 12px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--bg-card);
   color: var(--text-primary);
   box-shadow: var(--ui-panel-shadow);
@@ -158,7 +158,7 @@
 }
 
 .usage-activity-tooltip-total {
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   color: var(--text-quaternary);
 }
 
@@ -190,7 +190,7 @@
 
   .usage-activity-heading {
     flex-wrap: wrap;
-    gap: 9px;
+    gap: 8px;
   }
 
   .usage-activity-summary {
@@ -199,7 +199,7 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 9px;
+    gap: 8px;
   }
 
   .usage-activity-legend {

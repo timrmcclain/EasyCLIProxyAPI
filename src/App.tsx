@@ -356,10 +356,10 @@ function AppContent() {
                   title={locked ? t('app.nav.lockedHint') : undefined}
                   onClick={() => select(page.id)}
                 >
-                  <Icon size={17} aria-hidden="true" />
+                  <Icon size={16} aria-hidden="true" />
                   <span>{t(page.labelKey)}</span>
                   {locked ? (
-                    <Lock size={13} className="nav-lock-icon" aria-hidden="true" />
+                    <Lock size={14} className="nav-lock-icon" aria-hidden="true" />
                   ) : updateIndicator ? (
                     <i
                       className={`nav-update-indicator ${updateIndicator}`}
@@ -540,7 +540,7 @@ function AppContent() {
               disabled={windowsClosePrompt.resolvingAction !== null}
               onClick={() => setWindowsClosePrompt(null)}
             >
-              <X size={17} aria-hidden="true" />
+              <X size={16} aria-hidden="true" />
             </button>
             <div className="close-dialog-heading">
               <h2 id="close-dialog-title">{t('app.close.title')}</h2>

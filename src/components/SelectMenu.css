@@ -42,7 +42,7 @@
 
 .select-menu-trigger > svg {
   color: var(--text-tertiary);
-  transition: transform 0.16s ease;
+  transition: transform var(--dur-base) ease;
 }
 
 .select-menu.open .select-menu-trigger > svg {
@@ -59,7 +59,7 @@
   max-width: min(320px, calc(100vw - 24px));
   padding: 4px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--bg-card);
   box-shadow: 0 14px 34px rgba(45, 42, 38, 0.18);
 }

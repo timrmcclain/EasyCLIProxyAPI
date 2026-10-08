@@ -64,7 +64,7 @@ body, html, #root {
   border-radius: 12px;
   background: var(--bg-card);
   box-shadow: var(--ui-panel-shadow);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--dur-slow) ease, box-shadow var(--dur-slow) ease;
 }
 
 .panel:hover {
@@ -82,7 +82,7 @@ body, html, #root {
   margin-bottom: 2px;
   font-weight: 500;
   color: var(--text-secondary);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .nav-section button:hover:not(:disabled) {
@@ -105,7 +105,7 @@ body, html, #root {
   border-radius: 8px;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(15, 118, 110, 0.06);
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
 }
 
 .sidebar-easy-entry:hover {
@@ -118,7 +118,7 @@ body, html, #root {
 .sidebar-theme-selector {
   background: var(--bg-hover);
   border-radius: 8px;
-  padding: 3px;
+  padding: 4px;
   border: 1px solid var(--border-color);
 }
 
@@ -127,7 +127,7 @@ body, html, #root {
   font-size: var(--font-size-caption);
   font-weight: 500;
   color: var(--text-tertiary);
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
 }
 
 .sidebar-theme-selector button.active {
@@ -228,9 +228,9 @@ body, html, #root {
 .client-api-card {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px 14px;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
 }
 
 .client-api-card:hover {
@@ -284,7 +284,7 @@ body, html, #root {
   text-align: left;
   cursor: pointer;
   box-shadow: var(--ui-panel-shadow);
-  transition: all 0.2s ease;
+  transition: all var(--dur-slow) ease;
 }
 
 .home-quick-card:hover {
@@ -299,7 +299,7 @@ body, html, #root {
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--ui-accent-soft);
   color: var(--ui-accent);
   flex: none;
@@ -454,7 +454,7 @@ body, html, #root {
   border-radius: 12px;
   background: var(--bg-card);
   box-shadow: var(--ui-panel-shadow);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: border-color var(--dur-slow) ease, box-shadow var(--dur-slow) ease, transform var(--dur-slow) ease;
 }
 
 .oauth-card .oauth-card-body,
@@ -474,7 +474,7 @@ body, html, #root {
 }
 
 .oauth-card .provider-logo {
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border-secondary);
   padding: 4px;
   background: var(--bg-tertiary);
@@ -573,7 +573,7 @@ body, html, #root {
 .usage-records-page .usage-health-panel,
 .usage-records-page .usage-events-panel {
   border: 0;
-  border-radius: 18px;
+  border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.045);
 }
@@ -609,7 +609,7 @@ body, html, #root {
   height: 36px;
   padding: 0 8px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--bg-primary);
 }
 
@@ -672,7 +672,7 @@ body, html, #root {
 
 .usage-records-page .usage-section-heading strong {
   color: #1d1d1f;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -680,7 +680,7 @@ body, html, #root {
   gap: 1px;
   overflow: hidden;
   padding: 0;
-  border-radius: 18px;
+  border-radius: 12px;
   background: #d8d8de;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.045);
 }
@@ -725,7 +725,7 @@ body, html, #root {
 .usage-stat-card-value {
   color: var(--usage-tone);
   font-size: var(--font-size-display);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1.02;
 }
@@ -738,7 +738,7 @@ body, html, #root {
 .usage-metrics-grid .metric-card {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 16px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
@@ -746,7 +746,7 @@ body, html, #root {
 .metric-card strong {
   color: var(--text-primary);
   font-size: var(--font-size-display);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* 9. Easy Mode / Simple Mode Polish */
@@ -797,7 +797,7 @@ body, html, #root {
 .primary-button {
   border-radius: 8px;
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
 }
 
 .secondary-button {
@@ -806,7 +806,7 @@ body, html, #root {
   color: var(--text-secondary);
   border-radius: 8px;
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
 }
 
 .secondary-button:hover:not(:disabled) {
@@ -833,7 +833,7 @@ body, html, #root {
   color: #e11d48;
   border-radius: 8px;
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
 }
 
 .danger-button:hover:not(:disabled) {
@@ -917,7 +917,7 @@ body, html, #root {
     display: flex;
     min-width: 0;
     overflow-x: auto;
-    padding: 0 0 3px;
+    padding: 0 0 4px;
     scrollbar-width: thin;
     scroll-snap-type: x proximity;
   }
@@ -952,7 +952,7 @@ body, html, #root {
 
   .sidebar-easy-entry {
     min-height: 36px;
-    padding-inline: 9px;
+    padding-inline: 8px;
   }
 
   .sidebar-theme-selector {
@@ -962,7 +962,7 @@ body, html, #root {
 
   .sidebar-theme-selector button {
     min-height: 28px;
-    padding-inline: 7px;
+    padding-inline: 8px;
   }
 
   .sidebar-language-trigger {

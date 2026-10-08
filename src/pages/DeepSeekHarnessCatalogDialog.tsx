@@ -155,14 +155,14 @@ export function DeepSeekHarnessCatalogDialog({ onClose, onSaved }: { onClose: ()
       <div className="codex-catalog-body">
         <aside className="codex-catalog-sidebar">
           <button className={`secondary-button harness-provider-button${selected === null ? ' active' : ''}`} onClick={() => setSelected(null)}><Settings2 size={16} />{t('agents.harness.provider')}</button>
-          <div className="codex-catalog-search"><Search size={15} /><input aria-label={t('agents.catalog.search')} value={search} placeholder={t('agents.catalog.search')} onChange={e => setSearch(e.currentTarget.value)} /></div>
+          <div className="codex-catalog-search"><Search size={16} /><input aria-label={t('agents.catalog.search')} value={search} placeholder={t('agents.catalog.search')} onChange={e => setSearch(e.currentTarget.value)} /></div>
           <div className="codex-catalog-models" role="listbox" aria-label={t('agents.harness.title')}>
             {loading ? <div className="codex-catalog-state"><LoaderCircle className="spin" size={18} />{t('agents.catalog.loading')}</div> : snapshot?.models.filter(m => `${m.id} ${drafts[m.id]?.name ?? m.defaults.name ?? ''}`.toLowerCase().includes(search.toLowerCase())).map(m => <button role="option" aria-selected={selected === m.id} className={selected === m.id ? 'active' : ''} key={m.id} onClick={() => setSelected(m.id)}>
               <strong>{drafts[m.id]?.name || String(m.defaults.name ?? m.id)}</strong><span>{m.id}</span><small>{t(Object.keys(drafts[m.id] ?? {}).length ? 'agents.catalog.customized' : 'agents.harness.apiSource')}{m.id === snapshot.defaultModel ? ` · ${t('agents.harness.defaultModel')}` : ''}</small>
             </button>)}
             {!loading && snapshot?.models.length === 0 ? <div className="codex-catalog-state">{t('agents.catalog.empty')}</div> : null}
           </div>
-          <button className="secondary-button codex-catalog-reload" disabled={loading || saving} onClick={() => dirty ? setConfirmation('reload') : void load()}><RefreshCw size={15} />{t('agents.catalog.reload')}</button>
+          <button className="secondary-button codex-catalog-reload" disabled={loading || saving} onClick={() => dirty ? setConfirmation('reload') : void load()}><RefreshCw size={16} />{t('agents.catalog.reload')}</button>
         </aside>
         <main className="codex-catalog-editor"><fieldset disabled={loading || saving} className="harness-editor-fieldset">
           {snapshot && (active || selected === null) ? <>

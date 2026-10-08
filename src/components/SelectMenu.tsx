@@ -197,7 +197,7 @@ export function SelectMenu({
                   onClick={() => choose(option.value)}
                 >
                   <span title={option.label}>{option.label}</span>
-                  {isSelected ? <Check size={15} aria-hidden /> : null}
+                  {isSelected ? <Check size={16} aria-hidden /> : null}
                 </button>
               );
             })}

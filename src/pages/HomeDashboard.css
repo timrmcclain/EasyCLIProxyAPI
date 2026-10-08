@@ -38,12 +38,12 @@
 .home-dashboard .home-overview-heading h2 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.4;
 }
 
-.home-dashboard .home-top-grid h2 { font-size: 17px; }
+.home-dashboard .home-top-grid h2 { font-size: 16px; }
 
 .home-dashboard .control-panel .panel-detail-grid {
   display: grid;
@@ -61,7 +61,7 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   min-height: 32px;
   padding: 6px 12px;
@@ -144,7 +144,7 @@
 .home-panel-heading > div { min-width: 0; }
 .home-panel-heading { flex-wrap: wrap; align-items: flex-start; min-height: 48px; }
 .home-dashboard .home-panel-heading p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: var(--text-tertiary);
   font-size: 12px;
   line-height: 1.5;
@@ -171,7 +171,7 @@
   display: flex;
   gap: 8px;
   padding: 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
 }
 .home-protocol-tabs button {
@@ -182,7 +182,7 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  padding: 9px 6px;
+  padding: 8px 6px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -251,7 +251,7 @@
 .home-inline-link {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -267,7 +267,7 @@
 .home-overview-actions { margin-left: auto; }
 .home-overview-heading .icon-button { width: 32px; height: 32px; min-width: 32px; }
 .home-overview-actions .core-health-entry { gap: 8px 12px; }
-.home-overview-actions .core-health-open { min-height: 32px; padding: 6px 10px; border-color: var(--border-color); border-radius: 7px; background: var(--bg-card); color: var(--text-secondary); font-size: 11px; }
+.home-overview-actions .core-health-open { min-height: 32px; padding: 6px 10px; border-color: var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-secondary); font-size: 11px; }
 .home-overview-actions .core-health-entry-status { order: -1; }
 .home-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .home-stat-card {
@@ -287,7 +287,7 @@
 .home-stat-card.error { --stat-color: var(--failure-badge-text); }
 .home-stat-card h3 { margin: 0; color: var(--text-secondary); font-size: 12px; font-weight: 500; line-height: 1.5; }
 .home-stat-value { display: block; color: var(--text-primary); font-family: var(--font-mono); font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; letter-spacing: -.03em; }
-.home-stat-track { height: 5px; margin: 2px 0; overflow: hidden; border-radius: 3px; background: color-mix(in srgb, var(--stat-color) 13%, transparent); }
+.home-stat-track { height: 5px; margin: 2px 0; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--stat-color) 13%, transparent); }
 .home-stat-track > span { display: block; height: 100%; border-radius: inherit; background: var(--stat-color); transition: width .25s ease, background-color .25s ease; }
 .home-stat-card p { margin: 0; color: var(--text-tertiary); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
 
@@ -330,7 +330,7 @@
   .home-dashboard .home-top-grid > .panel { padding: 18px; }
   .home-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .home-stat-card { padding: 16px; }
-  .home-stat-value { font-size: 26px; }
+  .home-stat-value { font-size: 24px; }
   .home-overview-heading { align-items: flex-start; gap: 10px; }
   .home-overview-heading .home-overview-actions { width: 100%; flex-wrap: nowrap; }
   .home-overview-actions .core-health-entry { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
@@ -340,6 +340,6 @@
 
 @media (max-width: 380px) {
   .home-protocol-tabs { gap: 4px; }
-  .home-protocol-tabs button { gap: 5px; padding-inline: 0; }
+  .home-protocol-tabs button { gap: 4px; padding-inline: 0; }
   .home-stat-card { padding: 12px; }
 }

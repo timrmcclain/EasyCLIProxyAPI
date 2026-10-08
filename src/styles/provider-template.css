@@ -13,5 +13,5 @@
 .provider-template-rule legend { font-size: 11px; padding: 0 4px; }
 .provider-template-rule > button { margin-top: 10px; }
 .provider-model-config { display: grid; gap: 6px; min-width: 0; }
-.provider-template-section select, .provider-template-field select { min-height: 36px; border: 1px solid var(--theme-e8e4dc); border-radius: 7px; background: var(--bg-primary); color: var(--text-primary); padding: 5px 8px; font: inherit; }
+.provider-template-section select, .provider-template-field select { min-height: 36px; border: 1px solid var(--theme-e8e4dc); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); padding: 4px 8px; font: inherit; }
 .api-provider-dialog .provider-template-fields { grid-column: 1 / -1; }

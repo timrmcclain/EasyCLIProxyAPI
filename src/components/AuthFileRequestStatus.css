@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 5px 12px;
+  gap: 4px 12px;
 }
 
 .auth-file-requests-heading > span:first-child {
@@ -22,7 +22,7 @@
 }
 
 .auth-file-requests-counts {
-  gap: 5px 10px;
+  gap: 4px 10px;
 }
 
 .auth-file-requests-window {
@@ -38,8 +38,8 @@
 
 .auth-file-requests-blocks {
   display: flex;
-  gap: 3px;
-  padding: 3px 0;
+  gap: 4px;
+  padding: 4px 0;
 }
 
 .auth-file-request-block {
@@ -83,12 +83,12 @@
   left: 50%;
   z-index: 10;
   display: grid;
-  gap: 5px;
+  gap: 4px;
   width: max-content;
   max-width: 100%;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--border-color);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--bg-card);
   color: var(--text-secondary);
   box-shadow: 0 4px 14px #0002;
@@ -140,7 +140,7 @@
 .auth-file-requests.auth-file-requests-summary {
   grid-column: auto;
   align-content: start;
-  gap: 5px;
+  gap: 4px;
   width: 100%;
   font-size: 11px;
   line-height: 1.4;
@@ -164,7 +164,7 @@
   flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 8px;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .auth-file-requests-summary .auth-file-requests-heading > .auth-file-requests-counts > span {

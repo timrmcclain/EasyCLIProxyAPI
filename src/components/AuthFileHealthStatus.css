@@ -29,7 +29,7 @@
 }
 
 .auth-file-health.detailed .auth-health-summary {
-  padding: 9px 12px;
+  padding: 8px 12px;
   cursor: pointer;
 }
 
@@ -48,7 +48,7 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 3px 12px;
+  gap: 4px 12px;
 }
 .auth-health-heading strong { color: var(--health-accent); font-weight: var(--font-weight-semibold); }
 .auth-health-heading > span { color: var(--text-secondary); }
@@ -78,11 +78,11 @@
 .auth-health-core-message > span { color: var(--text-tertiary); font-size: var(--font-size-meta); }
 .auth-health-core-message p { margin: 4px 0 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .auth-health-records { margin: 0; padding: 0; list-style: none; }
-.auth-health-records li { padding: 9px 0; border-top: 1px solid var(--border-color); }
+.auth-health-records li { padding: 8px 0; border-top: 1px solid var(--border-color); }
 .auth-health-record-heading { justify-content: space-between; }
 .auth-health-record-heading strong { min-width: 0; color: var(--text-primary); overflow-wrap: anywhere; }
-.auth-health-record-meta { margin: 3px 0; }
-.auth-health-hint { display: block; margin: 3px 0 0; color: var(--text-tertiary); font-size: var(--font-size-meta); overflow-wrap: anywhere; }
+.auth-health-record-meta { margin: 4px 0; }
+.auth-health-hint { display: block; margin: 4px 0 0; color: var(--text-tertiary); font-size: var(--font-size-meta); overflow-wrap: anywhere; }
 .auth-health-actions {
   display: flex;
   align-items: center;
@@ -120,13 +120,13 @@
 .auth-file-health-compact > details[open] { grid-column: 1 / -1; }
 .auth-file-health-compact .auth-health-summary {
   min-height: 38px;
-  padding: 7px 0;
+  padding: 8px 0;
   gap: 4px 8px;
 }
 .auth-file-health-compact .auth-health-summary-content { flex: 1; flex-basis: auto; }
 .auth-file-health-compact .auth-health-icon { width: 14px; height: 14px; }
 .auth-file-health-compact .auth-health-heading { gap: 4px 8px; }
-.auth-file-health-compact .auth-health-heading strong { font-size: 12px; font-weight: 650; }
+.auth-file-health-compact .auth-health-heading strong { font-size: 12px; font-weight: 600; }
 .auth-file-health-compact .auth-health-countdown { margin: 0 0 0 auto; color: var(--text-tertiary); font-size: 11px; }
 .auth-file-health-compact .auth-health-disclosure { margin: 0; }
 .auth-file-health-compact .auth-health-body { padding: 0 0 12px; }
@@ -135,7 +135,7 @@
 .auth-file-health-compact .auth-health-record-heading { gap: 4px 10px; }
 .auth-file-health-compact .auth-health-record-heading strong { font-size: 12px; font-weight: 600; }
 .auth-file-health-compact .auth-health-record-heading > span { font-size: 11px; color: var(--text-tertiary); }
-.auth-file-health-compact .auth-health-record-meta { gap: 3px 10px; color: var(--text-secondary); font-size: 11px; }
+.auth-file-health-compact .auth-health-record-meta { gap: 4px 10px; color: var(--text-secondary); font-size: 11px; }
 .auth-file-health-compact .auth-health-hint { font-size: 11px; line-height: 1.5; }
 .auth-file-health-compact .auth-health-core-state { margin: 6px 0; color: var(--text-tertiary); font-size: 11px; }
 .auth-file-health-compact .auth-health-core-message p { margin-bottom: 8px; font-size: 12px; }

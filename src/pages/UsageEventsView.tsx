@@ -421,8 +421,8 @@ function UsageEventCell({
           }`}
         >
           <strong>{formatCacheReadRate({ inputTokens: record.tokens.input_tokens, cacheReadTokens: record.tokens.cache_read_tokens })}</strong>
-          <div className="usage-event-metrics"><span className="tone-cache-read" title={`${t('usage.token.cacheRead')}: ${record.tokens.cache_read_tokens.toLocaleString()}`} aria-label={`${t('usage.token.cacheRead')}: ${record.tokens.cache_read_tokens}`}><Database size={11} aria-hidden="true" />{compactNumber(record.tokens.cache_read_tokens)}</span></div>
-          <div className="usage-event-metrics usage-cache-write"><span className="tone-cache-write" title={`${t('usage.token.cacheCreation')}: ${record.tokens.cache_creation_tokens.toLocaleString()}`} aria-label={`${t('usage.token.cacheCreation')}: ${record.tokens.cache_creation_tokens}`}><DatabaseZap size={11} aria-hidden="true" />{compactNumber(record.tokens.cache_creation_tokens)}</span></div>
+          <div className="usage-event-metrics"><span className="tone-cache-read" title={`${t('usage.token.cacheRead')}: ${record.tokens.cache_read_tokens.toLocaleString()}`} aria-label={`${t('usage.token.cacheRead')}: ${record.tokens.cache_read_tokens}`}><Database size={12} aria-hidden="true" />{compactNumber(record.tokens.cache_read_tokens)}</span></div>
+          <div className="usage-event-metrics usage-cache-write"><span className="tone-cache-write" title={`${t('usage.token.cacheCreation')}: ${record.tokens.cache_creation_tokens.toLocaleString()}`} aria-label={`${t('usage.token.cacheCreation')}: ${record.tokens.cache_creation_tokens}`}><DatabaseZap size={12} aria-hidden="true" />{compactNumber(record.tokens.cache_creation_tokens)}</span></div>
         </td>
       );
     case 'total':
@@ -434,10 +434,10 @@ function UsageEventCell({
             : `${record.tokens.total_tokens.toLocaleString()} tokens`}
         >
           <strong>{compactNumber(record.tokens.total_tokens)}</strong>
-          <div className="usage-event-metrics"><span className="tone-input" title={`${t('usage.column.input')}: ${record.tokens.input_tokens.toLocaleString()}`} aria-label={`${t('usage.column.input')}: ${record.tokens.input_tokens}`}><ArrowUp size={11} aria-hidden="true" />{compactNumber(record.tokens.input_tokens)}</span></div>
+          <div className="usage-event-metrics"><span className="tone-input" title={`${t('usage.column.input')}: ${record.tokens.input_tokens.toLocaleString()}`} aria-label={`${t('usage.column.input')}: ${record.tokens.input_tokens}`}><ArrowUp size={12} aria-hidden="true" />{compactNumber(record.tokens.input_tokens)}</span></div>
           <div className="usage-event-metrics">
-            <span className="tone-output" title={`${t('usage.column.output')}: ${record.tokens.output_tokens.toLocaleString()}`} aria-label={`${t('usage.column.output')}: ${record.tokens.output_tokens}`}><ArrowDown size={11} aria-hidden="true" />{compactNumber(record.tokens.output_tokens)}</span>
-            <span className="tone-reasoning" title={`${t('usage.column.reasoning')}: ${record.tokens.reasoning_tokens.toLocaleString()}`} aria-label={`${t('usage.column.reasoning')}: ${record.tokens.reasoning_tokens}`}><Brain size={11} aria-hidden="true" />{compactNumber(record.tokens.reasoning_tokens)}</span>
+            <span className="tone-output" title={`${t('usage.column.output')}: ${record.tokens.output_tokens.toLocaleString()}`} aria-label={`${t('usage.column.output')}: ${record.tokens.output_tokens}`}><ArrowDown size={12} aria-hidden="true" />{compactNumber(record.tokens.output_tokens)}</span>
+            <span className="tone-reasoning" title={`${t('usage.column.reasoning')}: ${record.tokens.reasoning_tokens.toLocaleString()}`} aria-label={`${t('usage.column.reasoning')}: ${record.tokens.reasoning_tokens}`}><Brain size={12} aria-hidden="true" />{compactNumber(record.tokens.reasoning_tokens)}</span>
           </div>
         </td>
       );
@@ -855,7 +855,7 @@ export function EventsView({
           >
             <div className="usage-column-dialog-heading">
               <div>
-                <Columns3 size={19} aria-hidden="true" />
+                <Columns3 size={20} aria-hidden="true" />
                 <h2 id="usage-column-dialog-title">{t('usage.events.columnSettings')}</h2>
               </div>
               <button
@@ -865,7 +865,7 @@ export function EventsView({
                 title={t('common.close')}
                 aria-label={t('common.close')}
               >
-                <X size={17} />
+                <X size={16} />
               </button>
             </div>
             <p className="usage-column-dialog-description">

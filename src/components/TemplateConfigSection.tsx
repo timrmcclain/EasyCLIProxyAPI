@@ -194,7 +194,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
           </div>;
         })}</div>
         {groupErrors[group.id] ? <p className="template-config-error" role="alert">{groupErrors[group.id]}</p> : null}
-        <div className="template-config-actions"><span className={dirty ? 'template-config-action-status-dirty' : saved[group.id] ? 'template-config-action-status-saved' : undefined} role="status">{dirty ? tr('dirty') : saved[group.id] ? tr('saved') : ''}</span><div>{dirty ? <button type="button" className="secondary-button compact-button" disabled={busy !== null} onClick={() => discardGroup(group)}>{tr('discard')}</button> : null}<button type="button" className="primary-button compact-button" disabled={!dirty || busy !== null || !config} onClick={() => void saveGroup(group)}><Save size={15} aria-hidden="true" />{busy === group.id ? tr('saving') : tr('save')}</button></div></div>
+        <div className="template-config-actions"><span className={dirty ? 'template-config-action-status-dirty' : saved[group.id] ? 'template-config-action-status-saved' : undefined} role="status">{dirty ? tr('dirty') : saved[group.id] ? tr('saved') : ''}</span><div>{dirty ? <button type="button" className="secondary-button compact-button" disabled={busy !== null} onClick={() => discardGroup(group)}>{tr('discard')}</button> : null}<button type="button" className="primary-button compact-button" disabled={!dirty || busy !== null || !config} onClick={() => void saveGroup(group)}><Save size={16} aria-hidden="true" />{busy === group.id ? tr('saving') : tr('save')}</button></div></div>
       </section>;
     })}
   </div>;

@@ -1,0 +1,98 @@
+/* Design system foundation. Loaded last so these tokens and global rules win over the
+   older per-page layers. New CSS should use these tokens instead of raw values. */
+:root {
+  /* Spacing on a 4px grid. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Corner radii. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 999px;
+
+  /* Elevation: three steps only. */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+  --ui-panel-shadow: var(--shadow-md);
+
+  /* Motion. */
+  --dur-fast: 100ms;
+  --dur-base: 150ms;
+  --dur-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Focus ring. */
+  --focus-ring-color: var(--ui-accent);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  font-variant-numeric: tabular-nums;
+}
+
+/* Light theme: a soft gray page so white cards stand out, and hints that actually recede. */
+:root:not([data-theme='dark']) {
+  --surface-page: #f3f5f8;
+  --theme-faf9f5: var(--surface-page);
+  --bg-secondary: var(--surface-page);
+  --text-muted: #64748b;
+  --text-placeholder: #7b8798;
+}
+
+:root:not([data-theme='dark']),
+:root:not([data-theme='dark']) body,
+:root:not([data-theme='dark']) #root,
+:root:not([data-theme='dark']) .app-shell,
+:root:not([data-theme='dark']) .workspace,
+:root:not([data-theme='dark']) .workspace .content {
+  background: var(--surface-page);
+}
+
+:root:not([data-theme='dark']) :is(.workspace, .config-dialog, dialog) {
+  --bg-hover: #f1f4f8;
+  --bg-tertiary: #f8fafc;
+  --bg-quinary: #f8fafc;
+  --text-quaternary: #64748b;
+}
+
+/* Dark theme: readable disabled/muted text, and a warning color distinct from errors. */
+:root[data-theme='dark'] {
+  --text-muted: #94a3b8;
+  --text-disabled: #8b97a8;
+  --warning-color: #d39a4a;
+  --amber-color: #d39a4a;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* One focus ring for every interactive element, including ones whose local CSS removed it. */
+:is(a, button, input, select, textarea, summary, [role='button'], [role='tab'], [role='switch'],
+  [role='menuitem'], [role='option'], [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color) !important;
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Lighter icon strokes read better at 14-16px. */
+svg.lucide {
+  stroke-width: 1.75;
+}
+
+/* Respect reduced motion everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -169,7 +169,7 @@ export function CoreHealthPanel({
       <button type="button" className="icon-button quiet core-health-close" onClick={close} aria-label={t('common.close')} title={t('common.close')}><X size={18} aria-hidden="true" /></button>
       <div className="core-health-heading">
         <div className="core-health-title">
-          <span className="core-health-icon"><Activity size={19} aria-hidden="true" /></span>
+          <span className="core-health-icon"><Activity size={20} aria-hidden="true" /></span>
           <div><h2 id={`${dialogId}-title`}>{t('home.health.title')}</h2><p id={`${dialogId}-description`}>{t('home.health.description')}</p></div>
         </div>
         <div className="core-health-actions">
@@ -177,15 +177,15 @@ export function CoreHealthPanel({
             <RefreshCw size={14} className={modelsLoading ? 'spin' : undefined} aria-hidden="true" />{t('home.health.refresh')}
           </button>
           {running ? <button className="secondary-button" onClick={stopChecks} disabled={stopped}>
-            <Square size={13} aria-hidden="true" />{t('home.health.stop')}
+            <Square size={14} aria-hidden="true" />{t('home.health.stop')}
           </button> : <button className="primary-button" disabled={!canCheck} onClick={() => { void runChecks(models); }}>
-            <Play size={13} aria-hidden="true" />{t('home.health.checkAll')}
+            <Play size={14} aria-hidden="true" />{t('home.health.checkAll')}
           </button>}
         </div>
       </div>
 
       <div className="core-health-toolbar">
-        <label className="core-health-search"><Search size={15} aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder={t('apiAccess.health.search')} aria-label={t('apiAccess.health.search')} /></label>
+        <label className="core-health-search"><Search size={16} aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder={t('apiAccess.health.search')} aria-label={t('apiAccess.health.search')} /></label>
         <label className="core-health-auto" title={autoTargets.map((model) => model.name).join(', ')}>
           <input type="checkbox" checked={autoEnabled} onChange={(event) => toggleAuto(event.currentTarget.checked)} />
           <span>{t('home.health.auto', { count: autoTargets.length, hours: CORE_HEALTH_AUTO_INTERVAL_MS / 3_600_000 })}</span>
@@ -217,7 +217,7 @@ export function CoreHealthPanel({
                       <td><span className={`core-health-status ${status}`}>{checking ? <LoaderCircle size={12} className="spin" aria-hidden="true" /> : result?.success && !queued ? <Check size={12} aria-hidden="true" /> : result && !queued ? <X size={12} aria-hidden="true" /> : <Circle size={8} aria-hidden="true" />}{statusText}</span></td>
                       <td className="core-health-latency">{result?.success && !pending.has(model.name) ? <>{latency(result.firstTokenLatencyMs)}<span> / {latency(result.responseLatencyMs)}</span></> : '—'}</td>
                       <td className="core-health-time">{result ? <time dateTime={new Date(result.checkedAt).toISOString()} title={formatDate(result.checkedAt)}>{time(result.checkedAt)}</time> : '—'}</td>
-                      <td><button className="core-health-row-check" disabled={!canCheck || running} onClick={() => { void runChecks([model]); }} title={t('home.health.checkOne', { model: model.name })} aria-label={t('home.health.checkOne', { model: model.name })}><Play size={13} aria-hidden="true" /></button></td>
+                      <td><button className="core-health-row-check" disabled={!canCheck || running} onClick={() => { void runChecks([model]); }} title={t('home.health.checkOne', { model: model.name })} aria-label={t('home.health.checkOne', { model: model.name })}><Play size={14} aria-hidden="true" /></button></td>
                     </tr>;
                   })}</tbody>
                 </table>

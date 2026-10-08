@@ -41,7 +41,7 @@ export function AppReleaseNotes({ info, checking, failed, onOpenUrl }: Props) {
     <section className="app-release-notes" aria-labelledby={headingId}>
       <header className="app-release-notes-heading">
         <div>
-          <FileText size={17} aria-hidden="true" />
+          <FileText size={16} aria-hidden="true" />
           <h2 id={headingId}>{t('appUpdate.notes.title')}</h2>
         </div>
         <button
@@ -52,7 +52,7 @@ export function AppReleaseNotes({ info, checking, failed, onOpenUrl }: Props) {
           onClick={() => setExpanded((current) => !current)}
         >
           {t(expanded ? 'appUpdate.notes.collapse' : 'appUpdate.notes.expand')}
-          <ChevronDown size={15} className={expanded ? 'is-expanded' : ''} aria-hidden="true" />
+          <ChevronDown size={16} className={expanded ? 'is-expanded' : ''} aria-hidden="true" />
         </button>
       </header>
       <div id={contentId} hidden={!expanded}>

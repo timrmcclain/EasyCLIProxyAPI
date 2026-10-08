@@ -483,8 +483,8 @@ export function AuthFileManagementPage() {
         <button type="button" className="secondary-button compact-button auth-toolbar-quiet" disabled={loading || busy || oauthModelSaving || oauthModelProviders.length === 0} onClick={() => {
           const provider = oauthModelProviders.find((item) => item.label === providerFilter) ?? oauthModelProviders[0];
           if (provider) void openOauthModelSettings({ ...provider, scope: 'provider' });
-        }}><Settings2 size={15} />{t('authFiles.models.toolbarButton')}</button>
-        <button type="button" className="secondary-button compact-button auth-toolbar-quiet" disabled={busy} onClick={() => void openAuthFilesDirectory()}><FolderOpen size={15} />{t('authFiles.openDirectory')}</button>
+        }}><Settings2 size={16} />{t('authFiles.models.toolbarButton')}</button>
+        <button type="button" className="secondary-button compact-button auth-toolbar-quiet" disabled={busy} onClick={() => void openAuthFilesDirectory()}><FolderOpen size={16} />{t('authFiles.openDirectory')}</button>
         <button type="button" className="secondary-button compact-button" onClick={() => void loadFiles()} disabled={loading || busy}>
           <RefreshCw size={16} className={loading ? 'spin' : ''} />{t('authFiles.toolbar.refreshList')}
         </button>
@@ -584,11 +584,11 @@ export function AuthFileManagementPage() {
                   </div>
                   <footer className="auth-card-actions auth-list-cell" data-label={t('authFiles.list.actions')}>
                     <div className="auth-list-icon-actions">
-                      <button type="button" className="auth-list-action" onClick={() => void refreshQuota(file)} disabled={busy || disabled || !quotaProvider || quota.status === 'loading'} title={t('authFiles.quota.refresh')} aria-label={t('authFiles.quota.refresh')}><RefreshCw size={15} className={quota.status === 'loading' ? 'spin' : ''} aria-hidden="true" /></button>
-                      <button type="button" className="auth-list-action" onClick={() => setSettingsName(name)} disabled={busy || resettingCooldown || !isOAuthCredentialFile(file)} title={t(isOAuthCredentialFile(file) ? 'authFiles.settings.title' : 'authFiles.fileOnly')} aria-label={t('authFiles.settings.title')}><Settings2 size={15} aria-hidden="true" /></button>
-                      <button type="button" className="auth-list-action" onClick={() => setModelViewName(name)} disabled={busy || !providerKey(file)} title={t('authFiles.models.viewTitle')} aria-label={t('authFiles.models.viewTitle')}><Network size={15} aria-hidden="true" /></button>
-                      <button type="button" className="auth-list-action muted" onClick={() => void copyName(name)} disabled={busy} title={t('authFiles.copyName')} aria-label={t('authFiles.copyName')}>{copied === name ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}</button>
-                      <button type="button" className="auth-list-action danger" onClick={() => void deleteFile(file)} disabled={busy || resettingCooldown || isRuntimeOnly(file)} title={t('common.delete')} aria-label={t('common.delete')}><Trash2 size={15} aria-hidden="true" /></button>
+                      <button type="button" className="auth-list-action" onClick={() => void refreshQuota(file)} disabled={busy || disabled || !quotaProvider || quota.status === 'loading'} title={t('authFiles.quota.refresh')} aria-label={t('authFiles.quota.refresh')}><RefreshCw size={16} className={quota.status === 'loading' ? 'spin' : ''} aria-hidden="true" /></button>
+                      <button type="button" className="auth-list-action" onClick={() => setSettingsName(name)} disabled={busy || resettingCooldown || !isOAuthCredentialFile(file)} title={t(isOAuthCredentialFile(file) ? 'authFiles.settings.title' : 'authFiles.fileOnly')} aria-label={t('authFiles.settings.title')}><Settings2 size={16} aria-hidden="true" /></button>
+                      <button type="button" className="auth-list-action" onClick={() => setModelViewName(name)} disabled={busy || !providerKey(file)} title={t('authFiles.models.viewTitle')} aria-label={t('authFiles.models.viewTitle')}><Network size={16} aria-hidden="true" /></button>
+                      <button type="button" className="auth-list-action muted" onClick={() => void copyName(name)} disabled={busy} title={t('authFiles.copyName')} aria-label={t('authFiles.copyName')}>{copied === name ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}</button>
+                      <button type="button" className="auth-list-action danger" onClick={() => void deleteFile(file)} disabled={busy || resettingCooldown || isRuntimeOnly(file)} title={t('common.delete')} aria-label={t('common.delete')}><Trash2 size={16} aria-hidden="true" /></button>
                     </div>
                     <div className="auth-list-main-actions">
                       <button type="button" className="auth-list-switch" role="switch" aria-checked={!disabled} aria-label={`${t(disabled ? 'common.enable' : 'common.disable')} ${identity || name}`} onClick={() => void toggleStatus(file)} disabled={busy || resettingCooldown || !isOAuthCredentialFile(file)} title={t(isOAuthCredentialFile(file) ? disabled ? 'common.enable' : 'common.disable' : 'authFiles.fileOnly')}><span /></button>

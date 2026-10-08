@@ -16,15 +16,15 @@
 .auth-file-usage-metric {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 
 .auth-file-usage-metric svg {
   box-sizing: content-box;
   flex-shrink: 0;
-  padding: 3px;
-  border-radius: 5px;
+  padding: 4px;
+  border-radius: 6px;
   color: var(--primary-color);
   background: color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
@@ -58,5 +58,5 @@
 }
 
 @container auth-file-usage (max-width: 130px) {
-  .auth-file-usage-metrics { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .auth-file-usage-metrics { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }

@@ -576,10 +576,10 @@ export function OAuthLoginPage() {
                     <div className="oauth-auth-url-value" title={state.url}>{state.url}</div>
                     <div className="oauth-auth-url-actions">
                       <button type="button" className="secondary-button compact-button" onClick={() => void copyAuthUrl(state.url)}>
-                        <Copy size={15} aria-hidden="true" />{t('oauth.copyLink')}
+                        <Copy size={16} aria-hidden="true" />{t('oauth.copyLink')}
                       </button>
                       <button type="button" className="secondary-button compact-button" onClick={() => void openAuthUrl(state.url)}>
-                        <ExternalLink size={15} aria-hidden="true" />{t('oauth.openLink')}
+                        <ExternalLink size={16} aria-hidden="true" />{t('oauth.openLink')}
                       </button>
                     </div>
                     {state.userCode ? (
@@ -587,7 +587,7 @@ export function OAuthLoginPage() {
                         <div className="oauth-auth-url-label">{t('oauth.deviceCodeLabel')}</div>
                         <div className="oauth-device-code-value">{state.userCode}</div>
                         <button type="button" className="secondary-button compact-button" onClick={() => void copyDeviceCode(state.userCode)}>
-                          <Copy size={15} aria-hidden="true" />{t('oauth.copyDeviceCode')}
+                          <Copy size={16} aria-hidden="true" />{t('oauth.copyDeviceCode')}
                         </button>
                       </div>
                     ) : null}

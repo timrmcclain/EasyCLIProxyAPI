@@ -146,7 +146,7 @@
 
 @container workspace (max-width: 880px) {
   .usage-overview-layout .usage-stat-card {
-    gap: 5px;
+    gap: 4px;
     padding: 10px 8px;
   }
 

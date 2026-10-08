@@ -113,9 +113,9 @@ export function CredentialAdvancedFields({
                 onChange={(event) => updateAlias(index, { alias: event.currentTarget.value })} />
               <div className="credential-alias-row-actions">
                 <button type="button" className="icon-button quiet" disabled={disabled} aria-expanded={expanded} aria-label={expanded ? t('appUpdate.notes.collapse') : t('appUpdate.notes.expand')}
-                  onClick={() => setExpandedAlias(expanded ? null : index)}><ChevronDown size={15} className={expanded ? 'is-expanded' : ''} /></button>
+                  onClick={() => setExpandedAlias(expanded ? null : index)}><ChevronDown size={16} className={expanded ? 'is-expanded' : ''} /></button>
                 <button type="button" className="icon-button quiet" disabled={disabled} aria-label={t('authFiles.settings.aliasRemove', { index: index + 1 })}
-                  onClick={() => { setExpandedAlias((current) => current === index ? null : current !== null && current > index ? current - 1 : current); setField('model_aliases', aliases.filter((_, rowIndex) => rowIndex !== index)); }}><X size={15} /></button>
+                  onClick={() => { setExpandedAlias((current) => current === index ? null : current !== null && current > index ? current - 1 : current); setField('model_aliases', aliases.filter((_, rowIndex) => rowIndex !== index)); }}><X size={16} /></button>
               </div>
             </div>
             {expanded ? <div className="credential-alias-details">
@@ -224,7 +224,7 @@ export function CredentialHeadersEditor({ value, onChange, disabled = false }: {
           <input aria-label={t('authFiles.settings.headerValue')} value={row.value} disabled={disabled} autoComplete="off" spellCheck={false} placeholder={t('authFiles.settings.headerValue')}
             onChange={(event) => write(visible.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.currentTarget.value } : item))} />
           <button type="button" className="icon-button quiet" disabled={disabled} aria-label={t('authFiles.settings.headerRemove', { name: row.name || String(index + 1) })}
-            onClick={() => write(visible.filter((_, itemIndex) => itemIndex !== index))}><X size={15} /></button>
+            onClick={() => write(visible.filter((_, itemIndex) => itemIndex !== index))}><X size={16} /></button>
         </div>)}
       </div> : <p className="credential-settings-lead">{t('authFiles.settings.headersEmpty')}</p>}
       <div className="credential-settings-inline-actions">

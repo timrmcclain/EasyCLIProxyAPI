@@ -747,7 +747,7 @@ export function EasyModePage({
                 aria-pressed={theme === "light"}
                 onClick={() => setTheme("light")}
               >
-                <Sun size={15} />
+                <Sun size={16} />
               </button>
               <button
                 type="button"
@@ -757,7 +757,7 @@ export function EasyModePage({
                 aria-pressed={theme === "dark"}
                 onClick={() => setTheme("dark")}
               >
-                <Moon size={15} />
+                <Moon size={16} />
               </button>
               <button
                 type="button"
@@ -767,7 +767,7 @@ export function EasyModePage({
                 aria-pressed={theme === "system"}
                 onClick={() => setTheme("system")}
               >
-                <Monitor size={15} />
+                <Monitor size={16} />
               </button>
             </div>
           ) : null}
@@ -793,9 +793,9 @@ export function EasyModePage({
                 });
               }}
             >
-              <Languages size={15} />
+              <Languages size={16} />
               <span>{currentActiveLang.nativeLabel}</span>
-              <ChevronDown size={13} />
+              <ChevronDown size={14} />
             </button>
             {langMenuOpen ? (
               <div id="simple-mode-language-list" className="simple-mode-lang-menu" role="listbox" aria-label={t("easyMode.language.switch")} onKeyDown={handleLanguageListKeyDown}>
@@ -1274,7 +1274,7 @@ export function EasyModePage({
               title={t("easyMode.guide.close")}
               onClick={() => setGuideActive(false)}
             >
-              <X size={15} />
+              <X size={16} />
             </button>
           </div>
 

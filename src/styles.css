@@ -564,15 +564,15 @@ textarea:focus-visible {
   gap: 10px;
   width: 100%;
   min-height: 46px;
-  padding: 0 13px;
+  padding: 0 12px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--theme-2d2a26);
   font-weight: var(--font-weight-semibold);
   text-align: left;
-  transition: border-color 140ms ease, background 140ms ease, color 140ms ease,
-    transform 140ms ease;
+  transition: border-color var(--dur-base) ease, background var(--dur-base) ease, color var(--dur-base) ease,
+    transform var(--dur-base) ease;
 }
 
 .nav-section button svg {
@@ -664,11 +664,11 @@ textarea:focus-visible {
   min-height: 38px;
   padding: 0 10px;
   border: 1px dashed var(--border-primary);
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-secondary);
   text-align: center;
-  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+  transition: border-color var(--dur-base) ease, background var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .sidebar-easy-entry:hover {
@@ -697,11 +697,11 @@ textarea:focus-visible {
 .sidebar-theme-selector {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 3px;
+  gap: 4px;
   width: 100%;
-  padding: 3px;
+  padding: 4px;
   border: 1px solid var(--border-color);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--bg-tertiary);
 }
 
@@ -710,12 +710,12 @@ textarea:focus-visible {
   min-height: 32px;
   padding: 0 8px;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: var(--theme-716b61);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
-  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease, box-shadow var(--dur-base) ease;
   white-space: nowrap;
 }
 
@@ -744,7 +744,7 @@ textarea:focus-visible {
   min-height: 38px;
   padding: 0 10px;
   border: 1px solid var(--border-color);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--bg-primary);
   color: var(--text-secondary);
   text-align: left;
@@ -767,7 +767,7 @@ textarea:focus-visible {
 }
 
 .sidebar-language-trigger > svg:last-child {
-  transition: transform 160ms ease;
+  transition: transform var(--dur-base) ease;
 }
 
 .sidebar-language-trigger > svg:last-child.expanded {
@@ -781,10 +781,10 @@ textarea:focus-visible {
   bottom: calc(100% + 8px);
   left: 0;
   display: grid;
-  gap: 3px;
-  padding: 5px;
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--theme-d8d4cc);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fff);
   box-shadow: 0 -10px 28px rgba(45, 42, 38, 0.16);
 }
@@ -796,7 +796,7 @@ textarea:focus-visible {
   gap: 8px;
   width: 100%;
   min-height: 36px;
-  padding: 0 9px;
+  padding: 0 8px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -841,7 +841,7 @@ textarea:focus-visible {
   min-height: 38px;
   padding: 0 10px;
   border: 1px solid var(--border-color);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--bg-primary);
   color: var(--text-secondary);
   text-align: left;
@@ -969,7 +969,7 @@ textarea:focus-visible {
 
 .panel-heading p {
   min-height: 0;
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: var(--theme-5f5a53);
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
@@ -1152,7 +1152,7 @@ textarea:focus-visible {
 .version-source-copy {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: 4px;
 }
 
 .version-source-copy strong,
@@ -1300,10 +1300,10 @@ textarea:focus-visible {
 .version-metric-tile {
   display: grid;
   min-width: 0;
-  gap: 5px;
-  padding: 15px 16px;
+  gap: 4px;
+  padding: 16px 16px;
   border: 1px solid var(--theme-e8e5dc);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-faf9f5);
 }
 
@@ -1382,12 +1382,12 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   flex: 1 1 120px;
   min-height: 40px;
   padding: 8px 14px;
   font-weight: var(--font-weight-semibold);
-  border-radius: 9px;
+  border-radius: 8px;
   white-space: nowrap;
 }
 
@@ -1407,7 +1407,7 @@ textarea:focus-visible {
 .app-release-notes-heading > div {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1428,7 +1428,7 @@ textarea:focus-visible {
   gap: 6px;
   flex: none;
   min-height: 32px;
-  padding: 3px 0;
+  padding: 4px 0;
   border: 0;
   background: transparent;
   color: var(--theme-6d6760);
@@ -1452,7 +1452,7 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 8px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--theme-e8e5dc);
 }
@@ -1464,8 +1464,8 @@ textarea:focus-visible {
 }
 
 .app-release-notes-latest {
-  padding: 2px 7px;
-  border-radius: 5px;
+  padding: 2px 8px;
+  border-radius: 6px;
   background: var(--theme-dce8df);
   color: var(--theme-2f6b3f);
   font-size: var(--font-size-meta);
@@ -1498,8 +1498,8 @@ textarea:focus-visible {
 .app-release-notes-markdown > .release-notes-category {
   grid-column: 1;
   max-width: 220px;
-  padding: 3px 9px;
-  border-radius: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
   background: var(--theme-faf9f5);
   color: var(--theme-6d6760);
   font-size: var(--font-size-meta);
@@ -1517,11 +1517,11 @@ textarea:focus-visible {
 }
 
 .app-release-notes-markdown li + li {
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .app-release-notes-markdown li p {
-  margin: 5px 0;
+  margin: 4px 0;
 }
 
 .app-release-notes-markdown a {
@@ -1582,7 +1582,7 @@ textarea:focus-visible {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   margin: 4px 0 0;
 }
 
@@ -1659,11 +1659,11 @@ textarea:focus-visible {
   min-height: 56px;
   padding: 0 14px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
   box-sizing: border-box;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color var(--dur-base) ease, background-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
 }
 
 .client-api-card:hover {
@@ -1787,7 +1787,7 @@ textarea:focus-visible {
   box-sizing: border-box;
   text-align: left;
   cursor: pointer;
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition: border-color var(--dur-base) ease, background-color var(--dur-base) ease;
 }
 
 .client-api-value-row code:hover {
@@ -2221,8 +2221,8 @@ textarea:focus-visible {
   border-radius: 999px;
   background: var(--theme-e8e5dc);
   transition:
-    background 140ms ease,
-    border-color 140ms ease;
+    background var(--dur-base) ease,
+    border-color var(--dur-base) ease;
 }
 
 .switch-track::after {
@@ -2233,7 +2233,7 @@ textarea:focus-visible {
   border-radius: 999px;
   background: var(--theme-fffdf8);
   box-shadow: 0 1px 2px rgba(45, 42, 38, 0.18);
-  transition: transform 140ms ease;
+  transition: transform var(--dur-base) ease;
   content: '';
 }
 
@@ -2291,7 +2291,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 12px;
   min-width: 0;
-  padding: 15px;
+  padding: 16px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 8px;
   background: var(--theme-faf8f2);
@@ -2336,7 +2336,7 @@ textarea:focus-visible {
 .config-diagnostics-field {
   display: grid;
   min-width: 0;
-  gap: 7px;
+  gap: 8px;
   padding: 14px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 8px;
@@ -2353,9 +2353,9 @@ textarea:focus-visible {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 11px 13px;
+  padding: 12px 12px;
   border: 1px solid var(--theme-dfbf91);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff7e9);
   color: var(--theme-8b5b21);
   font-size: var(--font-size-label);
@@ -2399,7 +2399,7 @@ textarea:focus-visible {
 .config-management-description {
   display: grid;
   align-content: start;
-  gap: 9px;
+  gap: 8px;
 }
 
 .config-management-description strong {
@@ -2597,7 +2597,7 @@ textarea:focus-visible {
   gap: 8px;
   padding: 14px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-faf8f2);
 }
 
@@ -2617,7 +2617,7 @@ textarea:focus-visible {
 .config-network-label {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .config-network-label svg {
@@ -2644,7 +2644,7 @@ textarea:focus-visible {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   color: var(--theme-7a746c);
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-medium);
@@ -2655,7 +2655,7 @@ textarea:focus-visible {
   width: 100%;
   height: 38px;
   min-width: 0;
-  padding: 0 11px;
+  padding: 0 12px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 6px;
   outline: none;
@@ -2695,7 +2695,7 @@ textarea:focus-visible {
 .config-network-toggle > div {
   display: grid;
   min-width: 0;
-  gap: 7px;
+  gap: 8px;
 }
 
 .config-panel-heading {
@@ -2716,7 +2716,7 @@ textarea:focus-visible {
 }
 
 .config-heading-title {
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -2849,7 +2849,7 @@ textarea:focus-visible {
   flex: none;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--theme-f0eee8);
   color: var(--theme-7a746c);
   font-size: var(--font-size-meta);
@@ -2860,14 +2860,14 @@ textarea:focus-visible {
 .config-key-details {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: 4px;
 }
 
 .config-key-label-line {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .config-key-label-line strong {
@@ -2916,7 +2916,7 @@ textarea:focus-visible {
   width: 70px;
   height: 28px;
   justify-self: end;
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--theme-f4f1ea);
 }
 
@@ -2927,7 +2927,7 @@ textarea:focus-visible {
   min-height: 0;
   place-content: center;
   justify-items: center;
-  gap: 9px;
+  gap: 8px;
   padding: 24px;
   color: var(--theme-7a746c);
   text-align: center;
@@ -2949,10 +2949,10 @@ textarea:focus-visible {
 }
 
 .compact-button {
-  gap: 7px;
+  gap: 8px;
   width: auto;
   min-height: 34px;
-  margin-top: 3px;
+  margin-top: 4px;
   padding: 0 12px;
   font-size: var(--font-size-body);
 }
@@ -2965,7 +2965,7 @@ textarea:focus-visible {
   height: 40px;
   padding: 4px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-f0eee8);
 }
 
@@ -2974,7 +2974,7 @@ textarea:focus-visible {
   overflow: hidden;
   padding: 0 8px;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: var(--theme-6d6760);
   font-size: var(--font-size-body);
@@ -3031,7 +3031,7 @@ textarea:focus-visible {
 }
 
 .config-dialog-heading > div {
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -3057,7 +3057,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 34px;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .config-secret-input input {
@@ -3127,7 +3127,7 @@ textarea:focus-visible {
 }
 
 .config-dialog-actions button {
-  gap: 7px;
+  gap: 8px;
   height: 40px;
 }
 
@@ -3149,7 +3149,7 @@ textarea:focus-visible {
   width: min(430px, 100%);
   padding: 24px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 10px;
+  border-radius: 8px;
   outline: none;
   background: var(--theme-fffdf8);
   box-shadow: 0 22px 60px rgba(45, 42, 38, 0.28);
@@ -3170,7 +3170,7 @@ textarea:focus-visible {
   padding: 0;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
   color: var(--theme-7a746c);
 }
@@ -3206,7 +3206,7 @@ textarea:focus-visible {
 }
 
 .close-dialog-error {
-  padding: 9px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-dfb7b0);
   border-radius: 6px;
   background: var(--theme-fff1ee);
@@ -3242,7 +3242,7 @@ textarea:focus-visible {
 .close-choice-button {
   display: grid;
   min-height: 58px;
-  gap: 3px;
+  gap: 4px;
   padding: 8px 12px;
 }
 
@@ -3298,7 +3298,7 @@ textarea:focus-visible {
 .config-sensitive-words-count {
   min-width: 22px;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-f4f1ea);
   color: var(--theme-7a746c);
   font-size: var(--font-size-meta);
@@ -3368,7 +3368,7 @@ textarea:focus-visible {
 .config-software-settings-list {
   overflow: hidden;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
 }
 
@@ -3378,7 +3378,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 17px 20px;
+  padding: 16px 20px;
 }
 
 .config-software-setting-row + .config-software-setting-row {
@@ -3437,7 +3437,7 @@ textarea:focus-visible {
   .config-software-setting-row {
     min-height: 84px;
     gap: 16px;
-    padding: 15px 16px;
+    padding: 16px 16px;
   }
 
   .config-software-close-row {
@@ -3478,7 +3478,7 @@ textarea:focus-visible {
   }
 
   .config-software-setting-copy {
-    gap: 11px;
+    gap: 12px;
   }
 
   .config-software-setting-icon {
@@ -3521,7 +3521,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: start;
-  gap: 9px;
+  gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--theme-e2b6ae);
   border-radius: 6px;
@@ -3545,7 +3545,7 @@ textarea:focus-visible {
   padding: 8px 12px;
   margin: 10px 0;
   border: 1px solid var(--theme-b6d3bd);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-eef7f0);
   color: var(--theme-2f6b3f);
   box-sizing: border-box;
@@ -3572,7 +3572,7 @@ textarea:focus-visible {
 
 .action-feedback.inline-notice .action-feedback-icon {
   flex-shrink: 0;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .action-feedback.inline-notice .action-feedback-text {
@@ -3640,7 +3640,7 @@ textarea:focus-visible {
 
 .management-header span {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   overflow: hidden;
   color: var(--theme-7a746c);
   font-size: var(--font-size-label);
@@ -3690,7 +3690,7 @@ textarea:focus-visible {
   width: 240px;
   flex: none;
   height: 38px;
-  padding: 0 34px 0 11px;
+  padding: 0 34px 0 12px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 6px;
   background: var(--theme-ffffff);
@@ -3753,7 +3753,7 @@ textarea:focus-visible {
 
 .oauth-card-body {
   display: grid;
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
   align-content: start;
 }
@@ -3883,7 +3883,7 @@ textarea:focus-visible {
   min-width: 0;
   min-height: 78px;
   resize: vertical;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 6px;
   background: var(--theme-ffffff);
@@ -3915,7 +3915,7 @@ textarea:focus-visible {
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--theme-e2ddd3);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-faf9f5);
 }
 
@@ -3929,7 +3929,7 @@ textarea:focus-visible {
 
 .model-config-heading > div {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -3947,7 +3947,7 @@ textarea:focus-visible {
 
 .model-config-summary {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   min-height: 48px;
   align-content: center;
@@ -4033,7 +4033,7 @@ textarea:focus-visible {
   min-height: 400px;
   padding: 16px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
   box-shadow: 0 24px 64px rgba(45, 42, 38, 0.3);
 }
@@ -4074,9 +4074,9 @@ textarea:focus-visible {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 0 8px 0 11px;
+  padding: 0 8px 0 12px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
   color: var(--theme-8a847c);
 }
@@ -4099,7 +4099,7 @@ textarea:focus-visible {
 .model-discovery-toolbar > div {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 8px;
   justify-content: flex-end;
 }
 
@@ -4107,7 +4107,7 @@ textarea:focus-visible {
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--theme-e2ddd3);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
 }
 
@@ -4126,7 +4126,7 @@ textarea:focus-visible {
 .model-discovery-inline-error {
   display: grid;
   gap: 2px;
-  padding: 8px 11px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--theme-dfb7b0);
   background: var(--theme-fff1ee);
   color: var(--theme-9f2d20);
@@ -4145,7 +4145,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  padding: 6px 11px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--theme-eeece6);
   color: var(--theme-5f5a53);
   cursor: pointer;
@@ -4288,7 +4288,7 @@ textarea:focus-visible {
 }
 
 .model-transfer-count {
-  border-radius: 5px;
+  border-radius: 6px;
   padding: 2px 6px;
   background: var(--theme-f4f2ec);
   color: var(--theme-6d6760);
@@ -4338,7 +4338,7 @@ textarea:focus-visible {
   gap: 10px;
   width: 100%;
   min-height: 44px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border: 0;
   border-bottom: 1px solid var(--theme-eeece6);
   background: transparent;
@@ -4429,7 +4429,7 @@ textarea:focus-visible {
 
 .auth-model-dialog .model-discovery-header > div {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   flex: 1;
 }
 
@@ -4452,16 +4452,16 @@ textarea:focus-visible {
 .auth-model-provider select {
   min-width: 0;
   max-width: 100%;
-  padding: 5px 8px;
+  padding: 4px 8px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--theme-ffffff);
   color: var(--theme-2d2a26);
 }
 
 .auth-model-rules {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
   font-size: var(--font-size-meta);
 }
@@ -4473,7 +4473,7 @@ textarea:focus-visible {
   resize: vertical;
   padding: 8px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--theme-ffffff);
   color: var(--theme-2d2a26);
   font: inherit;
@@ -4526,11 +4526,11 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 5px 14px;
+  gap: 4px 14px;
   min-width: 0;
-  padding: 9px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-dfbf91);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff7e9);
 }
 
@@ -4570,7 +4570,7 @@ textarea:focus-visible {
 .provider-health-model-list {
   min-height: 0;
   border: 1px solid var(--theme-e2ddd3);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
 }
 
@@ -4580,7 +4580,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 10px;
   min-height: 54px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--theme-eeece6);
 }
 
@@ -4594,7 +4594,7 @@ textarea:focus-visible {
 
 .provider-health-model-name {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -4639,7 +4639,7 @@ textarea:focus-visible {
 
 .management-card-actions button,
 .management-heading-actions button {
-  gap: 7px;
+  gap: 8px;
 }
 
 .provider-workbench {
@@ -4665,7 +4665,7 @@ textarea:focus-visible {
   min-width: 0;
   padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-primary);
 }
@@ -4738,11 +4738,11 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
   padding: 0 12px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
 }
 
@@ -4914,7 +4914,7 @@ textarea:focus-visible {
   min-height: 38px;
   padding: 0 12px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
   color: var(--theme-5f5a53);
   font-size: var(--font-size-body);
@@ -4965,11 +4965,11 @@ textarea:focus-visible {
   min-height: 88px;
   padding: 14px 0;
   border-bottom: 1px solid var(--theme-eeece6);
-  transition: background 180ms ease, box-shadow 180ms ease, opacity 160ms ease;
+  transition: background var(--dur-base) ease, box-shadow var(--dur-base) ease, opacity var(--dur-base) ease;
 }
 
 .real-provider-row.dragging {
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-faf9f5);
   box-shadow: 0 10px 28px rgb(45 42 38 / 14%);
   opacity: 0.96;
@@ -5019,7 +5019,7 @@ textarea:focus-visible {
 
 .provider-row-main {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .provider-row-main > span,
@@ -5095,7 +5095,7 @@ textarea:focus-visible {
 .provider-row-actions,
 .auth-file-actions {
   justify-content: flex-end;
-  gap: 7px;
+  gap: 8px;
 }
 
 .provider-row-actions .provider-health-button {
@@ -5189,13 +5189,13 @@ textarea:focus-visible {
 
 .api-provider-dialog textarea {
   min-height: 64px;
-  padding-block: 7px;
+  padding-block: 8px;
 }
 
 .api-provider-dialog .model-config-card,
 .api-provider-dialog .thinking-level-config {
-  gap: 7px;
-  padding: 9px 10px;
+  gap: 8px;
+  padding: 8px 10px;
 }
 
 .api-provider-dialog .model-config-summary {
@@ -5204,10 +5204,10 @@ textarea:focus-visible {
 
 .thinking-level-config {
   display: grid;
-  gap: 9px;
-  padding: 11px 12px;
+  gap: 8px;
+  padding: 12px 12px;
   border: 1px solid var(--theme-e2ddd3);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-faf9f5);
 }
 
@@ -5231,7 +5231,7 @@ textarea:focus-visible {
 .thinking-level-entry {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 7px;
+  gap: 8px;
 }
 
 .thinking-level-entry input {
@@ -5256,8 +5256,8 @@ textarea:focus-visible {
   display: inline-flex;
   min-height: 28px;
   align-items: center;
-  gap: 5px;
-  padding: 0 7px 0 9px;
+  gap: 4px;
+  padding: 0 8px 0 8px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 999px;
   background: var(--theme-fffdf8);
@@ -5267,7 +5267,7 @@ textarea:focus-visible {
 }
 
 .thinking-level-tags.readonly > span {
-  padding-right: 9px;
+  padding-right: 8px;
   border-color: var(--theme-9ca9df);
   background: var(--theme-eef1ff);
   color: var(--theme-344ca1);
@@ -5298,12 +5298,12 @@ textarea:focus-visible {
 
 .provider-advanced-settings {
   border: 1px solid var(--theme-e2ddd3);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-faf9f5);
 }
 
 .provider-advanced-settings > summary {
-  padding: 11px 12px;
+  padding: 12px 12px;
   color: var(--theme-5f5a53);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
@@ -5327,7 +5327,7 @@ textarea:focus-visible {
 
 .provider-advanced-toggle > div {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -5463,7 +5463,7 @@ textarea:focus-visible {
 .thinking-alias-dialog .thinking-field-heading {
   display: grid;
   justify-content: stretch;
-  gap: 3px;
+  gap: 4px;
 }
 
 .thinking-alias-dialog .thinking-field-heading > span {
@@ -5505,8 +5505,8 @@ textarea:focus-visible {
 .thinking-alias-panel-heading {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding-bottom: 11px;
+  gap: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--theme-e3e1db);
 }
 
@@ -5525,7 +5525,7 @@ textarea:focus-visible {
 .thinking-alias-panel-heading > div {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .thinking-alias-panel-heading h2,
@@ -5588,7 +5588,7 @@ textarea:focus-visible {
 .thinking-model-search {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   height: 36px;
   padding: 0 10px;
   border: 1px solid var(--theme-d5d2cb);
@@ -5612,7 +5612,7 @@ textarea:focus-visible {
 .thinking-source-kind {
   max-width: 105px;
   overflow: hidden;
-  padding: 3px 6px;
+  padding: 4px 6px;
   border: 1px solid var(--theme-d8d1eb);
   border-radius: 999px;
   background: var(--theme-f5f1ff);
@@ -5632,7 +5632,7 @@ textarea:focus-visible {
   max-height: 270px;
   overflow-y: auto;
   border: 1px solid var(--theme-e5e1d9);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff);
   box-shadow: 0 12px 28px rgba(45, 42, 38, 0.16);
 }
@@ -5644,7 +5644,7 @@ textarea:focus-visible {
   gap: 8px;
   width: 100%;
   min-height: 43px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border: 0;
   border-bottom: 1px solid var(--theme-eeeae2);
   background: transparent;
@@ -5668,14 +5668,14 @@ textarea:focus-visible {
 .thinking-model-option-copy {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: 4px;
 }
 
 .thinking-model-option-copy > span:first-child {
   display: flex;
   min-width: 0;
   align-items: baseline;
-  gap: 7px;
+  gap: 8px;
 }
 
 .thinking-model-option-copy strong,
@@ -5698,12 +5698,12 @@ textarea:focus-visible {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .thinking-model-source em {
   flex: none;
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: 4px;
   background: var(--theme-eeece6);
   color: var(--theme-5f5a53);
@@ -5726,7 +5726,7 @@ textarea:focus-visible {
   min-height: 82px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   color: var(--theme-8a847c);
   font-size: var(--font-size-body);
 }
@@ -5742,7 +5742,7 @@ textarea:focus-visible {
 
 .thinking-model-selection > span {
   flex: none;
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: 4px;
   background: var(--theme-eeece6);
   color: var(--theme-5f5a53);
@@ -5800,11 +5800,11 @@ textarea:focus-visible {
   min-height: 48px;
   padding: 8px 10px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff);
   color: var(--theme-7a746c);
   cursor: pointer;
-  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+  transition: border-color var(--dur-base) ease, background var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .thinking-fast-option:hover {
@@ -5826,7 +5826,7 @@ textarea:focus-visible {
 .thinking-fast-option-copy > span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-size: var(--font-size-section);
   font-weight: var(--font-weight-semibold);
 }
@@ -5877,11 +5877,11 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   min-height: 56px;
-  padding: 9px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-d8d1eb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-f8f5ff);
   color: var(--theme-654f91);
 }
@@ -5896,7 +5896,7 @@ textarea:focus-visible {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   overflow: hidden;
   color: var(--theme-3f3550);
   font-size: var(--font-size-section);
@@ -5926,14 +5926,14 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 11px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--theme-e3e1db);
 }
 
 .thinking-alias-list-heading > div {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .thinking-alias-list-heading > strong {
@@ -5958,7 +5958,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 10px;
   min-height: 66px;
-  padding: 9px 7px 9px 10px;
+  padding: 8px 8px 8px 10px;
   border-bottom: 1px solid var(--theme-eeeae2);
 }
 
@@ -5970,7 +5970,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(80px, 1fr) 16px minmax(100px, 1fr);
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -5989,7 +5989,7 @@ textarea:focus-visible {
 .thinking-alias-route-source {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .thinking-alias-route-source > small {
@@ -6002,7 +6002,7 @@ textarea:focus-visible {
 .thinking-alias-route-source > small em {
   flex: none;
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--theme-eeece6);
   color: var(--theme-6f6961);
   font-size: var(--font-size-caption);
@@ -6026,7 +6026,7 @@ textarea:focus-visible {
 
 .thinking-effort-badge {
   min-width: 52px;
-  padding: 5px 8px;
+  padding: 4px 8px;
   border: 1px solid var(--theme-d8d1eb);
   border-radius: 999px;
   background: var(--theme-f5f1ff);
@@ -6041,7 +6041,7 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 4px;
 }
 
 .thinking-effort-badge.missing {
@@ -6143,7 +6143,7 @@ textarea:focus-visible {
   display: grid;
   width: 100%;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .agent-list-items strong {
@@ -6217,12 +6217,12 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 8px;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   width: 100%;
   min-height: 58px;
-  padding: 8px 9px;
+  padding: 8px 8px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
   color: var(--theme-2d2a26);
   text-align: left;
@@ -6283,8 +6283,8 @@ textarea:focus-visible {
   grid-auto-flow: column;
   justify-self: start;
   max-width: 100%;
-  gap: 3px;
-  padding: 3px;
+  gap: 4px;
+  padding: 4px;
   overflow-x: auto;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 8px;
@@ -6404,10 +6404,10 @@ textarea:focus-visible {
 .codex-session-metrics > div {
   display: grid;
   min-width: 0;
-  gap: 5px;
-  padding: 10px 11px;
+  gap: 4px;
+  padding: 10px 12px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
 }
 
@@ -6415,7 +6415,7 @@ textarea:focus-visible {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   color: var(--theme-8a847c);
   font-size: var(--font-size-meta);
 }
@@ -6458,14 +6458,14 @@ textarea:focus-visible {
 
 .codex-session-repair-copy {
   min-width: 0;
-  gap: 9px;
+  gap: 8px;
   color: var(--theme-5f5a53);
 }
 
 .codex-session-repair-copy > div {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .codex-session-repair-copy strong {
@@ -6511,16 +6511,16 @@ textarea:focus-visible {
   height: 100%;
   border-radius: inherit;
   background: var(--theme-4f825c);
-  transition: width 0.2s ease;
+  transition: width var(--dur-slow) ease;
 }
 
 .codex-session-notice {
   min-width: 0;
   align-items: flex-start;
   gap: 8px;
-  padding: 10px 11px;
+  padding: 10px 12px;
   border: 1px solid var(--theme-b6d3bd);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-eef7f0);
   color: var(--theme-2f6b3f);
   font-size: var(--font-size-meta);
@@ -6560,7 +6560,7 @@ textarea:focus-visible {
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: currentColor;
 }
@@ -6596,7 +6596,7 @@ textarea:focus-visible {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff);
 }
 
@@ -6607,7 +6607,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 12px;
   min-height: 76px;
-  padding: 10px 11px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--theme-eeeae2);
   background: var(--theme-fff);
 }
@@ -6686,7 +6686,7 @@ textarea:focus-visible {
 }
 
 .codex-session-meta > span {
-  padding: 3px 7px;
+  padding: 4px 8px;
   border: 1px solid var(--theme-b6d3bd);
   border-radius: 999px;
   background: var(--theme-eef7f0);
@@ -6717,10 +6717,10 @@ textarea:focus-visible {
   min-height: 150px;
   place-content: center;
   justify-items: center;
-  gap: 9px;
+  gap: 8px;
   padding: 18px;
   border: 1px dashed var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-faf9f5);
   color: var(--theme-8a847c);
   font-size: var(--font-size-label);
@@ -6795,7 +6795,7 @@ textarea:focus-visible {
   max-height: 360px;
   overflow-y: auto;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff);
 }
 
@@ -6820,7 +6820,7 @@ textarea:focus-visible {
 .codex-session-cleanup-list > label > span {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .codex-session-cleanup-list strong,
@@ -6867,7 +6867,7 @@ textarea:focus-visible {
   display: grid;
   min-width: 0;
   justify-items: end;
-  gap: 5px;
+  gap: 4px;
 }
 
 .agent-launch-actions {
@@ -6916,7 +6916,7 @@ textarea:focus-visible {
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--theme-e3ded5);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-faf8f4);
 }
 
@@ -6936,7 +6936,7 @@ textarea:focus-visible {
 .deepseek-harness-launch-field textarea.config-dialog-text-input {
   height: 72px;
   min-height: 72px;
-  padding-block: 9px;
+  padding-block: 8px;
   resize: vertical;
   line-height: var(--line-height-relaxed);
 }
@@ -7000,9 +7000,9 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 11px 13px;
+  padding: 12px 12px;
   border: 1px solid var(--theme-d8d2c8);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fff);
   color: var(--theme-2d2a26);
   text-align: left;
@@ -7046,7 +7046,7 @@ textarea:focus-visible {
 .agent-launch-directory-history {
   display: grid;
   min-height: 0;
-  gap: 7px;
+  gap: 8px;
 }
 
 .agent-launch-directory-history > strong {
@@ -7062,7 +7062,7 @@ textarea:focus-visible {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   border: 1px solid var(--theme-d8d2c8);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fff);
 }
 
@@ -7073,7 +7073,7 @@ textarea:focus-visible {
   gap: 12px;
   width: 100%;
   min-height: 58px;
-  padding: 8px 11px;
+  padding: 8px 12px;
   border: 0;
   border-bottom: 1px solid var(--theme-eeeae2);
   border-radius: 0;
@@ -7098,7 +7098,7 @@ textarea:focus-visible {
 .agent-launch-directory-history-list > button > span {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .agent-launch-directory-history-list > button strong {
@@ -7117,7 +7117,7 @@ textarea:focus-visible {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   color: var(--theme-8069ad);
   font-size: var(--font-size-label);
 }
@@ -7140,15 +7140,15 @@ textarea:focus-visible {
 .agent-status-grid > div {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: 4px;
   padding: 12px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
 }
 
 .agent-status-grid span {
-  gap: 5px;
+  gap: 4px;
   color: var(--theme-8a847c);
   font-size: var(--font-size-meta);
 }
@@ -7206,7 +7206,7 @@ textarea:focus-visible {
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-faf9f5);
 }
 
@@ -7225,7 +7225,7 @@ textarea:focus-visible {
   min-width: 0;
   padding: 8px 10px;
   border: 1px solid var(--theme-d3d0c9);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff);
   color: var(--theme-2f2c28);
   font: inherit;
@@ -7256,7 +7256,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .agent-claude-code-percent-input > span {
@@ -7299,7 +7299,7 @@ textarea:focus-visible {
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fff);
   box-shadow: 0 1px 2px rgba(45, 42, 38, 0.04);
 }
@@ -7322,7 +7322,7 @@ textarea:focus-visible {
 
 .agent-desktop-model-row {
   padding: 10px;
-  border-radius: 7px;
+  border-radius: 8px;
   box-shadow: none;
 }
 
@@ -7336,7 +7336,7 @@ textarea:focus-visible {
 .agent-desktop-model-field {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: 4px;
   font-size: var(--font-size-label);
   color: var(--theme-5f5a53);
 }
@@ -7396,9 +7396,9 @@ textarea:focus-visible {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 0 11px;
+  padding: 0 12px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
   color: var(--theme-8a847c);
 }
@@ -7425,14 +7425,14 @@ textarea:focus-visible {
   list-style: none;
   overflow: auto;
   border: 1px solid var(--theme-e2ddd3);
-  border-radius: 7px;
+  border-radius: 8px;
 }
 
 .agent-desktop-picker-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 11px;
+  padding: 8px 12px;
   cursor: pointer;
 }
 
@@ -7491,7 +7491,7 @@ textarea:focus-visible {
   flex: none;
   align-items: center;
   gap: 6px;
-  padding: 4px 7px;
+  padding: 4px 8px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 999px;
   background: var(--theme-faf9f5);
@@ -7526,7 +7526,7 @@ textarea:focus-visible {
   gap: 8px;
   padding: 6px 8px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fff);
   color: var(--theme-5f5a53);
   cursor: pointer;
@@ -7556,7 +7556,7 @@ textarea:focus-visible {
 .agent-section-heading > div {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .agent-section-heading strong {
@@ -7588,7 +7588,7 @@ textarea:focus-visible {
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  padding: 7px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 6px;
   background: var(--theme-fff);
@@ -7670,7 +7670,7 @@ textarea:focus-visible {
 
 .agent-model-trigger > svg {
   color: var(--theme-8a847c);
-  transition: transform 0.16s ease;
+  transition: transform var(--dur-base) ease;
 }
 
 .agent-model-picker.open .agent-model-trigger > svg {
@@ -7682,8 +7682,8 @@ textarea:focus-visible {
   z-index: 45;
   display: grid;
   grid-template-rows: 40px minmax(0, 1fr) 28px;
-  gap: 7px;
-  padding: 9px;
+  gap: 8px;
+  padding: 8px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 8px;
   background: var(--theme-fffdf8);
@@ -7729,10 +7729,10 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 18px;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   width: 100%;
   min-height: 48px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border: 0;
   border-bottom: 1px solid var(--theme-eeeae2);
   background: var(--theme-fff);
@@ -7756,7 +7756,7 @@ textarea:focus-visible {
 .agent-model-option > span {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 4px;
 }
 
 .agent-model-option strong,
@@ -7875,7 +7875,7 @@ textarea:focus-visible {
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
 }
 
@@ -7892,11 +7892,11 @@ textarea:focus-visible {
 .codex-catalog-search {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   height: 38px;
   padding: 0 10px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-ffffff);
   color: var(--theme-716b61);
 }
@@ -7922,9 +7922,9 @@ textarea:focus-visible {
   display: grid;
   gap: 2px;
   width: 100%;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
   color: var(--theme-2d2a26);
   text-align: left;
@@ -7977,7 +7977,7 @@ textarea:focus-visible {
 
 .codex-catalog-model-heading > div {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -8006,7 +8006,7 @@ textarea:focus-visible {
 .codex-catalog-form > label {
   display: grid;
   align-content: start;
-  gap: 7px;
+  gap: 8px;
   color: var(--theme-5f5a53);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
@@ -8024,9 +8024,9 @@ textarea:focus-visible {
 .codex-catalog-form textarea {
   width: 100%;
   min-width: 0;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 7px;
+  border-radius: 8px;
   outline: 0;
   background: var(--theme-ffffff);
   color: var(--theme-2d2a26);
@@ -8061,13 +8061,13 @@ textarea:focus-visible {
 .codex-catalog-choice-group {
   min-width: 0;
   margin: 0;
-  padding: 11px;
+  padding: 12px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 8px;
 }
 
 .codex-catalog-choice-group legend {
-  padding: 0 5px;
+  padding: 0 4px;
   color: var(--theme-5f5a53);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
@@ -8077,7 +8077,7 @@ textarea:focus-visible {
 .codex-catalog-checkboxes {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 8px;
 }
 
 .codex-catalog-chips label,
@@ -8097,7 +8097,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 4px;
   min-height: 30px;
-  padding: 5px 9px;
+  padding: 4px 8px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 999px;
   background: var(--theme-faf8f4);
@@ -8124,7 +8124,7 @@ textarea:focus-visible {
   grid-template-columns: auto minmax(0, 1fr) !important;
   align-items: center;
   min-height: 42px;
-  padding: 9px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 8px;
   background: var(--theme-faf8f4);
@@ -8201,7 +8201,7 @@ textarea:focus-visible {
   width: min(420px, 100%);
   padding: 20px;
   border: 1px solid var(--theme-d5d2cb);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
   box-shadow: 0 18px 48px rgba(45, 42, 38, 0.24);
 }
@@ -8297,14 +8297,14 @@ textarea:focus-visible {
   gap: 12px;
   padding: 8px 12px;
   border: 1px solid var(--theme-d8d2c8);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-faf8f4);
   color: var(--theme-5f5a53);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   user-select: none;
-  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  transition: border-color var(--dur-base) ease, background-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
 }
 
 .agent-oauth-configuration:hover {
@@ -8436,7 +8436,7 @@ textarea:focus-visible {
 .usage-refresh-btn {
   width: 34px;
   height: 34px;
-  border-radius: 7px;
+  border-radius: 8px;
   border: 1px solid var(--theme-e3e1db);
   background: var(--theme-fffdf8);
   color: var(--theme-5f5a53);
@@ -8444,7 +8444,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
 }
 
 .usage-refresh-btn:hover:not(:disabled) {
@@ -8461,12 +8461,12 @@ textarea:focus-visible {
 .usage-collector-state {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
   height: 34px;
   padding: 0 10px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
   white-space: nowrap;
 }
@@ -8504,17 +8504,17 @@ textarea:focus-visible {
 }
 
 .usage-collector-state > span:last-child {
-  padding-left: 7px;
+  padding-left: 8px;
   border-left: 1px solid var(--theme-e3e1db);
 }
 
 /* Tab Switcher */
 .usage-tabs {
   display: inline-flex;
-  gap: 3px;
-  padding: 3px;
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--bg-tertiary);
   width: fit-content;
 }
@@ -8532,7 +8532,7 @@ textarea:focus-visible {
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--dur-base) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .usage-tabs button:hover:not(.active) {
@@ -8594,14 +8594,14 @@ textarea:focus-visible {
 .usage-filter-item input {
   min-width: 0;
   height: 34px;
-  padding: 0 9px;
+  padding: 0 8px;
   border: 1px solid var(--theme-d5d2cb);
   border-radius: 6px;
   background: var(--theme-fff);
   color: var(--theme-2d2a26);
   font-size: var(--font-size-meta);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
 }
 
 .usage-filter-item select:focus,
@@ -8690,13 +8690,13 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   padding: 10px 12px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 8px;
   background: var(--theme-fffdf8);
   min-width: 0;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: transform var(--dur-base) ease, box-shadow var(--dur-base) ease, border-color var(--dur-base) ease;
 }
 
 .usage-stat-card:hover {
@@ -8737,7 +8737,7 @@ textarea:focus-visible {
   grid-template-rows: auto minmax(0, 1fr);
   padding: 16px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
 }
 
@@ -8795,15 +8795,15 @@ textarea:focus-visible {
 .usage-trend-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 7px;
+  gap: 4px;
+  padding: 2px 8px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--theme-7a746c);
   font-size: var(--font-size-caption);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
   user-select: none;
 }
 
@@ -8895,7 +8895,7 @@ textarea:focus-visible {
 
 .usage-trend-bar {
   opacity: 0.8;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--dur-base) ease;
 }
 
 .usage-trend-bar.is-active {
@@ -8971,9 +8971,9 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding-bottom: 5px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--theme-eeeae2);
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .usage-trend-tooltip-header strong {
@@ -9045,7 +9045,7 @@ textarea:focus-visible {
   gap: clamp(10px, 3cqi, 22px);
   padding: clamp(8px, 2cqb, 20px) 12px;
   border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border-radius: 12px;
 }
 
 .usage-token-donut {
@@ -9080,7 +9080,7 @@ textarea:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   text-align: center;
 }
 
@@ -9095,7 +9095,7 @@ textarea:focus-visible {
 
 .usage-token-donut-label span {
   color: var(--text-tertiary);
-  font-size: clamp(9px, 5cqi, 12px);
+  font-size: clamp(11px, 5cqi, 12px);
   line-height: 1.4;
 }
 
@@ -9267,7 +9267,7 @@ textarea:focus-visible {
   grid-template-rows: auto auto;
   align-content: start;
   align-items: start;
-  gap: 5px 12px;
+  gap: 4px 12px;
   margin: 0;
 }
 
@@ -9280,7 +9280,7 @@ textarea:focus-visible {
   grid-template-rows: subgrid;
   grid-row: span 2;
   min-width: 0;
-  gap: 5px;
+  gap: 4px;
 }
 
 .usage-token-context-metrics dt {
@@ -9417,12 +9417,12 @@ textarea:focus-visible {
   }
 
   .usage-token-results .usage-token-context-metrics dt {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .usage-token-results .usage-token-context-metrics {
     grid-template-columns: 1.1fr 0.8fr 1.2fr;
-    column-gap: 3px;
+    column-gap: 4px;
   }
 
   .usage-token-results .usage-token-context-metrics {
@@ -9474,7 +9474,7 @@ textarea:focus-visible {
 .usage-events-count-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  padding: 4px 8px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 999px;
   background: var(--theme-f4f1ea);
@@ -9517,7 +9517,7 @@ textarea:focus-visible {
   height: 30px;
   padding: 4px 8px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--theme-faf8f4);
   color: var(--theme-2d2a26);
   font-size: var(--font-size-caption);
@@ -9551,14 +9551,14 @@ textarea:focus-visible {
   height: 30px;
   padding: 0 8px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--theme-fffdf8);
   color: var(--theme-5f5a53);
   cursor: pointer;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  transition: all 0.15s ease;
-  gap: 3px;
+  transition: all var(--dur-base) ease;
+  gap: 4px;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -9594,11 +9594,11 @@ textarea:focus-visible {
   font-weight: var(--font-weight-semibold);
   background: var(--theme-f4f1ea);
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 5px;
+  border-radius: 6px;
   color: var(--theme-7a746c);
   cursor: pointer;
   line-height: 1.2;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -9624,10 +9624,10 @@ textarea:focus-visible {
   padding: 0;
   background: var(--theme-f4f1ea);
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 5px;
+  border-radius: 6px;
   color: var(--theme-7a746c);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--dur-base) ease;
   flex-shrink: 0;
 }
 
@@ -9670,7 +9670,7 @@ textarea:focus-visible {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   color: var(--theme-5f5a53);
 }
 
@@ -9696,7 +9696,7 @@ textarea:focus-visible {
   margin: 0 0 16px;
   padding: 14px 16px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--bg-tertiary);
 }
 
@@ -9713,7 +9713,7 @@ textarea:focus-visible {
 
 .usage-row-height-heading > div {
   display: grid;
-  gap: 3px;
+  gap: 4px;
 }
 
 .usage-row-height-heading strong,
@@ -9732,7 +9732,7 @@ textarea:focus-visible {
 .usage-settings-switch {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   border: 0;
   background: transparent;
   color: var(--text-secondary);
@@ -9795,8 +9795,8 @@ textarea:focus-visible {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
+  gap: 8px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 6px;
   background: var(--theme-fffdf8);
@@ -9943,7 +9943,7 @@ textarea:focus-visible {
 .usage-events-table th,
 .usage-events-table td {
   height: 44px;
-  padding: 7px 11px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--theme-eeeae2);
   color: var(--theme-5f5a53);
   white-space: nowrap;
@@ -9953,7 +9953,7 @@ textarea:focus-visible {
 
 .usage-events-table tbody tr {
   cursor: default;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--dur-base) ease;
 }
 
 .usage-events-table tbody tr:hover td {
@@ -10023,7 +10023,7 @@ textarea:focus-visible {
   border-radius: 1px;
   background-color: var(--theme-bdb5a9);
   opacity: 0.9;
-  transition: background-color 0.15s ease, height 0.15s ease, width 0.15s ease, opacity 0.15s ease;
+  transition: background-color var(--dur-base) ease, height var(--dur-base) ease, width var(--dur-base) ease, opacity var(--dur-base) ease;
 }
 
 /* Keep the final resize handle from adding overflow when all columns fit. */
@@ -10109,8 +10109,8 @@ body.table-col-resizing * {
 .usage-result {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 7px;
+  gap: 4px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-caption);
@@ -10220,7 +10220,7 @@ body.table-col-resizing * {
   gap: 14px;
   padding: 16px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
 }
 
@@ -10259,7 +10259,7 @@ body.table-col-resizing * {
 }
 
 .usage-data-management-badge {
-  padding: 5px 9px;
+  padding: 4px 8px;
   border: 1px solid var(--theme-d8d4cc);
   border-radius: 999px;
   color: var(--theme-716b61);
@@ -10280,7 +10280,7 @@ body.table-col-resizing * {
 
 .usage-storage-limit-action small {
   display: block;
-  margin-top: 7px;
+  margin-top: 8px;
   color: var(--theme-8a847c);
   font-size: var(--font-size-caption);
 }
@@ -10297,7 +10297,7 @@ body.table-col-resizing * {
   align-items: center;
   overflow: hidden;
   border: 1px solid var(--theme-d8d4cc);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-fffdf8);
 }
 
@@ -10335,10 +10335,10 @@ body.table-col-resizing * {
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   padding: 12px;
   border: 1px solid var(--theme-d8d4cc);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .usage-data-management-result span {
@@ -10425,7 +10425,7 @@ body.table-col-resizing * {
   max-height: min(760px, calc(100vh - 32px));
   padding: 20px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-fff);
   color: var(--theme-2d2a26);
 }
@@ -10453,7 +10453,7 @@ body.table-col-resizing * {
   grid-template-columns: minmax(200px, 1.5fr) repeat(4, minmax(115px, 1fr));
   gap: 8px;
   align-items: end;
-  padding: 9px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--theme-eeeae2);
 }
 .usage-price-sync-row label:not(.usage-price-sync-identity) { display: grid; gap: 4px; font-size: var(--font-size-caption); }
@@ -10541,7 +10541,7 @@ body.table-col-resizing * {
 .usage-pricing-table th,
 .usage-pricing-table td {
   height: 42px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--theme-eeeae2);
   color: var(--theme-5f5a53);
   text-align: center;
@@ -10581,7 +10581,7 @@ body.table-col-resizing * {
 .usage-price-row-actions {
   display: flex;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .real-auth-files-panel {
@@ -10630,9 +10630,9 @@ body.table-col-resizing * {
   grid-column: 2 / -1;
   align-items: center;
   flex-wrap: wrap;
-  gap: 5px 8px;
+  gap: 4px 8px;
   min-width: 0;
-  margin-top: -7px;
+  margin-top: -8px;
   color: var(--theme-7a746c);
   font-size: var(--font-size-meta);
 }
@@ -10670,7 +10670,7 @@ body.table-col-resizing * {
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: var(--theme-f2f0ea);
   white-space: nowrap;
@@ -10699,7 +10699,7 @@ body.table-col-resizing * {
 
 .auth-file-main {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .auth-file-title {
@@ -10740,7 +10740,7 @@ body.table-col-resizing * {
 
 .auth-priority-target {
   overflow: hidden;
-  padding: 9px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--theme-e3e1db);
   border-radius: 6px;
   background: var(--theme-f4f1ea);
@@ -10876,7 +10876,7 @@ body.table-col-resizing * {
 .real-quota-card-header .quota-card-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex: 0 0 auto;
 }
 
@@ -10900,7 +10900,7 @@ body.table-col-resizing * {
 
 .quota-row-list {
   display: grid;
-  gap: 13px;
+  gap: 12px;
 }
 
 .app-confirm-backdrop {
@@ -10929,7 +10929,7 @@ body.table-col-resizing * {
   gap: 10px;
   margin: 0;
   padding: 12px;
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-f4f2ec);
 }
 
@@ -10956,9 +10956,9 @@ body.table-col-resizing * {
 
 .quota-action-feedback {
   display: flex;
-  gap: 7px;
+  gap: 8px;
   align-items: flex-start;
-  padding: 9px 11px;
+  padding: 8px 12px;
   border-radius: 6px;
   background: var(--theme-f4f2ec);
   font-size: var(--font-size-label);
@@ -10968,7 +10968,7 @@ body.table-col-resizing * {
 
 .quota-action-feedback svg {
   flex-shrink: 0;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .quota-action-feedback.error {
@@ -11148,7 +11148,7 @@ body.table-col-resizing * {
 .install-dialog {
   display: grid;
   grid-template-rows: 48px 42px 10px 22px 72px 40px;
-  gap: 15px;
+  gap: 16px;
   width: min(420px, 100%);
   height: 360px;
   padding: 24px;
@@ -11165,7 +11165,7 @@ body.table-col-resizing * {
 
 .install-dialog-heading > span {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   color: var(--theme-7a746c);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
@@ -11219,7 +11219,7 @@ body.table-col-resizing * {
   height: 100%;
   border-radius: inherit;
   background: var(--theme-2d2a26);
-  transition: width 160ms ease;
+  transition: width var(--dur-base) ease;
 }
 
 .install-dialog.success .install-progress-fill {
@@ -11355,7 +11355,7 @@ body.table-col-resizing * {
   gap: 8px;
   padding: 6px 6px 6px 10px;
   border: 1px solid var(--theme-e3e1db);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--theme-faf8f2);
 }
 
@@ -11386,7 +11386,7 @@ body.table-col-resizing * {
 .app-update-dialog .install-dialog-message {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 @keyframes install-progress-slide {
@@ -11959,7 +11959,7 @@ body.table-col-resizing * {
   .codex-session-row,
   .codex-session-row:has(.codex-session-checkbox) {
     grid-template-columns: 20px minmax(0, 1fr);
-    gap: 9px;
+    gap: 8px;
   }
 
   .codex-session-row:not(:has(.codex-session-checkbox)) .codex-session-main,
@@ -12166,7 +12166,7 @@ body.table-col-resizing * {
 
   .real-auth-file-row > .provider-logo {
     align-self: start;
-    margin-top: 3px;
+    margin-top: 4px;
   }
 
   .info-list div {
@@ -12241,7 +12241,7 @@ body.table-col-resizing * {
 
 @media (prefers-reduced-motion: reduce) {
   .install-progress-track.unknown.is-running .install-progress-fill {
-    animation-duration: 2.2s;
+    animation: none;
   }
 }
 

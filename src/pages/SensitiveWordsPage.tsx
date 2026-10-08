@@ -86,7 +86,7 @@ function WordEditor({ provider, entries, composer, disabled, onAdd, onCompose, o
               <button type="button" className="icon-button quiet" disabled={disabled}
                 title={t('common.delete')} aria-label={`${t('common.delete')} ${title} ${index + 1}`}
                 onClick={() => onRemove(provider, entry.id)}>
-                <Trash2 size={15} aria-hidden="true" />
+                <Trash2 size={16} aria-hidden="true" />
               </button>
             </div>
           ))}

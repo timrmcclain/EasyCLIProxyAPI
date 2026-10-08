@@ -325,7 +325,7 @@ export function CodexSessionsPanel() {
             disabled={busy || loading}
             onClick={() => void loadPage(currentOffset)}
           >
-            <RefreshCw size={15} className={loading ? 'spin' : ''} />
+            <RefreshCw size={16} className={loading ? 'spin' : ''} />
             {t('agents.sessions.refresh')}
           </button>
         </div>
@@ -338,7 +338,7 @@ export function CodexSessionsPanel() {
             className="codex-session-database-metric"
             title={page?.databasePaths.join('\n') || page?.codexHome}
           >
-            <span><Database size={13} />{t('agents.sessions.database')}</span>
+            <span><Database size={14} />{t('agents.sessions.database')}</span>
             <strong>{page?.databasePaths[0] || t('agents.sessions.databaseMissing')}</strong>
           </div>
         </div>
@@ -358,7 +358,7 @@ export function CodexSessionsPanel() {
               disabled={busy || loading}
               onClick={() => void previewCleanup()}
             >
-              {operation === 'preview' ? <LoaderCircle size={15} className="spin" /> : <ScanSearch size={15} />}
+              {operation === 'preview' ? <LoaderCircle size={16} className="spin" /> : <ScanSearch size={16} />}
               {operation === 'preview' ? t('agents.sessions.scanningIndex') : t('agents.sessions.scanIndex')}
             </button>
             <button
@@ -367,7 +367,7 @@ export function CodexSessionsPanel() {
               disabled={busy}
               onClick={() => void repairSessions()}
             >
-              {operation === 'repair' ? <LoaderCircle size={15} className="spin" /> : <ShieldCheck size={15} />}
+              {operation === 'repair' ? <LoaderCircle size={16} className="spin" /> : <ShieldCheck size={16} />}
               {operation === 'repair' ? t('agents.sessions.repairing') : t('agents.sessions.repairNow')}
             </button>
           </div>
@@ -478,7 +478,7 @@ export function CodexSessionsPanel() {
             title={t('agents.sessions.previousPage')}
             disabled={busy || loading || !page || page.offset === 0}
             onClick={() => void loadPage(Math.max(0, currentOffset - (page?.limit ?? PAGE_SIZE)))}
-          ><ArrowLeft size={15} /></button>
+          ><ArrowLeft size={16} /></button>
           <span>{t('agents.sessions.pageNumber', { page: currentPage })}</span>
           <button
             type="button"
@@ -487,18 +487,18 @@ export function CodexSessionsPanel() {
             title={t('agents.sessions.nextPage')}
             disabled={busy || loading || !page?.hasMore}
             onClick={() => void loadPage(currentOffset + (page?.limit ?? PAGE_SIZE))}
-          ><ArrowRight size={15} /></button>
+          ><ArrowRight size={16} /></button>
         </div>
       </section>
 
       {deleteConfirmation ? (
         <div className="config-dialog-backdrop">
           <section ref={deleteDialogRef} className="config-dialog codex-session-dialog" role="alertdialog" aria-modal="true" aria-labelledby="codex-session-delete-title">
-            <div className="config-dialog-heading"><div><TriangleAlert size={19} /><h2 id="codex-session-delete-title">{deleteConfirmation.title}</h2></div></div>
+            <div className="config-dialog-heading"><div><TriangleAlert size={20} /><h2 id="codex-session-delete-title">{deleteConfirmation.title}</h2></div></div>
             <p>{deleteConfirmation.description}</p>
             <div className="config-dialog-actions two-actions">
               <button type="button" className="secondary-button" onClick={() => setDeleteConfirmation(null)}>{t('common.cancel')}</button>
-              <button type="button" className="danger-button" onClick={() => void confirmDelete()}><Trash2 size={15} />{t('agents.sessions.confirmDelete')}</button>
+              <button type="button" className="danger-button" onClick={() => void confirmDelete()}><Trash2 size={16} />{t('agents.sessions.confirmDelete')}</button>
             </div>
           </section>
         </div>
@@ -508,7 +508,7 @@ export function CodexSessionsPanel() {
         <div className="config-dialog-backdrop">
           <section ref={cleanupDialogRef} className="config-dialog codex-session-cleanup-dialog" role="dialog" aria-modal="true" aria-labelledby="codex-session-cleanup-title">
             <div className="config-dialog-heading">
-              <div><TriangleAlert size={19} /><h2 id="codex-session-cleanup-title">{t('agents.sessions.cleanupTitle')}</h2></div>
+              <div><TriangleAlert size={20} /><h2 id="codex-session-cleanup-title">{t('agents.sessions.cleanupTitle')}</h2></div>
               <button type="button" className="codex-session-dialog-close" aria-label={t('common.close')} onClick={() => setCleanupPreview(null)}><X size={16} /></button>
             </div>
             <p>{t('agents.sessions.cleanupDescription', { count: cleanupPreview.candidates.length })}</p>
@@ -543,7 +543,7 @@ export function CodexSessionsPanel() {
             <div className="config-dialog-actions two-actions">
               <button type="button" className="secondary-button" disabled={operation === 'cleanup'} onClick={() => setCleanupPreview(null)}>{t('common.cancel')}</button>
               <button type="button" className="danger-button" disabled={operation === 'cleanup' || cleanupSelectedIds.size === 0} onClick={() => void applyCleanup()}>
-                {operation === 'cleanup' ? <LoaderCircle size={15} className="spin" /> : <Trash2 size={15} />}
+                {operation === 'cleanup' ? <LoaderCircle size={16} className="spin" /> : <Trash2 size={16} />}
                 {t('agents.sessions.cleanupConfirm', { count: cleanupSelectedIds.size })}
               </button>
             </div>

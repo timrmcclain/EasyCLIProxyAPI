@@ -667,7 +667,7 @@ export function UsageRecordsPage() {
             title={t('usage.refresh')}
             aria-label={t('usage.refresh')}
           >
-            <RefreshCw size={15} className={loading ? 'spin' : ''} />
+            <RefreshCw size={16} className={loading ? 'spin' : ''} />
           </button>
         </div>
       </div>

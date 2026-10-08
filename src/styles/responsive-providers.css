@@ -43,7 +43,7 @@
 .api-access-page .provider-category-panel strong {
   justify-self: center;
   min-width: 22px;
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: 6px;
   background: var(--bg-secondary);
   color: var(--text-quaternary);
@@ -133,7 +133,7 @@
 .api-access-page .provider-row-main {
   grid-column: 2;
   grid-row: 1;
-  gap: 7px;
+  gap: 8px;
 }
 
 .api-access-page .provider-row-title {
@@ -144,7 +144,7 @@
 
 .api-access-page .provider-row-title strong {
   max-width: 100%;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -162,7 +162,7 @@
 
 .api-access-page .provider-row-title .state-pill {
   min-height: 22px;
-  padding: 1px 7px;
+  padding: 1px 8px;
   font-size: 11px;
   line-height: 18px;
 }
@@ -299,7 +299,7 @@
 @container credential-files (max-width: 680px) {
   .auth-files-page .auth-files-toolbar {
     grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0 9px;
+    gap: 0 8px;
   }
 
   .auth-files-page .auth-files-toolbar input {

@@ -609,7 +609,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
             <div className="config-field-label"><label htmlFor="thinking-model-search">{t('aliases.originalModel')}</label><SettingsHelp label={t('aliases.originalModel')}>{t('aliases.sourceHint')}</SettingsHelp></div>
             <div className="thinking-model-picker" ref={modelPickerRef}>
               <div className="thinking-model-search">
-                {loading ? <LoaderCircle size={15} className="spin" /> : <Search size={15} />}
+                {loading ? <LoaderCircle size={16} className="spin" /> : <Search size={16} />}
                 <input
                   id="thinking-model-search"
                   ref={modelSearchRef}
@@ -693,7 +693,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
                             </small>
                           </span>
                         </span>
-                        {selected ? <Check size={15} /> : null}
+                        {selected ? <Check size={16} /> : null}
                       </button>
                     );
                   })}
@@ -752,7 +752,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
               </div>
               <label className={`thinking-fast-option${fastEnabled ? ' active' : ''}`}>
                 <span className="thinking-fast-option-copy">
-                  <span><Zap size={15} /> Fast</span>
+                  <span><Zap size={16} /> Fast</span>
                 </span>
                 <span className="switch-control thinking-fast-switch">
                   <input
@@ -796,7 +796,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
             <div className="thinking-alias-preview">
               {fastEnabled && !normalizedEffort ? <Zap size={18} /> : <BrainCircuit size={18} />}
               <div>
-                <span>{selectedSource?.model || t('aliases.notSelected')} <ArrowRight size={13} /> {alias || t('aliases.enterAlias')}</span>
+                <span>{selectedSource?.model || t('aliases.notSelected')} <ArrowRight size={14} /> {alias || t('aliases.enterAlias')}</span>
               </div>
             </div>
             </div>
@@ -855,7 +855,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
                   ) : null}
                 <button type="button" className="icon-button quiet" disabled={loading || Boolean(busyAlias)}
                   onClick={() => void editAlias(entry)} title={t('common.edit')} aria-label={t('common.edit')}>
-                  <Pencil size={15} />
+                  <Pencil size={16} />
                 </button>
                 </div>
                 <button
@@ -867,8 +867,8 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
                   aria-label={t('aliases.delete', { alias: entry.alias })}
                 >
                   {busyAction === 'delete' && busyAlias === entry.alias
-                    ? <LoaderCircle size={15} className="spin" />
-                    : <Trash2 size={15} />}
+                    ? <LoaderCircle size={16} className="spin" />
+                    : <Trash2 size={16} />}
                 </button>
               </article>
             ))}

@@ -1112,12 +1112,12 @@ export function ConfigPanelPage() {
             {settingsCategories.map(item => {
               const Icon = CATEGORY_ICONS[item.id];
               const dirty = categoryDirty(item.id);
-              return <button type="button" key={item.id} id={`config-subpage-tab-${item.id}`} role="tab" className={activeSubpage === item.id ? 'active' : ''} aria-selected={activeSubpage === item.id} aria-controls="config-subpage-panel" tabIndex={activeSubpage === item.id ? 0 : -1} onClick={() => activateConfigSubpage(item.id)} onKeyDown={event => handleConfigTabKeyDown(event, item.id)}><Icon size={17} aria-hidden="true" /><span>{templateText(item.title, locale)}</span>{dirty ? <span className="config-nav-dirty" title={st('dirty')}><span className="sr-only">{st('dirty')}</span></span> : null}</button>;
+              return <button type="button" key={item.id} id={`config-subpage-tab-${item.id}`} role="tab" className={activeSubpage === item.id ? 'active' : ''} aria-selected={activeSubpage === item.id} aria-controls="config-subpage-panel" tabIndex={activeSubpage === item.id ? 0 : -1} onClick={() => activateConfigSubpage(item.id)} onKeyDown={event => handleConfigTabKeyDown(event, item.id)}><Icon size={16} aria-hidden="true" /><span>{templateText(item.title, locale)}</span>{dirty ? <span className="config-nav-dirty" title={st('dirty')}><span className="sr-only">{st('dirty')}</span></span> : null}</button>;
             })}
           </div>
         </div>
         <div className="config-settings-content" id="config-subpage-panel" role="tabpanel" aria-labelledby={`config-subpage-tab-${activeSubpage}`}>
-          {searching ? <section className="config-search-results" aria-label={st('results')}><div className="config-search-heading"><h2>{st('results')}</h2><span role="status">{searchResults.length}</span></div>{searchResults.length ? <div className="config-search-result-list">{searchResults.map(entry => <button type="button" key={`${entry.target}-${entry.field ?? ''}`} onClick={() => navigateToSetting(entry)}><span className="config-search-result-copy"><strong>{entry.title}</strong><small>{templateText(settingsCategories.find(item => item.id === entry.category)!.title, locale)}{entry.context ? ` / ${entry.context}` : ''}</small></span><ChevronRight size={17} aria-hidden="true" /></button>)}</div> : <p className="config-search-empty">{st('noResults')}</p>}</section> : null}
+          {searching ? <section className="config-search-results" aria-label={st('results')}><div className="config-search-heading"><h2>{st('results')}</h2><span role="status">{searchResults.length}</span></div>{searchResults.length ? <div className="config-search-result-list">{searchResults.map(entry => <button type="button" key={`${entry.target}-${entry.field ?? ''}`} onClick={() => navigateToSetting(entry)}><span className="config-search-result-copy"><strong>{entry.title}</strong><small>{templateText(settingsCategories.find(item => item.id === entry.category)!.title, locale)}{entry.context ? ` / ${entry.context}` : ''}</small></span><ChevronRight size={16} aria-hidden="true" /></button>)}</div> : <p className="config-search-empty">{st('noResults')}</p>}</section> : null}
           <div className="config-settings-cards">
 <section id="config-native-keys" tabIndex={-1} hidden={searching || activeSubpage !== 'general'} className="panel config-keys-panel">
           <div className="config-panel-heading">
@@ -1406,7 +1406,7 @@ export function ConfigPanelPage() {
               <div className="config-network-field config-proxy-field">
                 <div className="config-proxy-heading">
                   <label className="config-network-label" htmlFor="config-network-proxy-url">
-                    <Link2 size={15} aria-hidden="true" />
+                    <Link2 size={16} aria-hidden="true" />
                     {t('config.network.proxyUrl')}
                   </label>
                   <SettingsHelp label={t('config.network.proxyUrl')}>{t('config.network.proxyHint')} {t('config.network.systemProxyHint')}</SettingsHelp>
@@ -1620,7 +1620,7 @@ export function ConfigPanelPage() {
 
               <div className="config-network-field">
                 <span className="config-field-label"><label htmlFor="config-input-config-network-sessionTtl">
-                  <Clock3 size={15} aria-hidden="true" />
+                  <Clock3 size={16} aria-hidden="true" />
                   {t('config.network.sessionTtl')}
                 </label><SettingsHelp label={t('config.network.sessionTtl')}>{t('config.network.sessionTtlHint')}</SettingsHelp></span>
                 <input
@@ -1647,7 +1647,7 @@ export function ConfigPanelPage() {
 
               <div className="config-network-field config-network-routing-field">
                 <span className="config-network-label">
-                  <Route size={15} aria-hidden="true" />
+                  <Route size={16} aria-hidden="true" />
                   {t('config.routing.title')}
                   <span className="config-inline-status">{st('automatic')}</span>
                 </span>
@@ -2247,7 +2247,7 @@ export function ConfigPanelPage() {
           >
             <div className="config-dialog-heading">
               <div>
-                <KeyRound size={19} aria-hidden="true" />
+                <KeyRound size={20} aria-hidden="true" />
                 <h2 id="add-api-key-title">
                   {editingApiKey === null ? t('config.keys.addTitle') : t('config.keys.editTitle')}
                 </h2>
@@ -2288,9 +2288,9 @@ export function ConfigPanelPage() {
                   aria-label={showApiKey ? t('config.keys.hide') : t('config.keys.show')}
                 >
                   {showApiKey ? (
-                    <EyeOff size={17} aria-hidden="true" />
+                    <EyeOff size={16} aria-hidden="true" />
                   ) : (
-                    <Eye size={17} aria-hidden="true" />
+                    <Eye size={16} aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -2352,7 +2352,7 @@ export function ConfigPanelPage() {
           >
             <div className="config-dialog-heading">
               <div>
-                <Trash2 size={19} aria-hidden="true" />
+                <Trash2 size={20} aria-hidden="true" />
                 <h2 id="delete-api-key-title">{t('config.keys.deleteTitle')}</h2>
               </div>
             </div>
@@ -2360,7 +2360,7 @@ export function ConfigPanelPage() {
             {renderFeedback(keyFeedback)}
             {deletingLastKey ? (
               <div className="config-delete-warning">
-                <AlertCircle size={17} aria-hidden="true" />
+                <AlertCircle size={16} aria-hidden="true" />
                 <span>{t('config.keys.deleteAllWarning')}</span>
               </div>
             ) : null}

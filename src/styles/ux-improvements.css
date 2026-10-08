@@ -1,5 +1,5 @@
 /* Keep the ledger dense; details expand only when requested. */
-.ux-insight,.ux-change-preview,.ux-models { border:1px solid var(--border-primary); border-radius:10px; padding:12px 16px; margin:12px 0; background:var(--bg-secondary); color:var(--text-primary); font-size:13px; }
+.ux-insight,.ux-change-preview,.ux-models { border:1px solid var(--border-primary); border-radius:8px; padding:12px 16px; margin:12px 0; background:var(--bg-secondary); color:var(--text-primary); font-size:13px; }
 .ux-insight summary,.ux-change-preview summary,.ux-models summary { cursor:pointer; font-weight:600; min-height:28px; align-content:center; }
 .ux-insight p,.ux-models p,.ux-change-preview p { color:var(--text-secondary); line-height:1.6; }
 .ux-insight header,.ux-overview-tools { display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -33,10 +33,10 @@
 .account-dashboard .ad-quota-reset,.account-dashboard .ad-sort select { font-size:12px; }
 .ux-insight button,.ux-restore-actions button { min-height:34px; }
 .ux-insight button:focus-visible,.ux-insight summary:focus-visible,.ux-models summary:focus-visible,.ux-alerts input:focus-visible { outline:2px solid var(--personal-accent-text); outline-offset:3px; }
-@media (prefers-reduced-motion:no-preference) { .ux-insight button { transition:background-color 150ms ease,border-color 150ms ease; } }
+@media (prefers-reduced-motion:no-preference) { .ux-insight button { transition:background-color var(--dur-base) ease,border-color var(--dur-base) ease; } }
 @media(max-width:640px) { .ux-overview-tools { align-items:stretch; flex-direction:column; gap:0; } .ux-recovery li,.ux-models li,.ux-change-preview dl > div { grid-template-columns:1fr; } .ux-recovery time { grid-column:auto; } .ux-models code { overflow-wrap:anywhere; } }
 
 .ux-request-help { text-align:left; max-width:320px; font-size:12px; }
-.ux-request-help summary { cursor:pointer; padding:5px 0; }
-.ux-request-help p { margin:5px 0; line-height:1.5; color:var(--text-primary); }
+.ux-request-help summary { cursor:pointer; padding:4px 0; }
+.ux-request-help p { margin:4px 0; line-height:1.5; color:var(--text-primary); }
 .ux-request-help small { white-space:pre-wrap; overflow-wrap:anywhere; max-height:180px; overflow:auto; }
