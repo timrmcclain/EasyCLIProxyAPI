@@ -4,7 +4,7 @@ import { authFileRequestStats } from '../services/authFileRequests';
 import { formatUsageNumber } from '../services/usageNumber';
 import './AuthFileUsageSummary.css';
 
-/** Credential counters are cumulative for the current core session, not the recent request window. */
+/** Credential counters are cumulative for the current proxy session, not the recent request window. */
 export function AuthFileUsageSummary({ file }: { file: Record<string, unknown> }) {
   const { t, locale, formatNumber } = useI18n();
   const { success, failure } = authFileRequestStats(file);
@@ -22,7 +22,7 @@ export function AuthFileUsageSummary({ file }: { file: Record<string, unknown> }
   ];
 
   return (
-    <div className="auth-file-usage" role="group" aria-label={t('authFiles.usage.title')}>
+    <div className="auth-file-usage" role="group" aria-label={t('authFiles.usage.runtimeTotals')} title={t('authFiles.requests.totalsHint')}>
       <div className="auth-file-usage-metrics">
         {metrics.map(({ key, Icon, value, label }) => (
           <span key={key} className={`auth-file-usage-metric ${key}`} role="img" title={label} aria-label={label}>

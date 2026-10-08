@@ -42,7 +42,7 @@ describe('控件自身反馈', () => {
     expect(actionCalls('AuthFileManagementPage.tsx', 'toggleStatus', 'showNotice').calls).toHaveLength(0);
   });
 
-  it('停用凭证的启用按钮使用主题高亮，停用操作仍使用次要样式', () => {
+  it('凭证启用开关在启用时使用主题高亮，停用时为中性样式', () => {
     const file = 'AuthFileManagementPage.tsx';
     const source = ts.createSourceFile(file, readFileSync(new URL(`../src/pages/${file}`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     let button: ts.JsxOpeningElement | undefined;
@@ -55,8 +55,13 @@ describe('控件自身反馈', () => {
     };
     visit(source);
     const attributes = button?.attributes.properties.filter(ts.isJsxAttribute);
-    expect(attributes?.find((attribute) => attribute.name.getText(source) === 'className')?.initializer?.getText(source))
-      .toBe("{`${disabled ? 'primary-button' : 'secondary-button'} compact-button auth-card-toggle`}");
+    const attribute = (name: string) => attributes?.find((item) => item.name.getText(source) === name)?.initializer?.getText(source);
+    expect(attribute('className')).toBe('"auth-list-switch"');
+    expect(attribute('role')).toBe('"switch"');
+    expect(attribute('aria-checked')).toBe('{!disabled}');
+    const switchStyles = readFileSync(new URL('../src/pages/AuthFileManagementPage.css', import.meta.url), 'utf8');
+    expect(switchStyles).toMatch(/\.auth-list-switch\[aria-checked="true"\]\s*\{[^}]*background:\s*var\(--auth-accent\)/);
+    expect(switchStyles).not.toMatch(/\.auth-list-switch\s*\{[^}]*background:\s*var\(--auth-accent\)/);
     expect(attributes?.find((attribute) => attribute.name.getText(source) === 'disabled')?.initializer?.getText(source))
       .toBe('{busy || resettingCooldown || !isOAuthCredentialFile(file)}');
     const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');

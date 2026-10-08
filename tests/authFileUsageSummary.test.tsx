@@ -14,8 +14,8 @@ describe('credential cumulative usage', () => {
     expect(html).toContain('aria-label="Success rate 95%"');
     expect(html).toContain('aria-label="Success 1,900"');
     expect(html).toContain('aria-label="Failed 100"');
-    expect(html).toContain('Totals since the core started; reset on restart.');
-    expect(html).toContain('Core session totals');
+    expect(html).toContain('Totals since the proxy started; reset on restart.');
+    expect(html).toContain('aria-label="Proxy session totals"');
     expect(html).not.toContain('tokens');
   });
 

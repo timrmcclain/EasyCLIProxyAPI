@@ -41,7 +41,7 @@ type RGB = [number, number, number];
 function declarations(selector: string): Record<string, string> {
   const values: Record<string, string> = {};
   stylesheet.walkRules((rule) => {
-    if (rule.selector !== selector) return;
+    if (rule.selector.replace(/\s+/g, ' ') !== selector.replace(/\s+/g, ' ')) return;
     rule.walkDecls((declaration) => { values[declaration.prop] = declaration.value; });
   });
   return values;
