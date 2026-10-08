@@ -13,6 +13,7 @@ import { AccountDashboard, type AccountStatusSummary } from '../components/Accou
 import { HomeAccessPanel } from './HomeAccessPanel';
 import { HomeOverviewCards } from './HomeOverviewCards';
 import { CoreHealthPanel } from './CoreHealthPanel';
+import { CompressionStatusChip } from './CompressionStatusChip';
 import { useHomeOverview } from './useHomeOverview';
 import './HomeDashboard.css';
 
@@ -350,6 +351,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
             {accountStatus.problems > 0 && <span key={`problems-${accountStatus.problems}`} className="home-status-chip error status-changed">{t('home.status.problems', { count: accountStatus.problems })}</span>}
             {accountStatus.unconfirmed > 0 && <span key={`unconfirmed-${accountStatus.unconfirmed}`} className="home-status-chip neutral status-changed">{t('home.status.unconfirmed', { count: accountStatus.unconfirmed })}</span>}
           </span>}
+          <CompressionStatusChip />
           {accountStatus?.latestAt && <span className="home-status-latest">{t('home.status.lastRequest', { time: formatAgo(accountStatus.latestAt, locale) })}</span>}
           <span className="home-status-actions"><CoreHealthPanel compact
             coreReady={coreReady} models={overview.snapshot?.models ?? []}

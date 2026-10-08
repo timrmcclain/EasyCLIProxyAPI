@@ -1,4 +1,4 @@
-const alwaysAvailablePages = new Set(['easy', 'home', 'proxy', 'versions', 'config', 'usage-records', 'agents', 'connectors']);
+const alwaysAvailablePages = new Set(['easy', 'home', 'proxy', 'versions', 'config', 'usage-records', 'agents', 'connectors', 'compression']);
 
 export function isAlwaysAvailablePage(pageId: string) {
   return alwaysAvailablePages.has(pageId);

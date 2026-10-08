@@ -42,7 +42,7 @@ pub(crate) fn build_agent_updates_with_oauth(
         claude_desktop_model_mappings,
     } = options;
     let paths = agent_config_paths(client, home);
-    let root_base = managed_core_loopback_origin(port);
+    let root_base = crate::headroom::agent_origin(client, port);
     let openai_base = format!("{root_base}/v1");
     match client {
         AgentClient::ClaudeCode => {
@@ -1650,7 +1650,7 @@ pub(crate) fn prepare_agent_managed_removal(
 ) -> Result<Images, String> {
     match client {
         AgentClient::ClaudeCode => {
-            prepare_claude_code_managed_removal(paths, &managed_core_loopback_origin(port))
+            prepare_claude_code_managed_removal(paths, &crate::headroom::agent_origin(AgentClient::ClaudeCode, port))
         }
         AgentClient::ClaudeDesktop => prepare_claude_desktop_managed_removal(paths),
         AgentClient::Codex => prepare_codex_managed_removal(paths),

@@ -2864,7 +2864,7 @@ pub(crate) fn inspect_claude_agent_config(
     )
     .map_err(|error| format!("Failed to parse Claude Code configuration: {error}"))?;
     let env = root.get("env").and_then(serde_json::Value::as_object);
-    let expected_base = managed_core_loopback_origin(port);
+    let expected_base = crate::headroom::agent_origin(AgentClient::ClaudeCode, port);
     let configured = env
         .and_then(|env| env.get("ANTHROPIC_BASE_URL"))
         .and_then(serde_json::Value::as_str)
@@ -3204,7 +3204,7 @@ pub(crate) fn inspect_claude_desktop_agent_config(
     let threep = read_agent_json_or_empty(&paths[1], "Claude Desktop 3P configuration")?;
     let profile = read_agent_json_or_empty(&paths[2], "Claude Desktop gateway configuration")?;
     let meta = read_agent_json_or_empty(&paths[3], "Claude Desktop configuration index")?;
-    let expected_base = managed_core_loopback_origin(port);
+    let expected_base = crate::headroom::agent_origin(AgentClient::ClaudeDesktop, port);
     let configured = normal
         .get("deploymentMode")
         .and_then(serde_json::Value::as_str)

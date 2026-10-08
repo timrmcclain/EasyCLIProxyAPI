@@ -11,6 +11,7 @@ mod connectors;
 mod core_config;
 mod core_runtime;
 mod desktop_theme;
+mod headroom;
 mod instance_lock;
 mod management_api;
 mod network_proxy;
@@ -2515,6 +2516,7 @@ fn main() {
             if let Err(error) = load_codex_model_catalog_override(app.handle()) {
                 eprintln!("Failed to load Codex model catalog update file; using bundled catalog: {error}");
             }
+            headroom::start_watchdog(app.handle().clone());
             let catalog_update_app = app.handle().clone();
             if let Err(error) = load_codex_model_customizations(app.handle()) {
                 eprintln!("Failed to load Codex custom model configuration: {error}");
@@ -2648,6 +2650,13 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            headroom::headroom_status,
+            headroom::headroom_set_enabled,
+            headroom::headroom_set_routes,
+            headroom::headroom_set_memory,
+            headroom::headroom_stats,
+            headroom::headroom_learn_preview,
+            headroom::headroom_learn_apply,
             desktop_theme::get_linux_system_theme,
             health_check,
             detect_core_platform,

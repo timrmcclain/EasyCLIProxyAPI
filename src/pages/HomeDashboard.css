@@ -438,3 +438,16 @@
 .home-proxy-details[open] > summary {
   margin-bottom: var(--space-3);
 }
+
+.home-status-compression {
+  gap: var(--space-1);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.home-status-compression:hover {
+  background: var(--bg-hover);
+}

@@ -22,6 +22,7 @@ import {
   Settings,
   X,
   Search,
+  Shrink,
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime } from './coreRuntime';
@@ -37,6 +38,7 @@ import { GlossaryDialog } from './components/GlossaryDialog';
 import { UsageRecordsPage } from './pages/UsageRecordsPage';
 import { PluginsPage } from './pages/PluginsPage';
 import { ConnectorsPage } from './pages/ConnectorsPage';
+import CompressionPage from './pages/CompressionPage';
 import { languageOptions, useI18n } from './i18n';
 import { AppUpdateDialog, AppUpdateProvider, useAppUpdate } from './appUpdate';
 import { appUpdateIndicatorState } from './appUpdateModel';
@@ -103,6 +105,12 @@ const pages = [
     component: ConnectorsPage,
   },
   {
+    id: 'compression',
+    labelKey: 'app.nav.compression',
+    icon: Shrink,
+    component: CompressionPage,
+  },
+  {
     id: 'config',
     labelKey: 'app.nav.config',
     icon: Settings,
@@ -119,7 +127,7 @@ const pages = [
 type PageId = (typeof pages)[number]['id'];
 // Six everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
 const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'agents', 'connectors', 'config'];
-const advancedNav: PageId[] = ['api', 'plugins', 'quota', 'proxy', 'versions'];
+const advancedNav: PageId[] = ['compression', 'api', 'plugins', 'quota', 'proxy', 'versions'];
 const LAST_PAGE_KEY = 'personal.lastPage';
 
 function initialPage(): PageId {
@@ -341,7 +349,7 @@ function AppContent() {
   useEffect(() => {
     const navigate = (event: Event) => {
       const target = (event as CustomEvent<unknown>).detail;
-      if ((target === 'home' || target === 'oauth' || target === 'agents') && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
+      if ((target === 'home' || target === 'oauth' || target === 'agents' || target === 'compression') && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
     };
     window.addEventListener(UX_NAVIGATE, navigate);
     return () => window.removeEventListener(UX_NAVIGATE, navigate);

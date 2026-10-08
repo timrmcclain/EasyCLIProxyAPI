@@ -31,6 +31,52 @@ const PROVIDER_SECTIONS = [
   'openai-compatibility',
 ] as const;
 type ProviderSection = (typeof PROVIDER_SECTIONS)[number];
+// Compression (Headroom) in the browser mock: installed, off, with a little saved history.
+const mockCompression = { enabled: false, routeClaudeCode: true, routeClaudeDesktop: true, memory: false };
+function mockCompressionStatus() {
+  return {
+    installed: true,
+    binary: 'C:/Users/you/.local/bin/headroom.exe',
+    enabled: mockCompression.enabled,
+    running: mockCompression.enabled,
+    port: 8787,
+    proxyPort: 8317,
+    logPath: 'C:/Hub/headroom.log',
+    routeClaudeCode: mockCompression.routeClaudeCode,
+    routeClaudeDesktop: mockCompression.routeClaudeDesktop,
+    routed: mockCompression.enabled,
+    lastError: null,
+    memory: mockCompression.memory,
+  };
+}
+function mockCompressionStats() {
+  const day = (offset: number, tokens: number) => ({
+    timestamp: new Date(Date.now() - offset * 86_400_000).toISOString(),
+    total_tokens_saved: tokens,
+    compression_savings_usd: tokens * 0.000003,
+  });
+  return {
+    summary: { api_requests: 412, compression: { requests_compressed: 168, avg_compression_pct: 41.2, total_tokens_before: 3_900_000 } },
+    agentUsage: { agents: [
+      { agent: 'claude-code', label: 'Claude Code', requests: 371, tokens_saved: 1_384_000, savings_percent: 38.4 },
+      { agent: 'claude', label: 'Claude Desktop', requests: 41, tokens_saved: 96_500, savings_percent: 22.1 },
+    ] },
+    persistentSavings: {
+      lifetime: { requests: 412, tokens_saved: 1_480_500, compression_savings_usd: 4.44, total_input_tokens: 2_419_500 },
+      by_model: {
+        'claude-opus-4-6': { requests: 230, tokens_saved: 1_102_000, savings_percent: 41.0 },
+        'claude-sonnet-4-6': { requests: 182, tokens_saved: 378_500, savings_percent: 29.5 },
+      },
+      recent_history: [day(0, 210_000), day(1, 340_500), day(2, 98_000), day(4, 512_000), day(6, 320_000)],
+    },
+    tokensSavedByStrategy: { smart_crusher: 1_102_000, kompress: 378_500 },
+    recentRequests: [
+      { request_id: 'm1', timestamp: new Date(Date.now() - 120_000).toISOString(), model: 'claude-opus-4-6', input_tokens_original: 48_200, input_tokens_optimized: 21_900, tokens_saved: 26_300, savings_percent: 54.6 },
+      { request_id: 'm2', timestamp: new Date(Date.now() - 480_000).toISOString(), model: 'claude-sonnet-4-6', input_tokens_original: 9_400, input_tokens_optimized: 9_400, tokens_saved: 0, savings_percent: 0 },
+    ],
+  };
+}
+
 const V8_PROVIDER_BY_SECTION = {
   'gemini-api-key': 'gemini',
   'interactions-api-key': 'interactions',
@@ -1179,6 +1225,31 @@ export function createBrowserMockRuntime(
         { name: 'gemini-3-pro', displayName: 'Gemini 3 Pro', contextWindow: 1_000_000, inputModalities: ['text', 'image'] },
         { name: 'deepseek-chat', displayName: 'DeepSeek Chat', contextWindow: 64_000, inputModalities: ['text'] },
       ];
+      case 'headroom_status': return mockCompressionStatus();
+      case 'headroom_set_enabled': {
+        mockCompression.enabled = Boolean((payload as { enabled?: boolean } | undefined)?.enabled);
+        return mockCompressionStatus();
+      }
+      case 'headroom_set_routes': {
+        const routes = payload as { claudeCode?: boolean; claudeDesktop?: boolean } | undefined;
+        mockCompression.routeClaudeCode = Boolean(routes?.claudeCode);
+        mockCompression.routeClaudeDesktop = Boolean(routes?.claudeDesktop);
+        return mockCompressionStatus();
+      }
+      case 'headroom_learn_preview': return {
+        summary: 'Sessions: 4  |  Calls: 4358  |  Failures: 334 (7.7%)',
+        proposals: [{ path: `${String((payload as { project?: string } | undefined)?.project ?? 'C:/Project')}/CLAUDE.local.md`, content: ['## Headroom Learned Patterns', '', '### Screenshot loops', '- Take one screenshot after an action; do not repeat it.', ''].join('\n') }],
+        output: '',
+      };
+      case 'headroom_learn_apply': return null;
+      case 'headroom_set_memory': {
+        mockCompression.memory = Boolean((payload as { memory?: boolean } | undefined)?.memory);
+        return mockCompressionStatus();
+      }
+      case 'headroom_stats': {
+        if (!mockCompression.enabled) throw new Error('Browser Mock: compression is off');
+        return mockCompressionStats();
+      }
       case 'get_connector_overview':
       case 'apply_connector_change':
       case 'undo_connector_change': {

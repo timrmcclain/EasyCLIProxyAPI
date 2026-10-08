@@ -111,6 +111,7 @@ export const jaOverrides = {
 
   'app.nav.plugins': 'プラグイン',
   'app.nav.connectors': 'コネクタ',
+  'app.nav.compression': 'コンテキスト圧縮',
   ...homeJa,
   ...authFileListJa,
   'apiAccess.entries.addKey': 'API キーを追加',

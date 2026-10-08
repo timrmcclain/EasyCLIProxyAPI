@@ -671,7 +671,7 @@ pub(crate) fn fresh_agent_contents_with_oauth(
         claude_desktop_model_mappings,
         ..
     } = options;
-    let root_base = managed_core_loopback_origin(port);
+    let root_base = crate::headroom::agent_origin(client, port);
     let openai_base = format!("{root_base}/v1");
     match client {
         AgentClient::ClaudeCode => Ok(vec![build_claude_agent_config(
