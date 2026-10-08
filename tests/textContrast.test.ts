@@ -8,29 +8,29 @@ const stylesheet = postcss.parse([
   '../src/styles/ui-refinements.css',
 ].map((file) => readFileSync(new URL(file, import.meta.url), 'utf8')).join('\n'));
 const aliases: Record<string, string> = {
-  '--theme-4b4742': '--text-secondary',
-  '--theme-59544d': '--text-secondary',
-  '--theme-5f5a53': '--text-secondary',
-  '--theme-655f57': '--text-secondary',
-  '--theme-6b655d': '--text-secondary',
-  '--theme-6d6760': '--text-secondary',
-  '--theme-6f6961': '--text-tertiary',
-  '--theme-716b61': '--text-tertiary',
-  '--theme-777067': '--text-tertiary',
-  '--theme-7a746c': '--text-tertiary',
-  '--theme-817b72': '--text-tertiary',
-  '--theme-817b73': '--text-tertiary',
-  '--theme-8a847c': '--text-quaternary',
-  '--theme-918a81': '--text-quaternary',
-  '--theme-9a938a': '--text-quaternary',
-  '--theme-9a958d': '--text-quaternary',
-  '--theme-9b958c': '--text-quaternary',
+  '--ink-secondary-alias-6': '--text-secondary',
+  '--ink-secondary-alias-5': '--text-secondary',
+  '--ink-secondary-alias-4': '--text-secondary',
+  '--ink-secondary-alias-3': '--text-secondary',
+  '--ink-secondary-alias-2': '--text-secondary',
+  '--ink-secondary-alias-1': '--text-secondary',
+  '--ink-tertiary-alias-6': '--text-tertiary',
+  '--ink-tertiary-alias-5': '--text-tertiary',
+  '--ink-tertiary-alias-4': '--text-tertiary',
+  '--ink-tertiary-alias-3': '--text-tertiary',
+  '--ink-tertiary-alias-2': '--text-tertiary',
+  '--ink-tertiary-alias-1': '--text-tertiary',
+  '--ink-quaternary-alias-5': '--text-quaternary',
+  '--ink-quaternary-alias-4': '--text-quaternary',
+  '--ink-quaternary-alias-3': '--text-quaternary',
+  '--ink-quaternary-alias-2': '--text-quaternary',
+  '--ink-quaternary-alias-1': '--text-quaternary',
 };
 const surfaces = [
   '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-hover', '--bg-quinary', '--bg-card',
-  '--theme-faf9f5', '--theme-fffdf8', '--theme-f4f1ea', '--theme-f0eee8',
-  '--theme-eeece6', '--theme-ece8df', '--theme-e8e4dc', '--theme-dfdcd4',
-  '--theme-eef7f0', '--theme-fff1ee', '--theme-fff7e9', '--ui-accent-soft',
+  '--surface-3', '--surface-2', '--surface-13', '--surface-30',
+  '--surface-29', '--line-2', '--line-3', '--ink-6',
+  '--surface-27', '--surface-14', '--surface-23', '--ui-accent-soft',
 ];
 const textTokens = [
   '--text-primary', '--text-secondary', '--text-tertiary', '--text-quaternary',
@@ -115,7 +115,7 @@ for (const theme of ['light', 'dark'] as const) {
       expect(value('--bg-secondary')).toBe(theme === 'light' ? '#f6f7f5' : '#0b0d11');
       expect(value('--bg-tertiary')).toBe(theme === 'light' ? '#eff3f0' : '#1c212c');
       expect(value('--bg-hover')).toBe(theme === 'light' ? '#f6f8f6' : '#252b38');
-      expect(value('--theme-faf9f5')).toBe(theme === 'light' ? '#f6f7f5' : '#0b0d11');
+      expect(value('--surface-3')).toBe(theme === 'light' ? '#f6f7f5' : '#0b0d11');
       const background = color(value('--bg-card'));
       const hierarchy = ['primary', 'secondary', 'tertiary', 'quaternary', 'disabled']
         .map((role) => contrast(color(value(`--text-${role}`)), background));

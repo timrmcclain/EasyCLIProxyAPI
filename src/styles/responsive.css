@@ -1,0 +1,1349 @@
+/* Responsive rules for the shell, usage, providers, agents and settings pages, in their original cascade order. */
+
+/* ---- from responsive-shell-usage.css ---- */
+/* Keep footer controls reachable when desktop navigation exceeds the height. */
+@media (min-width: 901px) {
+  .sidebar-brand,
+  .sidebar-bottom {
+    flex-shrink: 0;
+  }
+
+  .sidebar > .nav-section {
+    min-height: 0;
+    margin-bottom: 18px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell:has(.usage-records-page) {
+    /* Loading a shorter tab must not stretch the navigation row above it. */
+    grid-template-rows: max-content minmax(0, 1fr);
+  }
+}
+
+/* Let toolbar rows keep their height instead of overlapping the table. */
+.usage-events-summary {
+  flex: none;
+  flex-wrap: wrap;
+}
+
+.usage-events-summary-left,
+.usage-events-summary-right {
+  width: auto;
+  max-width: 100%;
+  justify-content: flex-start;
+}
+
+.usage-events-summary-right {
+  margin-left: auto;
+}
+
+.usage-pagination-controls {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.usage-topbar,
+.usage-filter-panel {
+  flex-shrink: 0;
+}
+
+.usage-page-navigation,
+.usage-topbar-actions {
+  max-width: 100%;
+}
+
+.usage-tabs,
+.config-subpage-tabs,
+.oauth-subpage-tabs {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.usage-tabs button,
+.config-subpage-tabs button,
+.oauth-subpage-tabs button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.usage-topbar-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.usage-collector-state {
+  max-width: 100%;
+}
+
+.usage-collector-state > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usage-section-heading {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.usage-section-heading > div {
+  min-width: 0;
+}
+
+.usage-section-heading strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.usage-custom-range input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.usage-pricing-table-wrap:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: -2px;
+}
+
+.usage-pricing-panel {
+  overflow: auto;
+}
+
+.usage-price-editor {
+  min-height: 160px;
+  max-height: min(320px, 40vh);
+  flex-shrink: 0;
+}
+
+.usage-storage-limit-editor {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.usage-storage-limit-editor label {
+  min-width: 0;
+  flex: 1;
+}
+
+.usage-storage-limit-editor input {
+  min-width: 0;
+  width: 100%;
+  max-width: 168px;
+}
+
+.usage-storage-limit-editor button {
+  flex: none;
+  white-space: nowrap;
+}
+
+@container workspace (min-width: 600px) {
+  .usage-overview-layout .usage-stat-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@container workspace (max-width: 880px) {
+  .usage-overview-layout .usage-stat-card {
+    gap: 4px;
+    padding: 10px 8px;
+  }
+
+  .usage-overview-layout .usage-stat-card-value {
+    font-size: 24px;
+  }
+}
+
+@container workspace (max-width: 760px) {
+  .usage-data-management-action {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .usage-data-management-action > div:first-child {
+    min-width: 0;
+    flex: 1 1 260px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root:has(.usage-records-page) {
+    scrollbar-gutter: stable;
+  }
+
+  .usage-overview-layout {
+    grid-template-rows: max-content auto;
+    overflow: visible;
+  }
+
+  .usage-overview-canvas {
+    position: static;
+    width: 100%;
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 300px auto;
+    transform: none;
+  }
+
+  .usage-health-panel {
+    container-type: inline-size;
+    grid-template-rows: auto auto;
+  }
+
+  .usage-token-content {
+    grid-template-rows: auto auto auto;
+  }
+
+  .usage-token-composition {
+    container-type: inline-size;
+    min-height: 240px;
+  }
+
+  .usage-token-donut {
+    width: 100%;
+    max-width: 240px;
+  }
+}
+
+@container workspace (max-width: 540px) {
+  .usage-events-summary-right {
+    margin-left: 0;
+  }
+
+  .usage-storage-limit-editor {
+    flex-direction: row;
+  }
+
+  .usage-storage-limit-editor .primary-button {
+    width: auto;
+  }
+}
+
+@media (min-width: 761px) {
+  .usage-events-panel > .usage-table-wrap,
+  .usage-events-panel > .usage-empty {
+    min-height: 0;
+  }
+}
+
+/* ---- from responsive-providers.css ---- */
+/* Keep API navigation above the list at every width. */
+.api-access-page .real-provider-workbench {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.api-access-page .provider-category-panel {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  height: auto;
+  padding: 8px;
+}
+
+.api-access-page .provider-category-panel button {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  justify-content: stretch;
+  gap: 8px;
+  height: 50px;
+  min-height: 50px;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.api-access-page .provider-category-panel button.active {
+  background: var(--ui-accent-soft);
+  border-color: color-mix(in srgb, var(--ui-accent) 20%, transparent);
+  color: var(--ui-accent);
+}
+
+.api-access-page .provider-category-panel .provider-logo {
+  width: 24px;
+  height: 24px;
+}
+
+.api-access-page .provider-category-panel span {
+  white-space: normal;
+  overflow-wrap: normal;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.api-access-page .provider-category-panel strong {
+  justify-self: center;
+  min-width: 22px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-quaternary);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.api-access-page .provider-category-panel .active strong {
+  background: color-mix(in srgb, var(--ui-accent) 10%, var(--bg-primary));
+  color: var(--ui-accent);
+}
+
+.api-access-page .provider-resource-panel {
+  container: provider-resources / inline-size;
+  min-width: 0;
+  min-height: 0;
+}
+
+.api-access-page .management-panel-heading {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  grid-template-areas: 'title search actions';
+  gap: 14px 24px;
+  align-items: center;
+}
+
+.api-access-page .management-panel-heading > div:first-child {
+  grid-area: title;
+  text-align: left;
+}
+
+.api-access-page .api-access-search {
+  grid-area: search;
+  width: 100%;
+  max-width: 440px;
+  justify-self: end;
+}
+
+.api-access-page .api-access-heading-tools {
+  grid-area: actions;
+  display: flex;
+  width: auto;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.api-access-page .api-access-heading-tools > button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.api-access-page .real-provider-list {
+  margin-top: 18px;
+}
+
+.api-access-page .real-provider-row {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 104px;
+  padding: 16px 0;
+}
+
+.api-access-page .real-provider-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.api-access-page .provider-drag-handle {
+  grid-column: 1;
+  grid-row: 1;
+  width: 24px;
+  min-width: 24px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+  align-self: start;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.api-access-page .provider-row-main {
+  grid-column: 2;
+  grid-row: 1;
+  gap: 8px;
+}
+
+.api-access-page .provider-row-title {
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+}
+
+.api-access-page .provider-row-title strong {
+  max-width: 100%;
+  font-size: 14px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-access-page .provider-row-title > span:not(.state-pill) {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-quaternary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-access-page .provider-row-title .state-pill {
+  min-height: 22px;
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.api-access-page .provider-row-main > .provider-row-url {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-access-page .provider-row-meta {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 0;
+  line-height: 20px;
+}
+
+.api-access-page .provider-row-meta code {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--text-quaternary);
+  font-size: 12px;
+}
+
+.api-access-page .provider-row-meta span {
+  flex: none;
+  color: var(--text-quaternary);
+  font-size: 12px;
+}
+
+.api-access-page .provider-row-actions {
+  grid-column: 3;
+  grid-row: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 340px;
+}
+
+.api-access-page .provider-enabled-control {
+  min-width: 0;
+}
+
+.api-access-page .provider-row-actions .icon-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+}
+
+/* Compact tabs keep icons and counts aligned above each category label. */
+@container workspace (max-width: 820px) {
+  .api-access-page .provider-category-panel button {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 24px auto;
+    gap: 4px 8px;
+    height: auto;
+    min-height: 68px;
+  }
+
+  .api-access-page .provider-category-panel .provider-logo {
+    justify-self: end;
+  }
+
+  .api-access-page .provider-category-panel span {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: 12px;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+
+  .api-access-page .provider-category-panel strong {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+  }
+}
+
+@container provider-resources (max-width: 720px) {
+  .api-access-page .management-panel-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'title actions' 'search search';
+    column-gap: 12px;
+  }
+
+  .api-access-page .api-access-search {
+    max-width: none;
+  }
+}
+
+@container provider-resources (max-width: 580px) {
+  .api-access-page .real-provider-row {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .api-access-page .provider-row-actions {
+    grid-column: 2;
+    grid-row: 2;
+    max-width: none;
+    justify-content: flex-start;
+  }
+}
+
+/* Keep controls compact while allowing complete groups to move to the next line. */
+.auth-files-page .management-heading-actions {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.auth-files-page .management-heading-actions button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.auth-files-page .real-auth-files-panel {
+  container: credential-files / inline-size;
+  min-width: 0;
+}
+
+.auth-files-page .auth-files-toolbar select {
+  min-width: 0;
+}
+
+@container credential-files (max-width: 680px) {
+  .auth-files-page .auth-files-toolbar {
+    grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 8px;
+  }
+
+  .auth-files-page .auth-files-toolbar input {
+    grid-column: 2 / -1;
+  }
+
+  .auth-files-page .auth-files-toolbar select:first-of-type {
+    grid-column: 1 / 3;
+  }
+
+  .auth-files-page .auth-files-toolbar select:last-of-type {
+    grid-column: 3;
+  }
+
+  .auth-files-page .auth-files-toolbar select {
+    border-top: 1px solid var(--line-5);
+    border-left: 0;
+  }
+}
+
+.oauth-login-page > .oauth-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+}
+
+.oauth-browser-picker {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.oauth-browser-picker select {
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 240px;
+}
+
+.oauth-card .oauth-auth-url-actions,
+.oauth-card .management-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.oauth-card .management-card-actions > button {
+  flex: 1 1 auto;
+}
+
+.oauth-card .oauth-callback-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.oauth-card .oauth-callback-row > button {
+  width: auto;
+  white-space: nowrap;
+}
+
+.quota-group-heading {
+  flex-wrap: wrap;
+}
+
+.quota-group-heading .quota-group-actions {
+  flex: 1 1 280px;
+}
+
+.quota-group-actions .muted-summary {
+  width: auto;
+}
+
+.real-quota-row > div:first-child {
+  flex-wrap: wrap;
+}
+
+.real-quota-row small,
+.quota-reset-credit-summary span {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Optional key selectors must not shift fixed dialog grid tracks onto the model list. */
+.model-discovery-dialog.provider-health-dialog {
+  display: flex;
+  flex-direction: column;
+  height: min(660px, calc(100dvh - 48px));
+  min-height: 0;
+  overflow: auto;
+}
+
+.provider-health-dialog > :not(.provider-health-model-list) {
+  flex-shrink: 0;
+}
+
+.provider-health-dialog .provider-health-model-list {
+  flex: 1 1 180px;
+  min-height: 100px;
+  height: auto;
+}
+
+.provider-health-dialog .model-discovery-header > div {
+  flex-wrap: wrap;
+}
+
+.provider-health-dialog .model-discovery-header span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.provider-health-dialog .provider-health-key-selector {
+  min-width: 0;
+  padding: 0;
+}
+
+.model-discovery-dialog .model-discovery-toolbar,
+.model-discovery-dialog .model-discovery-actions,
+.model-discovery-dialog .model-transfer-summary {
+  flex-wrap: wrap;
+}
+
+.model-discovery-dialog .model-discovery-toolbar > span {
+  white-space: normal;
+}
+
+.api-provider-dialog .provider-group-heading,
+.api-provider-dialog .model-config-heading,
+.api-provider-dialog .thinking-level-heading {
+  flex-wrap: wrap;
+}
+
+@container workspace (max-width: 760px) {
+  .oauth-browser-picker {
+    justify-content: flex-start;
+  }
+
+  .auth-files-page .management-heading-actions,
+  .quota-group-heading .quota-group-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* Long model lists collapse behind a "Models (N)" toggle in the provider dialog. */
+.api-provider-dialog .provider-model-list {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+}
+.api-provider-dialog .provider-model-list[open] { padding-bottom: var(--space-3); }
+.api-provider-dialog .provider-model-list > summary {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-size-meta);
+  font-weight: 600;
+}
+.api-provider-dialog .provider-model-list > summary:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; border-radius: var(--radius-sm); }
+.api-provider-dialog .provider-model-list[open] > summary { margin-bottom: var(--space-1); }
+
+.oauth-login-page > .oauth-page-hint { margin: 0 0 var(--space-2); }
+
+/* ---- from responsive-agents.css ---- */
+/* Use the space left for the workbench, including the app sidebar and padding. */
+.agents-page:not(.agents-page-embedded) {
+  container: agent-workspace / inline-size;
+}
+
+@container agent-workspace (max-width: 760px) {
+  .app-shell:has(.agents-page:not(.agents-page-embedded)) .agent-workbench {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .app-shell:has(.agents-page:not(.agents-page-embedded)) .agent-client-list {
+    height: auto;
+    max-height: none;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  .agents-page:not(.agents-page-embedded) .agent-list-items {
+    display: grid;
+    flex: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 192px;
+    grid-template-columns: none;
+    grid-template-rows: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 4px;
+    scrollbar-gutter: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .agents-page:not(.agents-page-embedded) .agent-list-items button {
+    min-height: 58px;
+    scroll-snap-align: start;
+  }
+
+  .agents-page:not(.agents-page-embedded) .agent-list-items strong,
+  .agents-page:not(.agents-page-embedded) .agent-list-items small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.agent-save-bar,
+.agent-codex-save-actions,
+.agent-signin-label,
+.agent-section-heading-actions {
+  flex-wrap: wrap;
+}
+
+.agent-save-bar .agent-save-feedback {
+  flex-basis: 180px;
+}
+
+.agent-save-actions button,
+.agent-management-actions button {
+  max-width: 100%;
+}
+
+.agent-section-heading > div:first-child,
+.agent-claude-code-disable-compact > span:first-child {
+  overflow-wrap: anywhere;
+}
+
+@container agent-panel (max-width: 640px) {
+  .agent-desktop-models > .agent-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .agent-desktop-models > .agent-section-heading > .agent-section-heading-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .agent-desktop-model-fields {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .agent-desktop-model-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .agent-desktop-model-actions {
+    height: 44px;
+    justify-self: end;
+  }
+
+  .agent-status-grid,
+  .agent-status-grid.dual-install-status-grid,
+  .agent-status-grid.pi-status-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  }
+
+  .codex-session-overview-head,
+  .codex-session-list-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .codex-session-selection-actions {
+    justify-content: flex-start;
+  }
+
+  .codex-session-pagination {
+    flex-wrap: wrap;
+  }
+}
+
+@container agent-panel (max-width: 420px) {
+  .agent-subpage-tabs {
+    width: fit-content;
+    overflow-x: auto;
+  }
+
+  .agent-subpage-tabs button {
+    flex: none;
+    width: auto;
+    padding-inline: 10px;
+  }
+
+  .agent-signin-explanation dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .codex-session-meta,
+  .codex-session-row:has(.codex-session-checkbox) .codex-session-meta {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .codex-session-meta time {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+/* Catalog forms must respond to the editor width, not the whole dialog. */
+.codex-catalog-editor {
+  container: catalog-editor / inline-size;
+}
+
+.codex-catalog-sidebar,
+.codex-catalog-form > label,
+.codex-catalog-models > button {
+  min-width: 0;
+}
+
+.codex-catalog-model-heading,
+.codex-catalog-footer,
+.codex-catalog-footer > div:last-child,
+.codex-catalog-confirm > div > div {
+  flex-wrap: wrap;
+}
+
+.codex-catalog-model-heading > button {
+  flex: none;
+  max-width: 100%;
+}
+
+.codex-catalog-footer > div:last-child {
+  margin-left: auto;
+}
+
+.codex-catalog-hint,
+.codex-catalog-heading p {
+  overflow-wrap: anywhere;
+}
+
+@container catalog-editor (max-width: 500px) {
+  .codex-catalog-form,
+  .harness-reasoning-levels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Keep the model list beside the editor on small desktop windows so it does
+   not consume most of the dialog's available height. */
+@media (min-width: 600px) and (max-width: 900px) {
+  .codex-catalog-body,
+  .harness-catalog-dialog .codex-catalog-body {
+    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .codex-catalog-sidebar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px;
+    border-right: 1px solid var(--line-9);
+    border-bottom: 0;
+  }
+
+  .harness-catalog-dialog .codex-catalog-sidebar {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+
+  .codex-catalog-sidebar > *,
+  .harness-catalog-dialog .codex-catalog-sidebar > * {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .codex-catalog-footer {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .codex-catalog-footer > div:last-child {
+    display: flex;
+  }
+}
+
+.agent-backup-modal {
+  container: agent-backup / inline-size;
+}
+
+.agent-backup-modal footer {
+  flex-wrap: wrap;
+}
+
+.agent-backup-columns nav {
+  min-width: 0;
+}
+
+.agent-backup-columns nav button {
+  overflow-wrap: anywhere;
+}
+
+@container agent-backup (max-width: 680px) {
+  .agent-backup-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-backup-columns nav {
+    max-height: 160px;
+  }
+}
+
+/* Codex session rows: quiet icon delete instead of a loud red text button. */
+.codex-session-row .codex-session-delete-button.icon-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  justify-self: end;
+  color: var(--text-muted);
+}
+
+.codex-session-row .codex-session-delete-button.icon-button:hover:not(:disabled),
+.codex-session-row .codex-session-delete-button.icon-button:focus-visible {
+  color: var(--danger-color, #b91c1c);
+}
+
+@media (max-width: 720px) {
+  .codex-session-row .codex-session-delete-button.icon-button {
+    width: 32px;
+    justify-self: end;
+  }
+}
+
+/* Claude Code: runtime settings and role pickers collapsed under "Advanced". */
+.agent-advanced-settings {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+}
+
+.agent-advanced-settings > summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-size-meta);
+  font-weight: 500;
+}
+
+.agent-advanced-settings > summary:hover {
+  color: var(--text-primary);
+}
+
+.agent-advanced-settings[open] {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.agent-advanced-settings-intro {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-caption);
+}
+
+/* ---- from responsive-settings.css ---- */
+/* Keep each section responsive to its available content width, including the
+   sidebar and the narrower cards in the two-column home layout. */
+.home-quick-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@container workspace (max-width: 1080px) {
+  .home-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container workspace (max-width: 480px) {
+  .home-quick-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.client-api-panel {
+  container: home-api / inline-size;
+}
+
+.client-api-panel .client-api-heading {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.client-api-panel .client-api-heading > div {
+  flex: 1 1 260px;
+}
+
+.client-api-panel .client-api-key-actions {
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
+.client-api-key-code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@container home-api (max-width: 480px) {
+  .client-api-card {
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .client-api-card-heading {
+    flex: none;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+/* The download source is one control group: move the group together, then let
+   the select shrink while the action retains a readable label. */
+.version-source-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+
+.version-source-copy {
+  flex: 1 1 240px;
+}
+
+.version-source-control {
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: min(360px, 100%);
+  min-width: 0;
+}
+
+.version-source-control label,
+.version-source-control select {
+  min-width: 0;
+  width: 100%;
+}
+
+.version-source-add-button {
+  grid-column: auto;
+  white-space: nowrap;
+}
+
+@container workspace (max-width: 620px) {
+  .version-list,
+  .version-card-grid {
+    gap: 16px;
+  }
+
+  .version-source-row,
+  .version-list-item {
+    padding: 16px;
+  }
+
+  .app-release-notes-heading {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .app-release-notes-body {
+    padding: 0 16px 16px;
+  }
+
+  .app-release-notes-footer {
+    padding: 10px 16px;
+  }
+
+  .app-release-notes-markdown {
+    gap: 14px 12px;
+  }
+
+  .app-release-notes-markdown > .release-notes-category {
+    max-width: 80px;
+  }
+}
+
+/* Settings have variable-length descriptions; fixed row heights and controls
+   sized from the window instead of the workspace can make adjacent cards overlap. */
+.config-page .config-panel-heading,
+.config-page .config-heading-actions,
+.config-page .config-network-section-heading,
+.config-page .config-proxy-heading {
+  flex-wrap: wrap;
+}
+
+.config-page .config-panel-heading {
+  gap: 10px 14px;
+}
+
+.config-page .config-heading-actions {
+  margin-left: auto;
+}
+
+.config-keys-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.config-network-grid {
+  grid-auto-rows: minmax(154px, auto);
+}
+
+.config-network-field small,
+.config-diagnostics-setting-copy,
+.config-software-setting-copy {
+  overflow-wrap: anywhere;
+}
+
+.config-diagnostics-actions,
+.config-management-actions {
+  flex-wrap: wrap;
+}
+
+@container workspace (max-width: 900px) {
+  .config-network-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .config-diagnostics-toggle-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container workspace (max-width: 700px) {
+  .config-diagnostics-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .config-software-setting-row {
+    gap: 16px;
+    padding: 16px 16px;
+  }
+
+  .config-software-close-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .config-software-select {
+    width: 100%;
+    min-width: 0;
+    padding-left: 54px;
+  }
+
+  .config-diagnostics-footer,
+  .config-management-form-footer {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .config-diagnostics-actions {
+    justify-content: flex-end;
+  }
+}
+
+@container workspace (max-width: 560px) {
+  .config-network-grid,
+  .config-diagnostics-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .config-network-grid {
+    grid-auto-rows: auto;
+  }
+
+  .config-software-select {
+    padding-left: 0;
+  }
+
+  .config-heading-title h2 {
+    white-space: normal;
+  }
+}
+
+/* Alias routes should keep their names readable before metadata and actions
+   wrap onto a second line. The editor uses its own width inside a modal. */
+.thinking-alias-list-panel {
+  container: alias-list / inline-size;
+}
+
+.thinking-alias-dialog {
+  container: alias-editor / inline-size;
+}
+
+.thinking-alias-field {
+  min-width: 0;
+}
+
+@container alias-list (max-width: 560px) {
+  .thinking-alias-row {
+    grid-template-columns: minmax(0, 1fr) 34px;
+  }
+
+  .thinking-alias-route {
+    grid-column: 1 / -1;
+  }
+
+  .thinking-alias-badges {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+@container alias-editor (max-width: 580px) {
+  .thinking-effort-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Keep novice-mode actions compact at intermediate widths. Existing phone
+   rules made every action full-width even when two controls easily fit. */
+.simple-mode-topbar,
+.simple-mode-topbar-right,
+.simple-mode-brand-title,
+.simple-mode-choice-title,
+.simple-mode-api-model-heading,
+.simple-mode-api-model-selection-heading {
+  flex-wrap: wrap;
+}
+
+.simple-mode-topbar-left,
+.simple-mode-topbar-right,
+.simple-mode-brand,
+.simple-mode-brand-text {
+  min-width: 0;
+}
+
+.simple-mode-topbar-left {
+  flex: 1 1 340px;
+}
+
+.simple-mode-topbar-right {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.simple-mode-topbar-right > *,
+.simple-mode-guide-toggle {
+  flex-shrink: 0;
+}
+
+.simple-mode-choice-title strong,
+.simple-mode-brand-title strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.simple-mode-provider-card-foot {
+  flex-wrap: wrap;
+}
+
+.simple-mode-field .text-input,
+.simple-mode-field .select-input {
+  min-width: 0;
+}
+
+@container workspace (max-width: 720px) {
+  .simple-mode-topbar-left,
+  .simple-mode-topbar-right {
+    width: 100%;
+  }
+
+  .simple-mode-topbar-right {
+    justify-content: flex-start;
+  }
+
+  .simple-mode-choice-grid,
+  .simple-mode-api-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .simple-mode-api-actions,
+  .simple-mode-task-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .simple-mode-api-actions button,
+  .simple-mode-task-footer > .primary-button,
+  .simple-mode-task-footer > .secondary-button {
+    width: auto;
+  }
+
+  .simple-mode-task-footer > .primary-button {
+    margin-left: auto;
+  }
+}
+
+@container workspace (max-width: 520px) {
+  .simple-mode-api-model-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .simple-mode-step-status-track {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .simple-mode-step-status-connector {
+    display: none;
+  }
+
+  .simple-mode-step-status-copy strong,
+  .simple-mode-step-status-copy small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

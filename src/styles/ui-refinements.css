@@ -18,27 +18,26 @@
   --text-secondary: #1e293b;
   --text-tertiary: #334155;
   --text-quaternary: #475569;
-  --theme-faf9f5: #f6f7f5;
-  --theme-faf8f4: #ffffff;
-  --theme-faf8f2: #ffffff;
-  --theme-fffdf8: #ffffff;
-  --theme-f8f5ee: #f8fafc;
-  --theme-f6f2ec: #f8fafc;
-  --theme-f4f1ea: #f8fafc;
-  --theme-eeeae2: #e2e8f0;
-  --theme-eeece6: #f1f5f9;
-  --theme-e8e5dc: #f1f5f9;
-  --theme-e8e4dc: #f1f5f9;
-  --theme-e3e1db: #e2e8f0;
-  --theme-d5d2cb: #cbd5e1;
-  --theme-c7c2b8: #94a3b8;
-  --theme-7a746c: var(--text-tertiary);
-  --theme-5f5a53: var(--text-secondary);
-  --theme-4f4a43: var(--text-secondary);
-  --theme-433f39: #334155;
-  --theme-39352f: #334155;
-  --theme-342f2a: #1e293b;
-  --theme-2d2a26: #0f172a;
+  --surface-3: #f6f7f5;
+  --surface-4: #ffffff;
+  --surface-5: #ffffff;
+  --surface-2: #ffffff;
+  --surface-9: #f8fafc;
+  --surface-11: #f8fafc;
+  --surface-13: #f8fafc;
+  --line-1: #e2e8f0;
+  --surface-29: #f1f5f9;
+  --surface-31: #f1f5f9;
+  --line-3: #f1f5f9;
+  --line-5: #e2e8f0;
+  --line-9: #cbd5e1;
+  --line-13: #94a3b8;
+  --ink-tertiary-alias-3: var(--text-tertiary);
+  --ink-secondary-alias-4: var(--text-secondary);
+  --ink-4: var(--text-secondary);
+  --surface-35: #334155;
+  --ink-2: #334155;
+  --ink-1: #0f172a;
   --ui-accent: #0f766e;
   --ui-accent-strong: #0b5d57;
   --ui-accent-soft: #f0fdfa;
@@ -104,7 +103,7 @@ body, html, #root {
   color: #0f766e !important;
   border-radius: 8px;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(15, 118, 110, 0.06);
+  box-shadow: var(--shadow-sm);
   transition: all var(--dur-base) ease;
 }
 
@@ -133,7 +132,7 @@ body, html, #root {
 .sidebar-theme-selector button.active {
   background: var(--bg-primary);
   color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
 
@@ -236,7 +235,7 @@ body, html, #root {
 .client-api-card:hover {
   background: #ffffff;
   border-color: var(--border-primary);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-md);
 }
 
 .client-api-card-heading {
@@ -575,7 +574,7 @@ body, html, #root {
   border: 0;
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.045);
+  box-shadow: var(--shadow-lg);
 }
 
 .usage-records-page .panel.usage-filter-panel {
@@ -682,7 +681,7 @@ body, html, #root {
   padding: 0;
   border-radius: 12px;
   background: #d8d8de;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.045);
+  box-shadow: var(--shadow-lg);
 }
 
 .usage-stat-card {
@@ -711,7 +710,7 @@ body, html, #root {
 
 .usage-stat-card:hover {
   border-color: transparent;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 14px 32px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-lg);
   transform: none;
 }
 
@@ -740,7 +739,7 @@ body, html, #root {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-shadow: var(--shadow-sm);
 }
 
 .metric-card strong {
@@ -758,7 +757,7 @@ body, html, #root {
 }
 
 .simple-mode-step-status-item:not(:disabled):hover {
-  border-color: color-mix(in srgb, var(--ui-accent) 32%, var(--theme-e3e1db));
+  border-color: color-mix(in srgb, var(--ui-accent) 32%, var(--line-5));
   background: var(--bg-tertiary);
 }
 
@@ -976,7 +975,7 @@ body, html, #root {
     left: auto;
     top: calc(100% + 8px);
     width: 180px;
-    box-shadow: 0 10px 28px rgba(45, 42, 38, 0.16);
+    box-shadow: var(--shadow-lg);
   }
 
   .sidebar-contact {
@@ -1119,7 +1118,7 @@ body, html, #root {
 
 :root[data-theme='dark'] .home-quick-card:hover {
   border-color: #0d9488;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 :root[data-theme='dark'] .home-quick-icon {

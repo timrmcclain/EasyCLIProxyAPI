@@ -17,18 +17,18 @@
   --text-quaternary: var(--usage-page-muted);
   --border-secondary: var(--usage-page-border);
   --border-color: var(--usage-page-border);
-  --theme-fff: var(--usage-page-surface);
-  --theme-fffdf8: var(--usage-page-surface);
-  --theme-f8f5ee: var(--usage-page-surface);
-  --theme-f4f1ea: var(--usage-page-surface);
-  --theme-e3e1db: var(--usage-page-border);
-  --theme-d8d4cc: var(--usage-page-border);
-  --theme-eeeae2: var(--usage-page-border);
-  --theme-2d2a26: var(--usage-page-text);
-  --theme-5f5a53: var(--usage-page-text);
-  --theme-716b61: var(--usage-page-muted);
-  --theme-7a746c: var(--usage-page-muted);
-  --theme-8a847c: var(--usage-page-muted);
+  --surface-card: var(--usage-page-surface);
+  --surface-2: var(--usage-page-surface);
+  --surface-9: var(--usage-page-surface);
+  --surface-13: var(--usage-page-surface);
+  --line-5: var(--usage-page-border);
+  --line-8: var(--usage-page-border);
+  --line-1: var(--usage-page-border);
+  --ink-1: var(--usage-page-text);
+  --ink-secondary-alias-4: var(--usage-page-text);
+  --ink-tertiary-alias-5: var(--usage-page-muted);
+  --ink-tertiary-alias-3: var(--usage-page-muted);
+  --ink-quaternary-alias-5: var(--usage-page-muted);
   color: var(--usage-page-text);
 }
 
@@ -49,7 +49,7 @@
   background: var(--usage-page-surface);
   border-color: var(--usage-page-border);
   color: var(--usage-page-text);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 3%);
+  box-shadow: var(--shadow-sm);
 }
 
 .usage-records-page .usage-tab-panel .usage-pricing-table :is(th, td) {

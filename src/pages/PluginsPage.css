@@ -13,7 +13,7 @@
 .plugin-navigation > .plugin-toolbar { flex: 1 1 260px; justify-content: flex-end; }
 .plugin-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-tertiary); }
 .plugin-tabs button { border: 1px solid transparent; padding: 8px 14px; border-radius: 8px; background: transparent; color: var(--text-tertiary); font-size: 13px; }
-.plugin-tabs button.active { border-color: var(--border-color); background: var(--bg-card); color: var(--primary-color); font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / 4%); }
+.plugin-tabs button.active { border-color: var(--border-color); background: var(--bg-card); color: var(--primary-color); font-weight: 600; box-shadow: var(--shadow-sm); }
 .plugin-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .plugin-search { display: flex; align-items: center; gap: 10px; max-width: 440px; min-width: 180px; min-height: 44px; box-sizing: border-box; flex: 1; padding: 0 8px 0 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-tertiary); }
 .plugin-search > svg { flex: none; }
@@ -36,7 +36,7 @@
 .plugin-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 8px; color: var(--primary-color); background: var(--ui-accent-soft); }
 .plugin-badge { display: inline-flex; padding: 4px 8px; border-radius: 6px; background: var(--bg-tertiary); color: var(--text-tertiary); font-size: 11px; white-space: nowrap; }
 .plugin-badge.active { color: var(--success-badge-text); background: var(--success-badge-bg); }
-.plugin-badge.warning { color: var(--amber-text); background: var(--theme-fff7e9); }
+.plugin-badge.warning { color: var(--amber-text); background: var(--surface-23); }
 .plugin-meta, .plugin-path { color: var(--text-tertiary); font-size: 12px; margin: 0; line-height: 1.7; overflow-wrap: anywhere; }
 .plugin-path { font-family: ui-monospace, monospace; font-size: 11px; }
 .plugin-local-card .plugin-path { padding: 8px 10px; border-radius: 6px; background: var(--bg-secondary); }

@@ -91,7 +91,7 @@
   border-radius: 8px;
   background: var(--bg-card);
   color: var(--text-secondary);
-  box-shadow: 0 4px 14px #0002;
+  box-shadow: var(--shadow-md);
   pointer-events: none;
   transform: translateX(-50%);
 }

@@ -2,18 +2,11 @@
 @import './feature-pages.css';
 @import './ui-refinements.css';
 
-@import './personal-edition.css';
-@import './overview-light.css';
-
-@import './ux-improvements.css';
-@import './responsive-shell-usage.css';
-@import './responsive-providers.css';
-@import './responsive-agents.css';
-@import './responsive-settings.css';
+@import './app-theme.css';
+@import './responsive.css';
 @import './config-settings.css';
 @import '../pages/UsageEventsView.css';
 @import './usage-subpages.css';
 @import '../components/SelectMenu.css';
 @import '../pages/AgentClientList.css';
-@import './workspace-white.css';
 @import './design-system.css';
