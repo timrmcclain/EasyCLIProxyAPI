@@ -34,8 +34,8 @@
 .quota-summary-breakdown .quota-availability { grid-column:1/-1; }
 .quota-ledger .quota-row-refresh { min-height:32px; }
 @media(max-width:640px) { .quota-workflow-tools { flex-wrap:wrap; } .quota-workflow-tools input { flex-basis:100%; } }
-:root[data-theme='light'] .content:has(.home-page) { background:#fafaf7; padding:30px 36px 40px; }
-:root[data-theme='light'] .home-page { --bg-primary:#fff; --bg-secondary:#fafaf7; --bg-tertiary:#e6e8e0; --bg-hover:#eff1e9; --border-primary:#dcded5; --border-color:#e2e5da; --text-primary:#242820; --text-secondary:#64695e; --text-tertiary:#70766a; --quota-green:#16845c; --quota-amber:#b58a22; --quota-red:#bf4438; }
+:root[data-theme='light'] .content:has(.home-page) { background:var(--surface-page); padding:var(--space-8) var(--space-8) 40px; }
+:root[data-theme='light'] .home-page { --quota-green:#16845c; --quota-amber:#b58a22; --quota-red:#bf4438; }
 .quota-ledger { --quota-amber:#d6ae50; --quota-red:#d05f50; }
 :root[data-theme='dark'] .quota-ledger :is(.quota-icon-xai,.quota-icon-kimi) { background:#eee; padding:2px; border-radius:4px; }
 .account-dashboard.quota-ledger .ad-heading { margin-bottom:24px; gap:20px; }
@@ -56,7 +56,7 @@
 .quota-ledger .ledger-provider-filters button[aria-pressed='true'] { font-weight:600; }
 .quota-ledger .quota-layout-select { width:150px; flex-shrink:0; padding:8px 12px; background:var(--bg-primary); color:var(--text-primary); border:1px solid var(--border-primary); border-radius:8px; font-size:14px; }
 .quota-ledger .quota-provider-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); border-radius:12px; margin-bottom:30px; }
-:root[data-theme='light'] .quota-ledger .quota-provider-summary { background:#f3f4ee; }
+:root[data-theme='light'] .quota-ledger .quota-provider-summary { background:var(--bg-card); border:1px solid var(--border-color); }
 .quota-ledger .quota-provider-summary-cell { padding:20px; }
 .quota-ledger .quota-summary-heading { font-size:16px; margin-bottom:16px; gap:8px; }
 .quota-ledger .quota-summary-heading > span { font-size:12px; white-space:nowrap; }

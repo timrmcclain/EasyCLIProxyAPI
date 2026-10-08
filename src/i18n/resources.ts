@@ -20,7 +20,6 @@ export const zhTW: Record<MessageKey, string> = {
   'authFiles.cooldown.invalidResponse': '核心未傳回有效的清除結果，請重新整理列表確認冷卻狀態。',
   'app.contact.title': '加入 Discord 伺服器',
   'app.contact.label': '加入 Discord 伺服器',
-  'config.diagnostics.description': '啟用後將記錄呼叫出錯的請求，成功的請求不會記錄，請及時關閉「**寫入日誌檔案**」，避免占用過多儲存空間。',
   'appUpdate.notes.title': '軟體更新說明',
   'appUpdate.notes.expand': '展開',
   'appUpdate.notes.collapse': '收合',

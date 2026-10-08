@@ -136,7 +136,12 @@ export function ConnectorsPage() {
       ) : null}
       {notice ? <p className="connectors-notice" role="status">{notice}</p> : null}
       {error ? <p className="connectors-error" role="alert">{ct('loadFailed')}: {error}</p> : null}
-      {loading && !overview ? <p className="connectors-loading">…</p> : null}
+      {loading && !overview ? (
+        <p className="connectors-loading" role="status" aria-live="polite">
+          <RefreshCw size={14} aria-hidden="true" className="spin" />
+          {ct('loadingConnectors')}
+        </p>
+      ) : null}
       <div className="connectors-grid">
         {overview?.connectors.map(item => (
           <ConnectorCard
@@ -313,7 +318,14 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           <button type="button" className="secondary-button compact-button" disabled={aiTest?.running || saving} aria-busy={aiTest?.running} onClick={() => void runAiTest()}>
             <Sparkles size={14} aria-hidden="true" />{aiTest?.running ? ct('aiTesting') : ct('aiTest')}
           </button>
-          {aiTest && !aiTest.running ? <AiTestLine test={aiTest} connectorId={item.id} /> : <p className="connector-hint">{ct('aiTestHint')}{aiTestDesktopOnly ? <> {ct('aiTestDesktopCopy')}</> : null}</p>}
+          {aiTest && !aiTest.running ? (
+            <AiTestLine test={aiTest} connectorId={item.id} />
+          ) : (
+            <details className="connector-hint connector-hint-details">
+              <summary>{ct('aiTestHowTitle')}</summary>
+              <p>{ct('aiTestHint')}{aiTestDesktopOnly ? <> {ct('aiTestDesktopCopy')}</> : null}</p>
+            </details>
+          )}
         </div>
       ) : null}
 

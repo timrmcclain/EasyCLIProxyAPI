@@ -458,12 +458,13 @@ export function CodexSessionsPanel() {
                 </div>
                 <button
                   type="button"
-                  className="danger-button compact-button codex-session-delete-button"
+                  className="icon-button quiet codex-session-delete-button"
                   disabled={busy}
+                  aria-label={t('agents.sessions.deleteSession', { title: session.title || session.id })}
+                  title={t('agents.sessions.deleteSession', { title: session.title || session.id })}
                   onClick={() => requestDelete([session])}
                 >
-                  <Trash2 size={14} />
-                  {t('common.delete')}
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               </article>
             ))}

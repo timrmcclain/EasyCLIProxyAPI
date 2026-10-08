@@ -21,6 +21,7 @@ import {
   ServerCog,
   Settings,
   X,
+  Search,
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime } from './coreRuntime';
@@ -42,6 +43,7 @@ import { appUpdateIndicatorState } from './appUpdateModel';
 import { canOpenAppPage, isAlwaysAvailablePage } from './navigation';
 import { useThemePreference } from './theme';
 import { useDialogFocusTrap } from './components/useDialogFocusTrap';
+import { CommandPalette, type PaletteCommand } from './components/CommandPalette';
 
 
 const pages = [
@@ -123,6 +125,20 @@ type PageId = (typeof pages)[number]['id'];
 // Six everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
 const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'agents', 'connectors', 'config'];
 const advancedNav: PageId[] = ['api', 'plugins', 'quota', 'proxy', 'versions'];
+const LAST_PAGE_KEY = 'personal.lastPage';
+
+function initialPage(): PageId {
+  try {
+    const saved = localStorage.getItem(LAST_PAGE_KEY);
+    return saved && saved !== 'easy' && pages.some((page) => page.id === saved) ? saved as PageId : 'home';
+  } catch { return 'home'; }
+}
+
+/** Typing in a field should never trigger single-key shortcuts. */
+function isTypingTarget(target: EventTarget | null) {
+  const element = target as HTMLElement | null;
+  return Boolean(element && (element.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName)));
+}
 type WindowsCloseAction = 'exit' | 'minimize-to-tray';
 type WindowsCloseBehavior = 'ask' | WindowsCloseAction;
 
@@ -164,7 +180,9 @@ function AppContent() {
   const { locale, setLocale, t } = useI18n();
   const { info: appUpdateInfo, hasUpdate, processing: appUpdateProcessing } = useAppUpdate();
   const { latest: coreLatest, hasUpdate: coreHasUpdate } = useCoreUpdate();
-  const [active, setActive] = useState<PageId>('home');
+  const [active, setActive] = useState<PageId>(initialPage);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [homeProblems, setHomeProblems] = useState(0);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [theme, setTheme] = useThemePreference();
   const [windowsClosePrompt, setWindowsClosePrompt] = useState<WindowsClosePrompt | null>(null);
@@ -196,6 +214,39 @@ function AppContent() {
       setActive('home');
     }
   }, [active, coreReady]);
+
+  useEffect(() => {
+    try { if (active !== 'easy') localStorage.setItem(LAST_PAGE_KEY, active); } catch { /* Remembering the page is optional. */ }
+  }, [active]);
+
+  useEffect(() => {
+    const onProblems = (event: Event) => setHomeProblems(Number((event as CustomEvent<number>).detail) || 0);
+    window.addEventListener('app:account-problems', onProblems);
+    return () => window.removeEventListener('app:account-problems', onProblems);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const mod = event.ctrlKey || event.metaKey;
+      if (mod && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+        return;
+      }
+      if (mod && /^[1-6]$/.test(event.key)) {
+        event.preventDefault();
+        const target = primaryNav[Number(event.key) - 1];
+        if (target && canOpenAppPage(target, coreReady)) setActive(target);
+        return;
+      }
+      if (event.key === '/' && !mod && !event.altKey && !isTypingTarget(event.target)) {
+        const search = document.querySelector<HTMLInputElement>('main input[type="search"]');
+        if (search) { event.preventDefault(); search.focus(); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [coreReady]);
 
   useEffect(() => {
     if (!languageMenuOpen) return undefined;
@@ -338,6 +389,20 @@ function AppContent() {
     }
   };
 
+  const paletteCommands: PaletteCommand[] = [
+    ...[...primaryNav, ...advancedNav].map((id, position) => {
+      const page = pages.find((item) => item.id === id)!;
+      return {
+        id: `page-${id}`, label: t(page.labelKey), group: t('palette.pages'),
+        hint: position < primaryNav.length ? t('palette.pageShortcut', { key: position + 1 }) : undefined,
+        disabled: !canOpenAppPage(id, coreReady), run: () => select(id),
+      };
+    }),
+    { id: 'theme-light', label: t('app.theme.switchToLight'), group: t('palette.appearance'), run: () => setTheme('light') },
+    { id: 'theme-dark', label: t('app.theme.switchToDark'), group: t('palette.appearance'), run: () => setTheme('dark') },
+    { id: 'theme-system', label: t('app.theme.switchToSystem'), group: t('palette.appearance'), run: () => setTheme('system') },
+  ];
+
   const renderNavigationPage = (page: (typeof pages)[number]) => {
               const Icon = page.icon;
               const locked = !canOpenAppPage(page.id, coreReady);
@@ -361,6 +426,9 @@ function AppContent() {
                 >
                   <Icon size={16} aria-hidden="true" />
                   <span>{t(page.labelKey)}</span>
+                  {page.id === 'home' && homeProblems > 0 ? (
+                    <i className="nav-attention-dot" title={t('app.nav.attention', { count: homeProblems })} aria-label={t('app.nav.attention', { count: homeProblems })} />
+                  ) : null}
                   {locked ? (
                     <Lock size={14} className="nav-lock-icon" aria-hidden="true" />
                   ) : updateIndicator ? (
@@ -392,6 +460,9 @@ function AppContent() {
             </div>
           </div>
 
+          <button type="button" className="sidebar-command-button" onClick={() => setPaletteOpen(true)} aria-keyshortcuts="Control+K">
+            <Search size={14} aria-hidden="true" /><span>{t('palette.open')}</span><kbd>{t('palette.shortcut')}</kbd>
+          </button>
           <nav className="nav-section" aria-label={t('app.navigation')}>
             {primaryNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
             <details className="personal-advanced" open={advancedNav.includes(active) || undefined}>
@@ -599,6 +670,7 @@ function AppContent() {
       ) : null}
 
       <AppUpdateDialog />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
     </>
   );
 }

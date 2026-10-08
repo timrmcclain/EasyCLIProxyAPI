@@ -183,7 +183,6 @@ export function ConfigPanelPage() {
   const [busyAction, setBusyAction] = useState<ConfigAction>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingApiKey, setEditingApiKey] = useState<string | null>(null);
-  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [newApiKey, setNewApiKey] = useState('');
   const [newApiKeyRemark, setNewApiKeyRemark] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -654,19 +653,23 @@ export function ConfigPanelPage() {
     }
   };
 
-  const confirmDelete = async () => {
-    if (deleteIndex === null) {
-      return;
-    }
-    const deleted = await runMutation(
+  const requestDeleteKey = async (index: number) => {
+    const apiKey = settings?.apiKeys[index]?.apiKey || '';
+    if (!apiKey) return;
+    const confirmed = await askConfirmation({
+      title: t('config.keys.deleteTitle'),
+      message: t('config.keys.deleteConfirm', { key: maskApiKey(apiKey) }),
+      warning: settings?.apiKeys.length === 1 ? t('config.keys.deleteAllWarning') : undefined,
+      confirmText: t('common.delete'),
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    await runMutation(
       'delete-key',
       'delete_core_api_key',
-      { apiKey: selectedDeleteKey },
+      { apiKey },
       t('config.notice.keyDeleted'),
     );
-    if (deleted) {
-      setDeleteIndex(null);
-    }
   };
 
   const copyApiKey = async (apiKey: string, index: number) => {
@@ -1020,9 +1023,6 @@ export function ConfigPanelPage() {
     && tlsSettings !== null
     && !tlsSettingsDirty
     && tlsSavedStatusVisible;
-  const selectedDeleteKey =
-    deleteIndex === null ? '' : settings?.apiKeys[deleteIndex]?.apiKey || '';
-  const deletingLastKey = deleteIndex !== null && settings?.apiKeys.length === 1;
   const keyMutationBusy = busyAction === 'add-key' || busyAction === 'update-key';
   const managementSecretBusy = busyAction === 'management-secret';
   const loggingSettingsBusy = busyAction === 'logging';
@@ -1030,11 +1030,6 @@ export function ConfigPanelPage() {
     active: addDialogOpen,
     onEscape: keyMutationBusy ? undefined : closeAddDialog,
     preventEscape: keyMutationBusy,
-  });
-  const deleteDialogRef = useDialogFocusTrap<HTMLDivElement>({
-    active: deleteIndex !== null,
-    onEscape: busyAction === 'delete-key' ? undefined : () => setDeleteIndex(null),
-    preventEscape: busyAction === 'delete-key',
   });
   const activateConfigSubpage = (subpage: ConfigSubpage) => {
     setSettingsSearch('');
@@ -1202,7 +1197,7 @@ export function ConfigPanelPage() {
                     <button
                       type="button"
                       className="icon-button danger"
-                      onClick={() => setDeleteIndex(index)}
+                      onClick={() => void requestDeleteKey(index)}
                       disabled={controlsDisabled}
                       title={t('config.keys.delete')}
                       aria-label={t('config.keys.deleteNth', { number: index + 1 })}
@@ -1219,7 +1214,7 @@ export function ConfigPanelPage() {
               </div>
             )}
           </div>
-          {!addDialogOpen && deleteIndex === null ? renderFeedback(keyFeedback) : null}
+          {!addDialogOpen ? renderFeedback(keyFeedback) : null}
         </section>
 <section id="config-native-management" tabIndex={-1} hidden={searching || activeSubpage !== 'general'} className="panel config-management-panel">
           <div className="config-panel-heading">
@@ -1340,7 +1335,6 @@ export function ConfigPanelPage() {
                 <Network size={16} aria-hidden="true" />
                 <h3 id="config-network-section-title">{st('nativeNetwork')}</h3>
               </div>
-              <span className="config-card-status" role="status">{nativeDirty.network ? st('dirty') : ''}</span>
 
             </div>
             {renderFeedback(networkFeedback)}
@@ -1449,7 +1443,7 @@ export function ConfigPanelPage() {
               </div>
             </div>
 
-          <div className="config-settings-save-row"><button
+          <div className="config-settings-save-row"><span className="config-card-status" role="status">{networkSettingsDirty ? st('dirty') : ''}</span><button
                 type="button"
                 className="primary-button compact-button"
                 disabled={controlsDisabled || !networkSettingsDirty}
@@ -1574,7 +1568,7 @@ export function ConfigPanelPage() {
             {renderFeedback(tlsFeedback)}
           </div>
 
-          <div className="config-settings-save-row"><button
+          <div className="config-settings-save-row"><span className="config-card-status" role="status">{tlsSettingsDirty ? st('dirty') : ''}</span><button
                 type="button"
                 className="primary-button compact-button"
                 disabled={tlsSettingsLoading || tlsSettings === null || busyAction !== null || tlsFileSelecting !== null || !tlsSettingsDirty}
@@ -1593,7 +1587,6 @@ export function ConfigPanelPage() {
                 <Route size={16} aria-hidden="true" />
                 <h3 id="config-routing-section-title">{st('nativeRouting')}</h3>
               </div>
-              <span className="config-card-status" role="status">{nativeDirty.routing ? st('dirty') : ''}</span>
 
             </div>
             {renderFeedback(routingFeedback)}
@@ -1616,33 +1609,6 @@ export function ConfigPanelPage() {
                   />
                   <span className="switch-track" />
                 </label>
-              </div>
-
-              <div className="config-network-field">
-                <span className="config-field-label"><label htmlFor="config-input-config-network-sessionTtl">
-                  <Clock3 size={16} aria-hidden="true" />
-                  {t('config.network.sessionTtl')}
-                </label><SettingsHelp label={t('config.network.sessionTtl')}>{t('config.network.sessionTtlHint')}</SettingsHelp></span>
-                <input
-                  id="config-input-config-network-sessionTtl"
-                  className="config-network-input"
-                  type="text"
-                  value={sessionTtlDraft}
-                  disabled={controlsDisabled}
-                  placeholder="1h"
-                  onChange={(event) => {
-                    markDraftDirty('sessionTtl');
-                    setSessionTtlDraft(event.currentTarget.value);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape' && settings) {
-                      clearDraftDirty('sessionTtl');
-                      setSessionTtlDraft(settings.routingSessionAffinityTtl);
-                      event.currentTarget.blur();
-                    }
-                  }}
-                />
-
               </div>
 
               <div className="config-network-field config-network-routing-field">
@@ -1676,7 +1642,40 @@ export function ConfigPanelPage() {
               </div>
             </div>
 
-          <div className="config-settings-save-row"><button
+            <details className="config-advanced-details">
+              <summary>{t('config.advanced.title')}</summary>
+              <div className="config-network-grid">
+              <div className="config-network-field">
+                <span className="config-field-label"><label htmlFor="config-input-config-network-sessionTtl">
+                  <Clock3 size={16} aria-hidden="true" />
+                  {t('config.network.sessionTtl')}
+                </label><SettingsHelp label={t('config.network.sessionTtl')}>{t('config.network.sessionTtlHint')}</SettingsHelp></span>
+                <input
+                  id="config-input-config-network-sessionTtl"
+                  className="config-network-input"
+                  type="text"
+                  value={sessionTtlDraft}
+                  disabled={controlsDisabled}
+                  placeholder="1h"
+                  onChange={(event) => {
+                    markDraftDirty('sessionTtl');
+                    setSessionTtlDraft(event.currentTarget.value);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape' && settings) {
+                      clearDraftDirty('sessionTtl');
+                      setSessionTtlDraft(settings.routingSessionAffinityTtl);
+                      event.currentTarget.blur();
+                    }
+                  }}
+                />
+
+              </div>
+
+              </div>
+            </details>
+
+          <div className="config-settings-save-row"><span className="config-card-status" role="status">{sessionRoutingDirty ? st('dirty') : ''}</span><button
                 type="button"
                 className="primary-button compact-button"
                 disabled={controlsDisabled || !sessionRoutingDirty}
@@ -1695,32 +1694,10 @@ export function ConfigPanelPage() {
                 <RefreshCw size={16} aria-hidden="true" />
                 <h3 id="config-retry-section-title">{st('nativeRetry')}</h3>
               </div>
-              <span className="config-card-status" role="status">{nativeDirty.retry ? st('dirty') : ''}</span>
 
             </div>
             {renderFeedback(retryFeedback)}
             <div className="config-network-grid">
-              <div className="config-network-field config-network-toggle">
-                <div>
-                  <span className="config-field-label"><span>{t('config.network.disableCooling')}</span><SettingsHelp label={t('config.network.disableCooling')}>{t('config.network.disableCoolingHint')}</SettingsHelp></span>
-
-                </div>
-                <label className="switch-control" title={t('config.network.disableCooling')}>
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    aria-label={t('config.network.disableCooling')}
-                    checked={disableCoolingDraft}
-                    disabled={controlsDisabled}
-                    onChange={(event) => {
-                      markDraftDirty('disableCooling');
-                      setDisableCoolingDraft(event.currentTarget.checked);
-                    }}
-                  />
-                  <span className="switch-track" />
-                </label>
-              </div>
-
               <div className="config-network-field">
                 <span className="config-field-label"><label htmlFor="config-input-config-network-requestRetry">{t('config.network.requestRetry')}</label><SettingsHelp label={t('config.network.requestRetry')}>{templateText(templateMessages.retryHint, locale)}</SettingsHelp></span>
                 <input
@@ -1742,35 +1719,6 @@ export function ConfigPanelPage() {
                     if (event.key === 'Escape' && settings) {
                       clearDraftDirty('requestRetry');
                       setRequestRetryDraft(String(settings.requestRetry));
-                      setRetryError('');
-                      event.currentTarget.blur();
-                    }
-                  }}
-                />
-
-              </div>
-
-              <div className="config-network-field">
-                <span className="config-field-label"><label htmlFor="config-input-config-network-maxRetryCredentials">{t('config.network.maxRetryCredentials')}</label><SettingsHelp label={t('config.network.maxRetryCredentials')}>{templateText(templateMessages.credentialsHint, locale)}</SettingsHelp></span>
-                <input
-                  id="config-input-config-network-maxRetryCredentials"
-                  className={`config-network-input ${retryError ? 'error' : ''}`}
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={10}
-                  value={maxRetryCredentialsDraft}
-                  disabled={controlsDisabled}
-                  aria-invalid={Boolean(retryError)}
-                  onChange={(event) => {
-                    markDraftDirty('maxRetryCredentials');
-                    setMaxRetryCredentialsDraft(event.currentTarget.value.replace(/\D/g, '').slice(0, 10));
-                    setRetryError('');
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape' && settings) {
-                      clearDraftDirty('maxRetryCredentials');
-                      setMaxRetryCredentialsDraft(String(settings.maxRetryCredentials));
                       setRetryError('');
                       event.currentTarget.blur();
                     }
@@ -1809,6 +1757,61 @@ export function ConfigPanelPage() {
 
               </div>
 
+            </div>
+
+            <details className="config-advanced-details">
+              <summary>{t('config.advanced.title')}</summary>
+              <div className="config-network-grid">
+              <div className="config-network-field config-network-toggle">
+                <div>
+                  <span className="config-field-label"><span>{t('config.network.disableCooling')}</span><SettingsHelp label={t('config.network.disableCooling')}>{t('config.network.disableCoolingHint')}</SettingsHelp></span>
+
+                </div>
+                <label className="switch-control" title={t('config.network.disableCooling')}>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label={t('config.network.disableCooling')}
+                    checked={disableCoolingDraft}
+                    disabled={controlsDisabled}
+                    onChange={(event) => {
+                      markDraftDirty('disableCooling');
+                      setDisableCoolingDraft(event.currentTarget.checked);
+                    }}
+                  />
+                  <span className="switch-track" />
+                </label>
+              </div>
+
+              <div className="config-network-field">
+                <span className="config-field-label"><label htmlFor="config-input-config-network-maxRetryCredentials">{t('config.network.maxRetryCredentials')}</label><SettingsHelp label={t('config.network.maxRetryCredentials')}>{templateText(templateMessages.credentialsHint, locale)}</SettingsHelp></span>
+                <input
+                  id="config-input-config-network-maxRetryCredentials"
+                  className={`config-network-input ${retryError ? 'error' : ''}`}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={10}
+                  value={maxRetryCredentialsDraft}
+                  disabled={controlsDisabled}
+                  aria-invalid={Boolean(retryError)}
+                  onChange={(event) => {
+                    markDraftDirty('maxRetryCredentials');
+                    setMaxRetryCredentialsDraft(event.currentTarget.value.replace(/\D/g, '').slice(0, 10));
+                    setRetryError('');
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape' && settings) {
+                      clearDraftDirty('maxRetryCredentials');
+                      setMaxRetryCredentialsDraft(String(settings.maxRetryCredentials));
+                      setRetryError('');
+                      event.currentTarget.blur();
+                    }
+                  }}
+                />
+
+              </div>
+
               <div className="config-network-field">
                 <span className="config-field-label"><label htmlFor="config-input-config-network-streamingBootstrapRetries">{t('config.network.streamingBootstrapRetries')}</label><SettingsHelp label={t('config.network.streamingBootstrapRetries')}>{t('config.network.streamingBootstrapRetriesHint')}</SettingsHelp></span>
                 <input
@@ -1837,9 +1840,10 @@ export function ConfigPanelPage() {
                 />
 
               </div>
-            </div>
+              </div>
+            </details>
 
-          <div className="config-settings-save-row"><button
+          <div className="config-settings-save-row"><span className="config-card-status" role="status">{retrySettingsDirty ? st('dirty') : ''}</span><button
                 type="button"
                 className="primary-button compact-button"
                 disabled={controlsDisabled || !retrySettingsDirty}
@@ -1873,28 +1877,6 @@ export function ConfigPanelPage() {
                   disabled={controlsDisabled}
                   onChange={(event) => {
                     setDebugDraft(event.currentTarget.checked);
-                    markLoggingDraftDirty();
-                  }}
-                />
-                <span className="switch-track" />
-              </label>
-            </div>
-
-            <div className="config-diagnostics-setting">
-              <span className="config-diagnostics-setting-icon" aria-hidden="true"><Gauge size={18} /></span>
-              <div className="config-diagnostics-setting-copy">
-                <span className="config-field-label"><strong>{t('config.diagnostics.commercial.title')}</strong><SettingsHelp label={t('config.diagnostics.commercial.title')}>{t('config.diagnostics.commercial.description')} {t('config.diagnostics.commercial.warning')}</SettingsHelp></span>
-
-              </div>
-              <label className="switch-control" title={t('config.diagnostics.commercial.title')}>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={commercialModeDraft}
-                  aria-label={t('config.diagnostics.commercial.title')}
-                  disabled={controlsDisabled}
-                  onChange={(event) => {
-                    setCommercialModeDraft(event.currentTarget.checked);
                     markLoggingDraftDirty();
                   }}
                 />
@@ -1982,25 +1964,55 @@ export function ConfigPanelPage() {
               />
 
             </div>
-            <div className="config-diagnostics-field">
-              <span className="config-field-label"><label htmlFor="config-input-config-diagnostics-redisRetention-title">{t('config.diagnostics.redisRetention.title')}</label><SettingsHelp label={t('config.diagnostics.redisRetention.title')}>{t('config.diagnostics.redisRetention.hint')}</SettingsHelp></span>
-              <input
-                  id="config-input-config-diagnostics-redisRetention-title"
-                className="config-dialog-text-input"
-                type="number"
-                min="1"
-                max="3600"
-                step="1"
-                value={redisUsageRetentionDraft}
-                disabled={controlsDisabled}
-                onChange={(event) => {
-                  setRedisUsageRetentionDraft(event.currentTarget.value);
-                  markLoggingDraftDirty();
-                }}
-              />
+          </div>
+
+          <details className="config-advanced-details">
+            <summary>{t('config.advanced.title')}</summary>
+            <div className="config-diagnostics-toggle-grid">
+              <div className="config-diagnostics-setting">
+                <span className="config-diagnostics-setting-icon" aria-hidden="true"><Gauge size={18} /></span>
+                <div className="config-diagnostics-setting-copy">
+                  <span className="config-field-label"><strong>{t('config.diagnostics.commercial.title')}</strong><SettingsHelp label={t('config.diagnostics.commercial.title')}>{t('config.diagnostics.commercial.description')} {t('config.diagnostics.commercial.warning')}</SettingsHelp></span>
+
+                </div>
+                <label className="switch-control" title={t('config.diagnostics.commercial.title')}>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={commercialModeDraft}
+                    aria-label={t('config.diagnostics.commercial.title')}
+                    disabled={controlsDisabled}
+                    onChange={(event) => {
+                      setCommercialModeDraft(event.currentTarget.checked);
+                      markLoggingDraftDirty();
+                    }}
+                  />
+                  <span className="switch-track" />
+                </label>
+              </div>
 
             </div>
-          </div>
+            <div className="config-diagnostics-fields">
+              <div className="config-diagnostics-field">
+                <span className="config-field-label"><label htmlFor="config-input-config-diagnostics-redisRetention-title">{t('config.diagnostics.redisRetention.title')}</label><SettingsHelp label={t('config.diagnostics.redisRetention.title')}>{t('config.diagnostics.redisRetention.hint')}</SettingsHelp></span>
+                <input
+                    id="config-input-config-diagnostics-redisRetention-title"
+                  className="config-dialog-text-input"
+                  type="number"
+                  min="1"
+                  max="3600"
+                  step="1"
+                  value={redisUsageRetentionDraft}
+                  disabled={controlsDisabled}
+                  onChange={(event) => {
+                    setRedisUsageRetentionDraft(event.currentTarget.value);
+                    markLoggingDraftDirty();
+                  }}
+                />
+
+              </div>
+            </div>
+          </details>
 
           {settings && commercialModeDraft !== settings.commercialMode ? (
             <div className="config-diagnostics-commercial-note">
@@ -2208,7 +2220,7 @@ export function ConfigPanelPage() {
               </div>
             </div>
 
-          <div className="config-settings-save-row"><button
+          <div className="config-settings-save-row"><span className="config-card-status" role="status">{softwareSettingsDirty ? st('dirty') : ''}</span><button
                   type="button"
                   className="primary-button compact-button"
                   disabled={softwareSettingsLoading || softwareSettings === null || busyAction !== null || !softwareSettingsDirty}
@@ -2334,56 +2346,6 @@ export function ConfigPanelPage() {
               </button>
             </div>
           </form>
-        </div>
-      ) : null}
-
-      {deleteIndex !== null ? (
-        <div className="config-dialog-backdrop" onMouseDown={(event) => {
-          if (event.currentTarget === event.target && busyAction !== 'delete-key') {
-            setDeleteIndex(null);
-          }
-        }}>
-          <div
-            ref={deleteDialogRef}
-            className={`config-dialog config-delete-dialog ${deletingLastKey ? 'has-warning' : ''}`}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-api-key-title"
-          >
-            <div className="config-dialog-heading">
-              <div>
-                <Trash2 size={20} aria-hidden="true" />
-                <h2 id="delete-api-key-title">{t('config.keys.deleteTitle')}</h2>
-              </div>
-            </div>
-            <code className="config-delete-key">{maskApiKey(selectedDeleteKey)}</code>
-            {renderFeedback(keyFeedback)}
-            {deletingLastKey ? (
-              <div className="config-delete-warning">
-                <AlertCircle size={16} aria-hidden="true" />
-                <span>{t('config.keys.deleteAllWarning')}</span>
-              </div>
-            ) : null}
-            <div className="config-dialog-actions two-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setDeleteIndex(null)}
-                disabled={busyAction === 'delete-key'}
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                type="button"
-                className="danger-button"
-                onClick={() => void confirmDelete()}
-                disabled={busyAction === 'delete-key'}
-              >
-                <Trash2 size={16} aria-hidden="true" />
-                {busyAction === 'delete-key' ? t('common.deleting') : t('common.delete')}
-              </button>
-            </div>
-          </div>
         </div>
       ) : null}
 

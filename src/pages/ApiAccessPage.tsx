@@ -2017,8 +2017,22 @@ export function ApiProviderDialog({
     setModelLoading(false);
     setModelDiscoveryOpen(false);
   }, []);
+  const { askConfirmation, confirmationDialog } = useConfirmation();
+  const initialDraftSnapshot = useMemo(() => JSON.stringify(initialDraft), [initialDraft]);
+  const draftDirty = JSON.stringify(draft) !== initialDraftSnapshot;
+  const [modelListOpen, setModelListOpen] = useState(initialDraft.models.length <= 3);
+  const requestClose = useCallback(async () => {
+    if (busy) return;
+    if (draftDirty && !await askConfirmation({
+      title: t('apiAccess.discard.title'),
+      message: t('apiAccess.discard.message'),
+      confirmText: t('apiAccess.discard.confirm'),
+      variant: 'danger',
+    })) return;
+    onClose();
+  }, [askConfirmation, busy, draftDirty, onClose, t]);
   const providerDialogRef = useDialogFocusTrap<HTMLFormElement>({
-    onEscape: busy ? undefined : onClose,
+    onEscape: busy ? undefined : () => void requestClose(),
     preventEscape: busy,
   });
   const modelDialogRef = useDialogFocusTrap<HTMLElement>({
@@ -2097,6 +2111,7 @@ export function ApiProviderDialog({
   };
 
   const addModel = () => {
+    setModelListOpen(true);
     updateModels((models) => [...models, { name: '', alias: '' }]);
   };
 
@@ -2200,6 +2215,7 @@ export function ApiProviderDialog({
 
   const applyModelSelection = () => {
     if (modelLoading || selectedModels.length === 0) return;
+    setModelListOpen(selectedModels.length <= 3);
     setDraft((current) => ({
       ...current,
       models: selectedModels.flatMap((selected) => {
@@ -2260,9 +2276,41 @@ export function ApiProviderDialog({
         ? t('apiAccess.models.autoHint')
         : t('apiAccess.models.allHint');
 
+  const modelRows = draft.models.map((model, index) => (
+    <div className="provider-model-config" key={index}><div className="model-config-entry">
+      <input
+        value={model.name}
+        onChange={(event) => updateModel(index, { name: event.currentTarget.value })}
+        placeholder={t('apiAccess.models.namePlaceholder')}
+        aria-label={t('apiAccess.models.namePlaceholder')}
+        disabled={busy}
+      />
+      <input
+        value={model.alias ?? ''}
+        onChange={(event) => updateModel(index, { alias: event.currentTarget.value })}
+        placeholder={t('apiAccess.models.aliasPlaceholder')}
+        aria-label={t('apiAccess.models.aliasPlaceholder')}
+        disabled={busy}
+      />
+      <button
+        type="button"
+        className="icon-button quiet danger"
+        onClick={() => removeModel(index)}
+        disabled={busy}
+        title={t('apiAccess.models.remove')}
+        aria-label={t('apiAccess.models.remove')}
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+      <ProviderModelFields section={activeSection} value={model.config ?? { ...(model.thinking ? { thinking: model.thinking } : {}) }} onChange={(config) => updateModel(index, { config, thinking: isRecord(config.thinking) ? config.thinking : undefined })} />
+    </div>
+  ));
+
   const content = (
     <>
-      <div className="config-dialog-backdrop" onMouseDown={(event) => event.currentTarget === event.target && !busy && onClose()}>
+      {confirmationDialog}
+      <div className="config-dialog-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target && !busy) void requestClose(); }}>
       <form ref={providerDialogRef} className="config-dialog management-dialog api-provider-dialog" role="dialog" aria-modal="true" aria-labelledby="api-provider-dialog-title" onSubmit={(event) => void submit(event)}>
         <div className="config-dialog-heading">
           <div>
@@ -2271,7 +2319,7 @@ export function ApiProviderDialog({
               ? editingRow ? 'apiAccess.entries.editProvider' : 'apiAccess.entries.addProvider'
               : editingRow ? 'apiAccess.entries.editKey' : 'apiAccess.entries.addKey')}</h2>
           </div>
-          <button type="button" className="icon-button quiet" onClick={onClose} disabled={busy} title={t('common.close')} aria-label={t('common.close')}>
+          <button type="button" className="icon-button quiet" onClick={() => void requestClose()} disabled={busy} title={t('common.close')} aria-label={t('common.close')}>
             <X size={18} aria-hidden="true" />
           </button>
         </div>
@@ -2311,36 +2359,12 @@ export function ApiProviderDialog({
             <span>{modelSummaryDetail}</span>
           </div>
           <div className="model-config-entries">
-            {draft.models.map((model, index) => (
-              <div className="provider-model-config" key={index}><div className="model-config-entry">
-                <input
-                  value={model.name}
-                  onChange={(event) => updateModel(index, { name: event.currentTarget.value })}
-                  placeholder={t('apiAccess.models.namePlaceholder')}
-                  aria-label={t('apiAccess.models.namePlaceholder')}
-                  disabled={busy}
-                />
-                <input
-                  value={model.alias ?? ''}
-                  onChange={(event) => updateModel(index, { alias: event.currentTarget.value })}
-                  placeholder={t('apiAccess.models.aliasPlaceholder')}
-                  aria-label={t('apiAccess.models.aliasPlaceholder')}
-                  disabled={busy}
-                />
-                <button
-                  type="button"
-                  className="icon-button quiet danger"
-                  onClick={() => removeModel(index)}
-                  disabled={busy}
-                  title={t('apiAccess.models.remove')}
-                  aria-label={t('apiAccess.models.remove')}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-                <ProviderModelFields section={activeSection} value={model.config ?? { ...(model.thinking ? { thinking: model.thinking } : {}) }} onChange={(config) => updateModel(index, { config, thinking: isRecord(config.thinking) ? config.thinking : undefined })} />
-              </div>
-            ))}
+            {draft.models.length > 3 ? (
+              <details className="provider-model-list" open={modelListOpen} onToggle={(event) => setModelListOpen(event.currentTarget.open)}>
+                <summary>{t('apiAccess.models.listToggle', { count: draft.models.length })}</summary>
+                {modelRows}
+              </details>
+            ) : modelRows}
             <button type="button" className="secondary-button compact-button model-config-add" onClick={addModel} disabled={busy}>
               <Plus size={14} />{t('apiAccess.models.add')}
             </button>
@@ -2444,8 +2468,8 @@ export function ApiProviderDialog({
               <div><strong>{t('apiAccess.cooling.title')}</strong><span>{t('apiAccess.cooling.description')}</span></div>
               <select aria-label={t('apiAccess.cooling.title')} value={draft.disableCooling == null ? '' : String(draft.disableCooling)} onChange={(event) => updateOptionalBooleanField('disableCooling', event.currentTarget.value)}>
                 <option value="">{t('apiAccess.option.inherit')}</option>
-                <option value="true">{t('apiAccess.cooling.disable')}</option>
                 <option value="false">{t('apiAccess.cooling.enable')}</option>
+                <option value="true">{t('apiAccess.cooling.disable')}</option>
               </select>
             </div>
           </div>
@@ -2454,7 +2478,7 @@ export function ApiProviderDialog({
           <MessageNotice message={formError} onDismiss={() => setFormError('')} />
         ) : null}
         <div className="config-dialog-actions two-actions">
-          <button type="button" className="secondary-button" onClick={onClose} disabled={busy}>{t('common.cancel')}</button>
+          <button type="button" className="secondary-button" onClick={() => void requestClose()} disabled={busy}>{t('common.cancel')}</button>
           <button type="submit" className="primary-button" disabled={busy}>{busy ? t('common.saving') : t('common.save')}</button>
         </div>
       </form>

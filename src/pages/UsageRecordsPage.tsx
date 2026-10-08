@@ -1,14 +1,14 @@
 import { usagePreferences } from '../services/usagePreferences';
 import { useConfirmation } from '../components/ConfirmationDialog';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
-  Activity,
   Database,
   Gauge,
   Pencil,
   RefreshCw,
+  SlidersHorizontal,
   Trash2,
   TriangleAlert,
   Wallet,
@@ -261,6 +261,7 @@ export function UsageRecordsPage() {
   const [source, setSource] = useState('');
   const [apiKeyHash, setApiKeyHash] = useState('');
   const [result, setResult] = useState('all');
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(loadPageSize);
   const [status, setStatus] = useState<CollectorStatus | null>(null);
@@ -451,6 +452,12 @@ export function UsageRecordsPage() {
     };
   }, [loadData]);
 
+  // Provider, source, key and result live behind "More filters"; open it whenever one is in use.
+  const hiddenFilterCount = [provider, source, apiKeyHash].filter(Boolean).length + (result !== 'all' ? 1 : 0);
+  useEffect(() => {
+    if (hiddenFilterCount > 0) setMoreFiltersOpen(true);
+  }, [hiddenFilterCount]);
+
   const changeFilter = (setter: (value: string) => void, value: string) => {
     setter(value);
     setPage(1);
@@ -462,8 +469,15 @@ export function UsageRecordsPage() {
     !error &&
     loading &&
     ((activeTab === 'overview' && !overview) ||
-      (activeTab === 'analysis' && !overview && !analysis) ||
+      (activeTab === 'analysis' && !overview) ||
       (activeTab === 'events' && !events) ||
+      (activeTab === 'pricing' && !pricing));
+
+  // After a failed or empty load these tabs would otherwise render nothing at all.
+  const showUnavailable =
+    !showInitialLoading &&
+    (!loading || Boolean(error)) &&
+    (((activeTab === 'overview' || activeTab === 'analysis') && !overview) ||
       (activeTab === 'pricing' && !pricing));
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tab: UsageTab) => {
@@ -511,43 +525,55 @@ export function UsageRecordsPage() {
               options={[{ value: '', label: t('usage.filter.allModels') }, ...modelOptions.map((item) => ({ value: item.key, label: item.label }))]}
             />
           </div>
-          <div className="usage-filter-item">
-            <SelectMenu
-              value={provider}
-              ariaLabel={t('usage.column.provider')}
-              onChange={(value) => changeFilter(setProvider, value)}
-              options={[{ value: '', label: t('usage.filter.allProviders') }, ...providerOptions.map((item) => ({ value: item.key, label: item.label }))]}
-            />
-          </div>
-          <div className="usage-filter-item">
-            <SelectMenu
-              value={source}
-              ariaLabel={t('usage.filter.source')}
-              onChange={(value) => changeFilter(setSource, value)}
-              options={[{ value: '', label: t('usage.filter.allSources') }, ...sourceOptions.map((item) => ({ value: item.key, label: item.label }))]}
-            />
-          </div>
-          <div className="usage-filter-item">
-            <SelectMenu
-              value={apiKeyHash}
-              ariaLabel={t('apiAccess.field.key')}
-              onChange={(value) => changeFilter(setApiKeyHash, value)}
-              options={[{ value: '', label: t('usage.filter.allKeys') }, ...keyOptions.map((item) => ({ value: item.key, label: item.label }))]}
-            />
-          </div>
-          <div className="usage-filter-item">
-            <SelectMenu
-              value={result}
-              ariaLabel={t('usage.filter.result')}
-              onChange={(value) => changeFilter(setResult, value)}
-              options={[
-                { value: 'all', label: t('usage.filter.allResults') },
-                { value: 'success', label: t('usage.result.success') },
-                { value: 'failed', label: t('usage.result.failed') },
-                { value: 'canceled', label: t('usage.result.canceled') },
-              ]}
-            />
-          </div>
+          {moreFiltersOpen ? <>
+            <div className="usage-filter-item">
+              <SelectMenu
+                value={provider}
+                ariaLabel={t('usage.column.provider')}
+                onChange={(value) => changeFilter(setProvider, value)}
+                options={[{ value: '', label: t('usage.filter.allProviders') }, ...providerOptions.map((item) => ({ value: item.key, label: item.label }))]}
+              />
+            </div>
+            <div className="usage-filter-item">
+              <SelectMenu
+                value={source}
+                ariaLabel={t('usage.filter.source')}
+                onChange={(value) => changeFilter(setSource, value)}
+                options={[{ value: '', label: t('usage.filter.allSources') }, ...sourceOptions.map((item) => ({ value: item.key, label: item.label }))]}
+              />
+            </div>
+            <div className="usage-filter-item">
+              <SelectMenu
+                value={apiKeyHash}
+                ariaLabel={t('apiAccess.field.key')}
+                onChange={(value) => changeFilter(setApiKeyHash, value)}
+                options={[{ value: '', label: t('usage.filter.allKeys') }, ...keyOptions.map((item) => ({ value: item.key, label: item.label }))]}
+              />
+            </div>
+            <div className="usage-filter-item">
+              <SelectMenu
+                value={result}
+                ariaLabel={t('usage.filter.result')}
+                onChange={(value) => changeFilter(setResult, value)}
+                options={[
+                  { value: 'all', label: t('usage.filter.allResults') },
+                  { value: 'success', label: t('usage.result.success') },
+                  { value: 'failed', label: t('usage.result.failed') },
+                  { value: 'canceled', label: t('usage.result.canceled') },
+                ]}
+              />
+            </div>
+          </> : null}
+          <button
+            type="button"
+            className={`usage-filter-more${hiddenFilterCount > 0 ? ' has-active' : ''}`}
+            aria-expanded={moreFiltersOpen}
+            onClick={() => setMoreFiltersOpen((open) => !open)}
+          >
+            <SlidersHorizontal size={14} aria-hidden="true" />
+            <span>{t(moreFiltersOpen ? 'usage.filter.hideMore' : 'usage.filter.more')}</span>
+            {hiddenFilterCount > 0 ? <span className="usage-filter-more-count">{t('usage.filter.active', { count: hiddenFilterCount })}</span> : null}
+          </button>
         </div>
       </div>
 
@@ -687,8 +713,9 @@ export function UsageRecordsPage() {
         </div>
       ) : null}
 
+      {showUnavailable ? <UsageUnavailable failed={Boolean(error)} retrying={loading} onRetry={() => void loadData(false)} /> : null}
       {activeTab === 'overview' && overview ? <OverviewView overview={overview} range={overviewRange} /> : null}
-      {activeTab === 'analysis' && (analysis || overview) ? <UsageAnalysisView analysis={analysis} overview={overview} range={overviewRange} /> : null}
+      {activeTab === 'analysis' && overview ? <UsageAnalysisView analysis={analysis} overview={overview} range={overviewRange} /> : null}
       {activeTab === 'events' ? (
         <EventsView
           events={events ?? { items: [], total: 0, page, pageSize, totalPages: 1 }}
@@ -836,7 +863,7 @@ function UsageDataManagementView() {
       <div className="usage-data-management-action usage-storage-limit-action">
         <div>
           <strong>{t('usage.dataManagement.storageTitle')}</strong>
-          <span>{t('usage.dataManagement.storageDescription')}</span>
+          <span title={t('usage.dataManagement.storageDetail')}>{t('usage.dataManagement.storageDescription')}</span>
           {storage ? (
             <small>
               {t('usage.dataManagement.storageCurrent', {
@@ -876,7 +903,7 @@ function UsageDataManagementView() {
       <div className="usage-data-management-action">
         <div>
           <strong>{t('usage.dataManagement.shrinkTitle')}</strong>
-          <span>{t('usage.dataManagement.shrinkDescription')}</span>
+          <span title={t('usage.dataManagement.shrinkDetail')}>{t('usage.dataManagement.shrinkDescription')}</span>
         </div>
         <div className="usage-storage-limit-editor">
           <label>
@@ -896,7 +923,7 @@ function UsageDataManagementView() {
           </label>
           <button
             type="button"
-            className="primary-button"
+            className="danger-button"
             onClick={() => void shrinkDatabase()}
             disabled={savingLimit || shrinking || running}
           >
@@ -912,7 +939,7 @@ function UsageDataManagementView() {
           <strong>{t('usage.dataManagement.actionTitle')}</strong>
           <span>{t('usage.dataManagement.actionDescription')}</span>
         </div>
-        <button type="button" className="primary-button" onClick={() => void repair()} disabled={running || savingLimit || shrinking}>
+        <button type="button" className="secondary-button" onClick={() => void repair()} disabled={running || savingLimit || shrinking}>
           {running ? t('usage.dataManagement.running') : t('usage.dataManagement.run')}
         </button>
       </div>
@@ -1032,37 +1059,11 @@ function OverviewView({ overview, range }: { overview: UsageOverview; range?: Pi
   );
 }
 
+// The panels reflow (two columns, or stacked when narrow) instead of being
+// scaled down with a CSS transform, so chart text keeps its real size.
 function UsageOverviewPanels({ children }: { children: ReactNode }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    let frame = 0;
-    const measure = () => {
-      const { width, height } = container.getBoundingClientRect();
-      if (width <= 0 || height <= 0) return;
-      const nextScale = Math.min(1, width / 900, height / 420);
-      setScale((current) => Math.abs(current - nextScale) < 0.001 ? current : nextScale);
-    };
-    const scheduleMeasure = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(measure);
-    };
-    measure();
-    const observer = new ResizeObserver(scheduleMeasure);
-    observer.observe(container);
-    window.addEventListener('resize', scheduleMeasure);
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      window.removeEventListener('resize', scheduleMeasure);
-    };
-  }, []);
-
   return (
-    <div className="usage-overview-panels" ref={containerRef} style={{ '--usage-overview-scale': scale } as CSSProperties}>
+    <div className="usage-overview-panels usage-overview-reflow">
       <div className="usage-overview-canvas">{children}</div>
     </div>
   );
@@ -1492,18 +1493,10 @@ function TokenComposition({ overview }: { overview: UsageOverview }) {
           <span>{t('usage.stat.cacheHitRate')} <b>{(overview.cacheHitRate * 100).toFixed(1)}%</b></span>
         </div>
         <div className="usage-token-context">
-          <section className="usage-token-context-group usage-token-results" aria-labelledby="usage-token-results-title">
-            <h3 id="usage-token-results-title"><Activity size={14} aria-hidden="true" />{t('usage.token.requestStatus')}</h3>
-            <dl className="usage-token-context-metrics">
-              <div className="tone-success"><dt>{t('usage.result.success')}</dt><dd>{compactNumber(overview.successCount)}</dd></div>
-              <div className="tone-failed"><dt>{t('usage.result.failed')}</dt><dd>{compactNumber(overview.failureCount)}</dd></div>
-              <div><dt>{t('usage.result.canceled')}</dt><dd>{compactNumber(overview.canceledCount)}</dd></div>
-            </dl>
-          </section>
           <section className="usage-token-context-group" aria-labelledby="usage-token-performance-title">
             <h3 id="usage-token-performance-title"><Gauge size={14} aria-hidden="true" />{t('usage.token.performance')}</h3>
             <dl className="usage-token-context-metrics">
-              <div><dt>RPM</dt><dd>{overview.rpm.toFixed(2)}</dd></div>
+              <div><dt>{t('usage.stat.rpm')}</dt><dd>{overview.rpm.toFixed(2)}</dd></div>
               <div><dt>{t('usage.stat.averageLatency')}</dt><dd>{compactDuration(overview.averageLatencyMs)}</dd></div>
             </dl>
           </section>
@@ -1700,7 +1693,10 @@ function PricingView({
       {confirmationDialog}
       <div className="usage-pricing-toolbar">
         <div className="usage-pricing-summary">
-          <strong>{formatUsd(pricing.totalCost)}</strong>
+          <div className="usage-pricing-total">
+            <strong>{formatUsd(pricing.totalCost)}</strong>
+            <span className="usage-estimate-tag" title={t('usage.stat.costNote')}>{t('usage.cost.estimatedTag')}</span>
+          </div>
           <span>
             {t('usage.pricing.coverage', {
               priced: compactNumber(pricing.pricedRequests),
@@ -1743,7 +1739,7 @@ function PricingView({
           </div>
           <button type="button" className="icon-button" aria-label={t('common.close')} disabled={applyingSync} onClick={() => syncDialog.current?.close()}><X size={16} /></button>
         </div>
-        <p className="usage-price-sync-note">{t('usage.pricing.syncNote')}</p>
+        <p className="usage-price-sync-note" title={t('usage.pricing.syncDetail')}>{t('usage.pricing.syncNote')}</p>
         <div className="usage-price-sync-controls">
           <span>{t('usage.pricing.syncCounts', { matched: syncDrafts.length, unmatched: syncPreview?.unmatched.length ?? 0 })}</span>
           <button type="button" className="secondary-button" onClick={() => setSyncDrafts((current) => current.map((item) => ({ ...item, selected: true })))}>{t('usage.pricing.selectAll')}</button>
@@ -1919,6 +1915,21 @@ function UsageEmpty() {
     <div className="usage-empty">
       <TriangleAlert size={18} />
       <span>{t('usage.empty')}</span>
+    </div>
+  );
+}
+
+function UsageUnavailable({ failed, retrying, onRetry }: { failed: boolean; retrying: boolean; onRetry: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="usage-empty usage-unavailable" role="status">
+      {failed ? <TriangleAlert size={20} aria-hidden="true" /> : <Database size={20} aria-hidden="true" />}
+      <strong>{t(failed ? 'usage.unavailable.errorTitle' : 'usage.unavailable.emptyTitle')}</strong>
+      <span>{t(failed ? 'usage.unavailable.errorHint' : 'usage.unavailable.emptyHint')}</span>
+      <button type="button" className="secondary-button" onClick={onRetry} disabled={retrying}>
+        <RefreshCw size={14} aria-hidden="true" className={retrying ? 'spin' : ''} />
+        {t('usage.unavailable.retry')}
+      </button>
     </div>
   );
 }

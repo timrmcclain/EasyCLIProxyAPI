@@ -1746,20 +1746,34 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                 </button>
               </div>
             </div>
-            {notListed && <p className="agent-inline-message warning agent-desktop-model-notice" role="status">{t('preset.notListed', { row: index + 1, model: entry.model })}</p>}
-            {entryError && hasPendingChanges && !modelLoading
-              ? <p className="agent-inline-message warning agent-desktop-model-notice" role="status">{t(`agents.claudeDesktopMapping.error.${entryError}`)}</p>
-              : aliasNotice === 'aliasExists'
-                ? <p className="agent-inline-message warning agent-desktop-model-notice" role="status">{t(
+            {(() => {
+              // Show at most one notice per row (most severe first); the rest go in a tooltip.
+              const notices: { text: string; warning: boolean }[] = [];
+              if (entryError && hasPendingChanges && !modelLoading) {
+                notices.push({ text: t(`agents.claudeDesktopMapping.error.${entryError}`), warning: true });
+              } else if (aliasNotice === 'aliasExists') {
+                notices.push({ text: t(
                   claudeDesktopDefaultAliases.includes(entry.alias.trim().toLowerCase())
                     ? 'agents.claudeDesktopMapping.defaultAliasExists' : 'agents.claudeDesktopMapping.error.aliasExists',
                   { alias: entry.alias.trim() },
-                )}</p>
-                : aliasNotice === 'sameModel'
-                  ? <p className="agent-desktop-model-notice" role="status">{t('agents.claudeDesktopMapping.sameModel')}</p>
-                  : isClaude
-                    ? <p className="agent-desktop-model-notice" role="status">{t('agents.claudeDesktopMapping.claudeDefault')}</p>
-                    : null}
+                ), warning: true });
+              }
+              const hasRowError = notices.length > 0;
+              if (notListed) notices.push({ text: t('preset.notListed', { row: index + 1, model: entry.model }), warning: true });
+              if (!hasRowError && aliasNotice === 'sameModel') {
+                notices.push({ text: t('agents.claudeDesktopMapping.sameModel'), warning: false });
+              } else if (!hasRowError && isClaude) {
+                notices.push({ text: t('agents.claudeDesktopMapping.claudeDefault'), warning: false });
+              }
+              const [primary, ...rest] = notices;
+              if (!primary) return null;
+              return (
+                <p className={`${primary.warning ? 'agent-inline-message warning ' : ''}agent-desktop-model-notice`} role="status"
+                  title={rest.length ? rest.map((notice) => notice.text).join(' / ') : undefined}>
+                  {primary.text}
+                </p>
+              );
+            })()}
           </div>
           );
         })}
@@ -1779,7 +1793,12 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
           </div>
         </header>
       ) : null}
-      {!embedded && <div className="personal-context"><strong>{t('personal.connectionTitle')}</strong> {t('personal.connectionHelp')}</div>}
+      {!embedded && selected === 'claude-desktop' ? (
+        <details className="personal-context personal-context-compact">
+          <summary>{t('personal.connectionTitle')} <span className="personal-context-more">{t('personal.learnMore')}</span></summary>
+          <p>{t('personal.connectionHelp')}</p>
+        </details>
+      ) : null}
 
       <div className="agent-workbench">
         <AgentClientList clients={agentDefinitions.map((agent) => {
@@ -2045,12 +2064,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                 <section className="agent-core-setting-section agent-claude-desktop-mapping">
                   <div className="agent-section-heading">
                     <div>
-                      <strong>{t(selected === 'claude-code'
-                        ? 'agents.claudeCodeMapping.title'
-                        : 'agents.claudeDesktopMapping.title')}</strong>
-                      <span>{t(selected === 'claude-code'
-                        ? 'agents.claudeCodeMapping.description'
-                        : 'agents.claudeDesktopMapping.description')}</span>
+                      <strong>{t('agents.claudeCodeMapping.title')}</strong>
                     </div>
                     <div className="agent-section-heading-actions">
                       <label
@@ -2070,9 +2084,11 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                       </label>
                     </div>
                   </div>
-                  {selected === 'claude-code' ? (
+                  <details className="agent-advanced-settings">
+                    <summary>{t('agents.claudeCodeMapping.advanced')}</summary>
+                    <p className="agent-advanced-settings-intro">{t('agents.claudeCodeMapping.description')}</p>
                     <div className="agent-claude-code-runtime-settings">
-                      <div className="agent-claude-code-number-field">
+                      <div className="agent-claude-code-number-field" title={t('agents.claudeCodeRuntime.maxContextTokensHint')}>
                         <span>{t('agents.claudeCodeRuntime.maxContextTokens')}</span>
                         <input
                           type="number"
@@ -2086,13 +2102,10 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                           )}
                           disabled={busy || loading || modelLoading}
                           aria-label={t('agents.claudeCodeRuntime.maxContextTokens')}
-                          aria-describedby="claude-code-max-context-hint"
+                          aria-description={t('agents.claudeCodeRuntime.maxContextTokensHint')}
                         />
-                        <small id="claude-code-max-context-hint">
-                          {t('agents.claudeCodeRuntime.maxContextTokensHint')}
-                        </small>
                       </div>
-                      <label className="agent-claude-code-number-field">
+                      <label className="agent-claude-code-number-field" title={t('agents.claudeCodeRuntime.autoCompactPctHint')}>
                         <span>{t('agents.claudeCodeRuntime.autoCompactPct')}</span>
                         <div className="agent-claude-code-percent-input">
                           <input
@@ -2106,13 +2119,10 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                               Math.trunc(event.currentTarget.valueAsNumber || 0),
                             )}
                             disabled={busy || loading || modelLoading || claudeModelMappingsDraft.disableAutoCompact}
-                            aria-describedby="claude-code-auto-compact-hint"
+                            aria-description={t('agents.claudeCodeRuntime.autoCompactPctHint')}
                           />
                           <span>%</span>
                         </div>
-                        <small id="claude-code-auto-compact-hint">
-                          {t('agents.claudeCodeRuntime.autoCompactPctHint')}
-                        </small>
                       </label>
                       <label
                         className="agent-claude-code-disable-compact"
@@ -2120,7 +2130,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                       >
                         <span>
                           <strong>{t('agents.claudeCodeRuntime.disableAutoCompact')}</strong>
-                          <small>{t('agents.claudeCodeRuntime.disableAutoCompactHint')}</small>
                         </span>
                         <span className="switch-control">
                           <input
@@ -2140,7 +2149,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                       >
                         <span>
                           <strong>{t('agents.claudeCodeRuntime.manageDefaultModel')}</strong>
-                          <small>{t('agents.claudeCodeRuntime.manageDefaultModelHint')}</small>
                         </span>
                         <span className="switch-control">
                           <input
@@ -2161,7 +2169,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                       >
                         <span>
                           <strong>{t('agents.claudeCodeRuntime.manageSubagentModel')}</strong>
-                          <small>{t('agents.claudeCodeRuntime.manageSubagentModelHint')}</small>
                         </span>
                         <span className="switch-control">
                           <input
@@ -2177,7 +2184,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                         </span>
                       </label>
                     </div>
-                  ) : null}
                   <div className="agent-claude-desktop-mapping-grid">
                     {claudeMappingRoles.map((role) => (
                       <div className="agent-claude-desktop-mapping-row" key={role.key}>
@@ -2216,6 +2222,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                       </div>
                     ))}
                   </div>
+                  </details>
                 </section>
               ) : null}
 
@@ -2261,9 +2268,10 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                 onUninstallPi={() => void uninstallPiProvider()} />
             </div>
           ) : null}
-          {!embedded && <div className="ux-restore-actions">
-            <button type="button" className="secondary-button compact-button" disabled={busy} onClick={() => { setRestoreInitialId(undefined); setBackupsOpen(true); }}>{t('ux.backups')}</button>
-            {undoBackupByClient[selected] && <button type="button" className="secondary-button compact-button" disabled={busy} title={t('ux.undoHint')} onClick={() => { setRestoreInitialId(undoBackupByClient[selected]); setBackupsOpen(true); }}>{t('ux.undo')}</button>}
+          {/* Backups live in the Management tab; only the one-click Undo stays here. */}
+          {!embedded && undoBackupByClient[selected] && <div className="ux-restore-actions">
+            <button type="button" className="secondary-button compact-button" disabled={busy} title={t('ux.undoHint')}
+              onClick={() => { setRestoreInitialId(undoBackupByClient[selected]); setBackupsOpen(true); }}>{t('ux.undo')}</button>
           </div>}
           {activeSubpage !== 'core' ? configurationFeedback : null}
           <ConnectionError message={configurationErrorMessage} onDismiss={() => { setConfigurationError(''); setModelSelectionError(''); setModelError(''); }} />

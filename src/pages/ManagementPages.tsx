@@ -545,6 +545,7 @@ export function OAuthLoginPage() {
       </header>
 
       <FloatingNotice key={feedback.revision} notice={feedback.notice} onDismiss={feedback.clearNotice} />
+      <p className="oauth-hint oauth-page-hint">{t('oauth.hint')}</p>
       <label className="personal-provider-toggle"><input type="checkbox" checked={showOtherProviders} onChange={(event) => setShowOtherProviders(event.target.checked)} />{t('personal.otherProviders')}</label>
       <div className="oauth-grid">
         {oauthProviders.filter((provider) => showOtherProviders || ['claude', 'codex'].includes(provider.id)).map((provider) => {
@@ -569,7 +570,7 @@ export function OAuthLoginPage() {
               </div>
 
               <div className="oauth-card-body">
-                <p className="oauth-hint">{t(provider.id === 'devin' ? 'oauth.devinHint' : provider.id === 'meta' ? 'oauth.metaHint' : 'oauth.hint')}</p>
+                {provider.id === 'devin' || provider.id === 'meta' ? <p className="oauth-hint">{t(provider.id === 'devin' ? 'oauth.devinHint' : 'oauth.metaHint')}</p> : null}
                 {state.url ? (
                   <div className="oauth-auth-url-box">
                     <div className="oauth-auth-url-label">{t('oauth.authorizationLink')}</div>

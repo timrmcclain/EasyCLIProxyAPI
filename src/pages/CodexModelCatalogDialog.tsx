@@ -193,9 +193,8 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
     }}>
       <section ref={dialogRef} className="config-dialog codex-catalog-dialog" role="dialog" aria-modal="true" aria-labelledby="codex-catalog-title">
         <header className="config-dialog-heading codex-catalog-heading">
-          <div>
+          <div title={t('agents.catalog.subtitle')}>
             <h2 id="codex-catalog-title">{t('agents.catalog.title')}</h2>
-            <p>{t('agents.catalog.subtitle')}</p>
           </div>
           <button type="button" className="icon-button quiet" onClick={requestClose} disabled={saving} aria-label={t('common.close')}>
             <X size={18} aria-hidden="true" />
@@ -285,8 +284,9 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
                   <label className="codex-catalog-switch"><input type="checkbox" checked={activeModel.configuration.supports_parallel_tool_calls} onChange={(event) => updateField('supports_parallel_tool_calls', event.currentTarget.checked)} /><span>{t('agents.catalog.parallel')}</span></label>
                   <label className="wide"><span>{t('agents.catalog.systemPrompt')}</span><textarea className="codex-catalog-system-prompt" rows={12} spellCheck={false} value={activeModel.configuration.base_instructions} onChange={(event) => updateField('base_instructions', event.currentTarget.value)} aria-describedby="codex-catalog-prompt-hint" /><small id="codex-catalog-prompt-hint">{t('agents.catalog.systemPromptHint')}</small></label>
                 </div>
-                <p className="codex-catalog-hint" role="note">{t(codexContextSourceHint(activeModel))}</p>
-                <p className="codex-catalog-hint">{t('agents.catalog.capabilityHint')}</p>
+                <p className="codex-catalog-hint" role="note" title={t('agents.catalog.capabilityHint')}>
+                  {t(codexContextSourceHint(activeModel))}
+                </p>
               </>
             ) : !loading ? <div className="codex-catalog-state">{t('agents.catalog.empty')}</div> : null}
           </main>

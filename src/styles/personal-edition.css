@@ -217,3 +217,10 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .connection-error summary { cursor:pointer; padding:8px 0; }
 .connection-error pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; }
 @media(max-width:640px) { .connection-overview { padding:14px; } .connection-overview-heading { align-items:start; flex-direction:column; } }
+
+/* Agents: Claude Desktop connection note, collapsed to one line. */
+.personal-context.personal-context-compact { padding: var(--space-2) var(--space-3); font-size: var(--font-size-caption); }
+.personal-context-compact summary { cursor: pointer; color: var(--text-primary); font-weight: 500; }
+.personal-context-compact .personal-context-more { margin-left: var(--space-2); color: var(--ui-accent); font-weight: 400; }
+.personal-context-compact[open] .personal-context-more { display: none; }
+.personal-context-compact p { margin: var(--space-2) 0 0; color: var(--text-secondary); }

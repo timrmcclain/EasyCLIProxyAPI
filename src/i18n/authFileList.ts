@@ -23,7 +23,7 @@ export const authFileListZhCN = {
   'authFiles.usage.runtimeTotals': '运行累计',
   'authFiles.usage.title': '累计用量',
   'authFiles.toolbar.refreshList': '刷新列表',
-  'authFiles.toolbar.refreshQuota': '刷新额度',
+  'authFiles.toolbar.refreshQuota': '刷新全部额度',
 } as const;
 
 export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
@@ -51,7 +51,7 @@ export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.usage.runtimeTotals': 'Core session totals',
   'authFiles.usage.title': 'Cumulative usage',
   'authFiles.toolbar.refreshList': 'Refresh list',
-  'authFiles.toolbar.refreshQuota': 'Refresh quota',
+  'authFiles.toolbar.refreshQuota': 'Refresh all quotas',
 };
 
 export const authFileListJa: Record<keyof typeof authFileListZhCN, string> = {
@@ -79,5 +79,5 @@ export const authFileListJa: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.usage.runtimeTotals': 'コア稼働中の累計',
   'authFiles.usage.title': '累計使用量',
   'authFiles.toolbar.refreshList': '一覧を更新',
-  'authFiles.toolbar.refreshQuota': 'クォータを更新',
+  'authFiles.toolbar.refreshQuota': 'すべてのクォータを更新',
 };

@@ -29,13 +29,13 @@ export const settingsTemplateGroups = {
 };
 export const allSettingsTemplateGroups = Object.values(settingsTemplateGroups).flat();
 export const settingsMessages = {
-  title: text('高级设置', 'Advanced settings', '詳細設定'),
+  title: text('设置', 'Settings', '設定'),
   search: text('搜索设置', 'Search settings', '設定を検索'),
   searchHint: text('搜索设置…', 'Search settings…', '設定を検索…'),
   clearSearch: text('清空搜索', 'Clear search', '検索をクリア'),
   results: text('搜索结果', 'Search results', '検索結果'),
   noResults: text('没有找到匹配的设置，试试其他关键词。', 'No matching settings. Try another keyword.', '一致する設定がありません。別のキーワードをお試しください。'),
-  restart: text('保存后重启内核', 'Core restarts after saving', '保存後にコアを再起動'),
+  restart: text('保存后重启内核', 'The proxy restarts after saving', '保存後にコアを再起動'),
   automatic: text('自动保存', 'Auto-save', '自動保存'),
   dirty: text('有未保存修改', 'Unsaved changes', '未保存の変更'),
   nativeNetwork: text('监听与上游代理', 'Listening & upstream proxy', '待ち受けと上流プロキシ'),

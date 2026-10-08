@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -75,6 +75,11 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const [configRevision, setConfigRevision] = useState(0);
   const [tlsEnabled, setTlsEnabled] = useState(false);
   const [accountStatus, setAccountStatus] = useState<AccountStatusSummary | null>(null);
+  // The sidebar shows a dot on Overview while any account is limited.
+  const publishAccountStatus = useCallback((summary: AccountStatusSummary) => {
+    setAccountStatus(summary);
+    window.dispatchEvent(new CustomEvent('app:account-problems', { detail: summary.problems }));
+  }, []);
 
   const savedPortRef = useRef(8317);
   const copiedApiTimerRef = useRef<number | null>(null);
@@ -149,7 +154,10 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
       setListenHost(settings.host);
       setCustomPort(String(settings.port));
       savedPortRef.current = settings.port;
-    } catch {}
+    } catch (error) {
+      // Defaults stay in place; this only affects the displayed host and port.
+      console.warn('Failed to load GUI settings', error);
+    }
   };
 
   const loadHomeApiKey = async () => {
@@ -335,7 +343,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
         </section>
         {processNotice}
         <HomeOverviewCards snapshot={overview.snapshot} loading={overview.loading} coreReady={coreReady} onRefresh={overview.refresh} />
-        <AccountDashboard ready={coreReady} onSummary={setAccountStatus} />
+        <AccountDashboard ready={coreReady} onSummary={publishAccountStatus} />
         <details className="home-proxy-details">
           <summary>{t('home.status.connectionDetails')}</summary>
           {proxyPanel}

@@ -485,54 +485,6 @@ export function VersionManagementPage() {
     <section className="page management-page version-management-page">
       <MessageNotice message={versionSourceError} onDismiss={() => setVersionSourceError('')} />
       <section className="panel version-list">
-        <div className="version-source-row" aria-label={t('kernel.versions.downloadSource')}>
-          <div className="version-source-copy">
-            <strong>{t('kernel.versions.downloadSource')}</strong>
-            <span>{t('kernel.versions.downloadSourceHint')}</span>
-            {versionSource?.gitcodeAvailable === false ? (
-              <span>{t('kernel.versions.gitcodeUnavailable')}</span>
-            ) : null}
-          </div>
-          <div className="version-source-control">
-            <label>
-              <span className="sr-only">{t('kernel.versions.downloadSource')}</span>
-              <select
-                value={versionSource?.source ?? DEFAULT_VERSION_DOWNLOAD_SOURCE}
-                disabled={
-                  !versionSource
-                  || versionSourceSaving
-                  || installing
-                }
-                aria-label={t('kernel.versions.downloadSource')}
-                onChange={(event) => void updateVersionSource(event.currentTarget.value as VersionDownloadSource)}
-              >
-                <option value="github">{t('kernel.versions.source.github')}</option>
-                <option value="gitcode" disabled={!versionSource?.gitcodeAvailable}>
-                  {t('kernel.versions.source.gitcode')}
-                </option>
-                <option value="gh-proxy">{t('kernel.versions.source.ghProxy')}</option>
-                <option value="gh-fast">{t('kernel.versions.source.ghFast')}</option>
-                {versionSource?.customMirrors.map((url) => (
-                  <option key={url} value={`custom:${url}`}>
-                    {downloadSourceLabel(`custom:${url}`, t)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="primary-button version-source-add-button"
-              disabled={versionSourceSaving || installing}
-              onClick={() => {
-                setVersionSourceError('');
-                setCustomMirrorDialogOpen(true);
-              }}
-            >
-              <span>{t('kernel.versions.customMirrorAdd')}</span>
-            </button>
-          </div>
-        </div>
-
         <FloatingNotice key={feedback.revision} notice={feedback.notice} onDismiss={feedback.clearNotice} />
         <div className="version-card-grid">
         <article className="version-list-item app-module-card">
@@ -612,7 +564,6 @@ export function VersionManagementPage() {
         <details className="personal-disclosure maintenance-downloads"><summary>{t('kernel.versions.downloadSource')}</summary>
         <div className="version-source-row" aria-label={t('kernel.versions.downloadSource')}>
           <div className="version-source-copy">
-            <strong>{t('kernel.versions.downloadSource')}</strong>
             <span>{t('kernel.versions.downloadSourceHint')}</span>
             {versionSource?.gitcodeAvailable === false ? (
               <span>{t('kernel.versions.gitcodeUnavailable')}</span>
@@ -646,7 +597,7 @@ export function VersionManagementPage() {
             </label>
             <button
               type="button"
-              className="primary-button version-source-add-button"
+              className="secondary-button version-source-add-button"
               disabled={versionSourceSaving || installing}
               onClick={() => {
                 setVersionSourceError('');

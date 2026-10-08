@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { ArrowLeft, Download, ExternalLink, Folder, LogIn, Puzzle, RefreshCw, Search, Settings2, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Download, ExternalLink, Folder, LoaderCircle, LogIn, Puzzle, RefreshCw, Search, Settings2, Sparkles, Trash2, X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { pluginText } from '../i18n/plugins';
 import { FloatingNotice, useAppNotice } from '../appNotice';
@@ -20,6 +20,8 @@ import { PluginSettingsPanel } from './PluginSettingsPanel';
 import './PluginsPage.css';
 
 type Tab = 'installed' | 'store' | 'settings';
+/** Directory name shown when the core does not report one (a path, not prose). */
+const DEFAULT_PLUGINS_DIR = 'plugins';
 const message = (error: unknown) => error instanceof Error ? error.message : String(error);
 
 export function PluginsPage() {
@@ -165,8 +167,12 @@ export function PluginsPage() {
   return <div className="plugins-page">
     <header className="plugins-heading"><div><h1>{pt('title')}</h1><p>{pt('description')}</p></div><button className="secondary-button" disabled={locked} onClick={() => void load()}><RefreshCw size={16} aria-hidden="true" />{t('common.refresh')}</button></header>
     {error && <div className="plugin-error plugin-banner" role="alert"><span>{error}</span><button className="secondary-button" disabled={busy || loading} onClick={() => void load()}>{pt('retry')}</button></div>}
-    {supported === false ? <section className="plugin-empty"><Puzzle size={36} /><p>{pt('unsupported')}</p></section> : supported === null ? <section className="plugin-empty" role="status">{loading ? t('common.loading') : pt('retry')}</section> : <>
-      <div className="plugin-summary"><label className="plugin-global-toggle"><input type="checkbox" checked={data?.pluginsEnabled ?? false} disabled={locked || !data} onChange={e => { const enabled = e.target.checked; void mutate(() => pluginsApi.updateSettings({ enabled }), pt('saved')); }} />{pt('global')}</label><span><Folder size={16} aria-hidden="true" />{data?.pluginsDir || 'plugins'}</span><span>{pt('installed')} <strong>{installedCount}</strong>{configOnlyCount > 0 && <> · {pt('configOnly')} <strong>{configOnlyCount}</strong></>}</span></div>
+    {supported === false ? <section className="plugin-empty"><Puzzle size={36} /><p>{pt('unsupported')}</p></section> : supported === null ? (
+      <section className="plugin-empty" role="status" aria-live="polite">
+        {loading ? <><LoaderCircle size={20} className="spin" aria-hidden="true" />{pt('loadingPlugins')}</> : pt('retry')}
+      </section>
+    ) : <>
+      <div className="plugin-summary"><label className="plugin-global-toggle"><input type="checkbox" checked={data?.pluginsEnabled ?? false} disabled={locked || !data} onChange={e => { const enabled = e.target.checked; void mutate(() => pluginsApi.updateSettings({ enabled }), pt('saved')); }} />{pt('global')}</label><span><Folder size={16} aria-hidden="true" />{data?.pluginsDir || DEFAULT_PLUGINS_DIR}</span><span>{pt('installed')} <strong>{installedCount}</strong>{configOnlyCount > 0 && <> · {pt('configOnly')} <strong>{configOnlyCount}</strong></>}</span></div>
       {data && !data.pluginsEnabled && <p className="plugin-banner">{pt('disabledHint')}</p>}
       {restartRequired && <div className="plugin-banner"><span>{pt('restart')}</span><button className="secondary-button" disabled={locked} onClick={async () => { if (await askConfirmation({ title: pt('restartButton'), message: pt('restartConfirm') })) void mutate(async () => { await invoke('restart_core_process'); if (mounted.current) setRestartRequired(false); }, pt('saved')); }}>{pt('restartButton')}</button></div>}
       {resource ? <section className="plugin-resource"><div className="plugin-toolbar"><button className="secondary-button" onClick={() => setResource(null)}><ArrowLeft size={16} />{pt('back')}</button><strong>{resource.entry.label}</strong><button className="secondary-button" onClick={() => void invoke('open_external_url', { url: resource.url }).catch(e => setError(message(e)))}><ExternalLink size={16} />{pt('openExternal')}</button></div><iframe key={resource.url} src={resource.url} title={resource.entry.label} referrerPolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" allow="clipboard-read; clipboard-write" /></section> : <>
@@ -184,7 +190,12 @@ export function PluginsPage() {
           </div>}
         </div>
         {tab === 'settings' ? <PluginSettingsPanel onSaved={() => { notice.showNotice(pt('saved')); void load(); }} /> : <>
-          {loading && <p className="plugin-loading" role="status">{t('common.loading')}…</p>}
+          {loading && (
+            <p className="plugin-loading" role="status" aria-live="polite">
+              <LoaderCircle size={14} className="spin" aria-hidden="true" />
+              {pt('loadingPlugins')}
+            </p>
+          )}
           {tab === 'installed' ? <div className="plugin-grid">{plugins.map(plugin => {
             const status = getPluginStatus(plugin, data?.pluginsEnabled ?? false);
             const installed = isPluginInstalled(plugin);
@@ -205,12 +216,24 @@ export function PluginsPage() {
             </div>
           </article>; })}</div> : <>
             {store?.sourceErrors.length ? <details className="plugin-source-errors" open><summary>{pt('sourceErrors')}</summary>{store.sourceErrors.map((entry, index) => <p key={index}>{entry.sourceName || entry.sourceId || entry.sourceUrl}: {entry.message}</p>)}</details> : null}
-            <section className="plugin-finder" aria-labelledby="plugin-finder-title"><h2 id="plugin-finder-title"><Sparkles size={16} aria-hidden="true" />{pt('finderTitle')}</h2><p>{pt('finderHint')}</p>
+            <section className="plugin-finder" aria-labelledby="plugin-finder-title">
+              <h2 id="plugin-finder-title"><Sparkles size={16} aria-hidden="true" />{pt('finderTitle')}</h2>
+              <p title={pt('finderHint')}>{pt('finderShort')}</p>
               <form className="plugin-finder-form" onSubmit={event => { event.preventDefault(); void askFinder(); }}><input type="text" value={finderQuery} maxLength={500} onChange={event => setFinderQuery(event.target.value)} placeholder={pt('finderPlaceholder')} aria-label={pt('finderTitle')} /><button type="submit" className="primary-button" disabled={finderBusy || !finderQuery.trim() || !store?.plugins.length}><Sparkles size={16} aria-hidden="true" />{pt(finderBusy ? 'finderSearching' : 'finderButton')}</button></form>
               {finderError && <p className="plugin-error" role="alert">{finderError}</p>}
               {finderResult && <div className="plugin-finder-result" role="status">{finderResult.note && <p>{finderResult.note}</p>}{finderResult.matches.length ? <div className="plugin-grid">{finderResult.matches.map(match => storeCard(match.entry, match.why, <>{match.changes && <p className="plugin-meta"><strong>{pt('finderChanges')}</strong> {match.changes}</p>}{match.risk && <p className="plugin-meta"><strong>{pt('finderRisk')}</strong> {match.risk}</p>}</>))}</div> : !finderResult.note && <p>{pt('finderNoMatch')}</p>}<p className="plugin-meta">{pt('finderModel')} {finderResult.model}</p></div>}
             </section>
-            {recommendations.length > 0 && <section className="plugin-recommended" aria-labelledby="plugin-recommended-title"><h2 id="plugin-recommended-title">{pt('recommendedTitle')}</h2><p>{pt('recommendedHint')}</p><div className="plugin-grid">{recommendations.map(({ entry, summary }) => storeCard(entry, summary))}</div><h2 className="plugin-recommended-all">{pt('allPlugins')}</h2></section>}
+            {recommendations.length > 0 && (
+              <section className="plugin-recommended" aria-labelledby="plugin-recommended-title">
+                <h2 id="plugin-recommended-title">{pt('recommendedTitle')}</h2>
+                <details className="plugin-hint-details">
+                  <summary>{pt('recommendedShort')}</summary>
+                  <p>{pt('recommendedHint')}</p>
+                </details>
+                <div className="plugin-grid">{recommendations.map(({ entry, summary }) => storeCard(entry, summary))}</div>
+                <h2 className="plugin-recommended-all">{pt('allPlugins')}</h2>
+              </section>
+            )}
             <div className="plugin-grid">{storePlugins.map(entry => storeCard(entry))}</div>
           </>}
           {!loading && !error && (tab === 'installed' ? !plugins.length : !storePlugins.length) && <section className="plugin-empty"><Puzzle size={36} /><h2>{pt(search || filter !== 'all' ? 'noMatches' : 'empty')}</h2>{tab === 'installed' && !search && <><p>{pt('emptyHint')}</p><button className="primary-button" onClick={() => setTab('store')}>{pt('store')}</button></>}</section>}

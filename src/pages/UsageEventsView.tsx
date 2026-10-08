@@ -8,6 +8,7 @@ import type { MessageKey } from '../i18n/resources';
 import { formatCacheReadRate, formatGenerationSpeed } from '../services/usageMetrics';
 import { formatDuration, formatUsageNumber } from '../services/usageNumber';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { FloatingNotice, useAppNotice } from '../appNotice';
 import { usageProviderDetails } from '../services/usageProvider';
 import { usageModelDetails } from '../services/usageModel';
 
@@ -108,8 +109,10 @@ const EVENT_COLUMNS: readonly EventColumnDef[] = [
   { key: 'request', labelKey: 'usage.column.request', defaultWidth: 128, minWidth: 88, align: 'left' },
 ] as const;
 
+// Five calm defaults; every other column stays one click away in the column picker.
+// Saved column choices (current or legacy keys) always win over this list.
 const DEFAULT_EVENT_VISIBLE_COLUMNS: readonly EventColumnKey[] = [
-  'time', 'model', 'provider', 'result', 'total', 'cache', 'latency', 'speed', 'cost',
+  'time', 'model', 'source', 'result', 'total',
 ];
 
 const EVENT_COL_WIDTHS_STORAGE_KEY = 'cpa-gui.usage-events-col-widths.v4';
@@ -500,6 +503,16 @@ export function EventsView({
   const [fixedRowHeight, setFixedRowHeight] = useState(getInitialRowHeightEnabled);
   const [rowHeight, setRowHeight] = useState(getInitialRowHeight);
   const [exporting, setExporting] = useState(false);
+  const { notice, revision, showNotice, clearNotice } = useAppNotice();
+  // Preference writes rarely fail, but when they do the user should know the
+  // layout will not be remembered instead of the error being swallowed.
+  const savePreference = (key: string, value: string) => {
+    try {
+      usagePreferences.setItem(key, value);
+    } catch {
+      showNotice({ key: 'usage.events.preferenceSaveFailed' }, 'error');
+    }
+  };
 
   const columnDialogRef = useDialogFocusTrap<HTMLElement>({
     active: columnSettingsOpen,
@@ -527,9 +540,7 @@ export function EventsView({
       defaults[col.key] = col.defaultWidth;
     }
     commitWidths(defaults);
-    try {
-      usagePreferences.setItem(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(defaults));
-    } catch {}
+    savePreference(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(defaults));
   };
 
   const openColumnSettings = () => {
@@ -552,9 +563,7 @@ export function EventsView({
     const next =
       draftVisibleColumnKeys.length > 0 ? draftVisibleColumnKeys : getAllEventColumnKeys();
     setVisibleColumnKeys(next);
-    try {
-      usagePreferences.setItem(EVENT_VISIBLE_COLS_STORAGE_KEY, JSON.stringify(next));
-    } catch {}
+    savePreference(EVENT_VISIBLE_COLS_STORAGE_KEY, JSON.stringify(next));
     setColumnSettingsOpen(false);
   };
 
@@ -564,13 +573,13 @@ export function EventsView({
 
   const updateFixedRowHeight = (enabled: boolean) => {
     setFixedRowHeight(enabled);
-    usagePreferences.setItem(EVENT_ROW_HEIGHT_ENABLED_STORAGE_KEY, String(enabled));
+    savePreference(EVENT_ROW_HEIGHT_ENABLED_STORAGE_KEY, String(enabled));
   };
 
   const updateRowHeight = (value: number) => {
     const next = clampEventRowHeight(value);
     setRowHeight(next);
-    usagePreferences.setItem(EVENT_ROW_HEIGHT_STORAGE_KEY, String(next));
+    savePreference(EVENT_ROW_HEIGHT_STORAGE_KEY, String(next));
   };
 
   const resetSingleColumn = (key: EventColumnKey, e: React.MouseEvent) => {
@@ -580,17 +589,13 @@ export function EventsView({
     if (!colDef) return;
     const next = { ...widthsRef.current, [key]: colDef.defaultWidth };
     commitWidths(next);
-    try {
-      usagePreferences.setItem(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(next));
-    } catch {}
+    savePreference(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(next));
   };
 
   const persistColumnWidth = (key: EventColumnKey, width: number) => {
     const next = { ...widthsRef.current, [key]: width };
     commitWidths(next);
-    try {
-      usagePreferences.setItem(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(next));
-    } catch {}
+    savePreference(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(next));
   };
 
   const handleResizeKeyDown = (key: EventColumnKey, event: KeyboardEvent<HTMLDivElement>) => {
@@ -668,9 +673,7 @@ export function EventsView({
       setResizingCol(null);
       const next = widthsRef.current;
       setWidths(next);
-      try {
-        usagePreferences.setItem(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(next));
-      } catch {}
+      savePreference(EVENT_COL_WIDTHS_STORAGE_KEY, JSON.stringify(next));
     };
 
     window.addEventListener('pointermove', onPointerMove);
@@ -690,6 +693,7 @@ export function EventsView({
   const exportFilteredEvents = async () => {
     if (exporting || events.total === 0) return;
     setExporting(true);
+    clearNotice();
     try {
       const path = await save({
         title: t('usage.events.exportDialogTitle'),
@@ -709,7 +713,7 @@ export function EventsView({
       }
       await invoke('save_usage_events_export', { path, contents: usageEventsCsv(items) });
     } catch (error) {
-      window.alert(String(error));
+      showNotice({ key: 'usage.events.exportFailed', variables: { error: String(error) } }, 'error');
     } finally {
       setExporting(false);
     }
@@ -717,6 +721,7 @@ export function EventsView({
 
   return (
     <section className={`panel usage-events-panel usage-request-log${isCompactDefault ? ' usage-events-compact' : ''}${fixedRowHeight ? ' usage-row-height-fixed' : ' usage-row-height-auto'}`} aria-label={t('usage.events.title')} aria-busy={loading}>
+      <FloatingNotice key={revision} notice={notice} onDismiss={clearNotice} />
       {loading && events.items.length === 0 ? <div className="usage-empty" role="status"><Database size={20} aria-hidden="true" /><span>{t('usage.loading')}</span></div> : events.items.length ? (
         <div ref={tableWrapRef} className="usage-table-wrap" tabIndex={0} role="region" aria-label={t('usage.events.title')}>
           <table
@@ -901,7 +906,7 @@ export function EventsView({
                   onChange={(event) => updateRowHeight(Number(event.currentTarget.value))}
                   aria-label={t('usage.events.rowHeight.fixed')}
                 />
-                <output htmlFor="usage-row-height-range">{rowHeight}px</output>
+                <output htmlFor="usage-row-height-range">{t('usage.events.rowHeight.value', { value: rowHeight })}</output>
                 <span className="usage-row-height-hint">{t('usage.events.rowHeight.dragHint')}</span>
               </div>
             </section>

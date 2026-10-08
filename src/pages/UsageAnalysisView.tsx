@@ -79,7 +79,7 @@ function ModelComparison({ models }: { models: UsageCategory[] }) {
   return (
     <section className="usage-analysis-card usage-model-comparison">
       <header className="usage-analysis-heading">
-        <div><h2>{t('usage.analysis.modelTitle')}</h2><p>{t('usage.analysis.modelHint')}</p></div>
+        <div><h2>{t('usage.analysis.modelTitle')}</h2></div>
         <div className="usage-analysis-metric" role="group" aria-label={t('usage.analysis.metricLabel')}>
           {(['tokens', 'requests'] as const).map(value => <button key={value} type="button"
             aria-pressed={metric === value} onClick={() => setMetric(value)}>
@@ -134,7 +134,7 @@ function RequestResults({ overview, models }: { overview: AnalysisOverview; mode
   return (
     <section className="usage-analysis-card usage-request-results">
       <header className="usage-analysis-heading">
-        <div><h2>{t('usage.analysis.resultsTitle')}</h2><p>{t('usage.analysis.resultsHint')}</p></div>
+        <div><h2>{t('usage.analysis.resultsTitle')}</h2></div>
         <span className="usage-analysis-total">{t('usage.analysis.requestCount', { count: formatUsageNumber(overview.totalRequests, locale) })}</span>
       </header>
       <div className="usage-results-chart">

@@ -242,3 +242,56 @@
     max-height: 160px;
   }
 }
+
+/* Codex session rows: quiet icon delete instead of a loud red text button. */
+.codex-session-row .codex-session-delete-button.icon-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  justify-self: end;
+  color: var(--text-muted);
+}
+
+.codex-session-row .codex-session-delete-button.icon-button:hover:not(:disabled),
+.codex-session-row .codex-session-delete-button.icon-button:focus-visible {
+  color: var(--danger-color, #b91c1c);
+}
+
+@media (max-width: 720px) {
+  .codex-session-row .codex-session-delete-button.icon-button {
+    width: 32px;
+    justify-self: end;
+  }
+}
+
+/* Claude Code: runtime settings and role pickers collapsed under "Advanced". */
+.agent-advanced-settings {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+}
+
+.agent-advanced-settings > summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-size-meta);
+  font-weight: 500;
+}
+
+.agent-advanced-settings > summary:hover {
+  color: var(--text-primary);
+}
+
+.agent-advanced-settings[open] {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.agent-advanced-settings-intro {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-caption);
+}

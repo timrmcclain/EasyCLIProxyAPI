@@ -140,7 +140,6 @@ export function UsageActivityChart({ timeline, range }: UsageActivityChartProps)
       <div className="usage-activity-heading">
         <div className="usage-activity-title">
           <h3 id={titleId}>{t('usage.analysis.activityTitle')}</h3>
-          <p>{t('usage.analysis.activityHint')}</p>
         </div>
         <div className="usage-activity-summary">
           <strong>{t('usage.analysis.activityTotal', { count: formatNumber(series.totals.requests) })}</strong>

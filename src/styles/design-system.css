@@ -125,3 +125,9 @@ svg.lucide {
 .quota-ledger .quota-summary-total {
   margin: var(--space-1) 0;
 }
+
+/* Icon-only buttons need a comfortable click target. */
+.icon-button {
+  min-width: 32px;
+  min-height: 32px;
+}

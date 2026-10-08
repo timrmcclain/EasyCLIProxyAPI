@@ -529,3 +529,29 @@
 .config-page .config-extension-guide h2 { margin: 0; font-size: 1.05rem; }
 .config-page .config-extension-guide p { margin: 0; color: var(--text-secondary); max-width: 70ch; }
 .config-page .config-extension-guide-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Expert controls stay collapsed inside their card until requested. */
+.config-page .config-settings-content .config-advanced-details {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-3);
+}
+.config-page .config-settings-content .config-advanced-details > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-size-meta);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+}
+.config-page .config-settings-content .config-advanced-details > summary:hover { color: var(--text-primary); }
+.config-page .config-settings-content .config-advanced-details > summary:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.config-page .config-settings-content .config-advanced-details[open] > summary { margin-bottom: var(--space-3); }
+.config-page .config-settings-content .config-advanced-details > :is(.config-diagnostics-toggle-grid, .config-diagnostics-fields) + :is(.config-diagnostics-toggle-grid, .config-diagnostics-fields) { margin-top: var(--space-4); }
+/* "Unsaved changes" sits right next to the card's Save button. */
+.config-page .config-settings-content .config-settings-save-row { align-items: center; }
+.config-page .config-settings-content .config-settings-save-row > .config-card-status { margin-left: 0; font-size: var(--font-size-caption); }
+.config-page .config-settings-content .config-settings-save-row > .config-card-status:empty { display: none; }

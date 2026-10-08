@@ -10,6 +10,8 @@ import {
   type HarnessContextDefault, type HarnessDraft, type HarnessEditorSnapshot, type HarnessProfile,
 } from '../services/deepSeekHarnessCatalog';
 
+const harnessHintFields = ['input', 'defaultInput', 'maxTokens', 'defaultMaxTokens', 'api', 'headers'];
+
 function HarnessContextWindowInput({ label, value, inherited, onChange }: {
   label: string; value?: string; inherited: HarnessContextDefault; onChange: (value: string) => void;
 }) {
@@ -49,8 +51,7 @@ function HarnessFields({ group, draft, defaults = {}, prefix = '', api, contextD
     if (field.group) {
       const customized = Object.keys(draft).some(k => k.startsWith(`${key}.`));
       return <details className="harness-catalog-group" key={key}>
-        <summary>{label(field.name)}{customized ? ` · ${t('agents.catalog.customized')}` : ''}</summary>
-        <p className="codex-catalog-hint">{t(`agents.harness.hint.${field.name}` as MessageKey)}</p>
+        <summary title={t(`agents.harness.hint.${field.name}` as MessageKey)}>{label(field.name)}{customized ? ` · ${t('agents.catalog.customized')}` : ''}</summary>
         <HarnessFields group={field.group} draft={draft} defaults={isHarnessRecord(supplied) ? supplied : {}} prefix={`${key}.`} api={api} onChange={onChange} />
         {customized ? <button type="button" className="secondary-button" onClick={() => onChange(Object.fromEntries(Object.entries(draft).filter(([k]) => !k.startsWith(`${key}.`))))}>{t('agents.harness.resetGroup')}</button> : null}
       </details>;
@@ -59,7 +60,7 @@ function HarnessFields({ group, draft, defaults = {}, prefix = '', api, contextD
       let mapping: HarnessProfile = {};
       try { const parsed: unknown = JSON.parse(value || '{}'); if (isHarnessRecord(parsed)) mapping = parsed; } catch {}
       return <div className="harness-reasoning wide" key={key}>
-        <label><span>{label(field.name)}</span><select aria-label={label(field.name)} value={!value ? '' : value === 'false' ? 'false' : 'custom'}
+        <label><span title={t('agents.harness.hint.reasoningEfforts')}>{label(field.name)}</span><select aria-label={label(field.name)} aria-description={t('agents.harness.hint.reasoningEfforts')} value={!value ? '' : value === 'false' ? 'false' : 'custom'}
           onChange={e => set(e.currentTarget.value === 'custom' ? JSON.stringify({ off: null, low: 'low', medium: 'medium', high: 'high' }) : e.currentTarget.value)}>
           <option value="">{automatic}</option><option value="false">{t('agents.harness.reasoningDisabled')}</option><option value="custom">{t('agents.harness.reasoningCustom')}</option>
         </select></label>
@@ -70,12 +71,13 @@ function HarnessFields({ group, draft, defaults = {}, prefix = '', api, contextD
           {Object.prototype.hasOwnProperty.call(mapping, level) ? <input aria-label={`${level} reasoning_effort`} value={String(mapping[level] ?? '')} placeholder={level === 'off' ? t('agents.harness.noWireValue') : level}
             onChange={e => set(JSON.stringify({ ...mapping, [level]: level === 'off' && !e.currentTarget.value ? null : e.currentTarget.value }))} /> : null}
         </div>)}</div> : null}
-        <small>{t('agents.harness.hint.reasoningEfforts')}</small>
       </div>;
     }
     const jsonField = ['headers', 'kwargs', 'strings'].includes(field.kind);
-    return <label key={key} className={jsonField ? 'wide' : undefined}>
-      <span title={field.name}>{label(field.name)}{Object.prototype.hasOwnProperty.call(draft, key) ? <small className="harness-override">{t('agents.catalog.customized')}</small> : null}</span>
+    // Field hints live in the label tooltip so the form stacks compactly.
+    const hint = harnessHintFields.includes(field.name) ? t(`agents.harness.hint.${field.name}` as MessageKey) : '';
+    return <label key={key} className={jsonField ? 'wide' : undefined} title={hint || undefined}>
+      <span title={hint ? `${field.name}: ${hint}` : field.name}>{label(field.name)}{Object.prototype.hasOwnProperty.call(draft, key) ? <small className="harness-override">{t('agents.catalog.customized')}</small> : null}</span>
       {['enum', 'boolean', 'modalities'].includes(field.kind) ? <select aria-label={label(field.name)} value={value} onChange={e => set(e.currentTarget.value)}>
         <option value="">{automatic}</option>
         {field.kind === 'boolean' ? <><option value="true">{t('agents.harness.yes')}</option><option value="false">{t('agents.harness.no')}</option></> : null}
@@ -83,7 +85,6 @@ function HarnessFields({ group, draft, defaults = {}, prefix = '', api, contextD
         {field.kind === 'modalities' ? <>{field.name === 'input' ? <option value="[]">{t('agents.harness.providerInput')}</option> : null}<option value='["text"]'>{t('agents.harness.textOnly')}</option><option value='["text","image"]'>{t('agents.harness.textImage')}</option><option value='["image"]'>{t('agents.catalog.image')}</option></> : null}
       </select> : jsonField ? <textarea aria-label={label(field.name)} rows={4} spellCheck={false} value={value} placeholder={JSON.stringify(supplied ?? field.example, null, 2) ?? automatic} onChange={e => set(e.currentTarget.value)} />
         : <input aria-label={label(field.name)} type={['integer', 'number'].includes(field.kind) ? 'number' : 'text'} min={field.min ?? field.exclusiveMin} max={field.max} step={field.kind === 'integer' ? 1 : 'any'} value={value} placeholder={automatic} onChange={e => set(e.currentTarget.value)} />}
-      {['input', 'defaultInput', 'maxTokens', 'defaultMaxTokens', 'api', 'headers'].includes(field.name) ? <small>{t(`agents.harness.hint.${field.name}` as MessageKey)}</small> : null}
     </label>;
   })}</div>;
 }
