@@ -1265,6 +1265,8 @@ export function createBrowserMockRuntime(
             { id: 'playwright', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
             { id: 'windows', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
             { id: 'firecrawl', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: null, builtIn: false, signedIn: null }, claudeDesktop: off },
+            { id: 'codegraph', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'markitdown', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
           ],
         };
       }

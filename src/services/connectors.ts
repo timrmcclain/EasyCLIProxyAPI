@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-export type ConnectorId = 'google' | 'microsoft365' | 'github' | 'playwright' | 'windows' | 'firecrawl';
+export type ConnectorId = 'google' | 'microsoft365' | 'github' | 'playwright' | 'windows' | 'firecrawl' | 'codegraph' | 'markitdown';
 export type ConnectorTarget = 'claudeCode' | 'claudeDesktop';
 
 export type ConnectorTargetState = {

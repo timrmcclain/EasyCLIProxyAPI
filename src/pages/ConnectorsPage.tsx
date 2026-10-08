@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Building2, Check, ExternalLink, Flame, GitBranch, Globe, Mail, Monitor, Plug, RefreshCw, Sparkles, Undo2, type LucideIcon } from 'lucide-react';
+import { Building2, Check, ExternalLink, FileText, Flame, GitBranch, Globe, Mail, Monitor, Network, Plug, RefreshCw, Sparkles, Undo2, type LucideIcon } from 'lucide-react';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { useI18n } from '../i18n';
 import { connectorDynamicText, connectorText, type ConnectorTextKey } from '../i18n/connectors';
@@ -50,6 +50,8 @@ const connectorIcons: Partial<Record<ConnectorId, LucideIcon>> = {
   playwright: Globe,
   windows: Monitor,
   firecrawl: Flame,
+  codegraph: Network,
+  markitdown: FileText,
 };
 
 /** Notes longer than this collapse behind a disclosure so cards stay scannable. */

@@ -44,16 +44,20 @@ enum ConnectorId {
     Playwright,
     Windows,
     Firecrawl,
+    CodeGraph,
+    MarkItDown,
 }
 
 impl ConnectorId {
-    const ALL: [ConnectorId; 6] = [
+    const ALL: [ConnectorId; 8] = [
         ConnectorId::Google,
         ConnectorId::Microsoft365,
         ConnectorId::GitHub,
         ConnectorId::Playwright,
         ConnectorId::Windows,
         ConnectorId::Firecrawl,
+        ConnectorId::CodeGraph,
+        ConnectorId::MarkItDown,
     ];
 
     fn parse(value: &str) -> Result<Self, String> {
@@ -71,6 +75,8 @@ impl ConnectorId {
             ConnectorId::Playwright => "playwright",
             ConnectorId::Windows => "windows",
             ConnectorId::Firecrawl => "firecrawl",
+            ConnectorId::CodeGraph => "codegraph",
+            ConnectorId::MarkItDown => "markitdown",
         }
     }
 
@@ -90,6 +96,10 @@ impl ConnectorId {
             (ConnectorId::Windows, Target::Desktop) => "Windows-MCP",
             (ConnectorId::Firecrawl, Target::Code) => "firecrawl",
             (ConnectorId::Firecrawl, Target::Desktop) => "Firecrawl",
+            (ConnectorId::CodeGraph, Target::Code) => "codebase-memory",
+            (ConnectorId::CodeGraph, Target::Desktop) => "Codebase-Memory",
+            (ConnectorId::MarkItDown, Target::Code) => "markitdown",
+            (ConnectorId::MarkItDown, Target::Desktop) => "MarkItDown",
         }
     }
 
@@ -164,6 +174,8 @@ struct Runtimes {
     uvx: Option<PathBuf>,
     playwright: Option<(PathBuf, PathBuf)>,
     windows_python: Option<PathBuf>,
+    code_graph: Option<PathBuf>,
+    markitdown: Option<PathBuf>,
 }
 
 impl Runtimes {
@@ -179,12 +191,23 @@ impl Runtimes {
         let hub = local_app_data.join("TimAIHub");
         let playwright_cli = hub.join("playwright-mcp/node_modules/@playwright/mcp/cli.js");
         let windows_python = hub.join("windows-mcp/.venv/Scripts/python.exe");
+        // Both install into ~/.local/bin: the code graph through Headroom's checksum-verified
+        // installer, MarkItDown through `uv tool install markitdown-mcp`.
+        let local_bin = home.join(".local").join("bin");
+        let installed = |name: &str| {
+            [local_bin.join(format!("{name}.exe")), local_bin.join(name)]
+                .into_iter()
+                .chain(find_on_path(name))
+                .find(|path| path.is_file())
+        };
         Runtimes {
             uvx,
             playwright: node
                 .zip(Some(playwright_cli))
                 .filter(|(_, cli)| cli.is_file()),
             windows_python: Some(windows_python).filter(|path| path.is_file()),
+            code_graph: installed("codebase-memory-mcp"),
+            markitdown: installed("markitdown-mcp"),
         }
     }
 
@@ -193,6 +216,8 @@ impl Runtimes {
             ConnectorId::Google if self.uvx.is_none() => Some("uvx"),
             ConnectorId::Playwright if self.playwright.is_none() => Some("playwright"),
             ConnectorId::Windows if self.windows_python.is_none() => Some("windows-mcp"),
+            ConnectorId::CodeGraph if self.code_graph.is_none() => Some("codebase-memory-mcp"),
+            ConnectorId::MarkItDown if self.markitdown.is_none() => Some("markitdown-mcp"),
             _ => None,
         }
     }
@@ -342,6 +367,14 @@ fn build_entry(
             stdio_entry(target, name, python, vec!["-m".into(), "windows_mcp".into()], Some(env))
         }
         ConnectorId::Firecrawl => http_entry(target, name, FIRECRAWL_URL, None),
+        ConnectorId::CodeGraph => {
+            let binary = runtimes.code_graph.as_ref().ok_or("The code graph is not installed")?;
+            stdio_entry(target, name, binary, Vec::new(), None)
+        }
+        ConnectorId::MarkItDown => {
+            let binary = runtimes.markitdown.as_ref().ok_or("MarkItDown is not installed")?;
+            stdio_entry(target, name, binary, Vec::new(), Some(json!({ "PYTHONUTF8": "1" })))
+        }
     })
 }
 
@@ -1306,7 +1339,11 @@ fn ai_test_plan(id: ConnectorId, server: &str, google_email: Option<&str>, today
             vec![format!("mcp__{server}")],
             format!("Use the Microsoft 365 tools to count the Outlook emails received on {today}."),
         ),
-        ConnectorId::Playwright | ConnectorId::Windows | ConnectorId::Firecrawl => return None,
+        ConnectorId::Playwright
+        | ConnectorId::Windows
+        | ConnectorId::Firecrawl
+        | ConnectorId::CodeGraph
+        | ConnectorId::MarkItDown => return None,
     };
     Some((tools, format!("{task}\n\n{AI_TEST_RESULT_RULES}")))
 }

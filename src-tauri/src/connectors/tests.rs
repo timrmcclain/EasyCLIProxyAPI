@@ -74,6 +74,25 @@ fn runtimes(root: &Path) -> Runtimes {
         uvx: Some(root.join("uvx.exe")),
         playwright: Some((root.join("node.exe"), root.join("cli.js"))),
         windows_python: Some(root.join("python.exe")),
+        code_graph: Some(root.join("codebase-memory-mcp.exe")),
+        markitdown: Some(root.join("markitdown-mcp.exe")),
+    }
+}
+
+#[test]
+fn code_graph_and_markitdown_run_their_installed_programs() {
+    let root = Path::new("C:/fixture");
+    let runtimes = runtimes(root);
+    let none = BTreeMap::new();
+    for (id, program) in [(ConnectorId::CodeGraph, "codebase-memory-mcp.exe"), (ConnectorId::MarkItDown, "markitdown-mcp.exe")] {
+        for target in [Target::Code, Target::Desktop] {
+            let entry = build_entry(id, target, "", &none, &runtimes).unwrap();
+            assert_eq!(entry["command"].as_str().unwrap(), root.join(program).to_string_lossy());
+        }
+        let missing = Runtimes { code_graph: None, markitdown: None, ..runtimes.clone() };
+        assert!(build_entry(id, Target::Code, "", &none, &missing).is_err());
+        assert!(missing.unavailable_reason(id).is_some());
+        assert_eq!(ConnectorId::parse(id.key()).unwrap(), id);
     }
 }
 
@@ -354,7 +373,7 @@ fn ai_test_allows_only_named_read_only_tools_and_no_built_in_tools() {
     assert_eq!(after("--allowedTools"), "mcp__google-workspace__list_calendars,mcp__google-workspace__get_events");
     let (github, _) = ai_test_plan(ConnectorId::GitHub, "github", None, "2026-10-07").unwrap();
     assert_eq!(github, vec!["mcp__github__get_me"]);
-    for id in [ConnectorId::Playwright, ConnectorId::Windows, ConnectorId::Firecrawl] {
+    for id in [ConnectorId::Playwright, ConnectorId::Windows, ConnectorId::Firecrawl, ConnectorId::CodeGraph, ConnectorId::MarkItDown] {
         assert!(ai_test_plan(id, "x", None, "2026-10-07").is_none());
     }
 }
