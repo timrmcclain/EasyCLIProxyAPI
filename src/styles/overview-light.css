@@ -39,7 +39,7 @@
 .quota-ledger { --quota-amber:#d6ae50; --quota-red:#d05f50; }
 :root[data-theme='dark'] .quota-ledger :is(.quota-icon-xai,.quota-icon-kimi) { background:#eee; padding:2px; border-radius:4px; }
 .account-dashboard.quota-ledger .ad-heading { margin-bottom:24px; gap:20px; }
-.account-dashboard.quota-ledger .ad-heading h2 { font-size:clamp(28px,3vw,42px); line-height:1.15; font-weight:600; margin:0 0 14px; letter-spacing:-.04em; }
+.account-dashboard.quota-ledger .ad-heading h2 { font-size:var(--font-size-panel-title); line-height:1.35; font-weight:600; margin:0 0 4px; }
 .account-dashboard.quota-ledger .quota-load-status { font-size:14px; gap:12px; flex-wrap:wrap; }
 .quota-ledger .quota-loaded { color:var(--quota-green); }
 .quota-ledger .quota-load-status .ad-dot { width:4px; height:20px; border-radius:0; }
@@ -146,7 +146,7 @@
 }
 @media (max-width:760px) {
  :root[data-theme='light'] .content:has(.home-page) { padding:24px 20px; }
- .account-dashboard.quota-ledger .ad-heading h2 { font-size:28px; }
+ .account-dashboard.quota-ledger .ad-heading h2 { font-size:var(--font-size-panel-title); }
  .account-dashboard.quota-ledger .ad-heading { gap:16px; margin-bottom:16px; }
  .quota-ledger .quota-summary-heading { font-size:14px; flex-wrap:wrap; }
  .quota-ledger .quota-provider-summary-cell { padding:18px; }

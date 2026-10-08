@@ -343,3 +343,98 @@
   .home-protocol-tabs button { gap: 4px; padding-inline: 0; }
   .home-stat-card { padding: 12px; }
 }
+
+/* Status line: the one place Home answers "is everything working?". */
+.home-page .home-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-body);
+}
+
+.home-status-proxy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.home-status-proxy strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.home-status-proxy .home-runtime-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--text-muted);
+}
+
+.home-status-proxy.success .home-runtime-dot { background: var(--success-color); }
+.home-status-proxy.error .home-runtime-dot { background: var(--error-color); }
+.home-status-proxy.pending .home-runtime-dot { background: var(--warning-color); }
+
+.home-status-accounts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--border-color);
+}
+
+.home-status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.home-status-chip.error {
+  background: var(--failure-badge-bg);
+  border-color: var(--failure-badge-border);
+  color: var(--failure-badge-text);
+}
+
+.home-status-latest {
+  color: var(--text-muted);
+  font-size: var(--font-size-meta);
+}
+
+.home-status-actions {
+  margin-left: auto;
+}
+
+.home-status-actions .core-health-entry-status {
+  display: none;
+}
+
+.home-stat-error {
+  color: var(--error-color);
+}
+
+.home-proxy-details {
+  margin-top: var(--space-6);
+}
+
+.home-proxy-details > summary {
+  cursor: pointer;
+  width: fit-content;
+  padding: var(--space-2) 0;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.home-proxy-details[open] > summary {
+  margin-bottom: var(--space-3);
+}

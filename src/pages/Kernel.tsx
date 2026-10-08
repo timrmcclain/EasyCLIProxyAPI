@@ -9,7 +9,7 @@ import { useI18n } from '../i18n';
 import { useAppUpdate } from '../appUpdate';
 import { FloatingNotice, useAppNotice } from '../appNotice';
 import { VersionManagementPage, displayAppVersion } from './VersionManagementPage';
-import { AccountDashboard } from '../components/AccountDashboard';
+import { AccountDashboard, type AccountStatusSummary } from '../components/AccountDashboard';
 import { HomeAccessPanel } from './HomeAccessPanel';
 import { HomeOverviewCards } from './HomeOverviewCards';
 import { CoreHealthPanel } from './CoreHealthPanel';
@@ -34,6 +34,18 @@ type CoreTlsSettings = {
   key: string;
 };
 
+/** "3 min ago" style label for the status line; exact time stays in Activity. */
+function formatAgo(timestamp: string, locale: string) {
+  const seconds = Math.round((Date.parse(timestamp) - Date.now()) / 1000);
+  if (Number.isNaN(seconds)) return '';
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const abs = Math.abs(seconds);
+  if (abs < 60) return format.format(seconds, 'second');
+  if (abs < 3600) return format.format(Math.round(seconds / 60), 'minute');
+  if (abs < 86400) return format.format(Math.round(seconds / 3600), 'hour');
+  return format.format(Math.round(seconds / 86400), 'day');
+}
+
 export type KernelView = 'home' | 'proxy' | 'versions';
 
 export function KernelPage({ view = 'home' }: { view?: KernelView }) {
@@ -41,7 +53,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
     return <VersionManagementPage />;
   }
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { info: appUpdate } = useAppUpdate();
   const {
     status: coreStatus,
@@ -62,6 +74,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const [homeApiKeyError, setHomeApiKeyError] = useState(false);
   const [configRevision, setConfigRevision] = useState(0);
   const [tlsEnabled, setTlsEnabled] = useState(false);
+  const [accountStatus, setAccountStatus] = useState<AccountStatusSummary | null>(null);
 
   const savedPortRef = useRef(8317);
   const copiedApiTimerRef = useRef<number | null>(null);
@@ -209,35 +222,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const healthContext = [listenHost, customPort, tlsEnabled, coreStatus?.processId, configRevision].join(':');
   const overview = useHomeOverview(coreReady, healthContext);
 
-  if (view === 'home') {
-    return (
-      <section className="page kernel-page home-page">
-        <header className="management-header home-page-header">
-          <div><h1>{t('app.nav.home')}</h1></div>
-        </header>
-        <button type="button" className={`home-proxy-status ${statusTone}`}
-          onClick={() => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'proxy' }))}
-          title={t('home.proxyStatus.open')}>
-          {coreProcessBusy ? <LoaderCircle size={12} className="spin" aria-hidden="true" /> : <span className="home-runtime-dot" aria-hidden="true" />}
-          <span>{coreRunning ? t('home.proxyStatus.running', { port: customPort }) : statusLabel}</span>
-          <span aria-hidden="true">→</span>
-        </button>
-        <AccountDashboard ready={coreReady} />
-        <HomeOverviewCards snapshot={overview.snapshot} loading={overview.loading} coreReady={coreReady} onRefresh={overview.refresh} actions={<CoreHealthPanel compact
-          coreReady={coreReady} models={overview.snapshot?.models ?? []}
-          modelsLoading={overview.loading}
-          modelsError={overview.snapshot?.errors.models ?? ''}
-          onRefreshModels={overview.refresh} contextKey={healthContext}
-        />} />
-      </section>
-    );
-  }
-
-  return (
-    <section className="page kernel-page home-page proxy-page">
-      <header className="management-header">
-        <div><h1>{t('app.nav.proxy')}</h1></div>
-      </header>
+  const proxyPanel = (
       <div className="kernel-layout home-layout">
         <div className="panel control-panel">
           <div className="panel-heading home-panel-heading">
@@ -309,14 +294,65 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
               {t('kernel.action.restart')}
             </button>
           </div>
-          <FloatingNotice key={processFeedback.revision} notice={processFeedback.notice} onDismiss={processFeedback.clearNotice} />
         </div>
         <HomeAccessPanel
           profiles={apiProfiles} apiKey={homeApiKey} keyError={homeApiKeyError}
           ready={coreReady} copiedField={copiedApiField} onCopy={copyApiValue}
         />
       </div>
-      <FloatingNotice key={copyFeedback.revision} notice={copyFeedback.notice} onDismiss={copyFeedback.clearNotice} />
+  );
+  const processNotice = <FloatingNotice key={`process-${processFeedback.revision}`} notice={processFeedback.notice} onDismiss={processFeedback.clearNotice} />;
+  const toggleProxy = () => void runCoreProcessCommand(coreRunning ? 'stop_core_process' : 'start_core_process');
+
+  if (view === 'home') {
+    return (
+      <section className="page kernel-page home-page">
+        <header className="management-header home-page-header">
+          <div><h1>{t('app.nav.home')}</h1></div>
+        </header>
+        <section className="home-status" aria-label={t('home.status.label')}>
+          <span className={`home-status-proxy ${statusTone}`} role="status" title={statusError || undefined}>
+            {coreProcessBusy ? <LoaderCircle size={14} className="spin" aria-hidden="true" /> : <span className="home-runtime-dot" aria-hidden="true" />}
+            <strong>{coreRunning ? t('home.proxyStatus.running', { port: customPort }) : statusLabel}</strong>
+          </span>
+          <button type="button" className={coreRunning ? 'secondary-button compact-button' : 'primary-button compact-button'}
+            disabled={!coreInstalled || coreProcessBusy} onClick={toggleProxy}>
+            {coreRunning ? <Square size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+            {coreRunning ? t('kernel.action.stop') : t('kernel.action.start')}
+          </button>
+          {accountStatus && accountStatus.total > 0 && <span className="home-status-accounts">
+            <span>{t('home.status.accounts', { available: accountStatus.available, total: accountStatus.total })}</span>
+            {accountStatus.problems > 0 && <span className="home-status-chip error">{t('home.status.problems', { count: accountStatus.problems })}</span>}
+            {accountStatus.unconfirmed > 0 && <span className="home-status-chip neutral">{t('home.status.unconfirmed', { count: accountStatus.unconfirmed })}</span>}
+          </span>}
+          {accountStatus?.latestAt && <span className="home-status-latest">{t('home.status.lastRequest', { time: formatAgo(accountStatus.latestAt, locale) })}</span>}
+          <span className="home-status-actions"><CoreHealthPanel compact
+            coreReady={coreReady} models={overview.snapshot?.models ?? []}
+            modelsLoading={overview.loading}
+            modelsError={overview.snapshot?.errors.models ?? ''}
+            onRefreshModels={overview.refresh} contextKey={healthContext}
+          /></span>
+        </section>
+        {processNotice}
+        <HomeOverviewCards snapshot={overview.snapshot} loading={overview.loading} coreReady={coreReady} onRefresh={overview.refresh} />
+        <AccountDashboard ready={coreReady} onSummary={setAccountStatus} />
+        <details className="home-proxy-details">
+          <summary>{t('home.status.connectionDetails')}</summary>
+          {proxyPanel}
+        </details>
+        <FloatingNotice key={`copy-${copyFeedback.revision}`} notice={copyFeedback.notice} onDismiss={copyFeedback.clearNotice} />
+      </section>
+    );
+  }
+
+  return (
+    <section className="page kernel-page home-page proxy-page">
+      <header className="management-header">
+        <div><h1>{t('app.nav.proxy')}</h1></div>
+      </header>
+      {processNotice}
+      {proxyPanel}
+      <FloatingNotice key={`copy-${copyFeedback.revision}`} notice={copyFeedback.notice} onDismiss={copyFeedback.clearNotice} />
     </section>
   );
 }

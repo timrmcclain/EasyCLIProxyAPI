@@ -32,8 +32,15 @@ type Routing = { routingStrategy: string; routingSessionAffinity: boolean };
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 const providers = ['claude', 'antigravity', 'codex', 'xai', 'kimi'];
 const dashboardProvider = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
+// Problems sort first so the accounts that need a decision are at the top of each provider.
+const attentionRank: Record<string, number> = { exhausted: 0, unavailable: 0, limited: 0, resetDue: 0, unknown: 1, creditBacked: 2, available: 3, disabled: 4 };
+const problemKinds = ['exhausted', 'unavailable', 'limited', 'resetDue'];
+// Above this many accounts the search, state filter and provider chips are worth their space.
+const TOOLBAR_THRESHOLD = 8;
 
-export function AccountDashboard({ ready }: { ready: boolean }) {
+export type AccountStatusSummary = { total: number; available: number; problems: number; unconfirmed: number; latestAt?: string };
+
+export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSummary?: (summary: AccountStatusSummary) => void }) {
   const { t } = useI18n();
   const [files, setFiles] = useState<AuthFile[]>([]);
   const [names, setNames] = useState(readAccountNames);
@@ -44,11 +51,12 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
   const [updatedAt, setUpdatedAt] = useState<number>();
   const [sort, setSort] = useState(() => readDashboardPreference('quotaSort', ['priority', 'reset', 'recovery'] as const, 'priority'));
   const [filter, setFilter] = useState(() => readDashboardPreference('quotaProvider', ['all', ...providers, 'devin', 'gemini', 'other'], 'all'));
-  const [layout, setLayout] = useState(() => readDashboardPreference('quotaLayout', ['ledger', 'compact'] as const, 'ledger'));
+  const [layout, setLayout] = useState(() => readDashboardPreference('quotaLayout', ['ledger', 'compact'] as const, 'compact'));
   const [search, setSearch] = useState('');
   const [stateFilter, setStateFilter] = useState(() => readDashboardPreference('quotaState', ['all', 'available', 'attention'] as const, 'all'));
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null);
   const [hideEmails, setHideEmails] = useState(() => readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true');
+  const [showHealthy, setShowHealthy] = useState(() => readDashboardPreference('showHealthy', ['true', 'false'], 'false') === 'true');
   const [activity, setActivity] = useState<DashboardActivity | null>(null);
   const [activityError, setActivityError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -132,7 +140,24 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
     }
   };
 
+  const stale = !ready || Boolean(error);
+  const kindOf = (file: AuthFile) => quotaAvailability(file, quotas[quotaKey(file)], now, stale).kind;
+  const kinds = files.map(kindOf);
+  const summaryCounts: AccountStatusSummary = {
+    total: files.length,
+    available: kinds.filter((kind) => kind === 'available' || kind === 'creditBacked').length,
+    problems: kinds.filter((kind) => problemKinds.includes(kind)).length,
+    unconfirmed: kinds.filter((kind) => kind === 'unknown').length,
+    latestAt: activity?.latest?.timestamp,
+  };
+  const summaryKey = JSON.stringify(summaryCounts);
+  useEffect(() => { onSummary?.(JSON.parse(summaryKey) as AccountStatusSummary); }, [summaryKey, onSummary]);
+
   const sorted = [...files].sort((a, b) => {
+    if (sort === 'priority') {
+      const delta = (attentionRank[kindOf(a)] ?? 1) - (attentionRank[kindOf(b)] ?? 1);
+      if (delta) return delta;
+    }
     if (sort === 'recovery') {
       const delta = (quotaAvailability(a, quotas[quotaKey(a)], now, !ready || Boolean(error)).recoveryAt ?? Infinity)
         - (quotaAvailability(b, quotas[quotaKey(b)], now, !ready || Boolean(error)).recoveryAt ?? Infinity);
@@ -166,6 +191,11 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
   const viewAlternatives = (_file: AuthFile) => { setAlternatives(true); };
   const providerList = [...providers, ...[...new Set(files.map(dashboardProvider))].filter((provider) => !providers.includes(provider))];
   const filtered = filter !== 'all' || stateFilter !== 'all' || search.trim() !== '';
+  const showToolbar = files.length > TOOLBAR_THRESHOLD || filtered;
+  const collapseHealthy = !showHealthy && !filtered;
+  const healthyCount = visible.filter((file) => kindOf(file) === 'available').length;
+  const cardFiles = collapseHealthy ? visible.filter((file) => kindOf(file) !== 'available') : visible;
+  const toggleHealthy = (value: boolean) => { setShowHealthy(value); saveDashboardPreference('showHealthy', String(value)); };
   const clearFilters = () => {
     setAlternatives(false);
     setFilter('all'); setStateFilter('all'); setSearch('');
@@ -184,7 +214,7 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
     {!ready ? <p className="ad-notice">{t('accountDashboard.start')}</p> : null}
     {error ? <p role="alert" className="ad-notice ad-error">{error} {t('accountDashboard.staleWarning')}</p> : null}
     {ready && !loading && !error && !files.length ? <p className="ad-notice">{t('accountDashboard.empty')}</p> : null}
-    <div className="ledger-filters">
+    {showToolbar && <><div className="ledger-filters">
       <div className="ledger-provider-filters" role="group" aria-label={t('ledger.providers')}>
         {['all', ...providerList].map((provider) =>
           <button type="button" key={provider} aria-pressed={filter === provider} onClick={() => { setFilter(provider); saveDashboardPreference('quotaProvider', provider); }}>
@@ -195,7 +225,35 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
         <option value="ledger">{t('quotaLedger.ledger')}</option><option value="compact">{t('quotaLedger.compact')}</option>
       </select>
     </div>
-    <div className="quota-workflow-tools"><input type="search" aria-label={t('availability.search')} placeholder={t('availability.search')} value={search} onChange={event => setSearch(event.target.value)} /><select aria-label={t('availability.all')} value={stateFilter} onChange={event => { const value = event.target.value as typeof stateFilter; setStateFilter(value); saveDashboardPreference('quotaState', value); }}><option value="all">{t('availability.all')}</option><option value="available">{t('availability.known')}</option><option value="attention">{t('availability.attention')}</option></select><button type="button" className="secondary-button compact-button" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button><span className="quota-result-count" role="status">{t('availability.results', { shown: visible.length, total: files.length })}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>
+    <div className="quota-workflow-tools"><input type="search" aria-label={t('availability.search')} placeholder={t('availability.search')} value={search} onChange={event => setSearch(event.target.value)} /><select aria-label={t('availability.all')} value={stateFilter} onChange={event => { const value = event.target.value as typeof stateFilter; setStateFilter(value); saveDashboardPreference('quotaState', value); }}><option value="all">{t('availability.all')}</option><option value="available">{t('availability.known')}</option><option value="attention">{t('availability.attention')}</option></select><button type="button" className="secondary-button compact-button" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button><span className="quota-result-count" role="status">{t('availability.results', { shown: visible.length, total: files.length })}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div></>}
+    <div className="quota-provider-summary">
+      {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
+        const accounts = files.filter((file) => dashboardProvider(file) === provider);
+        return <QuotaProviderSummary key={provider} accounts={accounts} quotas={quotas} name={providerNames[provider] ?? provider} icon={<ProviderIcon provider={provider} />} now={now} stale={stale} labelFor={labelFor} />;
+      })}
+    </div>
+    {alternatives && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
+    {healthyCount > 0 && <div className="ad-healthy-toggle" role="status">
+      <span>{t(collapseHealthy ? 'home.accounts.healthyHidden' : 'home.accounts.healthyShown', { count: healthyCount })}</span>
+      {!filtered && <button type="button" className="secondary-button compact-button" aria-expanded={!collapseHealthy} onClick={() => toggleHealthy(collapseHealthy)}>{t(collapseHealthy ? 'home.accounts.showHealthy' : 'home.accounts.hideHealthy')}</button>}
+      {!showToolbar && summaryCounts.problems > 0 && <button type="button" className="secondary-button compact-button" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button>}
+    </div>}
+    <div className="ad-accounts">
+      {providerList.map((provider) => {
+        const group = cardFiles.filter((file) => dashboardProvider(file) === provider);
+        const columns = ledgerWindows(group, quotas).slice(0, 3);
+        return group.length > 0 ? <section className="quota-account-group" key={provider} aria-label={providerNames[provider] ?? provider}>
+      <h3 className="quota-group-heading"><ProviderIcon provider={provider} />{providerNames[provider] ?? provider}<span>{group.length}</span></h3>
+      {group.map((file) => <AccountCard key={quotaKey(file)} file={file} quota={quotas[quotaKey(file)] ?? idleQuota()} now={now}
+        label={labelFor(file)} hideEmails={hideEmails} requests={activity ? accountRequests(file, activity.items) : undefined} activityStale={activityError || stale}
+        friendlyName={names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} onName={saveName} onAlternatives={viewAlternatives}
+        columns={columns}
+        disabled={!ready || saving || loading || refreshingKey !== null || Boolean(error)} onSave={savePriority} onRefresh={refreshAccount} refreshing={refreshingKey === quotaKey(file)} stale={stale} />)}
+      </section> : null; })}
+      {!visible.length && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
+    </div>
+    <RecoveryTimeline files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} />
+    <OverviewAlerts key={String(hideEmails)} files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} items={activity?.items} activityStale={activityError || stale} />
     <details className="quota-ledger-notes"><summary>{t('quotaLedger.notes')}</summary><div className="ad-toolbar">
       <div className="ad-routing"><span className={`ad-dot ${ready ? 'online' : ''}`} />{ready ? t('accountDashboard.online') : t('accountDashboard.offline')}
         <span>{t('accountDashboard.routing', { strategy: routing?.routingStrategy ?? '—' })}</span>
@@ -207,30 +265,6 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
     <p className="ledger-snapshot">{t('ledger.snapshot', { count: activity?.items.length ?? 0 })}{activity ? ` · ${t('accountDashboard.checked', { time: new Date(activity.checkedAt).toLocaleTimeString() })}` : ''}</p>
     <div className="ad-footnote"><span>{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.loading')} · {t('accountDashboard.cadence')}</span>
       <span>{t('accountDashboard.routingHint')}</span></div>
-    </details>
-    <div className="quota-provider-summary">
-      {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
-        const accounts = files.filter((file) => dashboardProvider(file) === provider);
-        return <QuotaProviderSummary key={provider} accounts={accounts} quotas={quotas} name={providerNames[provider] ?? provider} icon={<ProviderIcon provider={provider} />} now={now} stale={!ready || Boolean(error)} labelFor={labelFor} />;
-      })}
-    </div>
-    {alternatives && <AlternativeComparison files={files} quotas={quotas} now={now} stale={!ready || Boolean(error)} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
-    <div className="ad-accounts">
-      {providerList.map((provider) => {
-        const group = visible.filter((file) => dashboardProvider(file) === provider);
-        const columns = ledgerWindows(group, quotas).slice(0, 3);
-        return group.length > 0 ? <section className="quota-account-group" key={provider} aria-label={providerNames[provider] ?? provider}>
-      <h3 className="quota-group-heading"><ProviderIcon provider={provider} />{providerNames[provider] ?? provider}<span>{group.length}</span></h3>
-      {group.map((file) => <AccountCard key={quotaKey(file)} file={file} quota={quotas[quotaKey(file)] ?? idleQuota()} now={now}
-        label={labelFor(file)} hideEmails={hideEmails} requests={activity ? accountRequests(file, activity.items) : undefined} activityStale={activityError || !ready || Boolean(error)}
-        friendlyName={names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} onName={saveName} onAlternatives={viewAlternatives}
-        columns={columns}
-        disabled={!ready || saving || loading || refreshingKey !== null || Boolean(error)} onSave={savePriority} onRefresh={refreshAccount} refreshing={refreshingKey === quotaKey(file)} stale={!ready || Boolean(error)} />)}
-      </section> : null; })}
-      {!visible.length && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
-    </div>
-    <RecoveryTimeline files={files} quotas={quotas} now={now} stale={!ready || Boolean(error)} labelFor={labelFor} />
-    <OverviewAlerts key={String(hideEmails)} files={files} quotas={quotas} now={now} stale={!ready || Boolean(error)} labelFor={labelFor} items={activity?.items} activityStale={activityError || !ready || Boolean(error)} />
     <section className="ledger-evidence" aria-label={t('ledger.latest')} title={t('ledger.evidenceHint')}>
       <span className="ledger-evidence-label"><Activity size={16} aria-hidden="true" />{t('ledger.latest')}</span>
       {latest ? <><strong>{requestClient(latest) ?? t('ledger.unknownClient')} <span aria-hidden="true">→</span> {latestFile ? labelFor(latestFile) : t('ledger.unmatched')}</strong>
@@ -238,6 +272,7 @@ export function AccountDashboard({ ready }: { ready: boolean }) {
         : <strong>{activity ? t('ledger.noSuccess') : t('ledger.waiting')}</strong>}
       {(!ready || activityError || Boolean(error)) && <span role="status">{t('ledger.stale')}</span>}
     </section>
+    </details>
   </section>;
 }
 
@@ -298,15 +333,16 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
         return <div key={`${row.label}-${index}`} className={`ad-quota ${tone}`}>
           <div className="ad-quota-title"><span>{row.label}</span><strong>{percent === null ? t('accountDashboard.unknown') : t('accountDashboard.remaining', { percent: quotaPercent(percent) })}</strong></div>
           {percent !== null ? <meter min={0} max={100} value={percent} aria-label={t('accountDashboard.meter', { label: row.label })} /> : <div className="quota-unknown-track" aria-hidden="true" />}
-          <div className="ad-quota-reset"><span>{overdue ? t('accountDashboard.resetDue') : row.resetAtMs ? t('accountDashboard.resetsIn', { time: resetCountdown(row.resetAtMs, now) }) : row.reset || t('accountDashboard.noReset')}</span>
-            {row.resetAtMs && <time dateTime={new Date(row.resetAtMs).toISOString()}>{new Date(row.resetAtMs).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time>}</div>
+          <div className="ad-quota-reset">{row.resetAtMs && !overdue
+            ? <time dateTime={new Date(row.resetAtMs).toISOString()} title={new Date(row.resetAtMs).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}>{t('accountDashboard.resetsIn', { time: resetCountdown(row.resetAtMs, now) })}</time>
+            : <span>{overdue ? t('accountDashboard.resetDue') : row.reset || t('accountDashboard.noReset')}</span>}</div>
           {blockedElsewhere && <small className="ad-card-note">{t('authFiles.quota.blockedElsewhere')}</small>}
           {row.justReset && <small className="ad-card-note credential-quota-just-reset">{t('authFiles.quota.justReset')}</small>}
           {row.detail && <small className="ad-card-note">{privateText(row.detail, hideEmails)}</small>}
         </div>;
       })}
     </div>
-    <div className="quota-row-actions">{quota.fetchedAt && <small>{t('availability.fresh', { time: new Date(quota.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}</small>}<button type="button" className="quota-row-refresh" disabled={disabled || !onRefresh || !providerForFile(file) || summary.health.disabled} onClick={() => void onRefresh?.(file)} aria-label={t('quotaLedger.refreshAccount', { account: displayLabel })}><RefreshCw size={16} aria-hidden="true" className={refreshing ? 'quota-refreshing' : undefined} />{t(refreshing ? 'accountDashboard.refreshing' : 'quotaLedger.refresh')}</button></div>
+    <div className="quota-row-actions"><button type="button" className="quota-row-refresh" disabled={disabled || !onRefresh || !providerForFile(file) || summary.health.disabled} onClick={() => void onRefresh?.(file)} aria-label={t('quotaLedger.refreshAccount', { account: displayLabel })}><RefreshCw size={16} aria-hidden="true" className={refreshing ? 'quota-refreshing' : undefined} />{t(refreshing ? 'accountDashboard.refreshing' : 'quotaLedger.refresh')}</button></div>
     <details className="personal-disclosure ad-account-details" open={detailsOpen} onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary>{orderedRows.length > 3 ? t('quotaLedger.more', { count: orderedRows.length - 3 }) : t('quotaLedger.details')}</summary>
     <span className={`state-pill ${availability.kind === 'available' ? 'success' : availability.kind === 'exhausted' || availability.kind === 'unavailable' ? 'error' : 'neutral'}`}>{t(`availability.${availability.kind}`)}</span>
     <p className="ad-card-note"><strong>{t('desk.credentialHealth')}: </strong>{stale ? t('accountDashboard.stale') : summary.health.tone === 'success' ? t('desk.active') : t(summary.health.label)} · {t('desk.healthHint')}</p>
@@ -319,7 +355,6 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
       {activityStale && <span>{t('ledger.stale')}</span>}
     </div>
 
-    <p className="ad-card-note">{summary.stats.recentAvailable ? t('accountDashboard.activity', { success: summary.stats.recentSuccess, failure: summary.stats.recentFailure }) : t('accountDashboard.noActivity')}</p>
     <div className="ad-card-footer"><label>{t('accountDashboard.priority')}<input type="number" step="1" value={draft} onChange={(event) => { setDraft(event.target.value); setFeedback(''); }} aria-label={t('accountDashboard.priorityLabel', { account: displayLabel })} disabled={disabled || pending} /></label>
       <button className="secondary-button" disabled={disabled || pending || draft === String(summary.priority)} onClick={() => void save()}>{pending ? t('accountDashboard.saving') : t('accountDashboard.save')}</button>
       <span className="ad-freshness">{quota.fetchedAt ? t('accountDashboard.quotaChecked', { time: new Date(quota.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.noSnapshot')}</span></div>

@@ -120,6 +120,9 @@ const pages = [
 ] as const;
 
 type PageId = (typeof pages)[number]['id'];
+// Six everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
+const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'agents', 'connectors', 'config'];
+const advancedNav: PageId[] = ['api', 'plugins', 'quota', 'proxy', 'versions'];
 type WindowsCloseAction = 'exit' | 'minimize-to-tray';
 type WindowsCloseBehavior = 'ask' | WindowsCloseAction;
 
@@ -390,10 +393,10 @@ function AppContent() {
           </div>
 
           <nav className="nav-section" aria-label={t('app.navigation')}>
-            {pages.filter((page) => !['easy', 'api', 'versions'].includes(page.id)).map(renderNavigationPage)}
-            <details className="personal-advanced" open={['api', 'versions'].includes(active) || undefined}>
+            {primaryNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
+            <details className="personal-advanced" open={advancedNav.includes(active) || undefined}>
               <summary>{t('personal.advanced')}</summary>
-              <div>{pages.filter((page) => ['api', 'versions'].includes(page.id)).map(renderNavigationPage)}
+              <div>{advancedNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
                 <button type="button" className="sidebar-easy-entry" onClick={() => select('easy')}>{t('app.nav.easy')}</button>
               </div>
             </details>

@@ -41,13 +41,13 @@ export function HomeOverviewCards({ snapshot, loading, coreReady, onRefresh, act
     {
       id: 'providerKeys', label: t('home.overview.providerKeys'),
       value: snapshot?.providerKeys == null ? '—' : formatNumber(snapshot.providerKeys),
-      description: snapshot?.providerKeys == null ? unavailable(true) : t('home.overview.providerKeysHint'),
+      description: snapshot?.providerKeys == null ? unavailable(true) : '',
       tone: 'neutral', error: snapshot?.errors.providerKeys,
     },
     {
       id: 'models', label: t('home.overview.models'),
       value: snapshot?.models == null ? '—' : formatNumber(snapshot.models.length),
-      description: snapshot?.models == null ? unavailable(true) : t('home.overview.modelsHint'),
+      description: snapshot?.models == null ? unavailable(true) : '',
       tone: 'neutral', error: snapshot?.errors.models,
     },
   ];
@@ -70,7 +70,7 @@ export function HomeOverviewCards({ snapshot, loading, coreReady, onRefresh, act
             aria-valuemax={card.percent != null ? 100 : undefined}
             aria-valuenow={card.percent != null ? Math.max(0, Math.min(100, card.percent)) : undefined}
           ><span style={{ width: `${Math.max(0, Math.min(100, card.percent ?? 0))}%` }} /></div>}
-          <p title={card.error || undefined}>{card.description}</p>
+          {card.error ? <p className="home-stat-error" role="alert">{card.error}</p> : card.description ? <p>{card.description}</p> : null}
         </article>)}
       </div>
     </section>

@@ -1,13 +1,12 @@
 .account-dashboard { --ad-accent: #bb704f; display: grid; gap: 20px; margin: 0 0 28px; color: var(--text-primary); }
 .home-page:has(.account-dashboard) { grid-template-rows: auto auto auto; grid-auto-rows: auto; align-content: start; }
-.home-page > .account-dashboard { grid-column: 1 / -1; grid-row: 2; }
 @container workspace (min-width: 840px) {
   .home-page:has(.account-dashboard) > .home-layout,
   .home-page:has(.account-dashboard) > .client-api-panel { grid-row: 3; }
 }
 .ad-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .ad-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .17em; color: var(--ad-accent); }
-.ad-heading h2 { margin: 8px 0; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.035em; font-weight: 600; }
+.ad-heading h2 { margin: 0 0 4px; font-size: var(--font-size-panel-title); font-weight: 600; }
 .ad-heading p, .ad-footnote { color: var(--text-secondary); font-size: 12px; line-height: 1.6; margin: 0; }
 .ad-heading button { flex-shrink: 0; display: flex; gap: 8px; align-items: center; }
 .ad-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-secondary); }
@@ -65,3 +64,17 @@
 .ad-footnote { display: grid; gap: 4px; font-size: 11px; }
 @media (max-width: 1000px) { .ad-accounts { grid-template-columns: 1fr; } .ad-freshness { margin-left: 0; } }
 @media (max-width: 720px) { .ad-heading { align-items: start; flex-direction: column; } .ad-metrics > div { padding: 16px 10px; } .ad-metrics svg { display: none; } .ad-metrics span { padding: 0; } .ad-metrics strong { font-size: 24px; } .ad-card { padding: 16px; } }
+
+/* Healthy accounts collapse into one line so problems are what you see first. */
+.ad-healthy-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-3) 0;
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: var(--font-size-meta);
+}

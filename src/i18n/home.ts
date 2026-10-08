@@ -1,4 +1,14 @@
 export const homeZhCN = {
+  'home.status.label': '状态',
+  'home.status.accounts': '{available}/{total} 个账号可用',
+  'home.status.problems': '{count} 个受限',
+  'home.status.unconfirmed': '{count} 个未确认',
+  'home.status.lastRequest': '最近请求：{time}',
+  'home.status.connectionDetails': '代理与连接详情',
+  'home.accounts.healthyHidden': '另有 {count} 个账号额度正常，已折叠',
+  'home.accounts.healthyShown': '{count} 个账号额度正常',
+  'home.accounts.showHealthy': '显示全部',
+  'home.accounts.hideHealthy': '只看需要处理的',
   'home.runtime.ready': '本地代理已就绪',
   'home.runtime.stopped': '启动内核后即可连接客户端',
   'home.runtime.notInstalled': '请先在版本管理中安装内核',
@@ -49,6 +59,16 @@ export const homeZhCN = {
 } as const;
 
 export const homeEn: Record<keyof typeof homeZhCN, string> = {
+  'home.status.label': 'Status',
+  'home.status.accounts': '{available} of {total} accounts available',
+  'home.status.problems': '{count} limited',
+  'home.status.unconfirmed': '{count} unconfirmed',
+  'home.status.lastRequest': 'Last request {time}',
+  'home.status.connectionDetails': 'Proxy & connection details',
+  'home.accounts.healthyHidden': '{count} more accounts have quota available',
+  'home.accounts.healthyShown': '{count} accounts have quota available',
+  'home.accounts.showHealthy': 'Show all',
+  'home.accounts.hideHealthy': 'Show only problems',
   'home.runtime.ready': 'Local proxy is ready',
   'home.runtime.stopped': 'Start the core to connect your clients',
   'home.runtime.notInstalled': 'Install a core in Version Management',
@@ -99,6 +119,16 @@ export const homeEn: Record<keyof typeof homeZhCN, string> = {
 };
 
 export const homeJa: Record<keyof typeof homeZhCN, string> = {
+  'home.status.label': 'ステータス',
+  'home.status.accounts': '{total} 件中 {available} 件のアカウントが利用可能',
+  'home.status.problems': '{count} 件が制限中',
+  'home.status.unconfirmed': '{count} 件が未確認',
+  'home.status.lastRequest': '最新リクエスト：{time}',
+  'home.status.connectionDetails': 'プロキシと接続の詳細',
+  'home.accounts.healthyHidden': 'ほかに {count} 件のアカウントは利用枠に問題ありません',
+  'home.accounts.healthyShown': '{count} 件のアカウントは利用枠に問題ありません',
+  'home.accounts.showHealthy': 'すべて表示',
+  'home.accounts.hideHealthy': '要対応のみ表示',
   'home.runtime.ready': 'ローカルプロキシは準備完了です',
   'home.runtime.stopped': 'コアを起動してクライアントを接続',
   'home.runtime.notInstalled': 'バージョン管理からコアをインストール',

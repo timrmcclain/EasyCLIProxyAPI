@@ -96,3 +96,32 @@ svg.lucide {
     scroll-behavior: auto !important;
   }
 }
+
+/* Home reads top to bottom: status, summary numbers, accounts, connection details. */
+.kernel-page.home-page:not(.proxy-page) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.kernel-page.home-page:not(.proxy-page) > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Provider summary: one compact tile per provider; detail sits behind "Show". */
+.quota-ledger .quota-provider-summary {
+  margin-bottom: var(--space-4);
+}
+
+.quota-ledger .quota-provider-summary-cell {
+  padding: var(--space-3) var(--space-4);
+}
+
+.quota-ledger .quota-summary-value {
+  font-size: var(--font-size-metric-compact);
+}
+
+.quota-ledger .quota-summary-total {
+  margin: var(--space-1) 0;
+}
