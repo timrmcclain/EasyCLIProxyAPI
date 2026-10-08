@@ -19,6 +19,8 @@ export type AuthFileCooldownSnapshot = {
 
 export type AuthFileHealth = {
   label: MessageKey;
+  /** Model named in an upstream "model not found" error, when that caused the pause. */
+  model?: string;
   tone: 'success' | 'warning' | 'error' | 'neutral' | 'info';
   message: string;
   status: string;
@@ -111,6 +113,18 @@ export function summarizeAuthFileCooldowns(snapshot: AuthFileCooldownSnapshot | 
   };
 }
 
+// Anthropic answers a retired or unknown model with a JSON not_found_error naming the model.
+function notFoundModel(message: string): string | undefined {
+  if (!message.startsWith('{')) return undefined;
+  try {
+    const error = (JSON.parse(message) as { error?: { type?: unknown; message?: unknown } }).error;
+    const match = error?.type === 'not_found_error' && typeof error.message === 'string' ? /^model:\s*(\S+)/.exec(error.message) : null;
+    return match?.[1];
+  } catch {
+    return undefined;
+  }
+}
+
 const healthyMessages = new Set(['ok', 'healthy', 'ready', 'success', 'available', 'active']);
 const messageReasons: Record<string, string> = {
   'quota exhausted': 'quota',
@@ -127,6 +141,8 @@ export function authFileHealth(file: Record<string, unknown>): AuthFileHealth {
   const base = { status, message, disabled };
   if (disabled) return { ...base, label: 'authFiles.status.disabled', tone: 'neutral' };
   if (readBoolean(file, 'unavailable') || status === 'error') {
+    const model = notFoundModel(message);
+    if (model) return { ...base, label: 'authFiles.health.reason.modelUnsupported', tone: 'error', model };
     const marker = message.toLowerCase();
     const reason = Object.prototype.hasOwnProperty.call(messageReasons, marker) ? messageReasons[marker] : marker;
     const reasonKey = cooldownReasonKey(reason);

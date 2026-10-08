@@ -163,6 +163,15 @@ describe('accounts the proxy paused',()=>{
     expect(result.kind).toBe('unavailable');
     expect(result.recoveryAt).toBeUndefined();
   });
+  it('names a model-not-found pause instead of calling the account unavailable',()=>{
+    const message=JSON.stringify({ type:'error', error:{ type:'not_found_error', message:'model: claude-3-5-haiku-20241022' }, request_id:'req_1' });
+    const paused={ provider:'claude', status:'error', unavailable:true, status_message:message };
+    const result=quotaAvailability(paused,exhausted,now);
+    expect(result.kind).toBe('unavailable');
+    expect(result.reason).toBe('modelNotFound');
+    expect(result.pausedModel).toBe('claude-3-5-haiku-20241022');
+    expect(result.recoveryAt).toBeUndefined();
+  });
   it('ignores stale quota data for a paused account',()=>{
     const paused={ provider:'claude', status:'error', unavailable:true, status_message:'quota exhausted' };
     expect(quotaAvailability(paused,{ ...exhausted, fetchedAt:now-60*60_000 },now).recoveryAt).toBeUndefined();

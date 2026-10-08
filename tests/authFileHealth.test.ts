@@ -121,3 +121,17 @@ describe('credential health and cooldowns', () => {
     expect(expiredToken.slice(0, expiredToken.indexOf('</summary>'))).toContain('Access token expired');
   });
 });
+
+describe('model not found pause', () => {
+  it('reads the proxy JSON error as an unsupported model', () => {
+    const message = JSON.stringify({ type: 'error', error: { type: 'not_found_error', message: 'model: claude-3-7-sonnet-20250219' } });
+    const health = authFileHealth({ status: 'error', unavailable: true, status_message: message });
+    expect(health.label).toBe('authFiles.health.reason.modelUnsupported');
+    expect(health.model).toBe('claude-3-7-sonnet-20250219');
+    expect(health.tone).toBe('error');
+  });
+  it('leaves other JSON errors as a generic pause', () => {
+    const message = JSON.stringify({ type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } });
+    expect(authFileHealth({ status: 'error', unavailable: true, status_message: message }).label).toBe('authFiles.status.unavailable');
+  });
+});
