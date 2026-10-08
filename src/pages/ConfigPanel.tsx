@@ -36,7 +36,8 @@ import {
   X, Bell } from 'lucide-react';
 import { useCoreRuntime, type CoreStatus } from '../coreRuntime';
 import { useI18n } from '../i18n';
-import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
+import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
+import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 import { webUiManagementUrl } from '../services/clientAccess';
 import { ThinkingAliasesPage } from './ThinkingAliasesPage';
 import { SensitiveWordsPage } from './SensitiveWordsPage';
@@ -169,7 +170,6 @@ export function ConfigPanelPage() {
   const [softwareStartCoreDraft, setSoftwareStartCoreDraft] = useState(true);
   const [softwareSilentStartDraft, setSoftwareSilentStartDraft] = useState(false);
   const [softwareDefaultTerminalDraft, setSoftwareDefaultTerminalDraft] = useState('auto');
-  const [softwareSavedStatusVisible, setSoftwareSavedStatusVisible] = useState(false);
   const [tlsSettings, setTlsSettings] = useState<CoreTlsSettings | null>(null);
   const [tlsSettingsLoading, setTlsSettingsLoading] = useState(true);
   const [tlsEnabledDraft, setTlsEnabledDraft] = useState(false);
@@ -177,7 +177,6 @@ export function ConfigPanelPage() {
   const [tlsKeyDraft, setTlsKeyDraft] = useState('');
   const [tlsError, setTlsError] = useState('');
   const [tlsFileSelecting, setTlsFileSelecting] = useState<'cert' | 'key' | null>(null);
-  const [tlsSavedStatusVisible, setTlsSavedStatusVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [busyAction, setBusyAction] = useState<ConfigAction>(null);
@@ -208,9 +207,8 @@ export function ConfigPanelPage() {
   const retryFeedback = useAppNotice();
   const tlsFeedback = useAppNotice();
   const softwareFeedback = useAppNotice();
-  const renderFeedback = (feedback: ReturnType<typeof useAppNotice>) => (
-    <FloatingNotice key={feedback.revision} notice={feedback.notice} onDismiss={feedback.clearNotice} />
-  );
+  // Results float and auto-dismiss; failures stay inline in the card that failed.
+  const renderFeedback = (feedback: ReturnType<typeof useAppNotice>) => <FeedbackNotice feedback={feedback} />;
   const [activeSubpage, setActiveSubpage] = useState<ConfigSubpage>('general');
   const [showPluginAdvanced, setShowPluginAdvanced] = useState(false);
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
@@ -385,7 +383,6 @@ export function ConfigPanelPage() {
 
   async function loadSoftwareSettings(mode: DraftRefreshMode = 'replace') {
     setSoftwareSettingsLoading(true);
-    setSoftwareSavedStatusVisible(false);
     try {
       const result = await invoke<SoftwareSettings>('get_software_settings');
       if (mode === 'preserve' && otherDraftDirtyRef.current.software) return;
@@ -722,7 +719,6 @@ export function ConfigPanelPage() {
 
     setBusyAction('tls');
     setTlsError('');
-    setTlsSavedStatusVisible(false);
     try {
       const result = await invoke<CoreTlsSettings>('save_core_tls_settings', {
         settings: { enabled: tlsEnabledDraft, cert, key },
@@ -738,7 +734,6 @@ export function ConfigPanelPage() {
       } else {
         tlsFeedback.showNotice({ key: 'config.tls.notice.saved' }, 'success');
       }
-      setTlsSavedStatusVisible(true);
     } catch (error) {
       setTlsError(String(error));
       void refreshStatus();
@@ -765,7 +760,6 @@ export function ConfigPanelPage() {
         }],
       });
       if (typeof selected !== 'string') return;
-      setTlsSavedStatusVisible(false);
       if (target === 'cert') setTlsCertDraft(selected);
       else setTlsKeyDraft(selected);
     } catch (error) {
@@ -776,16 +770,36 @@ export function ConfigPanelPage() {
     }
   };
 
-  const changeRoutingStrategy = async (strategy: string) => {
-    if (strategy === settings?.routingStrategy) {
-      return;
-    }
-    await runMutation(
+  // Routing strategy applies instantly, so confirm it and offer Undo back to the previous value.
+  const applyRoutingStrategy = async (strategy: string, undoTo?: string) => {
+    const saved = await runMutation(
       'routing',
       'set_core_routing_strategy',
       { strategy },
       t('config.notice.routingUpdated'),
     );
+    if (saved) {
+      routingFeedback.showNotice({ key: 'config.notice.routingUpdated' }, 'success', undoTo ? {
+        action: { label: { key: 'common.undo' }, onAction: () => void applyRoutingStrategy(undoTo) },
+      } : undefined);
+    }
+  };
+
+  const changeRoutingStrategy = async (strategy: string) => {
+    const previous = settings?.routingStrategy;
+    if (!previous || strategy === previous) {
+      return;
+    }
+    await applyRoutingStrategy(strategy, previous);
+  };
+
+  // The overview alerts switch is a local display preference that applies instantly.
+  const changeOverviewAlerts = (enabled: boolean, offerUndo = true) => {
+    setOverviewAlerts(enabled);
+    saveOverviewAlertsPreference(enabled);
+    softwareFeedback.showNotice({ key: 'common.saved' }, 'success', offerUndo ? {
+      action: { label: { key: 'common.undo' }, onAction: () => changeOverviewAlerts(!enabled, false) },
+    } : undefined);
   };
 
   const saveNetworkEndpointSettings = async () => {
@@ -939,9 +953,8 @@ export function ConfigPanelPage() {
       setSoftwareStartCoreDraft(result.startCoreOnLaunch);
       setSoftwareSilentStartDraft(result.silentStartEnabled);
       setSoftwareDefaultTerminalDraft(result.defaultTerminal);
-      setSoftwareSavedStatusVisible(true);
+      softwareFeedback.showNotice({ key: 'common.saved' }, 'success');
     } catch (error) {
-      setSoftwareSavedStatusVisible(false);
       softwareFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
       void loadSoftwareSettings('preserve');
     } finally {
@@ -991,19 +1004,12 @@ export function ConfigPanelPage() {
     || softwareStartCoreDirty
     || softwareSilentStartDirty
     || softwareDefaultTerminalDirty;
+  // Unsaved state is shown beside Save and the result as a notice, so the heading only reports load state.
   const softwareStatusLabel = softwareSettingsLoading
     ? t('common.loading')
     : softwareSettings === null
       ? t('common.unavailable')
-      : softwareSettingsDirty
-        ? t('config.network.unsaved')
-        : softwareSavedStatusVisible
-          ? t('config.network.saved')
-          : '';
-  const softwareStatusIsSaved = !softwareSettingsLoading
-    && softwareSettings !== null
-    && !softwareSettingsDirty
-    && softwareSavedStatusVisible;
+      : '';
   const tlsSettingsDirty = tlsSettings !== null && (
     tlsEnabledDraft !== tlsSettings.enabled
     || tlsCertDraft.trim() !== tlsSettings.cert
@@ -1014,15 +1020,7 @@ export function ConfigPanelPage() {
     ? t('common.loading')
     : tlsSettings === null
       ? t('common.unavailable')
-      : tlsSettingsDirty
-        ? t('config.network.unsaved')
-        : tlsSavedStatusVisible
-          ? t('config.network.saved')
-          : '';
-  const tlsStatusIsSaved = !tlsSettingsLoading
-    && tlsSettings !== null
-    && !tlsSettingsDirty
-    && tlsSavedStatusVisible;
+      : '';
   const keyMutationBusy = busyAction === 'add-key' || busyAction === 'update-key';
   const managementSecretBusy = busyAction === 'management-secret';
   const loggingSettingsBusy = busyAction === 'logging';
@@ -1077,6 +1075,8 @@ export function ConfigPanelPage() {
   };
   const categoryDirty = (id: ConfigSubpage) => nativeCategoryDirty[id]
     || settingsTemplateGroups[id].some(group => dirtyTemplateGroups.includes(group.id));
+  // Lets the shell ask before leaving Settings with edits that have not been saved.
+  useUnsavedChangesGuard('settings', settingsCategories.some(item => categoryDirty(item.id)));
   const templateGroups = activeSubpage === 'extensions' && !showPluginAdvanced ? [] : settingsTemplateGroups[activeSubpage];
   const searchEntries: SettingSearchEntry[] = [
     ...nativeEntries,
@@ -1301,6 +1301,7 @@ export function ConfigPanelPage() {
                   {managementSecretError || ' '}
                 </span>
                 <div className="config-management-actions">
+                  <span className="config-card-status" role="status">{nativeDirty.management ? st('dirty') : ''}</span>
                   <button type="button" className="secondary-button compact-button" disabled={controlsDisabled || settings?.managementSecretConfigured === false} onClick={() => void disableManagement()}>
                     {templateText(templateMessages.disableManagement, locale)}
                   </button>
@@ -1464,7 +1465,7 @@ export function ConfigPanelPage() {
             </div>
             <div className="config-heading-actions">
               {tlsStatusLabel ? (
-                <span className={`state-pill ${tlsStatusIsSaved ? 'success' : ''}`}>
+                <span className="state-pill">
                   {tlsStatusLabel}
                 </span>
               ) : null}
@@ -1491,7 +1492,6 @@ export function ConfigPanelPage() {
                   checked={tlsEnabledDraft}
                   disabled={tlsSettingsLoading || tlsSettings === null || busyAction !== null}
                   onChange={(event) => {
-                    setTlsSavedStatusVisible(false);
                     setTlsError('');
                     setTlsEnabledDraft(event.currentTarget.checked);
                   }}
@@ -1513,7 +1513,6 @@ export function ConfigPanelPage() {
                       disabled={tlsSettingsLoading || tlsSettings === null || busyAction !== null || tlsFileSelecting !== null}
                       placeholder={t('config.tls.certPlaceholder')}
                       onChange={(event) => {
-                        setTlsSavedStatusVisible(false);
                         setTlsError('');
                         setTlsCertDraft(event.currentTarget.value);
                       }}
@@ -1542,7 +1541,6 @@ export function ConfigPanelPage() {
                       disabled={tlsSettingsLoading || tlsSettings === null || busyAction !== null || tlsFileSelecting !== null}
                       placeholder={t('config.tls.keyPlaceholder')}
                       onChange={(event) => {
-                        setTlsSavedStatusVisible(false);
                         setTlsError('');
                         setTlsKeyDraft(event.currentTarget.value);
                       }}
@@ -1563,7 +1561,7 @@ export function ConfigPanelPage() {
               </div>
             ) : null}
 
-            <MessageNotice message={tlsError} onDismiss={() => setTlsError('')} />
+            <MessageNotice inline message={tlsError} onDismiss={() => setTlsError('')} />
 
             {renderFeedback(tlsFeedback)}
           </div>
@@ -2056,7 +2054,7 @@ export function ConfigPanelPage() {
               </div>
               <div className="config-heading-actions">
                 {softwareStatusLabel ? (
-                  <span className={`state-pill ${softwareStatusIsSaved ? 'success' : ''}`}>
+                  <span className="state-pill">
                     {softwareStatusLabel}
                   </span>
                 ) : null}
@@ -2083,7 +2081,6 @@ export function ConfigPanelPage() {
                       checked={softwareAutostartDraft}
                       disabled={softwareSettingsLoading || softwareSettings === null || busyAction !== null}
                       onChange={(event) => {
-                        setSoftwareSavedStatusVisible(false);
                         setSoftwareAutostartDraft(event.currentTarget.checked);
                       }}
                     />
@@ -2107,7 +2104,6 @@ export function ConfigPanelPage() {
                       checked={softwareStartCoreDraft}
                       disabled={softwareSettingsLoading || softwareSettings === null || busyAction !== null}
                       onChange={(event) => {
-                        setSoftwareSavedStatusVisible(false);
                         setSoftwareStartCoreDraft(event.currentTarget.checked);
                       }}
                     />
@@ -2132,7 +2128,6 @@ export function ConfigPanelPage() {
                       checked={softwareSilentStartDraft}
                       disabled={softwareSettingsLoading || softwareSettings === null || busyAction !== null}
                       onChange={(event) => {
-                        setSoftwareSavedStatusVisible(false);
                         setSoftwareSilentStartDraft(event.currentTarget.checked);
                       }}
                     />
@@ -2155,10 +2150,7 @@ export function ConfigPanelPage() {
                       role="switch"
                       aria-label={t('ux.alerts')}
                       checked={overviewAlerts}
-                      onChange={(event) => {
-                        setOverviewAlerts(event.currentTarget.checked);
-                        saveOverviewAlertsPreference(event.currentTarget.checked);
-                      }}
+                      onChange={(event) => changeOverviewAlerts(event.currentTarget.checked)}
                     />
                     <span className="switch-track" />
                   </label>
@@ -2179,7 +2171,6 @@ export function ConfigPanelPage() {
                       value={softwareDefaultTerminalDraft}
                       disabled={softwareSettingsLoading || softwareSettings === null || busyAction !== null}
                       onChange={(event) => {
-                        setSoftwareSavedStatusVisible(false);
                         setSoftwareDefaultTerminalDraft(event.currentTarget.value);
                       }}
                     >
@@ -2207,7 +2198,6 @@ export function ConfigPanelPage() {
                       value={softwareCloseBehaviorDraft}
                       disabled={softwareSettingsLoading || softwareSettings === null || busyAction !== null}
                       onChange={(event) => {
-                        setSoftwareSavedStatusVisible(false);
                         setSoftwareCloseBehaviorDraft(event.currentTarget.value as CloseBehavior);
                       }}
                     >

@@ -1,4 +1,6 @@
-import { MessageNotice } from '../appNotice';
+import { FeedbackNotice, MessageNotice, useAppNotice } from '../appNotice';
+import { useConfirmation } from '../components/ConfirmationDialog';
+import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Check, LoaderCircle, RefreshCw, RotateCcw, Search, X } from 'lucide-react';
@@ -41,8 +43,13 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
   const [saving, setSaving] = useState(false);
   const [defaultsRestored, setDefaultsRestored] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+  const feedback = useAppNotice();
+  const { showNotice, clearNotice } = feedback;
+  const setNotice = useCallback((message: string) => {
+    if (message) showNotice(message, 'success');
+    else clearNotice();
+  }, [clearNotice, showNotice]);
+  const { askConfirmation, confirmationDialog } = useConfirmation();
 
   const load = useCallback(async (restoreDefaults = false) => {
     setLoading(true);
@@ -65,7 +72,7 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setNotice]);
 
   useEffect(() => {
     void load();
@@ -118,19 +125,22 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
       : current.input_modalities.includes(candidate)),
   }));
 
-  const requestClose = () => {
+  useUnsavedChangesGuard('codex-model-catalog', dirty);
+
+  const requestClose = async () => {
     if (saving) return;
-    if (dirty) setDiscardConfirmOpen(true);
-    else onClose();
+    if (dirty && !await askConfirmation({
+      title: t('common.discardTitle'),
+      message: t('agents.catalog.discardHint'),
+      confirmText: t('agents.catalog.discard'),
+      variant: 'danger',
+    })) return;
+    onClose();
   };
 
   const dialogRef = useDialogFocusTrap<HTMLElement>({
-    onEscape: requestClose,
+    onEscape: () => void requestClose(),
     preventEscape: saving,
-  });
-  const discardDialogRef = useDialogFocusTrap<HTMLDivElement>({
-    active: discardConfirmOpen,
-    onEscape: () => setDiscardConfirmOpen(false),
   });
 
   const restoreModel = () => {
@@ -189,14 +199,14 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
 
   return (
     <div className="config-dialog-backdrop codex-catalog-backdrop" onMouseDown={(event) => {
-      if (event.currentTarget === event.target) requestClose();
+      if (event.currentTarget === event.target) void requestClose();
     }}>
       <section ref={dialogRef} className="config-dialog codex-catalog-dialog" role="dialog" aria-modal="true" aria-labelledby="codex-catalog-title">
         <header className="config-dialog-heading codex-catalog-heading">
           <div title={t('agents.catalog.subtitle')}>
             <h2 id="codex-catalog-title">{t('agents.catalog.title')}</h2>
           </div>
-          <button type="button" className="icon-button quiet" onClick={requestClose} disabled={saving} aria-label={t('common.close')}>
+          <button type="button" className="icon-button quiet" onClick={() => void requestClose()} disabled={saving} aria-label={t('common.close')}>
             <X size={18} aria-hidden="true" />
           </button>
         </header>
@@ -294,33 +304,22 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
 
         <footer className="codex-catalog-footer">
           <div>
-            {error ? <MessageNotice message={error} onDismiss={() => setError('')} /> : null}
-            <MessageNotice tone="success" message={!error ? notice : null} onDismiss={() => setNotice('')} />
+            {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
+            {!error ? <FeedbackNotice feedback={feedback} /> : null}
             <span>{dirty ? t('agents.catalog.unsaved') : t('agents.catalog.saveHint')}</span>
           </div>
           <div>
             <button type="button" className="secondary-button" onClick={() => void restoreAll()} disabled={loading || saving}>
               {t('agents.catalog.resetAll')}
             </button>
-            <button type="button" className="secondary-button" onClick={requestClose} disabled={saving}>{t('common.cancel')}</button>
+            <button type="button" className="secondary-button" onClick={() => void requestClose()} disabled={saving}>{t('common.cancel')}</button>
             <button type="button" className="primary-button" onClick={() => void save()} disabled={!snapshot || !dirty || loading || saving}>
               {saving ? <LoaderCircle size={16} className="spin" /> : null}{saving ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </footer>
 
-        {discardConfirmOpen ? (
-          <div className="codex-catalog-confirm">
-            <div ref={discardDialogRef} role="alertdialog" aria-modal="true">
-              <strong>{t('agents.catalog.unsaved')}</strong>
-              <span>{t('agents.catalog.discardHint')}</span>
-              <div>
-                <button type="button" className="secondary-button" onClick={() => setDiscardConfirmOpen(false)}>{t('agents.catalog.keepEditing')}</button>
-                <button type="button" className="danger-button" onClick={onClose}>{t('agents.catalog.discard')}</button>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        {confirmationDialog}
       </section>
     </div>
   );

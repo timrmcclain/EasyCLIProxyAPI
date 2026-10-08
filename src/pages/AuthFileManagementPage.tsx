@@ -35,15 +35,7 @@ import {
 } from 'lucide-react';
 
 const statusBadgeIcons = { success: CheckCircle2, warning: AlertTriangle, error: XCircle, neutral: MinusCircle, info: MinusCircle } as const;
-import antigravityIcon from '../assets/icons/antigravity.svg';
-import claudeIcon from '../assets/icons/claude.svg';
-import codexIcon from '../assets/icons/codex.svg';
-import geminiIcon from '../assets/icons/gemini.svg';
-import grokIcon from '../assets/icons/grok.svg';
-import devinIcon from '../assets/icons/devin.svg';
-import kimiIcon from '../assets/icons/kimi-light.svg';
-import metaIcon from '../assets/icons/meta.svg';
-import vertexIcon from '../assets/icons/vertex.svg';
+import { ProviderLogo, SignInAgainButton, needsSignIn } from '../components/AuthFileProviderIcon';
 import {
   formatDate,
   managementApi,
@@ -99,18 +91,6 @@ import {
 import { getCurrentLocale, translate, useI18n } from '../i18n';
 
 type AuthFile = Record<string, unknown>;
-
-const providerIcons: Record<string, string> = {
-  antigravity: antigravityIcon,
-  claude: claudeIcon,
-  codex: codexIcon,
-  gemini: geminiIcon,
-  kimi: kimiIcon,
-  vertex: vertexIcon,
-  xai: grokIcon,
-  devin: devinIcon,
-  meta: metaIcon,
-};
 
 const providerName = (file: AuthFile) => {
   const value = normalizeOAuthProvider(readString(file, 'provider', 'type', 'account_type'));
@@ -543,7 +523,6 @@ export function AuthFileManagementPage() {
             {pageFiles.map((file) => {
               const name = fileName(file);
               const key = quotaKey(file);
-              const icon = providerIcons[providerKey(file)] ?? geminiIcon;
               const disabled = authFileHealth(file).disabled;
               const priority = parseAuthFilePriority(file.priority) ?? 0;
               const identity = friendlyName(file) || readString(file, 'email', 'project_id', 'label');
@@ -569,7 +548,7 @@ export function AuthFileManagementPage() {
                 <article className={`auth-file-card ${disabled ? 'is-disabled' : ''}`} key={key} role="listitem" aria-label={identity || name}>
                   <div className="auth-credential-row">
                   <header className={`auth-card-header auth-list-cell ${identity ? '' : 'filename-only'}`}>
-                    <img src={icon} alt="" data-provider={providerKey(file)} className={providerKey(file) === 'devin' ? 'provider-logo devin-logo' : 'provider-logo'} />
+                    <ProviderLogo provider={providerKey(file)} className={providerKey(file) === 'devin' ? 'provider-logo devin-logo' : 'provider-logo'} />
                     <div className="auth-card-identity">
                       <strong title={identity || name}>{identity || name}</strong>
                       <span className="auth-card-filename" title={name}>{identity ? name : providerName(file)}</span>
@@ -583,6 +562,7 @@ export function AuthFileManagementPage() {
                   <div className="auth-list-cell auth-list-status" data-label={t('authFiles.list.status')}>
                     <span className={`auth-status-badge ${badgeTone}`} title={statusLabel}><BadgeIcon size={14} aria-hidden="true" /><span>{statusLabel}</span></span>
                     <small>{t('authFiles.priority.button', { priority })}</small>
+                    {needsSignIn(file) ? <SignInAgainButton account={identity || name} /> : null}
                   </div>
                   <div className="auth-list-cell auth-list-recent" data-label={t('authFiles.list.recent')}><AuthFileRequestStatus file={file} compact /></div>
                   <div className="auth-list-cell auth-list-usage" data-label={t('authFiles.usage.title')}><AuthFileUsageSummary file={file} /></div>

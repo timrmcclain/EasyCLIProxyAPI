@@ -204,7 +204,7 @@ export function PluginsPage() {
             return <article className="plugin-card plugin-local-card" key={plugin.id}>
             <div className="plugin-card-title"><span className="plugin-icon"><Puzzle size={23} /></span><div><h2>{getPluginTitle(plugin)}</h2>{getPluginTitle(plugin) !== plugin.id && <code>{plugin.id}</code>}</div><span className={`plugin-badge ${status === 'active' ? 'active' : status === 'missingFile' || status === 'notLoaded' ? 'warning' : ''}`}>{pt(status)}</span></div>
             {meta && <p className="plugin-meta">{meta}</p>}{plugin.path && <p className="plugin-path" title={plugin.path}>{plugin.path}</p>}
-            {status === 'missingFile' && <p className="plugin-card-description">{pt('missingFileHint')}</p>}
+            {status === 'missingFile' && <details className="plugin-hint-details"><summary>{pt('whatToDo')}</summary><p>{pt('missingFileHint')}</p></details>}
             {status === 'notLoaded' && <p className="plugin-card-description">{pt('notLoadedHint')}</p>}
             {collectPluginResourceEntries([plugin]).length > 0 && <div className="plugin-menus">{collectPluginResourceEntries([plugin]).map(entry => <button key={entry.menuIndex} title={entry.description} className="secondary-button" disabled={locked} onClick={() => void openResource(entry)}><ExternalLink size={14} />{entry.label}</button>)}</div>}
             <div className="plugin-card-actions">

@@ -93,7 +93,8 @@ import {
 } from '../services/providerEntries';
 import { getCurrentLocale, translate, useI18n } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
-import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
+import { MessageNotice, FeedbackNotice, useAppNotice, type NoticeMessage, type NoticeTone } from '../appNotice';
+import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 
 export type ProviderSection =
   | 'gemini-api-key'
@@ -1211,7 +1212,16 @@ export function ApiAccessPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const feedback = useAppNotice();
-  const { showNotice: setNotice } = feedback;
+  const { showNotice, clearNotice } = feedback;
+  // Results float and auto-dismiss; failures stay inline above the connection list.
+  const setNotice = useCallback((message: NoticeMessage, tone: NoticeTone = 'success') => {
+    if (tone === 'error') {
+      clearNotice();
+      setError(typeof message === 'string' ? message : t(message.key, message.variables));
+      return;
+    }
+    showNotice(message, tone);
+  }, [clearNotice, showNotice, t]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<ProviderRow | null>(null);
   const [dialogDraft, setDialogDraft] = useState<ProviderDraft>(emptyProviderDraft);
@@ -1503,7 +1513,7 @@ export function ApiAccessPage() {
   };
 
   const deleteRow = async (row: ProviderRow) => {
-    if (!await askConfirmation({ title: t('common.delete'), message: t('apiAccess.deleteConfirm', { remark: row.remark || row.name }), confirmText: t('common.delete'), variant: 'danger' })) return;
+    if (!await askConfirmation({ title: t('apiAccess.deleteTitle'), message: t('apiAccess.deleteConfirm', { remark: row.remark || row.name }), confirmText: t('common.delete'), variant: 'danger' })) return;
     feedback.clearNotice();
     setBusy(true);
     setError('');
@@ -1577,7 +1587,7 @@ export function ApiAccessPage() {
   return (
     <section className="page management-page api-access-page">
       {confirmationDialog}
-      {error ? <MessageNotice message={error} onDismiss={() => setError('')} /> : null}
+      {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
       <div className="provider-workbench real-provider-workbench">
         <aside className="panel provider-category-panel">
           {providerDefinitions.map((definition) => (
@@ -1727,7 +1737,7 @@ export function ApiAccessPage() {
           onClose={() => setHealthDialogRow(null)}
         />
       ) : null}
-      <FloatingNotice key={feedback.revision} notice={feedback.notice} onDismiss={feedback.clearNotice} />
+      <FeedbackNotice feedback={feedback} />
     </section>
   );
 }
@@ -1892,7 +1902,7 @@ function ProviderHealthDialog({ row, onClose, keySelector }: ProviderHealthDialo
             failed: failedCount,
           })}</span>
           {modelError ? (
-            <MessageNotice message={t('apiAccess.health.modelLoadFailed', { error: modelError })} onDismiss={() => setModelError('')} />
+            <MessageNotice inline message={t('apiAccess.health.modelLoadFailed', { error: modelError })} onDismiss={() => setModelError('')} />
           ) : modelLoading ? (
             <small>{t('apiAccess.health.loadingModels')}</small>
           ) : null}
@@ -2020,6 +2030,7 @@ export function ApiProviderDialog({
   const { askConfirmation, confirmationDialog } = useConfirmation();
   const initialDraftSnapshot = useMemo(() => JSON.stringify(initialDraft), [initialDraft]);
   const draftDirty = JSON.stringify(draft) !== initialDraftSnapshot;
+  useUnsavedChangesGuard('api-access-provider', draftDirty);
   const [modelListOpen, setModelListOpen] = useState(initialDraft.models.length <= 3);
   const requestClose = useCallback(async () => {
     if (busy) return;
@@ -2369,7 +2380,7 @@ export function ApiProviderDialog({
               <Plus size={14} />{t('apiAccess.models.add')}
             </button>
           </div>
-          {modelError && !modelDiscoveryOpen ? <MessageNotice message={modelError} onDismiss={() => setModelError('')} /> : null}
+          {modelError && !modelDiscoveryOpen ? <MessageNotice inline message={modelError} onDismiss={() => setModelError('')} /> : null}
         </div>
         <details className="provider-advanced-settings">
           <summary>{t('apiAccess.advanced')}</summary>
@@ -2475,11 +2486,12 @@ export function ApiProviderDialog({
           </div>
         </details>
         {formError ? (
-          <MessageNotice message={formError} onDismiss={() => setFormError('')} />
+          <MessageNotice inline message={formError} onDismiss={() => setFormError('')} />
         ) : null}
         <div className="config-dialog-actions two-actions">
+          <span className="config-card-status" role="status">{draftDirty ? t('common.unsavedChanges') : ''}</span>
           <button type="button" className="secondary-button" onClick={() => void requestClose()} disabled={busy}>{t('common.cancel')}</button>
-          <button type="submit" className="primary-button" disabled={busy}>{busy ? t('common.saving') : t('common.save')}</button>
+          <button type="submit" className="primary-button" disabled={busy || !draftDirty}>{busy ? t('common.saving') : t('common.save')}</button>
         </div>
       </form>
       </div>
@@ -2500,7 +2512,7 @@ export function ApiProviderDialog({
             </div>
 
             {modelError ? (
-              <MessageNotice source="apiAccess.modelDialog.fetchFailed" message={modelError} onDismiss={() => setModelError('')} />
+              <MessageNotice inline source="apiAccess.modelDialog.fetchFailed" message={modelError} onDismiss={() => setModelError('')} />
             ) : null}
 
             <div className="model-transfer-panels">

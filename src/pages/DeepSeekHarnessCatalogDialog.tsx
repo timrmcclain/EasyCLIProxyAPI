@@ -4,6 +4,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { LoaderCircle, RefreshCw, RotateCcw, Search, Settings2, X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { JsonFormEditor } from '../components/StructuredConfigEditor';
+import type { ConfigShape } from '../services/structuredConfig';
 import type { MessageKey } from '../i18n/resources';
 import {
   harnessContextDefault, harnessDraft, harnessReasoningLevels, harnessSchema, isHarnessRecord, parseHarnessDraft, sameHarnessDraft, updateHarnessDraft,
@@ -11,6 +13,13 @@ import {
 } from '../services/deepSeekHarnessCatalog';
 
 const harnessHintFields = ['input', 'defaultInput', 'maxTokens', 'defaultMaxTokens', 'api', 'headers'];
+
+/** Form shapes for the JSON-valued harness fields (see parseHarnessDraft for what each kind accepts). */
+function harnessFieldShape(kind: string, label: string): ConfigShape {
+  if (kind === 'strings') return { type: 'array', label, item: { type: 'string', label } };
+  // headers: name -> string value; kwargs: name -> literal or { $var, omitWhenOff } object.
+  return { type: 'map', label, item: { type: kind === 'headers' ? 'string' : 'any' } };
+}
 
 function HarnessContextWindowInput({ label, value, inherited, onChange }: {
   label: string; value?: string; inherited: HarnessContextDefault; onChange: (value: string) => void;
@@ -76,16 +85,23 @@ function HarnessFields({ group, draft, defaults = {}, prefix = '', api, contextD
     const jsonField = ['headers', 'kwargs', 'strings'].includes(field.kind);
     // Field hints live in the label tooltip so the form stacks compactly.
     const hint = harnessHintFields.includes(field.name) ? t(`agents.harness.hint.${field.name}` as MessageKey) : '';
-    return <label key={key} className={jsonField ? 'wide' : undefined} title={hint || undefined}>
+    // A label would forward clicks to the form's first button, so JSON-shaped fields use a plain group.
+    const Field = jsonField ? 'div' : 'label';
+    return <Field key={key} className={jsonField ? 'wide harness-json-field' : undefined} title={hint || undefined}>
       <span title={hint ? `${field.name}: ${hint}` : field.name}>{label(field.name)}{Object.prototype.hasOwnProperty.call(draft, key) ? <small className="harness-override">{t('agents.catalog.customized')}</small> : null}</span>
       {['enum', 'boolean', 'modalities'].includes(field.kind) ? <select aria-label={label(field.name)} value={value} onChange={e => set(e.currentTarget.value)}>
         <option value="">{automatic}</option>
         {field.kind === 'boolean' ? <><option value="true">{t('agents.harness.yes')}</option><option value="false">{t('agents.harness.no')}</option></> : null}
         {field.kind === 'enum' ? field.values!.map(v => <option key={v} value={v}>{v}</option>) : null}
         {field.kind === 'modalities' ? <>{field.name === 'input' ? <option value="[]">{t('agents.harness.providerInput')}</option> : null}<option value='["text"]'>{t('agents.harness.textOnly')}</option><option value='["text","image"]'>{t('agents.harness.textImage')}</option><option value='["image"]'>{t('agents.catalog.image')}</option></> : null}
-      </select> : jsonField ? <textarea aria-label={label(field.name)} rows={4} spellCheck={false} value={value} placeholder={JSON.stringify(supplied ?? field.example, null, 2) ?? automatic} onChange={e => set(e.currentTarget.value)} />
+      </select> : jsonField ? <JsonFormEditor text={value} shape={harnessFieldShape(field.kind, label(field.name))} emptyValue={field.kind === 'strings' ? [] : {}}
+          accepts={next => field.kind === 'strings' ? Array.isArray(next) : isHarnessRecord(next)}
+          serialize={next => (Array.isArray(next) ? next.length : isHarnessRecord(next) ? Object.keys(next).length : 1) ? JSON.stringify(next) : ''}
+          onTextChange={set} emptyHint={automatic} id={`harness-${key}`}
+          labels={{ json: t('harness.form.editJson'), form: t('harness.form.editForm'), unavailable: t('harness.form.unavailable') }}
+          renderJson={() => <textarea aria-label={label(field.name)} rows={4} spellCheck={false} value={value} placeholder={JSON.stringify(supplied ?? field.example, null, 2) ?? automatic} onChange={e => set(e.currentTarget.value)} />} />
         : <input aria-label={label(field.name)} type={['integer', 'number'].includes(field.kind) ? 'number' : 'text'} min={field.min ?? field.exclusiveMin} max={field.max} step={field.kind === 'integer' ? 1 : 'any'} value={value} placeholder={automatic} onChange={e => set(e.currentTarget.value)} />}
-    </label>;
+    </Field>;
   })}</div>;
 }
 

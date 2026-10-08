@@ -44,7 +44,6 @@ const PAGE_SIZE = 50;
 
 let sessionViewCache = {
   offset: 0,
-  selectionMode: false,
   selectedIds: new Set<string>(),
 };
 
@@ -58,7 +57,6 @@ export function CodexSessionsPanel() {
   const [loading, setLoading] = useState(true);
   const [operation, setOperation] = useState<'delete' | 'repair' | 'preview' | 'cleanup' | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [selectionMode, setSelectionMode] = useState(() => sessionViewCache.selectionMode);
   const [selectedIds, setSelectedIds] = useState(() => new Set(sessionViewCache.selectedIds));
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [cleanupPreview, setCleanupPreview] = useState<SessionIndexCleanupPreview | null>(null);
@@ -94,10 +92,9 @@ export function CodexSessionsPanel() {
   useEffect(() => {
     sessionViewCache = {
       offset: page?.offset ?? initialOffsetRef.current,
-      selectionMode,
       selectedIds: new Set(selectedIds),
     };
-  }, [page, selectionMode, selectedIds]);
+  }, [page, selectedIds]);
 
   const loadPage = useCallback(async (offset = 0, silent = false) => {
     if (!mountedRef.current) return null;
@@ -157,6 +154,11 @@ export function CodexSessionsPanel() {
     [selectedIds, sessions],
   );
   const allSelected = sessions.length > 0 && selectedSessions.length === sessions.length;
+  const someSelected = selectedSessions.length > 0 && !allSelected;
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
+  }, [someSelected]);
   const busy = operation !== null;
 
   const toggleSelected = (id: string, selected: boolean) => {
@@ -406,24 +408,21 @@ export function CodexSessionsPanel() {
             <span>{t('agents.sessions.pageDescription', { page: currentPage, size: page?.limit ?? PAGE_SIZE })}</span>
           </div>
           <div className="codex-session-selection-actions">
-            {selectionMode ? <span>{t('agents.sessions.selected', { count: selectedSessions.length })}</span> : null}
-            {selectionMode ? (
-              <>
-                <button type="button" className="secondary-button compact-button" disabled={busy || allSelected} onClick={() => setSelectedIds(new Set(sessions.map((session) => session.id)))}>{t('agents.sessions.selectAll')}</button>
-                <button type="button" className="secondary-button compact-button" disabled={busy || selectedIds.size === 0} onClick={() => setSelectedIds(new Set())}>{t('agents.sessions.clearSelection')}</button>
-                <button type="button" className="danger-button compact-button" disabled={busy || selectedSessions.length === 0} onClick={() => requestDelete(selectedSessions)}><Trash2 size={14} />{t('agents.sessions.deleteSelected')}</button>
-              </>
+            <label className="codex-session-select-all" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', minHeight: 32, cursor: 'pointer' }}>
+              <input
+                ref={selectAllRef}
+                type="checkbox"
+                checked={allSelected}
+                disabled={busy || loading || sessions.length === 0}
+                onChange={(event) => setSelectedIds(event.currentTarget.checked ? new Set(sessions.map((session) => session.id)) : new Set())}
+              />
+              <span>{t('agents.sessions.selectAll')}</span>
+            </label>
+            {selectedSessions.length > 0 ? (
+              <button type="button" className="secondary-button compact-button" disabled={busy} onClick={() => setSelectedIds(new Set())}>{t('agents.sessions.clearSelection')}</button>
             ) : null}
-            <button
-              type="button"
-              className="secondary-button compact-button"
-              disabled={busy || sessions.length === 0}
-              onClick={() => {
-                setSelectionMode((current) => !current);
-                setSelectedIds(new Set());
-              }}
-            >
-              {selectionMode ? t('common.cancel') : t('agents.sessions.multiSelect')}
+            <button type="button" className="danger-button compact-button" disabled={busy || selectedSessions.length === 0} onClick={() => requestDelete(selectedSessions)}>
+              <Trash2 size={14} />{t('agents.sessions.deleteSelectedCount', { count: selectedSessions.length })}
             </button>
           </div>
         </div>
@@ -436,16 +435,15 @@ export function CodexSessionsPanel() {
           <div className="codex-session-list">
             {sessions.map((session) => (
               <article className={`codex-session-row ${selectedIds.has(session.id) ? 'selected' : ''}`} key={session.id}>
-                {selectionMode ? (
-                  <label className="codex-session-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(session.id)}
-                      aria-label={t('agents.sessions.selectSession', { title: session.title || session.id })}
-                      onChange={(event) => toggleSelected(session.id, event.currentTarget.checked)}
-                    />
-                  </label>
-                ) : null}
+                <label className="codex-session-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(session.id)}
+                    disabled={busy}
+                    aria-label={t('agents.sessions.selectSession', { title: session.title || session.id })}
+                    onChange={(event) => toggleSelected(session.id, event.currentTarget.checked)}
+                  />
+                </label>
                 <div className="codex-session-main">
                   <strong>{session.title || t('agents.sessions.untitled')}</strong>
                   <code>{session.id}</code>

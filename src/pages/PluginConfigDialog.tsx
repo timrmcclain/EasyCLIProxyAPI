@@ -2,8 +2,10 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { LoaderCircle, Settings2, X } from 'lucide-react';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { JsonFormEditor } from '../components/StructuredConfigEditor';
 import { useI18n } from '../i18n';
 import { pluginConfigText, type PluginConfigMessage } from '../i18n/pluginConfig';
+import { isRecord } from '../services/managementApi';
 import { pluginsApi, type PluginConfigField, type PluginConfigObject, type PluginListEntry } from '../services/plugins';
 import {
   buildPluginConfigDraft, buildPluginConfigPatch, normalizePluginConfigFieldType,
@@ -126,6 +128,8 @@ export function PluginConfigDialog({ plugin, onClose, onSaved }: {
     }
   };
 
+  const formLabels = { json: pt('editJson'), form: pt('editForm'), unavailable: pt('formUnavailable') };
+  const changeRaw = (text: string) => { setRaw(text); setRawTouched(true); setRawError(''); setError(''); setDiscard(false); };
   const renderField = (field: PluginConfigField, index: number) => {
     if (!draft) return null;
     const type = normalizePluginConfigFieldType(field);
@@ -146,7 +150,11 @@ export function PluginConfigDialog({ plugin, onClose, onSaved }: {
         <option value="">{pt('inherit')}</option>
         {typeof value === 'string' && value && !field.enumValues.includes(value) ? <option value={value}>{value}</option> : null}
         {field.enumValues.map(option => <option key={option} value={option}>{option}</option>)}
-      </select> : type === 'array' || type === 'object' ? <textarea {...inputProps} rows={5} spellCheck={false} autoComplete="off" value={typeof value === 'string' ? value : ''} placeholder={type === 'array' ? '[]' : '{}'} onChange={event => changeField(field.name, event.currentTarget.value)} />
+      </select> : type === 'array' || type === 'object' ? <JsonFormEditor text={typeof value === 'string' ? value : ''} id={fieldId} disabled={saving}
+          shape={type === 'array' ? { type: 'array', label: field.name, item: { type: 'any' } } : { type: 'map', label: field.name, item: { type: 'any' } }}
+          emptyValue={type === 'array' ? [] : {}} accepts={next => type === 'array' ? Array.isArray(next) : isRecord(next)}
+          serialize={next => JSON.stringify(next, null, 2)} onTextChange={text => changeField(field.name, text)} labels={formLabels}
+          renderJson={() => <textarea {...inputProps} rows={5} spellCheck={false} autoComplete="off" value={typeof value === 'string' ? value : ''} placeholder={type === 'array' ? '[]' : '{}'} onChange={event => changeField(field.name, event.currentTarget.value)} />} />
         : <input {...inputProps} type="text" inputMode={type === 'number' ? 'decimal' : type === 'integer' ? 'numeric' : undefined} autoComplete="off" spellCheck={false} value={typeof value === 'string' ? value : ''} onChange={event => changeField(field.name, event.currentTarget.value)} />}
       <small id={`${fieldId}-hint`}>{field.description}</small>
       {fieldError ? <small className="plugin-config-error" id={`${fieldId}-error`}>{fieldError}</small> : null}
@@ -172,10 +180,12 @@ export function PluginConfigDialog({ plugin, onClose, onSaved }: {
                 {draft.errors.priority ? <small className="plugin-config-error" id={`${id}-priority-error`}>{draft.errors.priority}</small> : null}
               </div>
             </div>
-            {fields.length ? <section className="plugin-config-parameters"><h3>{pt('fields')}</h3><p>{pt('fieldsHint')}</p>{fields.map(renderField)}</section> : <div className="plugin-config-field plugin-config-parameters">
-              <label htmlFor={`${id}-raw`}>{pt('raw')}</label>
-              <small id={`${id}-raw-hint`}>{pt('rawHint')}</small>
-              <textarea id={`${id}-raw`} rows={10} value={raw} spellCheck={false} autoComplete="off" aria-invalid={Boolean(rawError)} aria-describedby={`${id}-raw-hint${rawError ? ` ${id}-raw-error` : ''}`} onChange={event => { setRaw(event.currentTarget.value); setRawTouched(true); setRawError(''); setError(''); setDiscard(false); }} />
+            {fields.length ? <section className="plugin-config-parameters"><h3>{pt('fields')}</h3><details className="plugin-config-about"><summary>{pt('howSaved')}</summary><p>{pt('fieldsHint')}</p></details>{fields.map(renderField)}</section> : <div className="plugin-config-field plugin-config-parameters">
+              <label htmlFor={`${id}-raw`}>{pt('rawForm')}</label>
+              <details className="plugin-config-about"><summary>{pt('howSaved')}</summary><small id={`${id}-raw-hint`}>{pt('rawHint')}</small></details>
+              <JsonFormEditor text={raw} id={`${id}-raw-form`} disabled={saving} shape={{ type: 'map', label: pt('rawForm'), item: { type: 'any' } }} emptyValue={{}}
+                accepts={isRecord} serialize={next => JSON.stringify(next, null, 2)} onTextChange={changeRaw} labels={formLabels}
+                renderJson={() => <textarea id={`${id}-raw`} rows={10} value={raw} spellCheck={false} autoComplete="off" aria-invalid={Boolean(rawError)} aria-describedby={`${id}-raw-hint${rawError ? ` ${id}-raw-error` : ''}`} onChange={event => changeRaw(event.currentTarget.value)} />} />
               {rawError ? <small className="plugin-config-error" id={`${id}-raw-error`}>{rawError}</small> : null}
             </div>}
           </fieldset> : null}

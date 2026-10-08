@@ -33,7 +33,7 @@ import { VersionManagementPage } from './pages/VersionManagementPage';
 import { OAuthManagementPage } from './pages/ManagementPages';
 import { QuotaPage } from './pages/QuotaPage';
 import { AgentsPage } from './pages/AgentsPage';
-import { EasyModePage } from './pages/EasyModePage';
+import { GlossaryDialog } from './components/GlossaryDialog';
 import { UsageRecordsPage } from './pages/UsageRecordsPage';
 import { PluginsPage } from './pages/PluginsPage';
 import { ConnectorsPage } from './pages/ConnectorsPage';
@@ -44,15 +44,10 @@ import { canOpenAppPage, isAlwaysAvailablePage } from './navigation';
 import { useThemePreference } from './theme';
 import { useDialogFocusTrap } from './components/useDialogFocusTrap';
 import { CommandPalette, type PaletteCommand } from './components/CommandPalette';
+import { confirmLeave } from './services/unsavedChanges';
 
 
 const pages = [
-  {
-    id: 'easy',
-    labelKey: 'app.nav.easy',
-    icon: House,
-    component: HomePage,
-  },
   {
     id: 'home',
     labelKey: 'app.nav.home',
@@ -130,7 +125,7 @@ const LAST_PAGE_KEY = 'personal.lastPage';
 function initialPage(): PageId {
   try {
     const saved = localStorage.getItem(LAST_PAGE_KEY);
-    return saved && saved !== 'easy' && pages.some((page) => page.id === saved) ? saved as PageId : 'home';
+    return saved && pages.some((page) => page.id === saved) ? saved as PageId : 'home';
   } catch { return 'home'; }
 }
 
@@ -183,6 +178,10 @@ function AppContent() {
   const [active, setActive] = useState<PageId>(initialPage);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [homeProblems, setHomeProblems] = useState(0);
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
+    try { return localStorage.getItem('personal.density') === 'compact' ? 'compact' : 'comfortable'; } catch { return 'comfortable'; }
+  });
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [theme, setTheme] = useThemePreference();
   const [windowsClosePrompt, setWindowsClosePrompt] = useState<WindowsClosePrompt | null>(null);
@@ -216,8 +215,19 @@ function AppContent() {
   }, [active, coreReady]);
 
   useEffect(() => {
-    try { if (active !== 'easy') localStorage.setItem(LAST_PAGE_KEY, active); } catch { /* Remembering the page is optional. */ }
+    try { localStorage.setItem(LAST_PAGE_KEY, active); } catch { /* Remembering the page is optional. */ }
   }, [active]);
+
+  useEffect(() => {
+    document.documentElement.dataset.density = density;
+    try { localStorage.setItem('personal.density', density); } catch { /* Density is a display preference. */ }
+  }, [density]);
+
+  useEffect(() => {
+    const openGlossary = () => setGlossaryOpen(true);
+    window.addEventListener('app:glossary', openGlossary);
+    return () => window.removeEventListener('app:glossary', openGlossary);
+  }, []);
 
   useEffect(() => {
     const onProblems = (event: Event) => setHomeProblems(Number((event as CustomEvent<number>).detail) || 0);
@@ -236,7 +246,7 @@ function AppContent() {
       if (mod && /^[1-6]$/.test(event.key)) {
         event.preventDefault();
         const target = primaryNav[Number(event.key) - 1];
-        if (target && canOpenAppPage(target, coreReady)) setActive(target);
+        if (target && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
         return;
       }
       if (event.key === '/' && !mod && !event.altKey && !isTypingTarget(event.target)) {
@@ -246,7 +256,7 @@ function AppContent() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [coreReady]);
+  }, [coreReady, active]);
 
   useEffect(() => {
     if (!languageMenuOpen) return undefined;
@@ -331,18 +341,19 @@ function AppContent() {
   useEffect(() => {
     const navigate = (event: Event) => {
       const target = (event as CustomEvent<unknown>).detail;
-      if ((target === 'home' || target === 'oauth' || target === 'agents') && canOpenAppPage(target, coreReady)) setActive(target);
+      if ((target === 'home' || target === 'oauth' || target === 'agents') && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
     };
     window.addEventListener(UX_NAVIGATE, navigate);
     return () => window.removeEventListener(UX_NAVIGATE, navigate);
-  }, [coreReady]);
+  }, [coreReady, active]);
 
   const select = useCallback((pageId: PageId) => {
     if (!canOpenAppPage(pageId, coreReady)) {
       return;
     }
+    if (pageId !== active && !confirmLeave()) return;
     setActive(pageId);
-  }, [coreReady]);
+  }, [coreReady, active]);
 
   useEffect(() => {
     const handleNavigate = (event: Event) => {
@@ -401,6 +412,9 @@ function AppContent() {
     { id: 'theme-light', label: t('app.theme.switchToLight'), group: t('palette.appearance'), run: () => setTheme('light') },
     { id: 'theme-dark', label: t('app.theme.switchToDark'), group: t('palette.appearance'), run: () => setTheme('dark') },
     { id: 'theme-system', label: t('app.theme.switchToSystem'), group: t('palette.appearance'), run: () => setTheme('system') },
+    { id: 'density-compact', label: t('density.compact'), group: t('palette.appearance'), disabled: density === 'compact', run: () => setDensity('compact') },
+    { id: 'density-comfortable', label: t('density.comfortable'), group: t('palette.appearance'), disabled: density === 'comfortable', run: () => setDensity('comfortable') },
+    { id: 'glossary', label: t('glossary.title'), group: t('palette.help'), run: () => setGlossaryOpen(true) },
   ];
 
   const renderNavigationPage = (page: (typeof pages)[number]) => {
@@ -449,8 +463,8 @@ function AppContent() {
 
   return (
     <>
-      <div className={`app-shell${active === "easy" ? " app-shell-easy-mode" : ""}`}>
-        {active !== "easy" ? (
+      <div className="app-shell">
+        {(
           <aside className="sidebar">
           <div className="sidebar-brand" title={t('app.desktopConsole')}>
             <span className="personal-brand-mark" aria-hidden="true">{PERSONAL_APP_INITIAL}<span>↗</span></span>
@@ -468,7 +482,6 @@ function AppContent() {
             <details className="personal-advanced" open={advancedNav.includes(active) || undefined}>
               <summary>{t('personal.advanced')}</summary>
               <div>{advancedNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
-                <button type="button" className="sidebar-easy-entry" onClick={() => select('easy')}>{t('app.nav.easy')}</button>
               </div>
             </details>
           </nav>
@@ -507,6 +520,11 @@ function AppContent() {
                 {t('app.theme.system')}
               </button>
             </div>
+            <div className="sidebar-theme-selector sidebar-density-selector" role="group" aria-label={t('density.label')}>
+              <button type="button" className={density === 'comfortable' ? 'active' : ''} aria-pressed={density === 'comfortable'} onClick={() => setDensity('comfortable')}>{t('density.comfortable')}</button>
+              <button type="button" className={density === 'compact' ? 'active' : ''} aria-pressed={density === 'compact'} onClick={() => setDensity('compact')}>{t('density.compact')}</button>
+            </div>
+            <button type="button" className="sidebar-glossary-link" onClick={() => setGlossaryOpen(true)}>{t('glossary.open')}</button>
             <div ref={languageMenuRef} className="sidebar-language">
               <button
                 ref={languageButtonRef}
@@ -572,22 +590,12 @@ function AppContent() {
             </div>
           </div>
           </aside>
-        ) : null}
+        )}
 
         <div className="workspace">
           <main className="content">
             {isAlwaysAvailablePage(activePage.id) || coreReady ? (
-              activePage.id === 'easy' ? (
-                <EasyModePage
-                  onExit={() => select('home')}
-                  theme={theme}
-                  setTheme={setTheme}
-                  locale={locale}
-                  setLocale={setLocale}
-                />
-              ) : (
-                <ActivePage />
-              )
+              <ActivePage />
             ) : (
               <CoreLockedPage />
             )}
@@ -670,6 +678,7 @@ function AppContent() {
       ) : null}
 
       <AppUpdateDialog />
+      <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
     </>
   );

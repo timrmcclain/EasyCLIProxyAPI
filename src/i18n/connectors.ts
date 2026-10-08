@@ -3,11 +3,25 @@ import { createTraditionalMessages } from './traditional';
 
 const messages = {
   title: ['连接器', 'Connectors', 'コネクタ'],
-  description: [
-    '让 Claude 使用你的其他应用。更改保存在本机的 Claude Code 与 Claude Desktop 设置中，重启对应应用后生效。',
-    'Let Claude use your other apps. Changes are saved to Claude Code and Claude Desktop settings on this computer and take effect after you restart that app.',
-    'Claude から他のアプリを使えるようにします。変更はこの PC の Claude Code と Claude Desktop の設定に保存され、アプリの再起動後に反映されます。',
+  description: ['让 Claude 使用你的其他应用。', 'Let Claude use your other apps.', 'Claude から他のアプリを使えるようにします。'],
+  howChangesApply: ['更改何时生效', 'When changes take effect', '変更が反映されるタイミング'],
+  descriptionDetail: [
+    '更改保存在本机的 Claude Code 与 Claude Desktop 设置中，重启对应应用后生效。',
+    'Changes are saved to Claude Code and Claude Desktop settings on this computer and take effect after you restart that app.',
+    '変更はこの PC の Claude Code と Claude Desktop の設定に保存され、アプリの再起動後に反映されます。',
   ],
+  noteTitle: ['开启前须知', 'Before you turn it on', 'オンにする前に'],
+  builtInShort: ['内置', 'Built in', '内蔵'],
+  microsoftStepCreate: ['创建 Entra 应用', 'Create an Entra app', 'Entra アプリを作成'],
+  microsoftStepCreateHow: ['操作步骤', 'How to set it up', '設定手順'],
+  microsoftStepPaste: ['粘贴 ID', 'Paste the IDs', 'ID を貼り付け'],
+  microsoftStepPasteBody: [
+    '开启 Claude Desktop，把“概述”页上的目录（租户）ID 和应用程序（客户端）ID 填到下面，然后保存。',
+    'Turn on Claude Desktop, copy the Directory (tenant) ID and Application (client) ID from the Overview page into the fields below, then Save.',
+    'Claude Desktop をオンにし、「概要」ページのディレクトリ（テナント）ID とアプリケーション（クライアント）ID を下の欄に入力して保存します。',
+  ],
+  microsoftStepRestart: ['重新启动 Claude Desktop', 'Restart Claude Desktop', 'Claude Desktop を再起動'],
+  microsoftStepRestartBody: ['重新打开 Claude Desktop，并在其中登录 Microsoft 365。', 'Reopen Claude Desktop and sign in to Microsoft 365 there.', 'Claude Desktop を開き直し、そこで Microsoft 365 にサインインします。'],
   profile: ['Claude Desktop 当前配置：', 'Claude Desktop profile in use:', '使用中の Claude Desktop プロファイル：'],
   noProfile: ['未找到 Claude Desktop 配置', 'No Claude Desktop profile found', 'Claude Desktop のプロファイルが見つかりません'],
   refresh: ['刷新', 'Refresh', '再読み込み'],

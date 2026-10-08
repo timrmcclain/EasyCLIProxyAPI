@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { JsonFormEditor } from '../components/StructuredConfigEditor';
 import { useI18n } from '../i18n';
 import { pluginText } from '../i18n/plugins';
 import { isRecord } from '../services/managementApi';
 import { safePluginWebURL } from '../services/pluginResources';
 import { pluginsApi, type PluginSettings } from '../services/plugins';
+import type { ConfigShape } from '../services/structuredConfig';
+
+/** Optional string fields of a store-auth rule, as validated by the core config writer. */
+const authEnvFields = ['token-env', 'username-env', 'password-env', 'header-name', 'header-value-env'] as const;
 
 export function PluginSettingsPanel({ onSaved }: { onSaved: () => void }) {
   const { t, locale } = useI18n();
@@ -26,6 +31,14 @@ export function PluginSettingsPanel({ onSaved }: { onSaved: () => void }) {
     }).catch(e => { if (generation.current === current) setError(String(e)); });
     return () => { ++generation.current; };
   }, [attempt]);
+  // Shape of one store-auth rule; unknown keys on a rule are kept as-is by the form.
+  const authShape: ConfigShape = { type: 'array', label: pt('auth'), item: { type: 'object', label: pt('authRule'), fields: {
+    match: { type: 'string', label: 'match', hint: pt('authMatchHint') },
+    type: { type: 'select', label: 'type', optional: true, hint: pt('authTypeHint'), options: ['none', 'bearer', 'basic', 'header', 'github-token'] },
+    ...Object.fromEntries(authEnvFields.map(name => [name, { type: 'string', label: name, optional: true } satisfies ConfigShape])),
+    'allow-insecure': { type: 'boolean', label: 'allow-insecure', optional: true },
+    'apply-to': { type: 'array', label: 'apply-to', optional: true, hint: pt('authApplyHint'), item: { type: 'select', label: 'apply-to', options: ['registry', 'metadata', 'artifact'] } },
+  } } };
   const save = async () => {
     if (pending.current || !original) return;
     setError('');
@@ -52,7 +65,12 @@ export function PluginSettingsPanel({ onSaved }: { onSaved: () => void }) {
       <fieldset disabled={busy}>
         <label className="plugin-field">{pt('directory')}<input value={directory} onChange={e => setDirectory(e.target.value)} /></label>
         <label className="plugin-field">{pt('sources')}<textarea rows={4} value={sources} onChange={e => setSources(e.target.value)} spellCheck={false} /><small>{pt('sourcesHint')}</small></label>
-        <label className="plugin-field">{pt('auth')}<textarea rows={7} value={auth} onChange={e => setAuth(e.target.value)} spellCheck={false} /><small>{pt('authHint')}</small></label>
+        <div className="plugin-field">{pt('auth')}
+          <JsonFormEditor text={auth} shape={authShape} emptyValue={[]} accepts={value => Array.isArray(value) && value.every(isRecord)}
+            serialize={value => JSON.stringify(value, null, 2)} onTextChange={setAuth} disabled={busy} id="plugin-store-auth"
+            labels={{ json: pt('editJson'), form: pt('editForm'), unavailable: pt('formUnavailable') }}
+            renderJson={() => <textarea rows={7} aria-label={pt('auth')} value={auth} onChange={e => setAuth(e.target.value)} spellCheck={false} />} />
+          <small>{pt('authHint')}</small></div>
       </fieldset>
       <button className="primary-button" type="submit" disabled={busy}>{busy ? t('common.loading') : t('common.save')}</button>
     </>}

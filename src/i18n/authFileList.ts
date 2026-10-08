@@ -24,6 +24,8 @@ export const authFileListZhCN = {
   'authFiles.usage.title': '累计用量',
   'authFiles.toolbar.refreshList': '刷新列表',
   'authFiles.toolbar.refreshQuota': '刷新全部额度',
+  'authFiles.signInAgain': '重新登录',
+  'authFiles.signInAgainHint': '此账户的登录已过期或被拒绝。请在“账户”页面重新登录。',
 } as const;
 
 export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
@@ -52,6 +54,8 @@ export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.usage.title': 'Cumulative usage',
   'authFiles.toolbar.refreshList': 'Refresh list',
   'authFiles.toolbar.refreshQuota': 'Refresh all quotas',
+  'authFiles.signInAgain': 'Sign in again',
+  'authFiles.signInAgainHint': 'This account’s sign-in expired or was rejected. Sign in again on the Accounts page.',
 };
 
 export const authFileListJa: Record<keyof typeof authFileListZhCN, string> = {
@@ -80,4 +84,6 @@ export const authFileListJa: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.usage.title': '累計使用量',
   'authFiles.toolbar.refreshList': '一覧を更新',
   'authFiles.toolbar.refreshQuota': 'すべてのクォータを更新',
+  'authFiles.signInAgain': '再ログイン',
+  'authFiles.signInAgainHint': 'このアカウントのログインは期限切れか拒否されました。アカウントページで再ログインしてください。',
 };

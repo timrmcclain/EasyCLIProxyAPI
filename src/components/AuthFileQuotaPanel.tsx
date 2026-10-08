@@ -46,7 +46,7 @@ export function AuthFileQuotaPanel({ quota, file, disabled, onRefresh, onReset, 
     const isBlocker = availability.blockers.includes(row);
     // A window can report healthy remaining% while the account is still blocked by a different, already-exhausted window (e.g. the 5-hour window looks fine while the 7-day cap is at zero). Don't render that as green.
     const blockedElsewhere = !isBlocker && ['exhausted', 'creditBacked', 'resetDue'].includes(availability.kind);
-    const tone = isBlocker ? 'low' : blockedElsewhere ? 'blocked' : percent === null ? 'unknown' : percent <= 10 ? 'low' : percent <= 30 ? 'medium' : 'high';
+    const tone = isBlocker ? 'low' : blockedElsewhere ? 'blocked' : percent === null ? 'unknown' : percent < 15 ? 'low' : percent < 50 ? 'medium' : 'high';
     return <div className={`credential-quota-row ${tone}`} key={`${row.label}-${index}`}>
       <div className="credential-quota-label"><span title={row.label}>{row.label}</span><strong>{percent === null ? '—' : `${quotaPercent(percent)}%`}</strong></div>
       <div className="credential-quota-track" role={percent === null ? undefined : 'progressbar'} aria-label={`${row.label} · ${t('authFiles.settings.quotaRemaining')}`}

@@ -25,14 +25,7 @@
 .ad-sort select { border: 1px solid var(--border-primary); background: var(--bg-secondary); color: var(--text-primary); border-radius: 8px; padding: 6px 8px; font-size: 11px; }
 .ad-accounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
 .ad-card { min-width: 0; padding: 20px; border: 1px solid var(--border-primary); border-top: 3px solid var(--ad-accent); border-radius: 12px; background: var(--bg-secondary); }
-.ad-codex { border-top-color: #648476; }
-.ad-card-header { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
-.ad-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.ad-identity > div { min-width: 0; }
-.ad-identity img { width: 29px; height: 29px; flex-shrink: 0; }
 .ad-provider { color: var(--text-secondary); font-size: 11px; }
-.ad-identity h3 { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.ad-card-header .state-pill { flex-shrink: 0; font-size: 11px; }
 .ad-quota-list { display: grid; gap: 18px; margin: 24px 0; }
 .ad-quota-title, .ad-quota-reset { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .ad-quota-title { font-size: 12px; }

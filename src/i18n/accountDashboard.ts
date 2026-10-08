@@ -56,7 +56,14 @@ export const accountDashboardEn = {
   "accountDashboard.days": "{days}d {hours}h",
   "accountDashboard.hours": "{hours}h {minutes}m",
   "accountDashboard.minutes": "{minutes}m",
-  "accountDashboard.accounts": "{claude} Claude · {codex} Codex"
+  "accountDashboard.accounts": "{claude} Claude · {codex} Codex",
+  "accountDashboard.menu": "Actions for {account}",
+  "accountDashboard.rename": "Rename…",
+  "accountDashboard.setPriority": "Set priority…",
+  "accountDashboard.refreshQuota": "Refresh quota",
+  "accountDashboard.moreLimits": "{count} more limits",
+  "accountDashboard.showDetails": "Show details",
+  "accountDashboard.hideDetails": "Hide details"
 } as const;
 export const accountDashboardZhCN = {
   ...uxImprovementsEn,
@@ -115,7 +122,14 @@ export const accountDashboardZhCN = {
   "accountDashboard.days": "{days}天 {hours}小时",
   "accountDashboard.hours": "{hours}小时 {minutes}分钟",
   "accountDashboard.minutes": "{minutes}分钟",
-  "accountDashboard.accounts": "{claude} 个 Claude · {codex} 个 Codex"
+  "accountDashboard.accounts": "{claude} 个 Claude · {codex} 个 Codex",
+  "accountDashboard.menu": "{account} 的操作",
+  "accountDashboard.rename": "重命名…",
+  "accountDashboard.setPriority": "设置优先级…",
+  "accountDashboard.refreshQuota": "刷新额度",
+  "accountDashboard.moreLimits": "另有 {count} 项限额",
+  "accountDashboard.showDetails": "显示详情",
+  "accountDashboard.hideDetails": "隐藏详情"
 } as const;
 export const accountDashboardJa = {
   ...uxImprovementsEn,
@@ -174,5 +188,12 @@ export const accountDashboardJa = {
   "accountDashboard.days": "{days}日 {hours}時間",
   "accountDashboard.hours": "{hours}時間 {minutes}分",
   "accountDashboard.minutes": "{minutes}分",
-  "accountDashboard.accounts": "Claude {claude} 件 · Codex {codex} 件"
+  "accountDashboard.accounts": "Claude {claude} 件 · Codex {codex} 件",
+  "accountDashboard.menu": "{account} の操作",
+  "accountDashboard.rename": "名前を変更…",
+  "accountDashboard.setPriority": "優先度を設定…",
+  "accountDashboard.refreshQuota": "利用枠を更新",
+  "accountDashboard.moreLimits": "ほか {count} 件の利用枠",
+  "accountDashboard.showDetails": "詳細を表示",
+  "accountDashboard.hideDetails": "詳細を隠す"
 } as const;

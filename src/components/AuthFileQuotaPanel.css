@@ -127,9 +127,9 @@
   border-radius: inherit;
   background: var(--quota-color, var(--success-color));
 }
-.credential-quota-dense .credential-quota-row.high { --quota-color: #20bf62; }
-.credential-quota-dense .credential-quota-row.medium { --quota-color: #e6a523; }
-.credential-quota-dense .credential-quota-row.low { --quota-color: #e25555; }
+.credential-quota-dense .credential-quota-row.high { --quota-color: var(--success-color); }
+.credential-quota-dense .credential-quota-row.medium { --quota-color: var(--warning-color); }
+.credential-quota-dense .credential-quota-row.low { --quota-color: var(--error-color); }
 .credential-quota-dense .credential-quota-row small {
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;

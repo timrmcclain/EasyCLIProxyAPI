@@ -9,12 +9,14 @@ export type ConfirmationOptions = {
   confirmText?: string;
   warning?: string;
   details?: { label: string; value: string }[];
+  /** Plain list of affected items (file paths, names) shown under the message. */
+  items?: string[];
   variant?: 'primary' | 'danger';
 };
 
 type ConfirmationDialogProps = ConfirmationOptions & { onDecision: (confirmed: boolean) => void };
 
-export function ConfirmationDialog({ title, message, confirmText, warning, details, variant = 'primary', onDecision }: ConfirmationDialogProps) {
+export function ConfirmationDialog({ title, message, confirmText, warning, details, items, variant = 'primary', onDecision }: ConfirmationDialogProps) {
   const { t } = useI18n();
   const titleId = useId();
   const descriptionId = useId();
@@ -63,6 +65,7 @@ export function ConfirmationDialog({ title, message, confirmText, warning, detai
           <button type="button" className="icon-button quiet" onClick={() => onDecision(false)} title={t('common.close')} aria-label={t('common.close')}><X size={18} aria-hidden="true" /></button>
         </div>
         <p id={descriptionId}>{message}</p>
+        {items?.length ? <ul className="app-confirm-items agent-template-files">{items.map((item) => <li key={item}><code>{item}</code></li>)}</ul> : null}
         {details?.length ? <dl className="app-confirm-details">{details.map((detail) => <div key={detail.label}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl> : null}
         {warning ? <p className="app-confirm-warning">{warning}</p> : null}
         <div className="config-dialog-actions two-actions">

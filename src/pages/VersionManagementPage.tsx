@@ -13,7 +13,7 @@ import {
 import { useCoreRuntime } from '../coreRuntime';
 import { useCoreUpdate } from '../coreUpdate';
 import { useI18n } from '../i18n';
-import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
+import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
 import { createVersionManagementVisitTracker } from '../services/versionManagementVisits';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 
@@ -179,7 +179,8 @@ export function VersionManagementPage() {
     } catch {}
   };
 
-  const updateVersionSource = async (source: VersionDownloadSource) => {
+  // The download source applies instantly, so confirm the switch and offer Undo to the previous source.
+  const updateVersionSource = async (source: VersionDownloadSource, undoTo?: VersionDownloadSource) => {
     setVersionSourceSaving(true);
     setVersionSourceError('');
     try {
@@ -188,7 +189,9 @@ export function VersionManagementPage() {
       resetLatest();
       showNotice({ key: 'kernel.versions.sourceSwitched', variables: {
         source: downloadSourceLabel(settings.source, t),
-      } }, 'info');
+      } }, 'success', undoTo && undoTo !== settings.source ? {
+        action: { label: { key: 'common.undo' }, onAction: () => void updateVersionSource(undoTo) },
+      } : undefined);
     } catch (error) {
       await loadVersionSourceSettings();
       setVersionSourceError(t('kernel.versions.gitcodeSaveFailed', { error: String(error) }));
@@ -483,9 +486,9 @@ export function VersionManagementPage() {
 
   return (
     <section className="page management-page version-management-page">
-      <MessageNotice message={versionSourceError} onDismiss={() => setVersionSourceError('')} />
+      {!customMirrorDialogOpen ? <MessageNotice inline message={versionSourceError} onDismiss={() => setVersionSourceError('')} /> : null}
       <section className="panel version-list">
-        <FloatingNotice key={feedback.revision} notice={feedback.notice} onDismiss={feedback.clearNotice} />
+        <FeedbackNotice feedback={feedback} />
         <div className="version-card-grid">
         <article className="version-list-item app-module-card">
           <div className="version-item-content">
@@ -522,7 +525,7 @@ export function VersionManagementPage() {
             </dl>
 
             {latestError ? (
-              <MessageNotice message={latestError} />
+              <MessageNotice inline message={latestError} />
             ) : null}
           </div>
 
@@ -580,7 +583,7 @@ export function VersionManagementPage() {
                   || installing
                 }
                 aria-label={t('kernel.versions.downloadSource')}
-                onChange={(event) => void updateVersionSource(event.currentTarget.value as VersionDownloadSource)}
+                onChange={(event) => void updateVersionSource(event.currentTarget.value as VersionDownloadSource, versionSource?.source)}
               >
                 <option value="github">{t('kernel.versions.source.github')}</option>
                 <option value="gitcode" disabled={!versionSource?.gitcodeAvailable}>
@@ -673,6 +676,7 @@ export function VersionManagementPage() {
                 ))}
               </div>
             ) : null}
+            <MessageNotice inline message={versionSourceError} onDismiss={() => setVersionSourceError('')} />
             <div className="app-update-dialog-actions">
               <button
                 type="button"

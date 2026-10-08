@@ -29,10 +29,8 @@
 .real-quota-row.is-exhausted { color:var(--failure-badge-text); }
 .account-dashboard.quota-ledger .ad-card.quota-account-exhausted { background:color-mix(in srgb,var(--quota-red,#bf4438) 7%,transparent); box-shadow:inset 3px 0 var(--quota-red,#bf4438); padding-left:14px; padding-right:10px; }
 .account-dashboard.quota-ledger .ad-critical .ad-quota-title strong { color:var(--quota-red,#bf4438); }
-.quota-row-actions > small { display:block; font-size:11px; color:var(--text-secondary); margin-bottom:6px; }
 .quota-summary-account-name { overflow-wrap:anywhere; }
 .quota-summary-breakdown .quota-availability { grid-column:1/-1; }
-.quota-ledger .quota-row-refresh { min-height:32px; }
 @media(max-width:640px) { .quota-workflow-tools { flex-wrap:wrap; } .quota-workflow-tools input { flex-basis:100%; } }
 :root[data-theme='light'] .content:has(.home-page) { background:var(--surface-page); padding:var(--space-8) var(--space-8) 40px; }
 :root[data-theme='light'] .home-page { --quota-green:#16845c; --quota-amber:#b58a22; --quota-red:#bf4438; }
@@ -81,15 +79,8 @@
 .quota-ledger .quota-summary-breakdown > div { display:grid; grid-template-columns:1fr auto; gap:4px; }
 .quota-ledger .quota-summary-breakdown small { grid-column:1/-1; }
 .account-dashboard.quota-ledger .quota-group-heading { padding:0 0 8px; font-size:14px; }
-.quota-ledger .quota-group-heading .quota-provider-icon { display:none; }
 .quota-ledger .quota-account-group + .quota-account-group { margin-top:24px; }
-.account-dashboard.quota-ledger .ad-card { position:relative; display:grid; grid-template-columns:minmax(190px,1.15fr) minmax(0,3fr) 126px; align-items:start; gap:0 28px; padding:18px 0 20px; min-height:108px; border:0; border-bottom:1px solid var(--border-primary); border-radius:0; background:transparent; }
-.account-dashboard.quota-ledger .ad-card-header { grid-column:1; grid-row:1; gap:4px; }
-.account-dashboard.quota-ledger .ad-identity > div { gap:8px; }
-.account-dashboard.quota-ledger .ad-identity h3 { font:600 16px/1.5 ui-monospace,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .account-dashboard.quota-ledger .ad-provider { font-size:12px; }
-.account-dashboard.quota-ledger .ad-card-header .state-pill { font-size:11px; }
-.account-dashboard.quota-ledger .ad-quota-list { grid-column:2; grid-row:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px 22px; }
 .account-dashboard.quota-ledger .ad-quota-title { align-items:baseline; gap:6px; font-size:14px; }
 .account-dashboard.quota-ledger .ad-quota-title strong { font-size:16px; font-weight:600; }
 .account-dashboard.quota-ledger .ad-quota-title > span { min-width:0; }
@@ -109,20 +100,9 @@
 .account-dashboard.quota-ledger .ad-card-note { font-size:11px; line-height:1.5; }
 .account-dashboard.quota-ledger .ad-quota-list > .ad-card-note { grid-column:1/-1; }
 .quota-ledger .quota-row-stale .ad-quota meter { opacity:.5; }
-.quota-ledger .quota-row-actions { grid-column:3; grid-row:1; padding-top:16px; }
-.quota-ledger .quota-row-refresh { display:flex; align-items:center; gap:6px; border:0; padding:4px 0; background:transparent; color:var(--text-secondary); cursor:pointer; font-size:12px; }
-.quota-ledger .quota-row-refresh:hover:not(:disabled) { color:var(--text-primary); }
-.quota-ledger .quota-row-refresh:disabled { opacity:.45; cursor:default; }
-.account-dashboard.quota-ledger .ad-account-details { grid-column:1/-1; margin:0; border:0; padding:0; }
-.account-dashboard.quota-ledger .ad-account-details:not([open]) { height:0; }
-.account-dashboard.quota-ledger .ad-account-details > summary { position:absolute; right:0; top:64px; min-height:24px; padding:4px 0; font-size:11px; color:var(--text-tertiary); }
-.account-dashboard.quota-ledger .ad-account-details[open] { border-top:1px dashed var(--border-primary); padding:14px 0 0; margin-top:14px; }
 .quota-ledger .quota-ledger-notes { margin:4px 0 8px; color:var(--text-secondary); font-size:11px; }
 .quota-ledger .quota-ledger-notes > summary { padding:8px 0; cursor:pointer; }
 .quota-ledger .quota-ledger-notes .ad-toolbar { border:0; }
-.account-dashboard.quota-ledger.quota-layout-compact .ad-card { min-height:88px; padding:12px 0 16px; }
-.account-dashboard.quota-layout-compact .ad-account-details > summary { top:52px; }
-.quota-layout-compact .ad-quota-reset time { display:none; }
 .quota-refreshing { animation:quota-turn 1s linear infinite; }
 @keyframes quota-turn { to { transform:rotate(360deg); } }
 @media (max-width:1200px) {
@@ -133,15 +113,10 @@
  .quota-ledger .quota-provider-summary-cell:last-child:nth-child(odd) { grid-column:1/-1; }
  .quota-ledger .ledger-filters { flex-wrap:wrap; padding-bottom:8px; }
  .quota-ledger .ledger-provider-filters { gap:2px; }
- .account-dashboard.quota-ledger .ad-card { grid-template-columns:minmax(150px,1fr) minmax(0,3fr) 106px; gap:0 16px; }
  .account-dashboard.quota-ledger .ad-quota-list { gap:14px; }
  .account-dashboard.quota-ledger .ad-quota-title { font-size:12px; flex-wrap:wrap; }
 }
 @media (max-width:960px) {
- .account-dashboard.quota-ledger .ad-card { grid-template-columns:minmax(0,1fr) 126px; gap:16px; }
- .account-dashboard.quota-ledger .ad-quota-list { grid-column:1/-1; grid-row:2; }
- .quota-ledger .quota-row-actions { grid-column:2; grid-row:1; padding:0; }
- .account-dashboard.quota-ledger .ad-account-details > summary { top:48px; }
  .account-dashboard.quota-ledger .ad-heading { flex-wrap:wrap; }
 }
 @media (max-width:760px) {
@@ -170,10 +145,6 @@
 .quota-ledger .quota-provider-summary { margin-bottom:20px; }
 .quota-ledger .quota-account-states { margin:10px 0 8px; }
 .quota-ledger .quota-summary-extra { padding-top:6px; margin-top:6px; font-size:12px; }
-.account-dashboard.quota-ledger .ad-card { padding-top:12px; padding-bottom:14px; }
-.quota-ledger .quota-row-actions { padding-top:0; }
-.quota-ledger .quota-row-refresh { min-height:32px; }
-.account-dashboard.quota-ledger .ad-account-details > summary { top:72px; }
 .account-dashboard.quota-ledger .quota-availability-available { margin-top:4px; }
 
 
@@ -184,3 +155,79 @@
 
 .quota-account-state.creditBacked { background:var(--personal-accent-text); }
 .quota-count-creditBacked,.quota-availability-creditBacked { color:var(--personal-accent-text); }
+
+/* One-row account cards: logo · name · status · deciding quota · reset · actions. Details expand below. */
+.account-dashboard.quota-ledger .ad-row-card { position:relative; display:block; min-height:56px; padding:var(--space-2) 0; border:0; border-bottom:1px solid var(--border-primary); border-radius:0; background:transparent; box-shadow:none; }
+.account-dashboard.quota-ledger .ad-row-card.quota-account-exhausted { padding-left:var(--space-3); background:color-mix(in srgb,var(--error-color) 6%,transparent); box-shadow:inset 3px 0 var(--error-color); }
+.account-dashboard.quota-ledger .ad-row { display:grid; grid-template-columns:24px minmax(140px,1.1fr) minmax(104px,auto) minmax(200px,2fr) auto; align-items:center; gap:var(--space-2) var(--space-4); min-height:40px; padding-right:48px; }
+.account-dashboard.quota-ledger .ad-row-logo { width:24px; height:24px; object-fit:contain; border-radius:var(--radius-sm); }
+.account-dashboard.quota-ledger span.ad-row-logo { display:inline-grid; place-items:center; background:var(--bg-tertiary); color:var(--text-secondary); font-size:var(--font-size-caption); font-weight:600; }
+.account-dashboard.quota-ledger .ad-row-name { display:grid; gap:2px; min-width:0; }
+.account-dashboard.quota-ledger .ad-row-name h3 { margin:0; font-size:var(--font-size-body); font-weight:600; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.account-dashboard.quota-ledger .ad-row-name .ad-provider { font-size:var(--font-size-caption); color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.account-dashboard.quota-ledger .ad-row-status { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-1); min-width:0; }
+.account-dashboard.quota-ledger .ad-row-status .state-pill { font-size:var(--font-size-caption); padding:2px var(--space-2); }
+.quota-availability-chip { display:inline-flex; align-items:center; gap:var(--space-1); padding:2px var(--space-2); border-radius:var(--radius-full); font-size:var(--font-size-caption); font-weight:600; line-height:1.5; white-space:nowrap; color:var(--text-secondary); background:color-mix(in srgb,currentColor 10%,transparent); cursor:default; }
+.quota-availability-chip.quota-availability-available { color:var(--success-color); }
+.quota-availability-chip:is(.quota-availability-exhausted,.quota-availability-unavailable) { color:var(--error-color); }
+.quota-availability-chip:is(.quota-availability-limited,.quota-availability-resetDue,.quota-availability-creditBacked) { color:var(--warning-color); }
+.account-dashboard.quota-ledger .ad-row-quota { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--space-2) var(--space-4); margin:0; min-width:0; }
+.account-dashboard.quota-ledger .ad-row-quota-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.account-dashboard.quota-ledger .ad-row-quota-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.account-dashboard.quota-ledger .ad-row-quota > .ad-card-note { grid-column:1/-1; margin:0; }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"title reset" "bar bar"; align-items:baseline; column-gap:var(--space-3); min-width:0; }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota-title { grid-area:title; display:flex; justify-content:flex-start; align-items:baseline; gap:var(--space-2); min-width:0; font-size:var(--font-size-meta); }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota-title > span { color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota-title strong { font-size:var(--font-size-meta); font-weight:600; font-variant-numeric:tabular-nums; }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota meter,
+.account-dashboard.quota-ledger .ad-row-card .quota-unknown-track { grid-area:bar; width:100%; height:6px; margin:var(--space-1) 0 0; }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota-reset { grid-area:reset; justify-self:end; display:block; font-size:var(--font-size-caption); line-height:1.5; color:var(--text-secondary); white-space:nowrap; }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota-reset time { color:inherit; cursor:help; }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota > .ad-card-note { grid-column:1/-1; margin:2px 0 0; }
+/* Thresholds: green above 50%, amber 15-50%, red below 15%. */
+.account-dashboard.quota-ledger .ad-row-card .ad-quota meter::-webkit-meter-optimum-value { background:var(--success-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-quota meter::-moz-meter-bar { background:var(--success-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-low meter::-webkit-meter-optimum-value { background:var(--warning-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-low meter::-moz-meter-bar { background:var(--warning-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-critical meter::-webkit-meter-optimum-value { background:var(--error-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-critical meter::-moz-meter-bar { background:var(--error-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-critical .ad-quota-title strong { color:var(--error-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-low .ad-quota-title strong { color:var(--warning-color); }
+.account-dashboard.quota-ledger .ad-row-card .ad-blocked meter::-webkit-meter-optimum-value { background:var(--text-muted); }
+.account-dashboard.quota-ledger .ad-row-card .ad-blocked meter::-moz-meter-bar { background:var(--text-muted); }
+.account-dashboard.quota-ledger .ad-row-actions { display:flex; align-items:center; justify-content:flex-end; gap:var(--space-2); }
+.account-dashboard.quota-ledger .ad-row-actions .auth-sign-in-again { min-height:32px; display:inline-flex; align-items:center; gap:var(--space-1); font-size:var(--font-size-caption); white-space:nowrap; }
+.ad-row-busy { color:var(--text-muted); }
+.ad-menu { position:relative; }
+.ad-menu-button { display:inline-grid; place-items:center; width:32px; height:32px; padding:0; border:1px solid transparent; border-radius:var(--radius-md); background:transparent; color:var(--text-secondary); cursor:pointer; }
+.ad-menu-button:hover,.ad-menu-button[aria-expanded="true"] { background:var(--bg-hover); color:var(--text-primary); }
+.ad-menu-button:focus-visible { outline:2px solid var(--ui-accent); outline-offset:2px; }
+.ad-menu-popover { position:absolute; top:calc(100% + var(--space-1)); right:0; z-index:30; display:grid; min-width:184px; padding:var(--space-1); border:1px solid var(--border-primary); border-radius:var(--radius-lg); background:var(--bg-primary); box-shadow:var(--shadow-lg); }
+.ad-menu-popover [role="menuitem"] { min-height:32px; padding:var(--space-1) var(--space-3); border:0; border-radius:var(--radius-sm); background:transparent; color:var(--text-primary); font:inherit; font-size:var(--font-size-meta); text-align:left; cursor:pointer; }
+.ad-menu-popover [role="menuitem"]:is(:hover,:focus-visible):not(:disabled) { background:var(--bg-hover); outline:none; }
+.ad-menu-popover [role="menuitem"]:focus-visible { box-shadow:inset 0 0 0 2px var(--ui-accent); }
+.ad-menu-popover [role="menuitem"]:disabled { opacity:.45; cursor:default; }
+.account-dashboard.quota-ledger .ad-row-card > .ad-account-details { margin:0; padding:0; border:0; }
+.account-dashboard.quota-ledger .ad-row-card > .ad-account-details > summary { position:absolute; top:calc(var(--space-2) + 4px); right:0; display:inline-flex; align-items:center; justify-content:center; gap:2px; min-width:32px; min-height:32px; padding:0 var(--space-1); border-radius:var(--radius-md); list-style:none; font-size:var(--font-size-caption); font-weight:600; color:var(--text-secondary); text-align:center; }
+.account-dashboard.quota-ledger .ad-row-card > .ad-account-details > summary::-webkit-details-marker { display:none; }
+.account-dashboard.quota-ledger .ad-row-card > .ad-account-details > summary:hover { background:var(--bg-hover); color:var(--text-primary); }
+.account-dashboard.quota-ledger .ad-row-card > .ad-account-details[open] > summary svg { transform:rotate(180deg); }
+.account-dashboard.quota-ledger .ad-details-body { display:grid; gap:var(--space-2); margin-top:var(--space-2); padding:var(--space-3) 0 var(--space-2) 40px; border-top:1px dashed var(--border-primary); }
+.account-dashboard.quota-ledger .ad-details-body .quota-availability { margin:0; }
+.account-dashboard.quota-ledger .ad-details-body .ad-card-note { margin:0; }
+.account-dashboard.quota-ledger .ad-detail-quotas { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:var(--space-3) var(--space-6); margin:0; }
+.account-dashboard.quota-ledger .ad-details-body .ad-card-activity { padding:var(--space-2) 0 0; }
+.account-dashboard.quota-ledger .ad-details-body .ad-card-footer :is(input,button) { min-height:32px; }
+.quota-ledger .quota-compare { min-height:44px; padding:var(--space-3) var(--space-4); font-size:var(--font-size-body); }
+.quota-group-heading :is(.quota-provider-icon,.ledger-provider-icon),.quota-summary-heading :is(.quota-provider-icon,.ledger-provider-icon) { width:20px; height:20px; object-fit:contain; }
+@media (max-width:1100px) {
+ .account-dashboard.quota-ledger .ad-row { grid-template-columns:24px minmax(0,1fr) auto; }
+ .account-dashboard.quota-ledger .ad-row-status { grid-column:3; grid-row:1; justify-content:flex-end; }
+ .account-dashboard.quota-ledger .ad-row-quota { grid-column:2/3; grid-row:2; }
+ .account-dashboard.quota-ledger .ad-row-actions { grid-column:3; grid-row:2; }
+}
+@media (max-width:640px) {
+ .account-dashboard.quota-ledger .ad-row-quota-2,.account-dashboard.quota-ledger .ad-row-quota-3 { grid-template-columns:minmax(0,1fr); }
+ .account-dashboard.quota-ledger .ad-details-body { padding-left:0; }
+}
+.account-dashboard.quota-ledger .ad-row-status .quota-availability-chip { margin:0; }

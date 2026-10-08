@@ -2,13 +2,14 @@
 .connectors-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
 .connectors-heading h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.4px; }
 .connectors-heading p { margin: 0; max-width: 760px; color: var(--text-tertiary); line-height: 1.7; }
+.connectors-heading .connector-hint-details { margin-top: var(--space-1); }
 .connectors-heading-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .connectors-page .connectors-heading-actions > button { width: auto; flex: none; }
 .connectors-profile { margin: 0; font-size: 13px; color: var(--text-secondary); }
 .connectors-notice { margin: 0; padding: 12px 16px; border-radius: 8px; background: color-mix(in srgb, var(--primary-color) 10%, transparent); color: var(--text-primary); font-size: 13px; }
 .connectors-error { margin: 0; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, #dc2626 10%, transparent); color: var(--text-primary); font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .connectors-loading { display: flex; align-items: center; gap: var(--space-2); margin: 0; padding: var(--space-3) var(--space-4); border: 1px dashed var(--border-color); border-radius: var(--radius-lg); color: var(--text-secondary); font-size: var(--font-size-meta); }
-.connectors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 16px; }
+.connectors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: var(--space-4); align-items: start; }
 .connector-card { min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); }
 .connector-card-header { display: flex; gap: 12px; align-items: flex-start; }
 .connector-card-header h2 { margin: 0 0 4px; font-size: 16px; }
@@ -16,12 +17,19 @@
 .connector-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 34px; border-radius: 8px; background: var(--bg-tertiary); color: var(--primary-color); }
 .connector-note { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
 .connector-unavailable { margin: 0; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, #d97706 12%, transparent); color: var(--text-primary); font-size: 12px; }
-.connector-targets { display: flex; flex-direction: column; gap: 8px; }
-.connector-target { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; }
-.connector-switch { display: flex; align-items: center; gap: 8px; min-width: 140px; font-size: 14px; font-weight: 600; }
-.connector-switch input { width: 18px; height: 18px; accent-color: var(--primary-color); }
-.connector-status { flex: 1; min-width: 0; font-size: 12px; color: var(--text-tertiary); }
-.connector-status.on { color: var(--text-secondary); }
+/* Claude Code / Claude Desktop sit side by side; each tile is a switch, a status chip and its test. */
+.connector-targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: var(--space-2); }
+.connector-target { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); min-width: 0; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); }
+.connector-target.checked { border-color: color-mix(in srgb, var(--ui-accent, var(--primary-color)) 45%, var(--border-color)); }
+.connector-switch { display: flex; align-items: center; gap: var(--space-2); min-height: 32px; font-size: var(--font-size-body); font-weight: 600; cursor: pointer; }
+.connector-switch input { appearance: none; position: relative; flex: none; width: 34px; height: 20px; margin: 0; border-radius: var(--radius-full); background: var(--border-color); cursor: pointer; transition: background .15s ease; }
+.connector-switch input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-sm); transition: transform .15s ease; }
+.connector-switch input:checked { background: var(--ui-accent, var(--primary-color)); }
+.connector-switch input:checked::after { transform: translateX(14px); }
+.connector-switch input:focus-visible { outline: 2px solid var(--ui-accent, var(--primary-color)); outline-offset: 2px; }
+.connector-switch input:disabled { opacity: .5; cursor: not-allowed; }
+.connector-status { max-width: 100%; padding: 2px var(--space-2); border-radius: var(--radius-full); background: var(--bg-tertiary); font-size: var(--font-size-caption); line-height: 1.5; color: var(--text-tertiary); overflow-wrap: anywhere; }
+.connector-status.on { background: color-mix(in srgb, #15803d 12%, transparent); color: var(--text-secondary); }
 .connector-card .connector-target > button, .connector-card .connector-actions > button, .connector-card .connector-secrets-status > button { width: auto; flex: none; }
 .connector-test { flex-basis: 100%; margin: 0; font-size: 12px; color: var(--text-secondary); white-space: pre-wrap; overflow-wrap: anywhere; }
 .connector-test.ok { color: #15803d; }
@@ -89,3 +97,14 @@
 .connector-hint-details summary { cursor: pointer; width: fit-content; color: var(--text-secondary); font-size: var(--font-size-caption); }
 .connector-hint-details summary:hover { color: var(--text-primary); }
 .connector-hint-details p { margin: var(--space-1) 0 0; line-height: 1.6; }
+.connector-note-details summary { cursor: pointer; width: fit-content; min-height: 24px; color: var(--text-secondary); font-weight: 600; }
+.connector-note-details p { margin: var(--space-1) 0 0; }
+.connector-steps { display: grid; gap: var(--space-2); }
+.connector-steps h3 { margin: 0; font-size: var(--font-size-meta); color: var(--text-primary); }
+.connector-steps ol { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.connector-steps ol > li { display: flex; gap: var(--space-2); align-items: flex-start; }
+.connector-steps ol > li > div { display: grid; gap: 2px; min-width: 0; font-size: var(--font-size-meta); }
+.connector-steps small { font-size: var(--font-size-caption); color: var(--text-tertiary); line-height: 1.5; }
+.connector-steps ul { display: grid; gap: var(--space-1); margin: var(--space-1) 0 0; padding-left: var(--space-4); font-size: var(--font-size-caption); color: var(--text-secondary); line-height: 1.6; }
+.connector-step-number { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; border-radius: var(--radius-full); background: var(--bg-tertiary); color: var(--text-secondary); font-size: var(--font-size-caption); font-weight: 700; }
+.connector-steps li.done .connector-step-number { background: var(--ui-accent, var(--primary-color)); color: #fff; }

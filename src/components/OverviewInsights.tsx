@@ -10,16 +10,19 @@ import { requestClient, privateText, type DashboardRequest } from '../services/d
 import { failureKind } from '../services/connectionPresentation';
 import { isRecord, managementApi } from '../services/managementApi';
 
+const limitedKinds = ['exhausted', 'limited', 'unavailable', 'creditBacked', 'resetDue'];
 type Props = { files: AuthFile[]; quotas: Record<string, QuotaState>; now: number; stale: boolean; labelFor: (file: AuthFile) => string };
 export function RecoveryTimeline({ files, quotas, now, stale, labelFor }: Props) {
   const { t } = useI18n();
-  const events = recoveryEvents(files, quotas, now, stale);
+  // Only accounts that are actually held back belong on the timeline; otherwise render no frame at all.
+  const events = recoveryEvents(files, quotas, now, stale)
+    .filter(event => limitedKinds.includes(quotaAvailability(event.file, quotas[quotaKey(event.file)], now, stale).kind));
   if (!events.length) return null;
   return <details className="ux-insight"><summary>{t('ux.recovery')} · {events.length}</summary><p>{t('ux.recoveryHint')}</p>
-    {events.length ? <ol className="ux-recovery">{events.map((event, i) => <li key={`${quotaKey(event.file)}-${i}`}>
+    <ol className="ux-recovery">{events.map((event, i) => <li key={`${quotaKey(event.file)}-${i}`}>
       <strong>{labelFor(event.file)}</strong><span>{event.group || t(event.includedOnly ? 'ux.renewal' : 'ux.expected')}</span>
       <span>{resetCountdown(event.at, now)}</span><time dateTime={new Date(event.at).toISOString()}>{new Date(event.at).toLocaleString()}</time>
-    </li>)}</ol> : <p>{t('ux.recoveryEmpty')}</p>}
+    </li>)}</ol>
   </details>;
 }
 

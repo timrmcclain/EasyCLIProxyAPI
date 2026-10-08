@@ -27,6 +27,11 @@ const messages = {
   loadFailed: ['加载插件配置失败', 'Could not load plugin configuration', 'プラグイン設定を読み込めませんでした'],
   saveFailed: ['保存插件配置失败', 'Could not save plugin configuration', 'プラグイン設定を保存できませんでした'],
   retry: ['重试', 'Retry', '再試行'],
+  editJson: ['以 JSON 编辑', 'Edit as JSON', 'JSON で編集'],
+  editForm: ['以表单编辑', 'Edit as form', 'フォームで編集'],
+  formUnavailable: ['此 JSON 无法显示为表单。请修正，或继续以 JSON 编辑。', 'This JSON can’t be shown as a form. Fix it or keep editing it as JSON.', 'この JSON はフォームで表示できません。修正するか、JSON のまま編集してください。'],
+  howSaved: ['保存方式说明', 'How changes are saved', '保存の仕組み'],
+  rawForm: ['自定义配置', 'Custom configuration', 'カスタム設定'],
 } as const;
 
 export type PluginConfigMessage = keyof typeof messages;

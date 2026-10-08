@@ -150,3 +150,7 @@
 .plugin-hint-details summary { cursor: pointer; width: fit-content; line-height: 1.5; }
 .plugin-hint-details summary:hover { color: var(--text-primary); }
 .plugin-hint-details p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--font-size-caption); line-height: 1.6; }
+.plugin-config-about { color: var(--text-secondary); font-size: var(--font-size-meta); }
+.plugin-config-about summary { cursor: pointer; width: fit-content; min-height: 24px; line-height: 1.5; }
+.plugin-config-about summary:hover { color: var(--text-primary); }
+.plugin-config-about > p, .plugin-config-about > small { display: block; margin: var(--space-1) 0 0; }

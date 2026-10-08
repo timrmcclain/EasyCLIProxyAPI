@@ -247,3 +247,5 @@
   border-color: color-mix(in srgb, var(--auth-accent) 26%, #edf0f4);
   box-shadow: 0 4px 14px rgb(35 83 160 / 7%);
 }
+.auth-card-header .ledger-provider-icon.provider-logo { width: 35px; height: 35px; border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); font-size: var(--font-size-section); font-weight: 600; }
+.auth-list-status .auth-sign-in-again { min-height: 32px; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-caption); white-space: nowrap; }

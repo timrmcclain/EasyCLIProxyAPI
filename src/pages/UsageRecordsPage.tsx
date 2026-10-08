@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { getCurrentLocale, useI18n } from '../i18n';
-import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
+import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
 import { calculateTokenComposition } from '../services/usageMetrics';
 import { formatDuration, formatUsageNumber } from '../services/usageNumber';
 import { handleHorizontalTabKey } from '../components/tabKeyboardNavigation';
@@ -599,7 +599,7 @@ export function UsageRecordsPage() {
 
   return (
     <section className="page management-page usage-records-page" data-active-tab={activeTab}>
-      {error ? <MessageNotice message={error} onDismiss={() => setError('')} /> : null}
+      {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
 
       <div className="usage-topbar">
         <div className="usage-page-navigation">
@@ -750,7 +750,9 @@ function UsageDataManagementView() {
   const [savingLimit, setSavingLimit] = useState(false);
   const [shrinkDraft, setShrinkDraft] = useState('');
   const [shrinking, setShrinking] = useState(false);
-  const [storageNotice, setStorageNotice] = useState('');
+  const feedback = useAppNotice();
+  const { showNotice, clearNotice } = feedback;
+  const limitDirty = storage !== null && limitDraft.trim() !== String(storage.maxDatabaseSizeMb);
 
   useEffect(() => {
     let disposed = false;
@@ -780,17 +782,15 @@ function UsageDataManagementView() {
     }
     setSavingLimit(true);
     setError('');
-    setStorageNotice('');
+    clearNotice();
     try {
       const next = await invoke<UsageStorageSettings>('save_usage_storage_settings', { maxDatabaseSizeMb });
       setStorage(next);
       setLimitDraft(String(next.maxDatabaseSizeMb));
-      setStorageNotice(t(
-        next.deletedRecords > 0
-          ? 'usage.dataManagement.storageSavedWithCleanup'
-          : 'usage.dataManagement.storageSaved',
-        { deleted: next.deletedRecords.toLocaleString() },
-      ));
+      showNotice({
+        key: next.deletedRecords > 0 ? 'usage.dataManagement.storageSavedWithCleanup' : 'usage.dataManagement.storageSaved',
+        variables: { deleted: next.deletedRecords.toLocaleString() },
+      });
     } catch (requestError) {
       setError(String(requestError));
     } finally {
@@ -812,19 +812,17 @@ function UsageDataManagementView() {
     if (!confirmed) return;
     setShrinking(true);
     setError('');
-    setStorageNotice('');
+    clearNotice();
     try {
       const next = await invoke<UsageStorageSettings>('shrink_usage_database', { targetDatabaseSizeMb });
       setStorage(next);
-      setStorageNotice(t(
-        next.deletedRecords > 0
-          ? 'usage.dataManagement.shrinkSuccess'
-          : 'usage.dataManagement.shrinkNoCleanup',
-        {
+      showNotice({
+        key: next.deletedRecords > 0 ? 'usage.dataManagement.shrinkSuccess' : 'usage.dataManagement.shrinkNoCleanup',
+        variables: {
           deleted: next.deletedRecords.toLocaleString(),
           size: formatStorageBytes(next.databaseSizeBytes),
         },
-      ));
+      });
     } catch (requestError) {
       setError(String(requestError));
     } finally {
@@ -836,10 +834,12 @@ function UsageDataManagementView() {
     if (!await askConfirmation({ title: t('usage.dataManagement.title'), message: t('usage.dataManagement.confirm') })) return;
     setRunning(true);
     setError('');
+    clearNotice();
     setResult(null);
     try {
       const next = await invoke<UsageRepairResult>('repair_usage_cache_records');
       setResult(next);
+      showNotice({ key: 'usage.dataManagement.success', variables: { repaired: next.repaired, deleted: next.deleted } });
       const nextStorage = await invoke<UsageStorageSettings>('get_usage_storage_settings');
       setStorage(nextStorage);
     } catch (requestError) {
@@ -883,17 +883,18 @@ function UsageDataManagementView() {
               disabled={loadingLimit || savingLimit || shrinking || running}
               onChange={(event) => setLimitDraft(event.currentTarget.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !loadingLimit && !savingLimit && !shrinking && !running) void saveStorageLimit();
+                if (event.key === 'Enter' && limitDirty && !loadingLimit && !savingLimit && !shrinking && !running) void saveStorageLimit();
               }}
               aria-label={t('usage.dataManagement.storageInput')}
             />
             <span>{t('usage.dataManagement.storageUnit')}</span>
           </label>
+          <span className="config-card-status" role="status">{limitDirty ? t('common.unsavedChanges') : ''}</span>
           <button
             type="button"
             className="primary-button"
             onClick={() => void saveStorageLimit()}
-            disabled={loadingLimit || savingLimit || shrinking || running}
+            disabled={loadingLimit || savingLimit || shrinking || running || !limitDirty}
           >
             {savingLimit ? t('usage.dataManagement.storageSaving') : t('usage.dataManagement.storageSave')}
           </button>
@@ -932,7 +933,7 @@ function UsageDataManagementView() {
         </div>
       </div>
 
-      {storageNotice ? <MessageNotice tone="success" message={storageNotice} onDismiss={() => setStorageNotice('')} /> : null}
+      <FeedbackNotice feedback={feedback} />
 
       <div className="usage-data-management-action">
         <div>
@@ -944,10 +945,9 @@ function UsageDataManagementView() {
         </button>
       </div>
 
-      {error ? <MessageNotice message={error} onDismiss={() => setError('')} /> : null}
+      {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
       {result ? (
         <>
-          <MessageNotice tone="success" message={t('usage.dataManagement.success', { repaired: result.repaired, deleted: result.deleted })} />
           <div className="usage-data-management-result">
           <div><span>{t('usage.dataManagement.scanned')}</span><strong>{result.scanned.toLocaleString()}</strong></div>
           <div><span>{t('usage.dataManagement.repaired')}</span><strong>{result.repaired.toLocaleString()}</strong></div>
@@ -1567,7 +1567,8 @@ function PricingView({
   const [syncDrafts, setSyncDrafts] = useState<SyncPriceDraft[]>([]);
   const [syncError, setSyncError] = useState('');
   const syncDialog = useRef<HTMLDialogElement>(null);
-  const { notice, revision, showNotice, clearNotice } = useAppNotice();
+  const pricingFeedback = useAppNotice();
+  const { showNotice, clearNotice } = pricingFeedback;
 
 
   const visibleRows = pricing.rows.filter((row) => {
@@ -1610,7 +1611,7 @@ function PricingView({
   };
 
   const deletePrice = async (model: string) => {
-    if (!await askConfirmation({ title: t('common.delete'), message: t('usage.pricing.deleteConfirm', { model }), confirmText: t('common.delete'), variant: 'danger' })) return;
+    if (!await askConfirmation({ title: t('usage.pricing.deleteTitle'), message: t('usage.pricing.deleteConfirm', { model }), confirmText: t('common.delete'), variant: 'danger' })) return;
     clearNotice();
     try {
       await invoke('delete_usage_model_price', { model });
@@ -1729,7 +1730,7 @@ function PricingView({
         </div>
       </div>
 
-      <FloatingNotice key={revision} notice={notice} onDismiss={clearNotice} />
+      <FeedbackNotice feedback={pricingFeedback} />
 
       <dialog ref={syncDialog} className="usage-price-sync-dialog" onCancel={(event) => { if (applyingSync) event.preventDefault(); }} onClose={() => setSyncPreview(null)}>
         <div className="usage-price-sync-header">

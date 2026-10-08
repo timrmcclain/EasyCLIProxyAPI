@@ -16,7 +16,7 @@ import devinIcon from '../assets/icons/devin.svg';
 import kimiIcon from '../assets/icons/kimi-light.svg';
 import metaIcon from '../assets/icons/meta.svg';
 import { useI18n } from '../i18n';
-import { FloatingNotice, useAppNotice } from '../appNotice';
+import { FeedbackNotice, MessageNotice, useAppNotice, type NoticeMessage } from '../appNotice';
 import { oauthSubpages, type OAuthSubpage } from '../oauthNavigation';
 import {
   changedOAuthAuthFileNames,
@@ -183,7 +183,21 @@ export function OAuthLoginPage() {
     cachedOAuthProviderStates,
   );
   const feedback = useAppNotice();
-  const { showNotice } = feedback;
+  const { showNotice, clearNotice } = feedback;
+  // Sign-in failures stay inline on the provider card that failed; results float briefly.
+  const [providerErrors, setProviderErrors] = useState<Partial<Record<OAuthProviderId, NoticeMessage>>>({});
+  const showProviderError = useCallback((provider: OAuthProviderId, message: NoticeMessage) => {
+    clearNotice();
+    setProviderErrors((current) => ({ ...current, [provider]: message }));
+  }, [clearNotice]);
+  const clearProviderError = useCallback((provider: OAuthProviderId) => {
+    setProviderErrors((current) => {
+      if (!(provider in current)) return current;
+      const next = { ...current };
+      delete next[provider];
+      return next;
+    });
+  }, []);
   const [browsers, setBrowsers] = useState<OAuthBrowserOption[]>([]);
   const [browsersLoading, setBrowsersLoading] = useState(true);
   const [selectedBrowser, setSelectedBrowser] = useState(loadOAuthBrowserPreference);
@@ -301,12 +315,8 @@ export function OAuthLoginPage() {
             }
             if (!isCurrent()) return;
             completeProviderAuth(provider);
-            showNotice(
-              priorityError
-                ? t('oauth.priorityApplyFailed', { error: priorityError })
-                : t('oauth.loginSuccess', { provider: providerLabel(provider) }),
-              priorityError ? 'error' : 'success',
-            );
+            if (priorityError) showProviderError(provider, t('oauth.priorityApplyFailed', { error: priorityError }));
+            else showNotice(t('oauth.loginSuccess', { provider: providerLabel(provider) }), 'success');
           } else if (status === 'error') {
             updateProviderState(provider, {
               status: 'error',
@@ -314,13 +324,10 @@ export function OAuthLoginPage() {
               polling: false,
             });
             clearPollingTimer(provider);
-            showNotice(
-              { key: 'oauth.loginFailed', variables: {
-                provider: providerLabel(provider),
-                detail: result.error ? `: ${result.error}` : '',
-              } },
-              'error',
-            );
+            showProviderError(provider, { key: 'oauth.loginFailed', variables: {
+              provider: providerLabel(provider),
+              detail: result.error ? `: ${result.error}` : '',
+            } });
           }
         } catch (error) {
           if (!isCurrent()) return;
@@ -330,7 +337,7 @@ export function OAuthLoginPage() {
             polling: false,
           });
           clearPollingTimer(provider);
-          showNotice(String(error), 'error');
+          showProviderError(provider, String(error));
         } finally {
           if (isCurrent()) delete pollingRequests.current[provider];
         }
@@ -340,7 +347,7 @@ export function OAuthLoginPage() {
         OAUTH_POLL_INTERVAL_MS,
       );
     },
-    [applyDefaultCredentialPriority, clearPollingTimer, completeProviderAuth, showNotice, t, updateProviderState],
+    [applyDefaultCredentialPriority, clearPollingTimer, completeProviderAuth, showNotice, showProviderError, t, updateProviderState],
   );
 
   useEffect(() => {
@@ -354,6 +361,7 @@ export function OAuthLoginPage() {
 
   const startLogin = async (provider: OAuthProviderId) => {
     clearPollingTimer(provider);
+    clearProviderError(provider);
     updateProviderState(provider, {
       url: undefined,
       state: undefined,
@@ -380,7 +388,7 @@ export function OAuthLoginPage() {
           error: t('oauth.missingState'),
           polling: false,
         });
-        showNotice({ key: 'oauth.missingStatePolling' }, 'error');
+        showProviderError(provider, { key: 'oauth.missingStatePolling' });
         return;
       }
 
@@ -408,7 +416,7 @@ export function OAuthLoginPage() {
         error: String(error),
         polling: false,
       });
-      showNotice(String(error), 'error');
+      showProviderError(provider, String(error));
     }
   };
 
@@ -424,7 +432,7 @@ export function OAuthLoginPage() {
       if (provider === 'devin') {
         updateProviderState(provider, { refreshing: false });
         if (currentState) startPolling(provider, currentState);
-        showNotice(String(error), 'error');
+        showProviderError(provider, String(error));
         return;
       }
       console.warn('Failed to cancel the previous OAuth session before refreshing', error);
@@ -436,7 +444,7 @@ export function OAuthLoginPage() {
     }
   };
 
-  const openAuthUrl = async (url?: string) => {
+  const openAuthUrl = async (provider: OAuthProviderId, url?: string) => {
     if (!url) return;
     try {
       await invoke('open_oauth_url', {
@@ -444,56 +452,51 @@ export function OAuthLoginPage() {
         browser: selectedBrowser === NO_AUTO_OPEN_BROWSER_ID ? 'default' : selectedBrowser,
       });
     } catch (error) {
-      showNotice(String(error), 'error');
+      showProviderError(provider, String(error));
     }
   };
 
-  const copyAuthUrl = async (url?: string) => {
+  const copyAuthUrl = async (provider: OAuthProviderId, url?: string) => {
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
       showNotice({ key: 'oauth.linkCopied' }, 'success');
     } catch {
-      showNotice({ key: 'oauth.linkCopyFailed' }, 'error');
+      showProviderError(provider, { key: 'oauth.linkCopyFailed' });
     }
   };
 
-  const copyDeviceCode = async (code?: string) => {
+  const copyDeviceCode = async (provider: OAuthProviderId, code?: string) => {
     if (!code) return;
     try {
       await navigator.clipboard.writeText(code);
       showNotice({ key: 'oauth.deviceCodeCopied' }, 'success');
     } catch {
-      showNotice({ key: 'oauth.deviceCodeCopyFailed' }, 'error');
+      showProviderError(provider, { key: 'oauth.deviceCodeCopyFailed' });
     }
   };
 
   const submitCallback = async (provider: OAuthProviderId) => {
     const current = states[provider];
     const callbackInput = (current?.callbackUrl || '').trim();
+    clearProviderError(provider);
     if (!callbackInput) {
-      showNotice(
-        provider === 'xai' ? t('oauth.pasteXaiCallback') : t('oauth.pasteCallback'),
-        'error',
-      );
+      showProviderError(provider, provider === 'xai' ? t('oauth.pasteXaiCallback') : t('oauth.pasteCallback'));
       return;
     }
 
     if (provider === 'devin') {
       const error = validateDevinCallback(callbackInput, current?.state);
       if (error) {
-        showNotice(t(error === 'state_mismatch' ? 'oauth.devinStateMismatch' : 'oauth.invalidCallback'), 'error');
+        showProviderError(provider, t(error === 'state_mismatch' ? 'oauth.devinStateMismatch' : 'oauth.invalidCallback'));
         return;
       }
     }
     const redirectUrl = resolveCallbackUrl(provider, callbackInput, current?.state);
     if (!redirectUrl) {
-      showNotice(
-        provider === 'xai'
-          ? t('oauth.invalidXaiCallback')
-          : t('oauth.invalidCallback'),
-        'error',
-      );
+      showProviderError(provider, provider === 'xai'
+        ? t('oauth.invalidXaiCallback')
+        : t('oauth.invalidCallback'));
       return;
     }
 
@@ -515,8 +518,16 @@ export function OAuthLoginPage() {
         callbackStatus: 'error',
         callbackError: String(error),
       });
-      showNotice(String(error), 'error');
+      showProviderError(provider, String(error));
     }
+  };
+
+  // The browser choice is a local preference that applies instantly: confirm it and offer Undo.
+  const changeBrowser = (browser: string, previous?: string) => {
+    setSelectedBrowser(browser);
+    showNotice({ key: 'common.saved' }, 'success', previous !== undefined && previous !== browser ? {
+      action: { label: { key: 'common.undo' }, onAction: () => changeBrowser(previous) },
+    } : undefined);
   };
 
   return (
@@ -526,7 +537,7 @@ export function OAuthLoginPage() {
           <span>{t('oauth.browser.label')}</span>
           <select
             value={selectedBrowser}
-            onChange={(event) => setSelectedBrowser(event.currentTarget.value)}
+            onChange={(event) => changeBrowser(event.currentTarget.value, selectedBrowser)}
             aria-label={t('oauth.browser.label')}
             disabled={browsersLoading}
           >
@@ -544,7 +555,7 @@ export function OAuthLoginPage() {
         </button>
       </header>
 
-      <FloatingNotice key={feedback.revision} notice={feedback.notice} onDismiss={feedback.clearNotice} />
+      <FeedbackNotice feedback={feedback} />
       <p className="oauth-hint oauth-page-hint">{t('oauth.hint')}</p>
       <label className="personal-provider-toggle"><input type="checkbox" checked={showOtherProviders} onChange={(event) => setShowOtherProviders(event.target.checked)} />{t('personal.otherProviders')}</label>
       <div className="oauth-grid">
@@ -576,10 +587,10 @@ export function OAuthLoginPage() {
                     <div className="oauth-auth-url-label">{t('oauth.authorizationLink')}</div>
                     <div className="oauth-auth-url-value" title={state.url}>{state.url}</div>
                     <div className="oauth-auth-url-actions">
-                      <button type="button" className="secondary-button compact-button" onClick={() => void copyAuthUrl(state.url)}>
+                      <button type="button" className="secondary-button compact-button" onClick={() => void copyAuthUrl(provider.id, state.url)}>
                         <Copy size={16} aria-hidden="true" />{t('oauth.copyLink')}
                       </button>
-                      <button type="button" className="secondary-button compact-button" onClick={() => void openAuthUrl(state.url)}>
+                      <button type="button" className="secondary-button compact-button" onClick={() => void openAuthUrl(provider.id, state.url)}>
                         <ExternalLink size={16} aria-hidden="true" />{t('oauth.openLink')}
                       </button>
                     </div>
@@ -587,7 +598,7 @@ export function OAuthLoginPage() {
                       <div className="oauth-device-code-box">
                         <div className="oauth-auth-url-label">{t('oauth.deviceCodeLabel')}</div>
                         <div className="oauth-device-code-value">{state.userCode}</div>
-                        <button type="button" className="secondary-button compact-button" onClick={() => void copyDeviceCode(state.userCode)}>
+                        <button type="button" className="secondary-button compact-button" onClick={() => void copyDeviceCode(provider.id, state.userCode)}>
                           <Copy size={16} aria-hidden="true" />{t('oauth.copyDeviceCode')}
                         </button>
                       </div>
@@ -619,6 +630,7 @@ export function OAuthLoginPage() {
                 ) : null}
               </div>
 
+              <MessageNotice inline message={providerErrors[provider.id]} onDismiss={() => clearProviderError(provider.id)} />
               <div className="button-row management-card-actions">
                 <button type="button" className="primary-button" disabled={Boolean(state.polling) || browsersLoading} onClick={() => void startLogin(provider.id)}>
                   {state.polling ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : <LogIn size={16} aria-hidden="true" />}

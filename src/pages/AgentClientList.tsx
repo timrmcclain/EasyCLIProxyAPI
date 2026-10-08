@@ -120,7 +120,7 @@ export function AgentClientList<Id extends string>({
           <RefreshCw size={16} className={loading ? 'spin' : ''} aria-hidden="true" />
         </button>
       </div>
-      {error ? <MessageNotice message={error} onDismiss={onDismissError} /> : null}
+      {error ? <MessageNotice inline message={error} onDismiss={onDismissError} /> : null}
       <div className="agent-list-items" ref={listRef}>
         {pageClients.map((client) => <button type="button" key={client.id}
           className={selected === client.id ? 'active' : ''} aria-pressed={selected === client.id}

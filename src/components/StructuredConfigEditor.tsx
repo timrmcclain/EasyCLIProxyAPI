@@ -1,5 +1,5 @@
-import { useId, useState } from 'react';
-import { ArrowDown, ArrowUp, Plus, Trash2, Undo2 } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
+import { ArrowDown, ArrowUp, Braces, ListTree, Plus, Trash2, Undo2 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { templateText } from '../i18n/templateConfig';
 import { configRecord, defaultStructuredValue, type ConfigShape, type ConfigText } from '../services/structuredConfig';
@@ -114,4 +114,43 @@ export function StructuredConfigEditor({ shape, value, onChange, disabled = fals
   return <input id={id} aria-label={label} className="text-input" type={shape.secret ? 'password' : shape.type === 'number' ? 'number' : 'text'} autoComplete="off" spellCheck={false} disabled={disabled}
     min={shape.min} max={shape.max} step={shape.type === 'number' ? shape.integer === false ? 'any' : 1 : undefined} value={typeof value === 'string' || typeof value === 'number' ? value : ''}
     onChange={event => { const text = event.currentTarget.value; onChange(shape.type === 'number' && text !== '' && Number.isFinite(Number(text)) ? Number(text) : text); }} />;
+}
+
+type JsonFormEditorProps = {
+  /** The JSON text that is actually saved; both views edit this one value. */
+  text: string;
+  shape: ConfigShape;
+  /** Value the form shows while the text is blank (blank keeps its existing meaning, e.g. inherit). */
+  emptyValue: unknown;
+  /** Whether a parsed value has the shape the form can edit; otherwise only the JSON view is offered. */
+  accepts: (value: unknown) => boolean;
+  serialize: (value: unknown) => string;
+  onTextChange: (text: string) => void;
+  /** The existing raw JSON editor, rendered unchanged in the JSON view. */
+  renderJson: () => ReactNode;
+  labels: { json: string; form: string; unavailable: string };
+  emptyHint?: string;
+  disabled?: boolean;
+  id?: string;
+};
+
+/** A structured form over a JSON text value, with an "Edit as JSON" view for power use. */
+export function JsonFormEditor({ text, shape, emptyValue, accepts, serialize, onTextChange, renderJson, labels, emptyHint, disabled = false, id }: JsonFormEditorProps) {
+  const [mode, setMode] = useState<'form' | 'json'>('form');
+  let value: unknown = emptyValue;
+  let formable = true;
+  if (text.trim()) {
+    try { value = JSON.parse(text); formable = accepts(value); } catch { formable = false; }
+  }
+  const showForm = mode === 'form' && formable;
+  return <div className="json-form-editor">
+    <div className="json-form-toolbar">
+      {mode === 'form' && !formable ? <small role="note">{labels.unavailable}</small> : showForm && !text.trim() && emptyHint ? <small>{emptyHint}</small> : <span />}
+      <button type="button" className="secondary-button compact-button json-form-toggle" disabled={disabled || (!showForm && !formable)} aria-pressed={!showForm}
+        onClick={() => setMode(showForm ? 'json' : 'form')}>
+        {showForm ? <Braces size={14} aria-hidden="true" /> : <ListTree size={14} aria-hidden="true" />}{showForm ? labels.json : labels.form}
+      </button>
+    </div>
+    {showForm ? <StructuredConfigEditor shape={shape} value={value} onChange={next => onTextChange(serialize(next))} disabled={disabled} id={id} /> : renderJson()}
+  </div>;
 }

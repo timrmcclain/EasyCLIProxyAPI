@@ -170,7 +170,7 @@ export function QuotaPage() {
   return (
     <section className="page management-page quota-page" aria-label={t('quota.title')}>
       {confirmationDialog}
-      {error ? <MessageNotice message={error} /> : null}
+      {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
       <OAuthPageToolbar
         icon={<Gauge size={18} />}
         summary={t(files.length === 1 ? 'quota.queryableCredentials.one' : 'quota.queryableCredentials.other', { count: files.length })}

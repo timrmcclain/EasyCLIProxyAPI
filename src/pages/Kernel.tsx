@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { LoaderCircle, Play, RefreshCw, RotateCw, Square } from 'lucide-react';
+import { Check, LoaderCircle, Play, RefreshCw, RotateCw, Square } from 'lucide-react';
 import { type CoreStatus, useCoreRuntime } from '../coreRuntime';
 import { clientApiProfiles } from '../services/clientAccess';
 import { useI18n } from '../i18n';
@@ -76,6 +76,9 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const [tlsEnabled, setTlsEnabled] = useState(false);
   const [accountStatus, setAccountStatus] = useState<AccountStatusSummary | null>(null);
   // The sidebar shows a dot on Overview while any account is limited.
+  const [setupState, setSetupState] = useState(() => {
+    try { return localStorage.getItem('personal.setupChecklist') ?? ''; } catch { return ''; }
+  });
   const publishAccountStatus = useCallback((summary: AccountStatusSummary) => {
     setAccountStatus(summary);
     window.dispatchEvent(new CustomEvent('app:account-problems', { detail: summary.problems }));
@@ -312,6 +315,20 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const processNotice = <FloatingNotice key={`process-${processFeedback.revision}`} notice={processFeedback.notice} onDismiss={processFeedback.clearNotice} />;
   const toggleProxy = () => void runCoreProcessCommand(coreRunning ? 'stop_core_process' : 'start_core_process');
 
+  // First-run checklist (replaces the old Easy mode): shown until every step has been done once.
+  const setupSteps = [
+    { id: 'proxy', done: coreRunning, action: coreInstalled && !coreRunning ? toggleProxy : undefined, actionKey: 'kernel.action.start' as const },
+    { id: 'account', done: (accountStatus?.total ?? 0) > 0, action: () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'oauth' })), actionKey: 'home.checklist.accountAction' as const },
+    { id: 'app', done: Boolean(accountStatus?.latestAt), action: () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'agents' })), actionKey: 'home.checklist.appAction' as const },
+  ];
+  const setupComplete = setupSteps.every((step) => step.done);
+  const rememberSetup = (value: string) => {
+    setSetupState(value);
+    try { localStorage.setItem('personal.setupChecklist', value); } catch { /* Shown again next launch. */ }
+  };
+  useEffect(() => { if (setupComplete && !setupState) rememberSetup('done'); }, [setupComplete, setupState]);
+  const showChecklist = !setupState && !setupComplete && (accountStatus !== null || !coreRunning);
+
   if (view === 'home') {
     return (
       <section className="page kernel-page home-page">
@@ -319,7 +336,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
           <div><h1>{t('app.nav.home')}</h1></div>
         </header>
         <section className="home-status" aria-label={t('home.status.label')}>
-          <span className={`home-status-proxy ${statusTone}`} role="status" title={statusError || undefined}>
+          <span key={statusTone} className={`home-status-proxy ${statusTone} status-changed`} role="status" title={statusError || undefined}>
             {coreProcessBusy ? <LoaderCircle size={14} className="spin" aria-hidden="true" /> : <span className="home-runtime-dot" aria-hidden="true" />}
             <strong>{coreRunning ? t('home.proxyStatus.running', { port: customPort }) : statusLabel}</strong>
           </span>
@@ -330,8 +347,8 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
           </button>
           {accountStatus && accountStatus.total > 0 && <span className="home-status-accounts">
             <span>{t('home.status.accounts', { available: accountStatus.available, total: accountStatus.total })}</span>
-            {accountStatus.problems > 0 && <span className="home-status-chip error">{t('home.status.problems', { count: accountStatus.problems })}</span>}
-            {accountStatus.unconfirmed > 0 && <span className="home-status-chip neutral">{t('home.status.unconfirmed', { count: accountStatus.unconfirmed })}</span>}
+            {accountStatus.problems > 0 && <span key={`problems-${accountStatus.problems}`} className="home-status-chip error status-changed">{t('home.status.problems', { count: accountStatus.problems })}</span>}
+            {accountStatus.unconfirmed > 0 && <span key={`unconfirmed-${accountStatus.unconfirmed}`} className="home-status-chip neutral status-changed">{t('home.status.unconfirmed', { count: accountStatus.unconfirmed })}</span>}
           </span>}
           {accountStatus?.latestAt && <span className="home-status-latest">{t('home.status.lastRequest', { time: formatAgo(accountStatus.latestAt, locale) })}</span>}
           <span className="home-status-actions"><CoreHealthPanel compact
@@ -342,6 +359,23 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
           /></span>
         </section>
         {processNotice}
+        {showChecklist && <section className="home-checklist" aria-labelledby="home-checklist-title">
+          <header>
+            <h2 id="home-checklist-title">{t('home.checklist.title')}</h2>
+            <button type="button" className="secondary-button compact-button" onClick={() => rememberSetup('dismissed')}>{t('home.checklist.dismiss')}</button>
+          </header>
+          <ol>
+            {setupSteps.map((step, index) => (
+              <li key={step.id} className={step.done ? 'done' : undefined}>
+                <span className="home-checklist-mark" aria-hidden="true">{step.done ? <Check size={14} /> : index + 1}</span>
+                <span>{t(`home.checklist.${step.id}` as 'home.checklist.proxy')}</span>
+                {step.done
+                  ? <span className="home-checklist-state">{t('home.checklist.done')}</span>
+                  : step.action && <button type="button" className="secondary-button compact-button" onClick={step.action}>{t(step.actionKey)}</button>}
+              </li>
+            ))}
+          </ol>
+        </section>}
         <HomeOverviewCards snapshot={overview.snapshot} loading={overview.loading} coreReady={coreReady} onRefresh={overview.refresh} />
         <AccountDashboard ready={coreReady} onSummary={publishAccountStatus} />
         <details className="home-proxy-details">

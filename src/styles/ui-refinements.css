@@ -1138,3 +1138,46 @@ body, html, #root {
   border-color: transparent;
   color: var(--text-primary);
 }
+
+/* Notice follow-up action (for example Undo after an instant change). */
+.action-feedback.inline-notice:has(> .action-feedback-action) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.action-feedback.inline-notice .action-feedback-action {
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.action-feedback.inline-notice .action-feedback-action:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme='dark'] .action-feedback.inline-notice .action-feedback-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.action-feedback.inline-notice .action-feedback-action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* "Unsaved changes" status shown beside a dialog's Cancel/Save buttons. */
+.config-dialog-actions.two-actions:has(> .config-card-status) {
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(118px, auto));
+  align-items: center;
+}
+
+.config-dialog-actions > .config-card-status {
+  margin-left: 0;
+  justify-self: end;
+}

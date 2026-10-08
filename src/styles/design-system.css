@@ -131,3 +131,154 @@ svg.lucide {
   min-width: 32px;
   min-height: 32px;
 }
+
+/* First-run checklist on Home. */
+.home-checklist {
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--ui-accent);
+  border-radius: var(--radius-xl);
+}
+
+.home-checklist header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.home-checklist h2 {
+  margin: 0;
+  font-size: var(--font-size-section);
+}
+
+.home-checklist ol {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-checklist li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 36px;
+}
+
+.home-checklist li > span:nth-child(2) {
+  flex: 1;
+}
+
+.home-checklist li.done > span:nth-child(2) {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.home-checklist-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+}
+
+.home-checklist li.done .home-checklist-mark {
+  background: var(--success-color);
+  border-color: var(--success-color);
+  color: #fff;
+}
+
+.home-checklist-state {
+  color: var(--success-color);
+  font-size: var(--font-size-meta);
+}
+
+/* Glossary dialog. */
+.glossary-dialog {
+  width: min(640px, calc(100vw - var(--space-8)));
+  max-height: 76vh;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.glossary-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.glossary-dialog h2 {
+  margin: 0;
+  font-size: var(--font-size-panel-title);
+}
+
+.glossary-dialog dl {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+}
+
+.glossary-dialog dt {
+  font-weight: var(--font-weight-semibold);
+}
+
+.glossary-dialog dd {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+}
+
+.sidebar-glossary-link {
+  width: 100%;
+  margin: var(--space-1) 0;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-regular);
+  text-align: left;
+}
+
+.sidebar-glossary-link:hover {
+  color: var(--ui-accent-strong);
+}
+
+.sidebar-density-selector {
+  margin-top: var(--space-2);
+}
+
+/* Compact density: tighter type and spacing across the workspace. */
+:root[data-density='compact'] .workspace .content {
+  zoom: 0.9;
+}
+
+/* A status that changes pulses once instead of silently jumping. */
+@keyframes status-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }
+  100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+.status-changed {
+  border-radius: var(--radius-full);
+  animation: status-pulse 600ms var(--ease-standard) 1;
+}
+
+.sidebar-theme-selector.sidebar-density-selector {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sidebar-density-selector button {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

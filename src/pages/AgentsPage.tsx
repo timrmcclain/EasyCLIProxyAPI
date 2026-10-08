@@ -3,7 +3,8 @@ import { ConnectionOverview } from '../components/ConnectionOverview';
 import { ConnectionError } from '../components/ConnectionError';
 import { DesktopModelPickerDialog } from '../components/DesktopModelPickerDialog';
 import { DesktopModelPresetControls } from '../components/DesktopModelPresetControls';
-import { MessageNotice } from '../appNotice';
+import { FeedbackNotice, MessageNotice, useAppNotice } from '../appNotice';
+import { useConfirmation } from '../components/ConfirmationDialog';
 import {
   useCallback,
   useEffect,
@@ -363,8 +364,6 @@ type AgentViewState = {
   subpage: AgentSubpageId;
   connectionHelpOpen: boolean;
   configurationError: string;
-  configurationNotice: string;
-  clearNotice: string;
   launchError: string;
 };
 
@@ -372,8 +371,6 @@ const DEFAULT_AGENT_VIEW_STATE: AgentViewState = {
   subpage: DEFAULT_AGENT_SUBPAGE,
   connectionHelpOpen: false,
   configurationError: '',
-  configurationNotice: '',
-  clearNotice: '',
   launchError: '',
 };
 
@@ -546,10 +543,17 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     });
   };
   const setActiveSubpage = (subpage: AgentSubpageId) => updateViewState({ subpage });
-  const { connectionHelpOpen, configurationError, configurationNotice, clearNotice, launchError } = viewState;
+  const { connectionHelpOpen, configurationError, launchError } = viewState;
   const setConfigurationError = (configurationError: string) => updateViewState({ configurationError });
-  const setConfigurationNotice = (configurationNotice: string) => updateViewState({ configurationNotice });
-  const setClearNotice = (clearNotice: string) => updateViewState({ clearNotice });
+  // Results of applying, clearing, or backing up float briefly; failures stay inline.
+  const resultFeedback = useAppNotice();
+  const { showNotice: showResultNotice, clearNotice: clearResultNotice } = resultFeedback;
+  const setConfigurationNotice = (message: string) => {
+    if (message) showResultNotice(message, 'success');
+    else clearResultNotice();
+  };
+  const setClearNotice = setConfigurationNotice;
+  const { askConfirmation, confirmationDialog } = useConfirmation();
   const setLaunchError = (launchError: string) => updateViewState({ launchError });
   const [statuses, setStatuses] = useState<AgentConfigStatus[]>(() => agentStatusesCache ?? []);
   const [modelData, setModelData] = useState(() => ({
@@ -584,10 +588,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
   const [undoBackupByClient, setUndoBackupByClient] = useState<Record<string, string>>({});
   const [restoreInitialId, setRestoreInitialId] = useState<string | undefined>();
   const [defaultError, setDefaultError] = useState('');
-  const [templatePreview, setTemplatePreview] = useState<{ revision: string; files: string[] } | null>(null);
-  const [defaultConfirmOpen, setDefaultConfirmOpen] = useState(false);
   const [clearError, setClearError] = useState('');
-  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [launchDirectoryDialogOpen, setLaunchDirectoryDialogOpen] = useState(false);
   const [codexCatalogDialogOpen, setCodexCatalogDialogOpen] = useState(false);
   const [harnessCatalogDialogOpen, setHarnessCatalogDialogOpen] = useState(false);
@@ -624,16 +625,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
           setLaunchDirectoryDialogOpen(false);
           setLaunchDirectoryTarget(null);
         },
-    preventEscape: busy,
-  });
-  const defaultDialogRef = useDialogFocusTrap<HTMLElement>({
-    active: defaultConfirmOpen,
-    onEscape: busy ? undefined : () => setDefaultConfirmOpen(false),
-    preventEscape: busy,
-  });
-  const clearDialogRef = useDialogFocusTrap<HTMLElement>({
-    active: clearConfirmOpen,
-    onEscape: busy ? undefined : () => setClearConfirmOpen(false),
     preventEscape: busy,
   });
   const oauthRequiredDialogRef = useDialogFocusTrap<HTMLElement>({
@@ -792,9 +783,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     setModelSelectionError('');
     setBackupsOpen(false);
     setDefaultError('');
-    setDefaultConfirmOpen(false);
     setClearError('');
-    setClearConfirmOpen(false);
     setCodexCatalogDialogOpen(false);
     setDesktopHelpOpen(false);
     setLaunchDirectoryDialogOpen(false);
@@ -1364,8 +1353,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     }
   };
 
-  const resetConfigurationToDefault = async () => {
-    if (!templatePreview) return;
+  const resetConfigurationToDefault = async (templatePreview: { revision: string }) => {
     const claudeModelMappings = requireClaudeModelMappings();
     if (isClaudeModelMappingClient && !claudeModelMappings) return;
     const model = isClaudeModelMappingClient
@@ -1384,7 +1372,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
         claudeDesktopModelMappings: selected === 'claude-desktop' ? claudeModelMappings : null,
       });
       clearPendingChanges();
-      setDefaultConfirmOpen(false);
       if (isClaudeModelMappingClient) {
         claudeModelMappingsDirtyRef.current[selected] = false;
       }
@@ -1398,7 +1385,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     } catch (requestError) {
       if (!handleOAuthLoginError(requestError, 'apply')) {
         setDefaultError(String(requestError));
-        setTemplatePreview(null);
       }
     } finally {
       setBusyAction(null);
@@ -1423,7 +1409,6 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       else await removeSelectedConfiguration();
       clearPendingChanges();
       if (isClaudeModelMappingClient) claudeModelMappingsDirtyRef.current[selected] = false;
-      setClearConfirmOpen(false);
       setModelSelectionError('');
       setModelError('');
       setClearNotice(selected === 'codex' ? t('agents.clear.success')
@@ -1601,31 +1586,38 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     if (isClaudeModelMappingClient && !mappings) return;
     const model = isClaudeModelMappingClient ? mappings?.sonnet : requireSelectedModel();
     if (!model) return;
-    setDefaultError(''); setConfigurationError(''); setTemplatePreview(null); setBusyAction('default');
+    setDefaultError(''); setConfigurationError(''); setBusyAction('default');
+    let preview: { revision: string; files: string[] };
     try {
-      const preview = await invoke<{ revision: string; files: string[] }>('preview_agent_config_template', {
+      preview = await invoke<{ revision: string; files: string[] }>('preview_agent_config_template', {
         client: selected, model, oauthConfiguration,
         claudeCodeModelMappings: selected === 'claude-code' ? mappings : null,
         claudeDesktopModelMappings: selected === 'claude-desktop' ? mappings : null,
       });
-      setTemplatePreview(preview); setDefaultConfirmOpen(true);
-    } catch (cause) { setConfigurationError(String(cause)); }
-    finally { setBusyAction(null); }
+    } catch (cause) {
+      setConfigurationError(String(cause));
+      return;
+    } finally { setBusyAction(null); }
+    const confirmed = await askConfirmation({
+      title: t('agents.default.title', { name: activeDefinition.name }),
+      message: t('agents.default.description', { name: activeDefinition.name }),
+      items: preview.files,
+      confirmText: t('agents.default.confirm'),
+      variant: 'danger',
+    });
+    if (confirmed) await resetConfigurationToDefault(preview);
   };
 
-  const closeDefaultConfirmation = () => {
-    setDefaultError('');
-    setDefaultConfirmOpen(false);
-  };
-
-  const openClearConfirmation = () => {
+  const openClearConfirmation = async () => {
     setClearError('');
-    setClearConfirmOpen(true);
-  };
-
-  const closeClearConfirmation = () => {
-    setClearError('');
-    setClearConfirmOpen(false);
+    const codex = selected === 'codex';
+    const confirmed = await askConfirmation({
+      title: codex ? t('agents.clear.title') : t('agents.clearIntegration.title', { name: activeDefinition.name }),
+      message: t(codex ? 'agents.clear.description' : 'agents.clearIntegration.description'),
+      confirmText: t(codex ? 'agents.clear.confirm' : 'agents.clearIntegration.confirm'),
+      variant: 'danger',
+    });
+    if (confirmed) await clearConfiguration();
   };
 
   const openClearIntegrationGuide = () => {
@@ -1869,7 +1861,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
               </div>
 
               <ConnectionError message={activeStatus?.error} />
-              <MessageNotice message={activeStatus?.warnings.join('；')} tone="info" />
+              <MessageNotice inline message={activeStatus?.warnings.join('；')} tone="info" />
 
               {selected === 'claude-desktop' ? desktopModelEditor : <div className="agent-minimal-field">
                 <label htmlFor="embedded-agent-model">{t(isDeepSeekHarnessClient ? 'agents.harness.defaultModel' : 'agents.useModel')}</label>
@@ -1964,7 +1956,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
               </div>
 
               <ConnectionError message={activeStatus?.error} />
-              <MessageNotice message={activeStatus?.warnings.join('；')} tone="info" />
+              <MessageNotice inline message={activeStatus?.warnings.join('；')} tone="info" />
 
               {!isClaudeModelMappingClient ? (
                 <section className="agent-core-setting-section agent-model-section">
@@ -2199,7 +2191,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                             <span className="switch-control">
                               <input
                                 type="checkbox"
-                                checked={claudeModelMappingsDraft[role.contextKey]}
+                                checked={claudeModelMappingsDraft[role.contextKey] === true}
                                 onChange={(event) => changeClaude1mPreference(
                                   role.contextKey,
                                   event.currentTarget.checked,
@@ -2261,11 +2253,13 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
                 pluginInstalled={Boolean(activeStatus?.pluginInstalled)} pluginVersion={activeStatus?.pluginVersion ?? null}
                 updateLabel={piPluginUpdateAvailable ? piPluginUpdateTitle ?? '' : ''}
                 onBackup={() => void createManualBackup()} onRestore={() => { setRestoreInitialId(undefined); setBackupsOpen(true); }}
-                onTemplate={() => void openDefaultConfirmation()} onClear={openClearConfirmation}
+                onTemplate={() => void openDefaultConfirmation()} onClear={() => void openClearConfirmation()}
                 canClearIntegration={!loading && Boolean(activeStatus?.configValid && activeStatus.supportedPlatform)}
                 onClearIntegration={() => void clearCodexIntegration()}
                 onUpdatePi={() => void updatePiProvider()}
                 onUninstallPi={() => void uninstallPiProvider()} />
+              <MessageNotice inline message={defaultError} onDismiss={() => setDefaultError('')} />
+              <MessageNotice inline message={clearError} onDismiss={() => setClearError('')} />
             </div>
           ) : null}
           {/* Backups live in the Management tab; only the one-click Undo stays here. */}
@@ -2275,8 +2269,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
           </div>}
           {activeSubpage !== 'core' ? configurationFeedback : null}
           <ConnectionError message={configurationErrorMessage} onDismiss={() => { setConfigurationError(''); setModelSelectionError(''); setModelError(''); }} />
-          <MessageNotice tone="success" message={!configurationErrorMessage ? configurationNotice || clearNotice : null}
-            onDismiss={() => { setConfigurationNotice(''); setClearNotice(''); }} />
+          {!configurationErrorMessage ? <FeedbackNotice feedback={resultFeedback} /> : null}
           {activeSubpage === 'core' ? <AgentRunControls name={activeDefinition.name} dualTargets={hasIndependentCliAndApp}
             desktop={(hasIndependentCliAndApp && !isDeepSeekHarnessClient) || selected === 'claude-desktop' || selected === 'zcode' || selected === 'workbuddy'}
             targets={activeLaunchTargets} enabled={launchEnabled} busyAction={busyAction}
@@ -2515,7 +2508,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
               </div>
             ) : null}
             {launchDirectoryError ? (
-              <MessageNotice message={launchDirectoryError} onDismiss={() => setLaunchDirectoryError('')} />
+              <MessageNotice inline message={launchDirectoryError} onDismiss={() => setLaunchDirectoryError('')} />
             ) : null}
             <div className="config-dialog-actions two-actions">
               <button
@@ -2547,50 +2540,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
         </div>
       ) : null}
 
-      {defaultConfirmOpen ? (
-        <div className="config-dialog-backdrop">
-          <section ref={defaultDialogRef} className="config-dialog agent-restore-dialog" role="alertdialog" aria-modal="true" aria-labelledby="agent-default-title">
-            <div className="config-dialog-heading">
-              <div><AlertTriangle size={20} /><h2 id="agent-default-title">{t('agents.default.title')}</h2></div>
-            </div>
-            <p>
-              {t('agents.default.description', { name: activeDefinition.name })}
-            </p>
-            {templatePreview ? <ul className="agent-template-files">{templatePreview.files.map((file) => <li key={file}><code>{file}</code></li>)}</ul> : null}
-            {defaultError ? (
-              <MessageNotice message={defaultError} onDismiss={() => setDefaultError('')} />
-            ) : null}
-            <div className="config-dialog-actions two-actions">
-              <button type="button" className="secondary-button" onClick={closeDefaultConfirmation} disabled={busy}>{t('common.cancel')}</button>
-              <button type="button" className="danger-button" onClick={() => void resetConfigurationToDefault()} disabled={busy || !templatePreview}>
-                {busyAction === 'default' ? <LoaderCircle size={16} className="spin" /> : null}
-                {t('agents.default.confirm')}
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      {clearConfirmOpen ? (
-        <div className="config-dialog-backdrop">
-          <section ref={clearDialogRef} className="config-dialog agent-restore-dialog" role="alertdialog" aria-modal="true" aria-labelledby="agent-clear-title">
-            <div className="config-dialog-heading">
-              <div><AlertTriangle size={20} /><h2 id="agent-clear-title">{selected === 'codex' ? t('agents.clear.title') : t('agents.clearIntegration.title', { name: activeDefinition.name })}</h2></div>
-            </div>
-            <p>{t(selected === 'codex' ? 'agents.clear.description' : 'agents.clearIntegration.description')}</p>
-            {clearError ? (
-              <MessageNotice message={clearError} onDismiss={() => setClearError('')} />
-            ) : null}
-            <div className="config-dialog-actions two-actions">
-              <button type="button" className="secondary-button" onClick={closeClearConfirmation} disabled={busy}>{t('common.cancel')}</button>
-              <button type="button" className="danger-button" onClick={() => void clearConfiguration()} disabled={busy}>
-                {busyAction === 'clear' ? <LoaderCircle size={16} className="spin" /> : <Trash2 size={16} />}
-                {t(selected === 'codex' ? 'agents.clear.confirm' : 'agents.clearIntegration.confirm')}
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+      {confirmationDialog}
 
       {oauthLoginRequiredAction ? (
         <div className="config-dialog-backdrop">

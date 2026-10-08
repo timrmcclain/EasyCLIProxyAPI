@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { ExternalLink, Plug, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
+import { Building2, Check, ExternalLink, Flame, GitBranch, Globe, Mail, Monitor, Plug, RefreshCw, Sparkles, Undo2, type LucideIcon } from 'lucide-react';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { useI18n } from '../i18n';
 import { connectorDynamicText, connectorText, type ConnectorTextKey } from '../i18n/connectors';
@@ -38,6 +38,22 @@ const guideLinks = {
   entra: 'https://entra.microsoft.com/',
   entraAppRegistrations: 'https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade/quickStartType~/null/sourceType/Microsoft_AAD_IAM',
 } as const;
+
+/**
+ * Per-connector icons. src/assets/icons has no GitHub, Google, Microsoft, Firecrawl or
+ * Playwright logos, so these are generic glyphs; unknown ids fall back to the plug.
+ */
+const connectorIcons: Partial<Record<ConnectorId, LucideIcon>> = {
+  google: Mail,
+  microsoft365: Building2,
+  github: GitBranch,
+  playwright: Globe,
+  windows: Monitor,
+  firecrawl: Flame,
+};
+
+/** Notes longer than this collapse behind a disclosure so cards stay scannable. */
+const LONG_NOTE = 100;
 
 function openLink(url: string) {
   void invoke('open_external_url', { url }).catch(() => undefined);
@@ -111,6 +127,10 @@ export function ConnectorsPage() {
         <div>
           <h1>{ct('title')}</h1>
           <p>{ct('description')}</p>
+          <details className="connector-hint-details">
+            <summary>{ct('howChangesApply')}</summary>
+            <p>{ct('descriptionDetail')}</p>
+          </details>
         </div>
         <div className="connectors-heading-actions">
           {overview?.canUndo ? (
@@ -211,6 +231,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
   const missing = missingSecrets(item, draft);
   const unavailable = item.unavailableReason ? dt(`unavailable_${item.unavailableReason}`) : null;
   const note = dt(`${item.id}_note`);
+  const Icon = connectorIcons[item.id] ?? Plug;
   const showSecrets = item.secretNames.length > 0 && (editingSecrets || (!item.secretsConfigured && secretsWanted(item, draft)));
 
   const save = async () => {
@@ -267,40 +288,47 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
   return (
     <section className="connector-card" aria-labelledby={`connector-${item.id}-title`}>
       <header className="connector-card-header">
-        <span className="connector-icon" aria-hidden="true"><Plug size={18} /></span>
+        <span className="connector-icon" aria-hidden="true"><Icon size={18} /></span>
         <div>
           <h2 id={`connector-${item.id}-title`}>{dt(`${item.id}_name`)}</h2>
           <p>{dt(`${item.id}_body`)}</p>
         </div>
       </header>
-      {note ? <p className="connector-note">{note}</p> : null}
+      {note && note.length > LONG_NOTE ? (
+        <details className="connector-note connector-note-details">
+          <summary>{ct('noteTitle')}</summary>
+          <p>{note}</p>
+        </details>
+      ) : note ? <p className="connector-note">{note}</p> : null}
       {unavailable ? <p className="connector-unavailable">{unavailable}</p> : null}
 
       <div className="connector-targets">
         {connectorTargets.map(target => {
           const state = item[target];
           const test = tests[target];
+          const status = state.enabled
+            ? state.builtIn
+              ? ct('builtInShort')
+              : state.signedIn === true
+                ? `${ct('on')} · ${ct('signedIn')}`
+                : state.signedIn === false
+                  ? `${ct('on')} · ${ct('notSignedIn')}`
+                  : ct('on')
+            : ct('off');
           return (
-            <div key={target} className="connector-target">
+            <div key={target} className={`connector-target${draft[target] ? ' checked' : ''}`}>
               <label className="connector-switch">
                 <input
                   type="checkbox"
+                  role="switch"
                   checked={draft[target]}
                   disabled={saving || (Boolean(unavailable) && !state.enabled)}
                   onChange={event => setDraft(current => ({ ...current, [target]: event.target.checked }))}
                 />
                 <span>{ct(target)}</span>
               </label>
-              <span className={`connector-status ${state.enabled ? 'on' : 'off'}`}>
-                {state.enabled
-                  ? state.builtIn
-                    ? ct('builtIn')
-                    : state.signedIn === true
-                      ? `${ct('on')} · ${ct('signedIn')}`
-                      : state.signedIn === false
-                        ? `${ct('on')} · ${ct('notSignedIn')}`
-                        : ct('on')
-                  : ct('off')}
+              <span className={`connector-status ${state.enabled ? 'on' : 'off'}`} title={state.enabled && state.builtIn ? ct('builtIn') : undefined}>
+                {status}
               </span>
               {state.enabled && !state.builtIn ? (
                 <button type="button" className="secondary-button compact-button" disabled={test?.running || saving} onClick={() => void runTest(target)}>
@@ -340,23 +368,47 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
         </details>
       ) : null}
       {item.id === 'microsoft365' ? (
+        <section className="connector-steps" aria-labelledby={`connector-${item.id}-steps`}>
+          <h3 id={`connector-${item.id}-steps`}>{ct('microsoftDesktopGuideTitle')}</h3>
+          <ol>
+            <li className={item.secretsConfigured ? 'done' : undefined}>
+              <span className="connector-step-number" aria-hidden="true">{item.secretsConfigured ? <Check size={12} /> : 1}</span>
+              <div>
+                <strong>{ct('microsoftStepCreate')}</strong>
+                <details className="connector-hint-details">
+                  <summary>{ct('microsoftStepCreateHow')}</summary>
+                  <ul>
+                    <li>{ct('microsoftDesktopGuideRegister')} <GuideLink url={guideLinks.entraAppRegistrations} label={ct('openAppRegistrations')} /></li>
+                    <li>{ct('microsoftDesktopGuideRedirect')}</li>
+                    <li>{ct('microsoftDesktopGuidePermissions')}</li>
+                  </ul>
+                </details>
+              </div>
+            </li>
+            <li className={item.secretsConfigured ? 'done' : undefined}>
+              <span className="connector-step-number" aria-hidden="true">{item.secretsConfigured ? <Check size={12} /> : 2}</span>
+              <div>
+                <strong>{ct('microsoftStepPaste')}</strong>
+                <small>{ct('microsoftStepPasteBody')}</small>
+              </div>
+            </li>
+            <li>
+              <span className="connector-step-number" aria-hidden="true">3</span>
+              <div>
+                <strong>{ct('microsoftStepRestart')}</strong>
+                <small>{ct('microsoftStepRestartBody')}</small>
+              </div>
+            </li>
+          </ol>
+        </section>
+      ) : null}
+
+      {item.id === 'microsoft365' ? (
         <details className="connector-guide">
           <summary>{ct('microsoftGuideTitle')}</summary>
           <p>{ct('microsoftGuideBody')} <GuideLink url={guideLinks.entra} label={ct('openEntra')} /></p>
         </details>
       ) : null}
-      {item.id === 'microsoft365' ? (
-        <details className="connector-guide">
-          <summary>{ct('microsoftDesktopGuideTitle')}</summary>
-          <ol>
-            <li>{ct('microsoftDesktopGuideRegister')} <GuideLink url={guideLinks.entraAppRegistrations} label={ct('openAppRegistrations')} /></li>
-            <li>{ct('microsoftDesktopGuideRedirect')}</li>
-            <li>{ct('microsoftDesktopGuidePermissions')}</li>
-            <li>{ct('microsoftDesktopGuideIds')}</li>
-          </ol>
-        </details>
-      ) : null}
-
       {item.accessLevels.length > 0 ? (
         <label className="connector-field">
           <span>{ct('access')}</span>

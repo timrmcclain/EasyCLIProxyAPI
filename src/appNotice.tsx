@@ -15,19 +15,32 @@ import {
 
 export type { NoticeTone, NoticeMessage, AppNotice, AppNoticeState, AppNoticeAction };
 
+/** A single follow-up control shown inside a notice, e.g. Undo after an instant change. */
+export type NoticeActionButton = { label: NoticeMessage; onAction: () => void };
+export type NoticeOptions = { action?: NoticeActionButton };
+type NoticeWithAction = AppNotice & { action?: NoticeActionButton };
+
 export interface UseAppNoticeReturn {
-  showNotice: (message: NoticeMessage, tone?: NoticeTone) => void;
+  showNotice: (message: NoticeMessage, tone?: NoticeTone, options?: NoticeOptions) => void;
   clearNotice: () => void;
   notice: AppNotice | null;
   revision: number;
 }
 
+/**
+ * Feedback model used across the app:
+ * - transient results (saved, copied, applied, deleted) float and auto-dismiss on success
+ *   (paused while hovered or focused);
+ * - errors stay until dismissed and render inline where the notice is placed
+ *   (FeedbackNotice, or MessageNotice with `inline`).
+ */
 export function useAppNotice(source?: MessageKey): UseAppNoticeReturn {
   const [state, dispatch] = useReducer(appNoticeReducer, initialAppNoticeState);
   const owner = useId();
 
-  const showNotice = useCallback((message: NoticeMessage, tone: NoticeTone = 'success') => {
-    dispatch({ type: 'show', notice: { owner, source, message, tone } });
+  const showNotice = useCallback((message: NoticeMessage, tone: NoticeTone = 'success', options?: NoticeOptions) => {
+    const notice: NoticeWithAction = { owner, source, message, tone, ...(options?.action ? { action: options.action } : {}) };
+    dispatch({ type: 'show', notice });
   }, [owner, source]);
 
   const clearNotice = useCallback(() => {
@@ -65,6 +78,8 @@ export function InlineNotice({
 
   const Icon = notice.tone === 'error' ? AlertCircle : notice.tone === 'success' ? CheckCircle2 : Info;
   const isError = notice.tone === 'error';
+  const action = (notice as NoticeWithAction).action;
+  const actionLabel = action ? typeof action.label === 'string' ? action.label : t(action.label.key, action.label.variables) : '';
 
   return (
     <div
@@ -80,6 +95,18 @@ export function InlineNotice({
           <span className="action-feedback-message">{message}</span>
         </div>
       </div>
+      {action && actionLabel ? (
+        <button
+          type="button"
+          className="action-feedback-action"
+          onClick={() => {
+            action.onAction();
+            onDismiss?.();
+          }}
+        >
+          {actionLabel}
+        </button>
+      ) : null}
       {onDismiss ? (
         <button
           type="button"
@@ -150,14 +177,35 @@ function FloatingNoticeInstance({ notice, onDismiss, className }: InlineNoticePr
   </NoticePortal>;
 }
 
-export function MessageNotice({ message, tone = 'error', onDismiss, source }: {
+/**
+ * A notice driven by a message prop. Pass `inline` for persistent problems that need action, so the
+ * message renders next to the control that failed instead of floating over the page.
+ */
+export function MessageNotice({ message, tone = 'error', onDismiss, source, inline = false, className }: {
   message?: NoticeMessage | null;
   tone?: NoticeTone;
   onDismiss?: () => void;
   source?: MessageKey;
+  inline?: boolean;
+  className?: string;
 }) {
   const owner = useId();
-  return <FloatingNotice notice={message ? { owner, message, tone, source } : null} onDismiss={onDismiss} />;
+  const notice = message ? { owner, message, tone, source } : null;
+  return inline
+    ? <InlineNotice notice={notice} onDismiss={onDismiss} className={className} />
+    : <FloatingNotice notice={notice} onDismiss={onDismiss} className={className} />;
+}
+
+/**
+ * Renders the current result of a useAppNotice() hook with the app-wide rule: errors stay inline
+ * where this element is placed; success and info float, and success auto-dismisses.
+ */
+export function FeedbackNotice({ feedback, className }: { feedback: UseAppNoticeReturn; className?: string }) {
+  const { notice, revision, clearNotice } = feedback;
+  if (notice?.tone === 'error') {
+    return <InlineNotice key={revision} notice={notice} onDismiss={clearNotice} className={className} />;
+  }
+  return <FloatingNotice key={revision} notice={notice} onDismiss={clearNotice} className={className} />;
 }
 
 export const ActionFeedback = FloatingNotice;

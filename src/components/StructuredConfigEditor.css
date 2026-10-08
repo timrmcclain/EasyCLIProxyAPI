@@ -30,3 +30,10 @@
 .structured-list :is(input, select):focus-visible, .structured-map :is(input, select):focus-visible,
 .structured-object :is(input, select):focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 .structured-list button, .structured-map button, .structured-object button { max-width: 100%; }
+.json-form-editor { display: grid; gap: var(--space-2); min-width: 0; }
+.json-form-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-width: 0; }
+.json-form-toolbar small { font-size: var(--font-size-caption); color: var(--text-tertiary); line-height: 1.5; }
+.json-form-toolbar .json-form-toggle { flex: none; width: auto; min-height: 32px; display: inline-flex; align-items: center; gap: var(--space-1); }
+/* JSON-shaped harness catalog fields are a plain group (not a label) so clicks don't hit the view toggle. */
+.codex-catalog-form > .harness-json-field { display: grid; grid-column: 1 / -1; align-content: start; gap: var(--space-2); color: var(--text-secondary); font-size: var(--font-size-meta); font-weight: 600; }
+.harness-json-field .json-form-editor { font-weight: 400; }

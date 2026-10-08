@@ -8,7 +8,7 @@ import type { MessageKey } from '../i18n/resources';
 import { formatCacheReadRate, formatGenerationSpeed } from '../services/usageMetrics';
 import { formatDuration, formatUsageNumber } from '../services/usageNumber';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
-import { FloatingNotice, useAppNotice } from '../appNotice';
+import { FeedbackNotice, useAppNotice } from '../appNotice';
 import { usageProviderDetails } from '../services/usageProvider';
 import { usageModelDetails } from '../services/usageModel';
 
@@ -503,7 +503,8 @@ export function EventsView({
   const [fixedRowHeight, setFixedRowHeight] = useState(getInitialRowHeightEnabled);
   const [rowHeight, setRowHeight] = useState(getInitialRowHeight);
   const [exporting, setExporting] = useState(false);
-  const { notice, revision, showNotice, clearNotice } = useAppNotice();
+  const eventsFeedback = useAppNotice();
+  const { showNotice, clearNotice } = eventsFeedback;
   // Preference writes rarely fail, but when they do the user should know the
   // layout will not be remembered instead of the error being swallowed.
   const savePreference = (key: string, value: string) => {
@@ -721,7 +722,7 @@ export function EventsView({
 
   return (
     <section className={`panel usage-events-panel usage-request-log${isCompactDefault ? ' usage-events-compact' : ''}${fixedRowHeight ? ' usage-row-height-fixed' : ' usage-row-height-auto'}`} aria-label={t('usage.events.title')} aria-busy={loading}>
-      <FloatingNotice key={revision} notice={notice} onDismiss={clearNotice} />
+      <FeedbackNotice feedback={eventsFeedback} />
       {loading && events.items.length === 0 ? <div className="usage-empty" role="status"><Database size={20} aria-hidden="true" /><span>{t('usage.loading')}</span></div> : events.items.length ? (
         <div ref={tableWrapRef} className="usage-table-wrap" tabIndex={0} role="region" aria-label={t('usage.events.title')}>
           <table
