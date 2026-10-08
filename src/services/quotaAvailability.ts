@@ -3,7 +3,7 @@ import { providerForFile, type AuthFile, type QuotaState, type QuotaRow } from '
 
 export type AvailabilityKind = 'available' | 'exhausted' | 'creditBacked' | 'limited' | 'unknown' | 'disabled' | 'unavailable' | 'resetDue';
 export type GroupAvailability = { id: string; label: string; kind: AvailabilityKind; blockers: QuotaRow[]; recoveryAt?: number };
-export type Availability = { kind: AvailabilityKind; blockers: QuotaRow[]; recoveryAt?: number; updating: boolean; groups?: GroupAvailability[]; reason?: 'paidQuota' | 'notReported' | 'unmapped' | 'modelNotFound'; pausedModel?: string; uncertainty?: 'stale' | 'checkFailed' | 'notChecked' | 'offline' | 'health' | 'incomplete'; includedOnly?: boolean; creditBalance?: number; resetsAvailable?: number };
+export type Availability = { kind: AvailabilityKind; blockers: QuotaRow[]; recoveryAt?: number; updating: boolean; groups?: GroupAvailability[]; reason?: 'paidQuota' | 'notReported' | 'unmapped' | 'modelNotFound' | 'planBlocked'; pausedModel?: string; planMessage?: string; uncertainty?: 'stale' | 'checkFailed' | 'notChecked' | 'offline' | 'health' | 'incomplete'; includedOnly?: boolean; creditBalance?: number; resetsAvailable?: number };
 export const QUOTA_FRESH_MS = 6 * 60_000;
 
 /** Included allowance and reported credit fallback. Neither is a routing decision or a success guarantee. */
@@ -12,6 +12,9 @@ export function quotaAvailability(file: AuthFile, quota: QuotaState | undefined,
   const base = { blockers: [] as QuotaRow[], updating: quota?.status === 'loading' };
   if (health.disabled) return { ...base, kind: 'disabled' };
   if (stale) return { ...base, kind: 'unknown', uncertainty: 'offline' };
+  // The provider refuses every request because the plan doesn't cover it; quota numbers can't override that.
+  const planMessage = typeof file.plan_block_message === 'string' ? file.plan_block_message : '';
+  if (planMessage) return { ...base, kind: 'unavailable', reason: 'planBlocked', planMessage };
   if (health.tone === 'error') {
     // A quota pause still has a reported reset; other pauses (expired token, challenge) do not promise one.
     const quotaPause = health.label === 'authFiles.health.reason.quota' || health.label === 'authFiles.health.reason.credentialQuota';

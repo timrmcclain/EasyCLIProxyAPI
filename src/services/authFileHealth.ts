@@ -159,3 +159,15 @@ export function authFileHealth(file: Record<string, unknown>): AuthFileHealth {
   if (status === 'active' || status === 'ready') return { ...base, label: 'authFiles.health.active', tone: 'success' };
   return { ...base, label: 'authFiles.health.unknown', tone: 'neutral' };
 }
+
+/**
+ * Saved accounts "Availability" badge. Model-only cooldowns (e.g. a retired model name) leave the
+ * account usable, so they stay visible in the cooldown row but don't turn the badge into "Cooling".
+ */
+export function authFileListStatus(file: Record<string, unknown>, snapshot: AuthFileCooldownSnapshot | undefined): { label: MessageKey; tone: AuthFileHealth['tone'] } {
+  const health = authFileHealth(file);
+  if (health.disabled) return { label: health.label, tone: health.tone };
+  if (typeof file.plan_block_message === 'string' && file.plan_block_message) return { label: 'availability.planBlockedLabel', tone: 'error' };
+  if ((snapshot?.records ?? []).some((record) => record.scope !== 'model')) return { label: 'authFiles.list.cooling', tone: 'warning' };
+  return { label: health.label === 'authFiles.health.active' ? 'authFiles.list.available' : health.label, tone: health.tone };
+}

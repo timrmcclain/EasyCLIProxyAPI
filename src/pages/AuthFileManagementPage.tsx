@@ -72,7 +72,8 @@ import {
   setOAuthCredentialFileDisabled,
   sortAuthFilesByPriority,
 } from '../services/authFiles';
-import { authFileHealth, normalizeAuthFileCooldowns } from '../services/authFileHealth';
+import { authFileHealth, authFileListStatus, normalizeAuthFileCooldowns } from '../services/authFileHealth';
+import { loadPlanBlocks, withPlanBlocks } from '../services/planBlock';
 import { codexMetadataFor } from '../services/quotaMetadata';
 import { quotaResetInstant, useQuotaClock } from '../services/quotaTime';
 import {
@@ -161,6 +162,7 @@ export function AuthFileManagementPage() {
     .map((provider) => ({ provider, label: providerName({ provider }) }))
     .sort((a, b) => a.label.localeCompare(b.label)), [files]);
 
+  const planBlocksRef = useRef<Record<string, string>>({});
   const loadFiles = useCallback(async (showLoading = true) => {
     const requestId = ++fileRequestRef.current;
     if (showLoading) setLoading(true);
@@ -170,7 +172,13 @@ export function AuthFileManagementPage() {
       if (!mountedRef.current || requestId !== fileRequestRef.current) return;
       setFileListStale(false);
       const nextFiles = sortAuthFilesByPriority(dedupeAuthFiles(responseList(payload, 'files')));
-      setFileSnapshot({ files: nextFiles, receivedAtMs: Date.now(), observedAt: readString(payload, 'observed_at') });
+      const receivedAtMs = Date.now();
+      const observedAt = readString(payload, 'observed_at');
+      setFileSnapshot({ files: withPlanBlocks(nextFiles, planBlocksRef.current), receivedAtMs, observedAt });
+      void loadPlanBlocks(nextFiles).then((blocks) => {
+        planBlocksRef.current = blocks;
+        if (mountedRef.current && requestId === fileRequestRef.current) setFileSnapshot({ files: withPlanBlocks(nextFiles, blocks), receivedAtMs, observedAt });
+      }).catch(() => undefined);
       const validQuotaKeys = new Set(nextFiles.map(quotaKey));
       pruneQuotaCache(validQuotaKeys);
       updateQuotaCache((current) => {
@@ -537,8 +545,9 @@ export function AuthFileManagementPage() {
               const cooldownSnapshot = normalizeAuthFileCooldowns(file.cooldowns, receivedAtMs, observedAt);
               const hasCooldown = Boolean(cooldownSnapshot?.records?.length);
               const showCooldown = hasCooldown || cooldownSnapshot?.records === null;
-              const statusLabel = hasCooldown && !health.disabled ? t('authFiles.list.cooling') : t(health.label === 'authFiles.health.active' ? 'authFiles.list.available' : health.label);
-              const badgeTone = hasCooldown && !health.disabled ? 'warning' : health.tone;
+              const listStatus = authFileListStatus(file, cooldownSnapshot);
+              const statusLabel = t(listStatus.label);
+              const badgeTone = listStatus.tone;
               const BadgeIcon = statusBadgeIcons[badgeTone];
               const expanded = expandedFiles.has(key);
               const detailsId = `auth-file-details-${encodeURIComponent(key)}`;

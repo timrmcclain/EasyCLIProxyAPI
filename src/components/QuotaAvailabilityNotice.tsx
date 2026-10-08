@@ -6,8 +6,8 @@ const stateMark = (kind: Availability['kind']) => kind === 'exhausted' || kind =
 
 export function QuotaAvailabilityNotice({ state, now, compact = false }: { state: Availability; now: number; compact?: boolean }) {
   const { t } = useI18n();
-  const label = state.reason === 'modelNotFound' ? t('availability.modelPaused') : t(`availability.${state.kind}`);
-  const reasonText = state.reason ? t(`availability.${state.reason}`, { model: state.pausedModel ?? '' }) : '';
+  const label = state.reason === 'modelNotFound' ? t('availability.modelPaused') : state.reason === 'planBlocked' ? t('availability.planBlockedLabel') : t(`availability.${state.kind}`);
+  const reasonText = state.reason ? t(`availability.${state.reason}`, { model: state.pausedModel ?? '', message: state.planMessage ?? '' }) : '';
   if (compact) {
     // One-line chip for dense rows; the explanation stays reachable on hover and in the full notice.
     const hint = [

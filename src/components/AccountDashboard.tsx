@@ -19,6 +19,7 @@ import { readDashboardPreference, saveDashboardPreference } from '../services/da
 import { readAccountNames, saveAccountNames } from '../services/accountNames';
 import { privateAccountLabel } from '../services/accountPrivacy';
 import { ProviderLogo, SignInAgainButton, needsSignIn } from './AuthFileProviderIcon';
+import { loadPlanBlocks, withPlanBlocks } from '../services/planBlock';
 import { accountRequests, loadDashboardActivity, requestClient, successfulRequest, privateText, type DashboardActivity, type DashboardRequest } from '../services/dashboardActivity';
 import './AccountDashboard.css';
 
@@ -59,6 +60,7 @@ export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSumma
   const readyRef = useRef(ready);
   readyRef.current = ready;
   const lastAttempt = useRef<Record<string, number>>({});
+  const planBlocks = useRef<Record<string, string>>({});
   const quotas = useQuotaCache();
   const now = useQuotaClock();
 
@@ -74,11 +76,15 @@ export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSumma
       ]);
       const next = dedupeAuthFiles(responseList(payload, 'files'));
       if (!mounted.current || !readyRef.current) return;
-      setFiles(next);
+      setFiles(withPlanBlocks(next, planBlocks.current));
       setRouting(settings);
       setUpdatedAt(Date.now());
       await Promise.all([
         refreshDashboardQuotas(next.filter((file) => providerForFile(file)), force, lastAttempt.current, () => mounted.current && readyRef.current),
+        loadPlanBlocks(next).then((blocks) => {
+          planBlocks.current = blocks;
+          if (mounted.current && readyRef.current) setFiles(withPlanBlocks(next, blocks));
+        }).catch(() => undefined),
         loadDashboardActivity().then((result) => { if (mounted.current && readyRef.current) { setActivity(result); setActivityError(false); } }).catch(() => { if (mounted.current) setActivityError(true); }),
       ]);
     } catch {
