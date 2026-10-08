@@ -24,13 +24,13 @@ const path = require('node:path');
     await page.addInitScript(() => localStorage.setItem('easy-cli-proxy-api.locale', 'en'));
     await page.goto(`${base}/?mock=running&mockDelay=5`);
     await page.locator('.app-shell').waitFor();
-    await page.locator('.nav-section button').nth(2).click();
-    await page.getByRole('tab', { name: 'Authentication Files', exact: true }).click();
+    await page.locator('.nav-section').getByRole('button', { name: 'Accounts', exact: true }).click();
+    await page.getByRole('tab', { name: 'Saved accounts', exact: true }).click();
     await page.locator('.auth-file-card').first().waitFor();
     assert.equal(await page.locator('.auth-file-card').count(), 10);
     await page.locator('.auth-list-pagination select').selectOption('20');
     await page.waitForFunction(() => document.querySelectorAll('.auth-file-card').length > 10);
-    await page.locator('.auth-files-heading-actions').getByRole('button', { name: 'Refresh quota', exact: true }).click();
+    await page.locator('.auth-files-heading-actions').getByRole('button', { name: 'Refresh all quotas', exact: true }).click();
     const card = name => page.locator('.auth-file-card').filter({ has: page.locator(`.auth-card-filename[title="${name}"]`) });
     for (const name of ['codex-personal.json', 'claude-team.json', 'kimi-personal.json', 'devin-team.json', 'xai-subscription.json', 'antigravity-team-with-a-long-account-name.json']) {
       await card(name).locator('[role="progressbar"]').first().waitFor();

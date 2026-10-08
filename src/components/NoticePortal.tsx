@@ -28,9 +28,14 @@ function acquireHost(doc: Document) {
       const viewportHeight = doc.documentElement.clientHeight;
       const bounds = element.getBoundingClientRect();
       const idealTop = viewportHeight - 24 - Math.min(element.scrollHeight, viewportHeight - 48);
-      const buttons = dialog ? Array.from(dialog.querySelectorAll('button'))
+      // Only buttons inside the dialog's visible box count: controls scrolled out of an inner
+      // scroll region must not be mistaken for the dialog footer.
+      const dialogBounds = dialog?.getBoundingClientRect();
+      const buttons = dialog && dialogBounds ? Array.from(dialog.querySelectorAll('button'))
         .filter(button => !element.contains(button))
-        .map(button => button.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) : [];
+        .map(button => button.getBoundingClientRect())
+        .filter(rect => rect.width > 0 && rect.height > 0
+          && rect.top >= dialogBounds.top - 1 && rect.bottom <= dialogBounds.bottom + 1) : [];
       const lastBottom = Math.max(0, ...buttons.map(rect => rect.bottom));
       const footer = buttons.filter(rect => rect.bottom >= lastBottom - 8);
       if (footer.some(rect => rect.right > bounds.left && rect.left < bounds.right

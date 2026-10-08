@@ -10,6 +10,7 @@ const path = require('node:path');
     await server.listen(); browser = await chromium.launch({channel:'msedge',headless:true});
     const page = await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
     page.setDefaultTimeout(10000);
+    page.setDefaultNavigationTimeout(60000);
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.addInitScript(()=>localStorage.setItem('easy-cli-proxy-api.locale','en'));
     await page.goto('http://127.0.0.1:1436/?mock=running');
@@ -29,19 +30,26 @@ const path = require('node:path');
     });
     await page.locator('.quota-refresh').click();
     const codex=page.locator('.ad-card').filter({hasText:'codex-personal.json'});
+    // The one-row card shows the state chip; the full notice (credit balance) lives in the card details.
+    const chip=codex.locator('.quota-availability-chip').filter({hasText:'Included quota used · credits available'});
+    await chip.waitFor();
+    assert.ok(!((await chip.getAttribute('title'))||'').includes('Blocked for'));
+    assert.ok((await codex.innerText()).includes('0% left'));
+    await codex.getByRole('button',{name:/^Actions for /}).click();
+    await page.getByRole('menu').getByRole('menuitem',{name:'Rename…',exact:true}).click();
     await codex.locator('.quota-availability strong').filter({hasText:'Included quota used · credits available'}).waitFor();
     assert.ok((await codex.innerText()).includes('849.89 credits reported'));
     assert.ok(!(await codex.innerText()).includes('Blocked for'));
-    assert.ok((await codex.innerText()).includes('0% left'));
-    await codex.locator('summary').click();
     await codex.getByLabel('Friendly name').fill('My work account');
     await codex.getByRole('button',{name:'Save name',exact:true}).click();
     const nav=page.getByRole('navigation',{name:'Main navigation'});
     await nav.getByRole('button',{name:'Accounts',exact:true}).click();
+    // Saved accounts are paged in routing order; find this account by its file name.
+    await page.locator('.auth-files-toolbar input').fill('codex-personal');
     await page.locator('.auth-card-identity strong').filter({hasText:'My work account'}).waitFor();
     await nav.getByRole('button',{name:'Connected apps',exact:true}).click();
     await page.locator('.connection-overview h2').getByText('Configured',{exact:true}).waitFor();
-    const refresh=page.locator('.agent-header-actions button').last();
+    const refresh=page.locator('.agent-client-list-heading').getByRole('button',{name:'Detect Again',exact:true});
     for(const [mode,text] of [['verified','Recent request verified'],['attention','Needs attention'],['notDetected','App not detected'],['detected','Detected'],['configured','Configured']]) {
       await page.evaluate(mode=>{window.connectionMode=mode},mode);await refresh.click();
       await page.locator('.connection-overview h2').getByText(text,{exact:true}).waitFor();

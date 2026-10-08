@@ -7,13 +7,14 @@ import '../../src/styles/index.css';
 
 const params = new URLSearchParams(location.search);
 localStorage.setItem('easy-cli-proxy-api.locale', params.get('locale') || 'zh-CN');
-// Keep the model column visible even if a previous fixture changed the user's layout.
+// Keep the model and cost columns visible even if a previous fixture changed the user's layout.
 localStorage.setItem('cpa-gui.usage-events-visible-cols.v3', JSON.stringify([
-  'time', 'key', 'source', 'model', 'result', 'request', 'latency', 'speed', 'total', 'cache', 'provider',
+  'time', 'key', 'source', 'model', 'result', 'request', 'latency', 'speed', 'total', 'cache', 'provider', 'cost',
 ]));
 localStorage.removeItem('cpa-gui.usage-events-visible-cols.v2');
 localStorage.removeItem('cpa-gui.usage-events-visible-cols.v4');
 localStorage.removeItem('cpa-gui.usage-events-visible-cols.v5');
+localStorage.removeItem('cpa-gui.usage-events-visible-cols.v6');
 localStorage.removeItem('cpa-gui.usage-events-col-widths.v2');
 localStorage.removeItem('cpa-gui.usage-events-col-widths.v3');
 document.documentElement.dataset.theme = params.get('theme') || 'light';
@@ -66,7 +67,20 @@ const records: UsageRecord[] = [
   record('formula', 'formula-model', 'formula-alias', '=SUM(A1)'),
 ];
 
-mockIPC(async () => null);
+// CSV export pages through get_usage_events, asks the native save dialog for a path, then writes
+// through the backend; record the written contents so the browser test can inspect them.
+mockIPC(async (cmd, args) => {
+  if (cmd === 'get_usage_events') {
+    const query = (args as { query?: { page?: number } })?.query;
+    return { items: records, total: records.length, page: query?.page ?? 1, pageSize: 5000, totalPages: 1 };
+  }
+  if (cmd === 'plugin:dialog|save') return 'C:/fixture/usage-response-model.csv';
+  if (cmd === 'save_usage_events_export') {
+    (window as unknown as { __usageExport?: unknown }).__usageExport = args;
+    return null;
+  }
+  return null;
+});
 
 createRoot(document.getElementById('root')!).render(
   <I18nProvider>

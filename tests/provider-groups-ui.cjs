@@ -87,6 +87,11 @@ const fs = require('node:fs/promises');
     await dialog.locator('.action-feedback-message').waitFor();
     assert.equal(await page.evaluate(() => window.groupFixture.writes.length), writes, 'Stale save must not write');
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    // The edited draft is guarded: closing asks before discarding it.
+    const discard = page.getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true });
+    await discard.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await dialog.waitFor({ state: 'detached' });
+    assert.equal(await page.evaluate(() => window.groupFixture.writes.length), writes, 'Discarding must not write');
 
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await rows.nth(3).waitFor();

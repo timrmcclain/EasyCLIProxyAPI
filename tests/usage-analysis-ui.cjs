@@ -58,8 +58,16 @@ fs.mkdirSync(screenshots, { recursive: true });
 
     await open();
     assert.equal(await page.locator('#usage-tab-analysis').getAttribute('aria-selected'), 'true');
-    assert.equal(await page.locator('.usage-filter-panel select').count(), 6, 'Analysis keeps the shared filter controls');
-    assert.equal(await page.locator('.usage-filter-panel button').count(), 0, 'Analysis does not restore the removed reset button');
+    const filterTriggers = page.locator('.usage-filter-panel .select-menu-trigger');
+    const moreFilters = page.locator('.usage-filter-panel .usage-filter-more');
+    assert.deepEqual(await filterTriggers.evaluateAll(items => items.map(item => item.getAttribute('aria-label'))), ['Time range', 'Model'], 'Analysis shows the two primary shared filters');
+    assert.equal(await moreFilters.getAttribute('aria-expanded'), 'false');
+    await moreFilters.click();
+    assert.deepEqual(await filterTriggers.evaluateAll(items => items.map(item => item.getAttribute('aria-label'))),
+      ['Time range', 'Model', 'Provider', 'Source', 'API Key', 'Request result'], 'Analysis keeps all six shared filter controls behind More filters');
+    assert.equal(await page.locator('.usage-filter-panel button:not(.select-menu-trigger):not(.usage-filter-more)').count(), 0, 'Analysis does not restore the removed reset button');
+    await moreFilters.click();
+    assert.equal(await filterTriggers.count(), 2, 'More filters collapses back to the primary filters');
     let rows = await modelRows();
     assert.deepEqual(rows.map(row => row.key), ['model-a', 'model-b', 'model-c', 'model-d', 'model-f', 'other']);
     assert.deepEqual(rows.map(row => row.value), [10000, 4000, 3600, 1200, 540, 660], 'Top five plus other includes all eight models');

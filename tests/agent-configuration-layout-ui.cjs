@@ -329,9 +329,26 @@ const desktopViewports = [
       return metrics;
     };
 
+    // The client list sizes its page from a ResizeObserver, so a tab switch that changes the panel
+    // height re-paginates a frame later. Wait until the list is stable for three frames before measuring.
+    const settleClientList = () => page.evaluate(() => new Promise(resolve => {
+      let previous = '';
+      let stableFrames = 0;
+      const tick = () => {
+        const list = document.querySelector('.agent-list-items');
+        const current = list ? `${list.clientHeight}/${list.scrollHeight}/${list.children.length}` : '';
+        stableFrames = current === previous ? stableFrames + 1 : 0;
+        previous = current;
+        if (stableFrames >= 3) resolve();
+        else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }));
+
     const openSubpage = async name => {
       const target = tab(name);
       if (await target.count()) await target.click();
+      await settleClientList();
     };
 
     const textFlow = { full: {}, embedded: {} };
@@ -583,16 +600,29 @@ const desktopViewports = [
       await page.getByRole('option', { name: 'gpt-two' }).click();
       await page.locator('.agent-save-bar').getByText('待应用', { exact: true }).waitFor();
       await assertDesktopLayout(`${label}/pending`);
-      assert.deepEqual(await page.locator(controls).evaluateAll(nodes => nodes.map(node => {
+      const pending = await page.locator(controls).evaluateAll(nodes => nodes.map(node => {
         const rect = node.getBoundingClientRect();
         return [rect.x + scrollX, rect.y + scrollY, rect.width, rect.height];
-      })), original, `${label}: pending feedback must not shift the controls`);
+      }));
+      // A pending edit intentionally inserts the "what will change" preview directly above the save bar.
+      // That block may push the controls down as a unit; the pending badge itself must not move or resize them.
+      const preview = await page.locator('.ux-change-preview').evaluate(node => ({
+        height: node.getBoundingClientRect().height
+          + Number.parseFloat(getComputedStyle(node).marginTop) + Number.parseFloat(getComputedStyle(node).marginBottom),
+        gap: Number.parseFloat(getComputedStyle(node.parentElement).rowGap) || 0,
+      }));
+      const shift = pending[0][1] - original[0][1];
+      assert.ok(Math.abs(shift - (preview.height + preview.gap)) <= 1,
+        `${label}: only the inserted change preview (${preview.height}px with margins + ${preview.gap}px gap) may push the controls down, got ${shift}px`);
+      assert.deepEqual(pending.map(([x, y, width, height]) => [x, y - shift, width, height]), original,
+        `${label}: pending feedback must not shift the controls beyond the change preview`);
       const save = page.getByRole('button', { name: '更新配置', exact: true });
       await save.click();
-      const failure = page.locator('.app-notice-stack').getByRole('alert').filter({ hasText: /模拟配置写入失败/ });
+      // Configuration write failures render inline as the shared connection-error block (raw text under "技术详情").
+      const failure = page.locator('.connection-error').filter({ hasText: /模拟配置写入失败/ });
       await failure.waitFor();
       await assertDesktopLayout(`${label}/failure`);
-      await failure.getByRole('button').click();
+      await failure.getByRole('button', { name: '关闭', exact: true }).click();
       await failure.waitFor({ state: 'detached' });
       await save.click();
       await page.waitForFunction(() => document.documentElement.dataset.fixtureApplied === '1');

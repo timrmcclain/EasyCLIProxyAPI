@@ -1,4 +1,4 @@
-import { uxImprovementsEn } from './uxImprovements';
+import { uxImprovementsEn, uxImprovementsJa, uxImprovementsZhCN } from './uxImprovements';
 export const accountDashboardEn = {
   ...uxImprovementsEn,
   "accountDashboard.eyebrow": "ACCOUNT OVERVIEW",
@@ -66,7 +66,7 @@ export const accountDashboardEn = {
   "accountDashboard.hideDetails": "Hide details"
 } as const;
 export const accountDashboardZhCN = {
-  ...uxImprovementsEn,
+  ...uxImprovementsZhCN,
   "accountDashboard.eyebrow": "账户面板",
   "accountDashboard.title": "账号与额度",
   "accountDashboard.description": "在一处查看账户、剩余额度和重置时间。",
@@ -132,7 +132,7 @@ export const accountDashboardZhCN = {
   "accountDashboard.hideDetails": "隐藏详情"
 } as const;
 export const accountDashboardJa = {
-  ...uxImprovementsEn,
+  ...uxImprovementsJa,
   "accountDashboard.eyebrow": "アカウントデスク",
   "accountDashboard.title": "アカウントと利用枠",
   "accountDashboard.description": "アカウント、残りの利用枠、リセット時刻をまとめて確認。",

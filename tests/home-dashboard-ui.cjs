@@ -49,6 +49,12 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     const value = id => page.locator(`[data-stat="${id}"] .home-stat-value`);
     const runtimeValue = label => page.locator('.control-panel .panel-detail-row').filter({ has: page.getByText(label, { exact: true }) }).locator('dd');
     const meter = id => page.locator(`[data-stat="${id}"] .home-stat-track[role="meter"]`);
+    // Runtime controls and connection details now sit in a collapsed "Proxy & connection details" section.
+    const showProxyDetails = async (target = page) => {
+      const details = target.locator('.home-proxy-details');
+      if (!await details.evaluate(node => node.open)) await details.locator(':scope > summary').click();
+      await target.locator('.home-proxy-details .control-panel').waitFor();
+    };
 
     await open('', page, false);
     await page.locator('.home-overview[aria-busy="false"]').waitFor();
@@ -56,6 +62,8 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await page.screenshot({ path: 'misc/home-dashboard-initial.png', fullPage: true, animations: 'disabled' });
     console.log('Initial homepage rendered: misc/home-dashboard-initial.png');
     assert.equal(await page.locator('.home-stat-card').count(), 4);
+    assert.equal(await page.locator('.home-proxy-details').evaluate(node => node.open), false, 'proxy and connection details start collapsed');
+    await showProxyDetails();
     assert.equal(await runtimeValue('Installation Status').innerText(), 'Installed');
     assert.equal(await runtimeValue('Runtime Status').innerText(), 'Running');
     assert.equal(await page.locator('.home-runtime-details .panel-detail-row').count(), 6, 'runtime details retain both statuses, both versions, PID, and port');
@@ -73,10 +81,13 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     assert.equal((await probes(page)).length, 0, 'opening the dashboard must not perform inference');
     assert.equal(await page.locator('.core-health-panel, .core-health-table, .core-health-dialog').count(), 0, 'the dashboard must show only the compact entry');
     assert.ok((await page.locator('.core-health-entry').boundingBox()).height < 150, 'the collapsed entry must not take up a full panel');
-    assert.equal(await page.locator('.home-overview-heading .core-health-entry').count(), 1, 'health monitoring belongs in the overview header');
-    assert.equal(await page.locator('.home-dashboard > .core-health-entry').count(), 0, 'health monitoring must not leave an orphan entry below the overview');
-    const healthSummaryBounds = await page.locator('.core-health-entry-status').boundingBox();
-    assert.ok(healthSummaryBounds.width > 1 && healthSummaryBounds.height > 1, 'the health summary must stay visible beside its entry');
+    assert.equal(await page.locator('.home-status .core-health-entry').count(), 1, 'health monitoring belongs in the status bar');
+    assert.equal(await page.locator('.home-page > .core-health-entry').count(), 0, 'health monitoring must not leave an orphan entry below the overview');
+    // In the one-line status bar the summary text is visually hidden; it stays on the button tooltip and description.
+    const healthOpen = page.locator('.core-health-open');
+    assert.ok((await healthOpen.getAttribute('title'))?.trim(), 'the health summary must stay available on the entry tooltip');
+    const describedBy = await healthOpen.getAttribute('aria-describedby');
+    assert.ok((await page.locator(`[id="${describedBy}"]`).textContent())?.trim(), 'the health summary must describe its entry for assistive technology');
 
     const access = page.locator('.home-access-panel');
     assert.equal(await access.locator('.client-api-card').count(), 1, 'only the selected connection details should be shown');
@@ -91,7 +102,8 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await openaiTab.focus();
     await page.keyboard.press('ArrowRight');
     assert.equal(await page.locator('#home-protocol-claude').getAttribute('aria-selected'), 'true');
-    assert.equal(await page.locator('#home-protocol-claude').evaluate(node => node === document.activeElement), true);
+    // Focus follows selection on the next animation frame.
+    await page.waitForFunction(() => document.activeElement?.id === 'home-protocol-claude');
     assert.equal(await page.getByRole('tabpanel').locator('code').innerText(), 'http://127.0.0.1:8317');
     await page.getByRole('tabpanel').getByRole('button').click();
     await page.waitForFunction(() => window.homeFixture.copied.includes('http://127.0.0.1:8317'));
@@ -106,8 +118,10 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     const dialog = page.getByRole('dialog', { name: 'Model Health', exact: true });
     assert.equal(await dialog.getAttribute('aria-modal'), 'true');
     assert.equal(await dialog.evaluate(node => node.contains(document.activeElement)), true, 'opening the modal must focus a control inside it');
-    assert.equal(await dialog.getByRole('checkbox').count(), 0, 'health checks must not offer automatic mode');
-    assert.equal(await dialog.getByText(/automatically|automatic check/i).count(), 0);
+    // Scheduled checks are an explicit opt-out checkbox; with it off, checks are manual-only.
+    const autoToggle = dialog.getByRole('checkbox', { name: /^Auto-check \d+ models every 4 hours/ });
+    assert.equal(await autoToggle.count(), 1, 'automatic checks must be an explicit, visible choice');
+    assert.equal(await autoToggle.isChecked(), false, 'the fixture runs with automatic checks turned off');
     assert.equal((await probes(page)).length, 0, 'opening the modal must not perform inference');
     const focusable = dialog.locator('button:not(:disabled), input:not(:disabled), summary, [tabindex="0"]');
     await focusable.last().focus();
@@ -198,8 +212,11 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await page.getByRole('button', { name: 'Refresh Models', exact: true }).click();
     await page.locator('.core-health-table tbody tr').first().waitFor();
     await open('offline=1');
-    await page.getByRole('dialog').getByText('Start the core to check model health', { exact: true }).waitFor();
+    await page.getByRole('dialog').getByText('Start the proxy to check model health', { exact: true }).waitFor();
     await page.locator('.home-overview[aria-busy="false"]').waitFor();
+    await page.keyboard.press('Escape');
+    await showProxyDetails();
+    await showHealth(page, 'offline=1');
     assert.equal(await value('usage').innerText(), '97.8%');
     assert.equal(await value('models').innerText(), '—');
     assert.equal(await runtimeValue('Installation Status').innerText(), 'Installed');
@@ -213,6 +230,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await open('keyError=1', page, false);
     assert.equal(await access.locator('.home-field-error').count(), 1);
     await open('tls=1', page, false);
+    await showProxyDetails();
     assert.equal(await page.getByRole('tabpanel').locator('code').innerText(), 'https://127.0.0.1:8317/v1');
     await open('noRequests=1&unknownCredentials=1', page, false);
     await page.locator('.home-overview[aria-busy="false"]').waitFor();
@@ -237,7 +255,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await timed.clock.install({ time: new Date('2026-10-03T04:00:00Z') });
     await timed.clock.pauseAt(new Date('2026-10-03T04:00:01Z'));
     await open('', timed);
-    assert.equal(await timed.getByRole('dialog').getByRole('checkbox').count(), 0);
+    assert.equal(await timed.getByRole('dialog').getByRole('checkbox').isChecked(), false);
     for (let cycle = 1; cycle <= 2; cycle += 1) {
       await timed.clock.runFor(301000);
       assert.equal((await probes(timed)).length, 0, `the open dialog must stay idle after ${cycle} five-minute periods`);
@@ -276,6 +294,21 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await timed.close();
     console.log('Fake-clock manual-only checks passed: no inference while idle or across repeated five-minute periods, close/reopen, and model refreshes.');
 
+    // With automatic checks on, the first scheduled run probes one inexpensive chat model per provider and nothing else.
+    const auto = await makePage();
+    await auto.clock.install({ time: new Date('2026-10-03T04:00:00Z') });
+    await open('autoHealth=1', auto, false);
+    await auto.locator('.home-overview[aria-busy="false"]').waitFor();
+    await auto.clock.runFor(30000);
+    assert.equal((await probes(auto)).length, 0, 'automatic checks wait for the start delay');
+    await auto.clock.runFor(31000);
+    await auto.waitForFunction(() => window.homeFixture.calls.filter(call => call.cmd === 'core_health_probe').length === 5);
+    const autoModels = (await probes(auto)).map(call => call.args.model);
+    assert.deepEqual([...autoModels].sort(), ['claude-sonnet-4-6', 'deepseek-chat', 'gemini-3-pro', 'gpt-5.2-codex', 'long-provider/llama-4-scout-instruct-with-a-long-model-name'], 'one chat model per provider; aliases are skipped');
+    await auto.clock.runFor(30 * 60000);
+    assert.equal((await probes(auto)).length, 5, 'automatic checks do not repeat within the four-hour interval');
+    await auto.close();
+
     fs.mkdirSync('misc', { recursive: true });
     for (const [theme, width] of [['light', 1280], ['dark', 1280], ['light', 640], ['dark', 640], ['light', 390], ['dark', 390]]) {
       const height = width < 640 ? 844 : 1050;
@@ -304,8 +337,8 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
       const toolbar = page.locator('#browser-mock-toolbar');
       if (await toolbar.count()) await toolbar.evaluate(node => { node.style.display = 'none'; });
       assert.equal(await page.locator('.home-stat-card').count(), 4);
-      assert.equal(await page.locator('.home-overview-heading .core-health-open').count(), 1);
-      assert.equal(await page.locator('.home-dashboard > .core-health-entry').count(), 0);
+      assert.equal(await page.locator('.home-status .core-health-open').count(), 1);
+      assert.equal(await page.locator('.home-page > .core-health-entry').count(), 0);
       assert.equal(await page.locator('.core-health-table').count(), 0);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${theme}/${width} app homepage overflows horizontally`);
       await page.screenshot({ path: `misc/home-dashboard-app-${theme}-${width}.png`, animations: 'disabled' });
@@ -344,16 +377,18 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             window.scrollTo(0, 0);
             const root = document.scrollingElement;
-            const cards = [...document.querySelectorAll('.home-top-grid > .panel, .home-stat-card')].map(node => {
+            const cards = [...document.querySelectorAll('.home-status, .home-stat-card')].map(node => {
               const bounds = node.getBoundingClientRect();
               return { name: node.getAttribute('data-stat') || node.className, top: bounds.top, bottom: bounds.bottom, height: bounds.height };
             });
-            return { scrollHeight: root.scrollHeight, clientHeight: root.clientHeight, viewportHeight: innerHeight, cards };
+            const accounts = document.querySelector('#account-dashboard-title')?.getBoundingClientRect();
+            return { scrollHeight: root.scrollHeight, clientHeight: root.clientHeight, viewportHeight: innerHeight, cards, accountsTop: accounts ? accounts.top : Infinity };
           });
           const context = `${locale}/${theme}/${viewport.width}x${viewport.height}`;
-          assert.equal(layout.cards.length, 6, `${context} must show both top panels and all four overview cards`);
-          assert.ok(layout.scrollHeight <= layout.clientHeight + 1,
-            `${context} homepage causes a vertical page scrollbar: ${layout.scrollHeight}px content in ${layout.clientHeight}px viewport`);
+          assert.equal(layout.cards.length, 5, `${context} must show the status bar and all four overview cards`);
+          // Home now continues with the account dashboard and proxy details, so the page itself may scroll;
+          // the status bar and overview must still be fully visible and the accounts section must start above the fold.
+          assert.ok(layout.accountsTop < layout.viewportHeight, `${context} accounts section must start within the first screen: ${layout.accountsTop}px`);
           for (const card of layout.cards) {
             assert.ok(card.height > 0 && card.top >= -1 && card.bottom <= layout.viewportHeight + 1,
               `${context} ${card.name} must be fully visible without scrolling: ${JSON.stringify(card)}`);
@@ -361,7 +396,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
         }
       }
     }
-    console.log('Desktop homepage fits all four viewport sizes in Chinese/English and light/dark themes without vertical page overflow.');
+    console.log('Desktop homepage status bar and overview fit all four viewport sizes in Chinese/English and light/dark themes, with accounts starting above the fold.');
     assert.deepEqual(errors, []);
     console.log('Home dashboard browser checks passed. Screenshots: misc/home-{dashboard,health-dialog}-{light,dark}-{1280,640,390}.png and app.png');
   } finally {

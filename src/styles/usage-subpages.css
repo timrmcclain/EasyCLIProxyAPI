@@ -408,6 +408,27 @@ body.table-col-resizing .usage-records-page .usage-request-log .usage-events-tab
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 300px auto;
   }
+
+  /* Stacked, the Token card grows with its content (as on phones) instead of
+     being a fixed-size container that its details spill out of. */
+  .usage-records-page .usage-overview-reflow .usage-health-panel {
+    container-type: inline-size;
+    grid-template-rows: auto auto;
+  }
+
+  .usage-records-page .usage-overview-reflow .usage-token-content {
+    grid-template-rows: auto auto auto;
+  }
+
+  .usage-records-page .usage-overview-reflow .usage-token-composition {
+    container-type: inline-size;
+    min-height: 240px;
+  }
+
+  .usage-records-page .usage-overview-reflow .usage-token-donut {
+    width: 100%;
+    max-width: 240px;
+  }
 }
 
 /* Request results moved out of the token panel; two context groups remain. */

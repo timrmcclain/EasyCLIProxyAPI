@@ -15,6 +15,8 @@ const base = process.env.META_OAUTH_TEST_BASE_URL || process.env.DEVIN_TEST_BASE
     const open = async (query = '') => {
       await page.goto(base + '/tests/fixtures/meta-oauth.html?' + query, { waitUntil: 'domcontentloaded' });
       await page.locator('.oauth-card, .simple-mode-provider-card').first().waitFor();
+      // The OAuth sign-in page lists only Claude and Codex until "Show other providers" is checked.
+      if (!/(^|&)view=easy/.test(query)) await page.locator('.oauth-login-page .personal-provider-toggle input').check();
     };
     const managementCard = () => page.locator('.oauth-card').filter({ hasText: /Muse \(Meta\) OAuth|Muse OAuth|Meta OAuth/ });
     const easyCard = () => page.locator('.simple-mode-provider-card').filter({ hasText: /Muse \(Meta\) OAuth|Muse OAuth|Meta OAuth/ });

@@ -78,6 +78,15 @@ const category = (key: string, label = key) => ({ key, label, requests: 200, fai
 mockIPC(async (cmd, args) => {
   if (cmd === 'plugin:event|listen') return 1;
   if (cmd === 'plugin:event|unlisten' || cmd === 'set_app_locale') return null;
+  // CSV export goes through the native save dialog and a backend write; record both for the tests.
+  if (cmd === 'plugin:dialog|save') {
+    (window as any).__usageExportDialog = (args as { options?: unknown })?.options ?? null;
+    return 'C:/fixture/usage-events.csv';
+  }
+  if (cmd === 'save_usage_events_export') {
+    (window as any).__usageExport = args;
+    return null;
+  }
   if (cmd === 'get_usage_collector_status') {
     return { state: 'collecting', message: '', lastCollectedAt: now.toISOString(), totalRecords: 54 };
   }

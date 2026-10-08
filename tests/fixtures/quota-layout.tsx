@@ -14,7 +14,7 @@ const rows = quotaRowsFor('kimi', {
 });
 
 const claudeFile = { name: 'claude.json', provider: 'claude', auth_index: 'claude-fixture' };
-const claudeQuota = { status: 'success' as const, rows, resetCredits: 2, claudeResetGrants: parseAnthropicResetGrantStatus({ eligible: true, at_limit: true, grants: [{ id: 'reserve', resets_total: 2, resets_left: 2, usable_now: true }] })! };
+const claudeQuota = { status: 'success' as const, rows, resetCredits: 2, resetCreditExpiries: ['2030-10-20T00:00:00Z', '2030-10-27T00:00:00Z'], claudeResetGrants: parseAnthropicResetGrantStatus({ eligible: true, at_limit: true, grants: [{ id: 'reserve', resets_total: 2, resets_left: 2, usable_now: true }] })! };
 
 createRoot(document.getElementById('root')!).render(
   <I18nProvider>

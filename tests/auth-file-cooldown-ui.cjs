@@ -36,7 +36,9 @@ const fs = require('node:fs/promises');
       if (await details.getAttribute('open') === null) await details.locator('.auth-health-summary').click();
     };
     const assertMainRowHeight = async label => {
-      const heights = await page.locator('.auth-credential-row').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().height));
+      // Only rows that carry a cooldown strip can be stretched by it; idle-quota rows have their own text height.
+      const heights = await page.locator('.auth-file-card:has(.auth-file-health) .auth-credential-row').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().height));
+      assert.ok(heights.length >= 4, `${label}: expected several cooldown rows, got ${heights.length}`);
       assert.ok(heights.every(height => height >= 88 && height <= 120), `${label}: cooldown content does not stretch the seven-column main row: ${JSON.stringify(heights)}`);
     };
     const open = async query => {
@@ -60,8 +62,14 @@ const fs = require('node:fs/promises');
     assert.ok((await primary().locator('.auth-health-heading').innerText()).includes('凭证及 2 个模型冷却'));
     assert.equal(await primary().locator('.auth-credential-row > .auth-list-cell').count(), 7, 'Cooldown rows retain the complete seven-column overview');
     assert.equal(await primary().locator('.auth-list-recent').isVisible(), true, 'Recent requests stay visible while diagnostics are collapsed');
-    assert.equal(await primary().locator('.auth-list-usage').isVisible(), true, 'Runtime counters stay visible while diagnostics are collapsed');
-    assert.equal(await primary().locator('.auth-list-icon-actions > button:visible').count(), 5, 'Credential actions stay directly available');
+    // At this medium width the usage column is folded into the row's Details panel by design.
+    assert.equal(await primary().locator('.auth-list-usage').isVisible(), false, 'Usage column is hidden at medium width');
+    await expandMetadata(primary());
+    assert.equal(await primary().locator('.auth-list-details-usage .auth-file-usage').isVisible(), true, 'Runtime counters are available in Details at medium width');
+    await primary().locator('.auth-list-details-button').click();
+    assert.equal(await primary().locator('.auth-list-details').isVisible(), false, 'Details collapse again');
+    assert.equal(await primary().locator('.auth-list-icon-actions > button:visible').count(), 2, 'Refresh and settings stay directly available');
+    assert.equal(await primary().getByRole('switch').isVisible(), true, 'Enable/disable switch stays directly available');
     assert.equal(await clear(primary()).isVisible(), true, 'Reset is directly available beside the collapsed cooldown summary');
     await assertMainRowHeight('Collapsed cooldown');
     await primary().screenshot({ path: path.join(screenshotDir, 'cooldown-collapsed-light-desktop.png') });
@@ -151,7 +159,7 @@ const fs = require('node:fs/promises');
     await open();
     await confirmReset(primary());
     await page.evaluate(() => { window.cooldownFixture.holdNextRead = true; });
-    await page.getByRole('button', { name: '刷新', exact: true }).click();
+    await page.getByRole('button', { name: '刷新列表', exact: true }).click();
     await page.waitForFunction(() => Boolean(window.cooldownFixture.releaseRead));
     await releaseReset();
     await page.waitForFunction(() => window.cooldownFixture.reads === 3 && window.cooldownFixture.completedReads === 2);

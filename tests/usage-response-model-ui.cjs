@@ -68,7 +68,8 @@ function parseCsv(text) {
     const modelCells = () => page.locator('.usage-td-model');
     const modelDetails = () => modelCells().evaluateAll(cells => cells.map(cell => ({
       main: cell.querySelector(':scope > strong')?.textContent || '',
-      sublines: Array.from(cell.querySelectorAll(':scope > small')).map(item => item.textContent || ''),
+      sublines: Array.from(cell.querySelectorAll(':scope > small:not(.usage-model-effort)')).map(item => item.textContent || ''),
+      effort: cell.querySelector(':scope > .usage-model-effort')?.textContent ?? null,
       response: cell.querySelector(':scope > .usage-response-model')?.textContent || '',
       title: cell.getAttribute('title')?.split('\n').slice(0, 3).join('\n') ?? null,
     })));
@@ -89,11 +90,13 @@ function parseCsv(text) {
     await open('zh-CN');
     assert.equal(await modelCells().count(), 9, 'Every fixture record renders a model cell');
     const zhDetails = await modelDetails();
-    assert.equal(await page.locator('.usage-th-effort').count(), 1, 'Migration enables reasoning effort for existing layouts');
+    // Reasoning effort is no longer a separate column; every model cell shows it as a subline.
+    assert.equal(await page.locator('.usage-th-effort').count(), 0, 'Reasoning effort has no separate column');
+    assert.deepEqual(zhDetails.map(item => item.effort), Array(9).fill('high'), 'Existing layouts show reasoning effort inside every model cell');
     assert.equal(await page.locator('.usage-td-request').first().textContent(), '/v1/responses');
     assert.equal(await page.locator('.usage-td-request').first().getAttribute('title'), '/v1/responses');
     assert.match(await modelCells().first().getAttribute('title'), /response_model.*上游声明/);
-    assert.deepEqual(await page.locator('.usage-events-table th').evaluateAll(cells => cells.slice(0, 2).map(cell => cell.className.split(' ')[0])), ['usage-th-time', 'usage-th-provider']);
+    assert.deepEqual(await page.locator('.usage-events-table th').evaluateAll(cells => cells.slice(0, 2).map(cell => cell.className.split(' ')[0])), ['usage-th-time', 'usage-th-model']);
     assert.equal(await page.locator('.usage-td-provider strong').first().textContent(), 'Codex');
     assert.equal(await page.locator('.usage-access-type').first().textContent(), 'API');
     assert.equal(await page.locator('.usage-access-type').nth(1).textContent(), 'OAuth');
@@ -102,13 +105,15 @@ function parseCsv(text) {
       main: 'astra',
       sublines: ['gpt-6-astra', '响应模型: gpt-5.6-luna'],
       response: '响应模型: gpt-5.6-luna',
+      effort: 'high',
       title: '请求模型: astra\n路由模型: gpt-6-astra\n响应模型: gpt-5.6-luna',
     }, 'Differing alias, upstream model, and upstream response remain distinguishable');
     assert.deepEqual(zhDetails[1], {
       main: 'same-alias',
       sublines: ['gpt-6-sol'],
       response: '',
-      title: '请求模型: same-alias\n路由模型: gpt-6-sol',
+      effort: 'high',
+      title: '请求模型: same-alias\n路由模型: gpt-6-sol\n推理强度: high',
     }, 'A response equal to the routed model is not repeated');
     assert.deepEqual(zhDetails[2].sublines, ['openai/gpt-4o-latest', '响应模型: gpt-4o-2024-08-06'], 'Snapshot and prefix model names preserve the existing upstream subline');
     assert.equal(zhDetails[2].title, '请求模型: gpt4o\n路由模型: openai/gpt-4o-latest\n响应模型: gpt-4o-2024-08-06');
@@ -119,7 +124,7 @@ function parseCsv(text) {
     assert.equal(await page.locator('.usage-td-cost strong').nth(1).textContent(), '$0.00');
     assert.equal(await page.locator('.usage-td-cost').nth(2).locator('small').textContent(), '未定价');
     await assertNoHorizontalPageOverflow('desktop');
-    for (const child of await modelCells().first().locator(':scope > strong, :scope > small').all()) {
+    for (const child of await modelCells().first().locator(':scope > strong, :scope > small:not(.usage-model-effort)').all()) {
       assert.equal((await child.getAttribute('title')).split('\n').slice(0, 3).join('\n'), zhDetails[0].title, 'Hovering each line exposes the full three-model title');
     }
     const longLine = await modelCells().nth(6).locator('.usage-response-model').evaluate(element => ({
@@ -131,12 +136,12 @@ function parseCsv(text) {
     assert.equal(longLine.overflow, 'ellipsis', 'Long response names are visibly ellipsized');
     assert.ok(longLine.title.includes(`response-${'r'.repeat(120)}`), 'The complete long response remains available in the title');
 
-    const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', { name: '导出本页 CSV', exact: true }).click();
-    const download = await downloadPromise;
-    const csvPath = await download.path();
-    assert.ok(csvPath, 'CSV export creates a download');
-    const csv = await fs.promises.readFile(csvPath, 'utf8');
+    // Export asks the native save dialog for a path and writes the CSV through the backend.
+    await page.getByRole('button', { name: '导出筛选结果 CSV', exact: true }).click();
+    await page.waitForFunction(() => window.__usageExport);
+    const exportCall = await page.evaluate(() => window.__usageExport);
+    assert.equal(exportCall.path, 'C:/fixture/usage-response-model.csv', 'CSV export writes to the chosen file');
+    const csv = exportCall.contents;
     const csvRows = parseCsv(csv.replace(/^\uFEFF/, ''));
     const header = csvRows[0];
     const aliasIndex = header.indexOf('alias');

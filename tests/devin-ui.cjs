@@ -10,7 +10,11 @@ const base = process.env.DEVIN_TEST_BASE_URL || 'http://127.0.0.1:1421';
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error)));
     await page.route('**/*', route => route.request().url().startsWith(base + '/') ? route.continue() : route.abort());
-    const open = query => page.goto(base + '/tests/fixtures/devin.html?' + (query || ''), { waitUntil: 'domcontentloaded' });
+    // The OAuth sign-in page lists only Claude and Codex until "Show other providers" is checked.
+    const open = async query => {
+      await page.goto(base + '/tests/fixtures/devin.html?' + (query || ''), { waitUntil: 'domcontentloaded' });
+      if (!/(^|&)view=/.test(query || '')) await page.locator('.oauth-login-page .personal-provider-toggle input').check();
+    };
     const card = () => page.locator('.oauth-card').filter({ hasText: 'Devin OAuth' });
     const click = label => card().getByRole('button', { name: label, exact: true }).click();
     const calls = () => page.evaluate(() => window.devinFixture.calls);
@@ -55,8 +59,9 @@ const base = process.env.DEVIN_TEST_BASE_URL || 'http://127.0.0.1:1421';
     assert.ok((await calls()).some(call => call.cmd === 'start_oauth_login' && call.args.provider === 'devin'));
 
     await open('view=files');
-    await page.getByText('devin-test.json', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Fetch Quota', exact: true }).click();
+    await page.getByText('devin-test.json', { exact: true }).first().waitFor();
+    // The auth-file list shows a compact quota cell; fetching is the row's "Refresh Quota" action.
+    await page.getByRole('button', { name: 'Refresh Quota', exact: true }).click();
     await page.getByText('75%', { exact: false }).first().waitFor();
     assert.equal(await page.locator('.devin-logo').count(), 1);
 
@@ -67,7 +72,7 @@ const base = process.env.DEVIN_TEST_BASE_URL || 'http://127.0.0.1:1421';
     assert.equal(await page.locator('.real-quota-track').count(), 2);
     assert.equal(await page.locator('.real-quota-track span').last().evaluate(node => node.style.width), '0%');
     await page.evaluate(() => { window.devinFixture.quotaError = true; });
-    await page.getByRole('button', { name: 'Refresh All', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh Quota', exact: true }).click(); // the toolbar's refresh-all action
     await page.getByText('Session expired', { exact: false }).waitFor();
     assert.equal(await page.locator('.real-quota-track').count(), 0);
 

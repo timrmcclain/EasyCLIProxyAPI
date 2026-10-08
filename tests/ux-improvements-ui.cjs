@@ -8,7 +8,7 @@ const path = require('node:path');
   await server.listen();browser=await chromium.launch({channel:'msedge',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});page.setDefaultTimeout(10000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>localStorage.setItem('easy-cli-proxy-api.locale','en'));
-  await page.goto('http://127.0.0.1:1437/?mock=running');await page.waitForFunction(()=>document.querySelector('.quota-refresh')&&!document.querySelector('.quota-refresh').disabled);
+  await page.goto('http://127.0.0.1:1437/?mock=running',{timeout:60000});await page.waitForFunction(()=>document.querySelector('.quota-refresh')&&!document.querySelector('.quota-refresh').disabled);
   await page.evaluate(()=>{
    const original=window.__TAURI_INTERNALS__.invoke;window.uxWrites=[];window.uxItems=[];window.uxFail=false;
    window.__TAURI_INTERNALS__.invoke=async(command,args,...rest)=>{
@@ -22,15 +22,19 @@ const path = require('node:path');
    };
   });
   await page.locator('.quota-refresh').click();await page.waitForFunction(()=>!document.querySelector('.quota-refresh').disabled);
-  await page.evaluate(async()=>{const {updateQuotaCache}=await import('/src/services/quotaCache.ts');updateQuotaCache(cache=>Object.fromEntries(Object.entries(cache).map(([key,value])=>[key,{...value,status:'success',fetchedAt:Date.now(),rows:[{scope:'account',label:'Weekly',remainingPercent:60,resetAtMs:Date.now()+86400000}]}])));});
+  await page.evaluate(async()=>{const {updateQuotaCache}=await import('/src/services/quotaCache.ts');updateQuotaCache(cache=>{const held=Object.keys(cache).find(key=>!/codex|antigravity|xai/i.test(key))??Object.keys(cache)[0];return Object.fromEntries(Object.entries(cache).map(([key,value])=>[key,{...value,status:'success',fetchedAt:Date.now(),rows:[{scope:'account',label:'Weekly',remainingPercent:key===held?0:60,resetAtMs:Date.now()+86400000}]}]));});});
   const nav=page.getByRole('navigation',{name:'Main navigation'});
+  // Overview now offers alternatives and the reset timeline only while an account is held back, so one plain (non-Codex/Antigravity/xAI) account above is exhausted.
   await page.getByRole('button',{name:'Compare alternatives',exact:true}).click();
   const alternatives=page.getByRole('region',{name:'Compare alternatives'});await alternatives.waitFor();
   await alternatives.getByRole('button',{name:'Load available models'}).first().click();await alternatives.getByText('fixture-model',{exact:true}).waitFor();await alternatives.getByText('Reported inputs: text, image',{exact:true}).waitFor();
   await alternatives.getByRole('button',{name:'Close',exact:true}).click();
   await page.locator('.ux-insight summary').filter({hasText:'Upcoming allowance resets'}).click();
   await page.getByText('Provider estimates. A new quota check must confirm availability after each reset.',{exact:true}).waitFor();
-  await page.getByLabel('Notify me in Overview',{exact:true}).check();
+  // The opt-in switch moved to Settings -> App preferences; Overview only shows the alerts.
+  await nav.getByRole('button',{name:'Settings',exact:true}).click();await page.locator('#config-subpage-tab-software').click();
+  await page.getByRole('switch',{name:'Notify me in Overview',exact:true}).check();
+  await nav.getByRole('button',{name:/^Overview\b/}).click();await page.locator('.quota-refresh').waitFor();
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
   await page.waitForTimeout(1700);
   await page.evaluate(()=>{window.uxItems=[{timestamp:new Date().toISOString(),auth_index:'mock-codex-1',model:'fixture-model',user_agent:'claude-desktop/1',failed:true,canceled:false,failure_status:429}];window.dispatchEvent(new Event('focus'));});

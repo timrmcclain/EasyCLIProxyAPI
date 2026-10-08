@@ -26,6 +26,8 @@ const path = require('node:path');
     });
     await page.getByRole('button',{name:'Refresh accounts',exact:true}).click();
     const summary=page.locator('.quota-provider-summary-cell');
+    // The per-group breakdown sits behind the tile's Show toggle.
+    await summary.getByRole('button',{name:'Show',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('.quota-provider-groups')?.textContent.includes('Claude/GPT'));
     assert.equal(await summary.locator('.quota-summary-value').innerText(),'2');
     assert.match(await summary.innerText(),/of 2 reported groups available/);

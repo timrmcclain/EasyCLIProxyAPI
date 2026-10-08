@@ -79,7 +79,8 @@ const path = require('node:path');
       await form.locator('.provider-advanced-settings > summary').click();
       const headers = form.getByRole('textbox', { name: /Custom Headers/ });
       await headers.fill('X-Layout-Test: reachable');
-      await form.getByRole('combobox', { name: 'Disable Cooldown', exact: true }).selectOption('false');
+      // The provider-level select is now "Cooldown" (Use default / On / Off); "On" stores disable-cooling: false.
+      await form.getByRole('combobox', { name: 'Cooldown', exact: true }).selectOption({ label: 'On' });
       await form.getByRole('combobox', { name: 'Cache User ID', exact: true }).selectOption('false');
       await assertDialogControls(form);
       const scroll = await form.evaluate((element) => ({ top: element.scrollTop, max: element.scrollHeight - element.clientHeight }));
@@ -110,7 +111,7 @@ const path = require('node:path');
 
     await page.locator('.real-provider-row').getByRole('button', { name: 'Edit', exact: true }).click();
     await form.locator('.provider-advanced-settings > summary').click();
-    for (const name of ['Disable Cooldown', 'Cache User ID']) {
+    for (const name of ['Cooldown', 'Cache User ID']) {
       const control = form.getByRole('combobox', { name, exact: true });
       assert.equal(await control.inputValue(), 'false');
       await control.selectOption('');

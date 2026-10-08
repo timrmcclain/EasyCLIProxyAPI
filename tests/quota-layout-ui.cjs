@@ -45,7 +45,10 @@ const base = process.env.QUOTA_TEST_BASE || 'http://127.0.0.1:1421';
     const claudeCard = page.locator('.real-quota-card').filter({ has: page.locator('strong[title="claude.json"]') });
     assert.equal(await claudeCard.getByRole('button', { name: 'Reset Quota', exact: true }).isEnabled(), true);
     assert.equal(await page.locator('.credential-quota-reset').isEnabled(), true);
-    assert.match(await page.locator('.credential-quota-reset-credits').innerText(), /2/);
+    // The reset count label was replaced by one expiry line per available reset credit.
+    const denseExpiries = page.locator('.credential-quota-dense .reset-credit-expiries li');
+    assert.equal(await denseExpiries.count(), 2, 'Dense panel lists both available reset credits');
+    assert.match(await denseExpiries.first().innerText(), /2030/);
     console.log('Quota layout: 11 viewport/content combinations passed');
   } finally {
     await browser.close();

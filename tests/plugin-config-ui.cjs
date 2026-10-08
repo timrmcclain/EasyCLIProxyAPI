@@ -25,6 +25,9 @@ const path = require('node:path');
     };
     const field = name => page.getByLabel(new RegExp(`^${name}`));
     const save = () => page.getByRole('button', { name: 'Save', exact: true });
+    // Array/object fields and the raw configuration open in a form view; switch one to its JSON textarea to type JSON.
+    const jsonMode = name => page.locator('.plugin-config-field').filter({ has: page.locator('label', { hasText: new RegExp(`^${name}`) }) })
+      .getByRole('button', { name: 'Edit as JSON', exact: true }).click();
 
     await open();
     assert.equal(await save().isDisabled(), true);
@@ -39,6 +42,8 @@ const path = require('node:path');
     assert.equal(await field('retries').getAttribute('aria-invalid'), 'true');
     assert.equal(await page.evaluate(() => window.pluginConfigFixture.patches.length), 0);
     await field('retries').fill('0');
+    await jsonMode('modes');
+    await jsonMode('headers');
     await field('modes').fill('{}');
     await save().click();
     assert.equal(await field('modes').getAttribute('aria-invalid'), 'true');
@@ -60,6 +65,7 @@ const path = require('node:path');
     assert.equal(await page.getByRole('button', { name: 'Open configuration' }).evaluate(element => element === document.activeElement), true);
 
     await open('raw');
+    await jsonMode('Custom configuration');
     const raw = field('Custom configuration');
     const baseline = JSON.parse(await raw.inputValue());
     assert.equal(Object.hasOwn(baseline, 'enabled'), false);

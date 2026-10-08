@@ -12,6 +12,9 @@ import '../../src/styles/index.css';
 
 const params = new URLSearchParams(location.search);
 localStorage.setItem('easy-cli-proxy-api.locale', params.get('locale') || 'en');
+// Each scenario starts without persisted health results; scheduled auto-checks stay off unless ?autoHealth is set.
+localStorage.removeItem('personal.coreHealth.results');
+localStorage.setItem('personal.coreHealth.auto', JSON.stringify({ enabled: params.has('autoHealth'), lastRunAt: 0 }));
 document.documentElement.dataset.theme = params.get('theme') || 'light';
 const runtime = createBrowserMockRuntime(params.has('offline') ? 'stopped' : 'running', (event, payload) => { void emit(event, payload); });
 const initialModels = ['gpt-5.2-codex', 'claude-sonnet-4-6', 'gemini-3-pro', 'deepseek-chat', 'custom/team-alias', 'long-provider/llama-4-scout-instruct-with-a-long-model-name']

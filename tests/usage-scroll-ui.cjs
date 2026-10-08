@@ -54,9 +54,9 @@ function parseCsv(text) {
         `${label}: shared filters stay above the tab content`);
       assert.equal(await page.locator('.usage-events-panel .usage-filter-panel').count(), 0,
         `${label}: request details do not embed a second filter toolbar`);
-      const geometry = await panel.evaluate(element => {
+      const readFilterGeometry = () => panel.evaluate(element => {
         const row = element.querySelector('.usage-filter-row');
-        const selects = [...row.querySelectorAll('select')];
+        const selects = [...row.querySelectorAll('.select-menu-trigger')];
         return {
           selectCount: selects.length,
           tops: selects.map(control => control.getBoundingClientRect().top),
@@ -66,14 +66,25 @@ function parseCsv(text) {
             .map(node => node.className || node.tagName),
         };
       });
-      assert.equal(geometry.selectCount, 6, `${label}: all six filters are present`);
+      // Two primary filters are always visible; the other four live behind "More filters".
+      const moreFilters = panel.locator('.usage-filter-more');
+      assert.equal(await moreFilters.getAttribute('aria-expanded'), 'false', `${label}: extra filters start collapsed`);
+      const collapsed = await readFilterGeometry();
+      assert.equal(collapsed.selectCount, 2, `${label}: two primary filters are visible`);
+      assert.deepEqual(collapsed.overflow, [], `${label}: collapsed filters do not overflow horizontally`);
       if (expectSingleRow) {
-        assert.ok(Math.max(...geometry.tops) - Math.min(...geometry.tops) <= 1,
-          `${label}: all six selectors fit on one desktop row`);
+        const moreTop = await moreFilters.evaluate(element => element.getBoundingClientRect().top);
+        const tops = [...collapsed.tops, moreTop];
+        assert.ok(Math.max(...tops) - Math.min(...tops) <= 1,
+          `${label}: the primary filters and More filters fit on one desktop row`);
       }
+      await moreFilters.click();
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const geometry = await readFilterGeometry();
+      assert.equal(geometry.selectCount, 6, `${label}: all six filters are present`);
       assert.deepEqual(geometry.overflow, [], `${label}: responsive filters do not overflow horizontally`);
-      assert.equal(await panel.locator('button').count(), 0, `${label}: filters have no reset button`);
-      for (const control of await panel.locator('select').all()) {
+      assert.equal(await panel.locator('button:not(.select-menu-trigger):not(.usage-filter-more)').count(), 0, `${label}: filters have no reset button`);
+      for (const control of await panel.locator('.select-menu-trigger').all()) {
         assert.equal(await control.isEnabled(), true, `${label}: every filter is usable`);
         await control.scrollIntoViewIfNeeded();
         assert.equal(await control.evaluate(element => {
@@ -83,6 +94,8 @@ function parseCsv(text) {
             && bounds.right <= Math.min(innerWidth, row.right) + 1;
         }), true, `${label}: every filter remains fully visible within the row`);
       }
+      await moreFilters.click();
+      assert.equal(await panel.locator('.select-menu-trigger').count(), 2, `${label}: More filters collapses again`);
     };
 
     const readSharedGeometry = () => page.evaluate(async () => {
@@ -171,7 +184,8 @@ function parseCsv(text) {
 
     assert.equal(await page.getByRole('heading', { name: 'Request Event Log' }).count(), 0, 'The redundant request log heading is removed');
     const firstRow = page.locator('.usage-events-table tbody tr').first();
-    assert.equal(await page.locator('.usage-events-table th').count(), 13, 'Saved settings cannot restore removed duplicate columns');
+    // Of the 17 legacy keys only the 11 that still exist as columns are restored.
+    assert.equal(await page.locator('.usage-events-table th').count(), 11, 'Saved settings cannot restore removed duplicate columns');
     assert.equal(await firstRow.locator('.usage-td-source svg, .usage-td-source img').count(), 0, 'Source is plain text without a logo');
     assert.equal(await firstRow.locator('.usage-td-total').getAttribute('title'), '1,200 tokens', 'The displayed total uses the recorded total instead of adding cache and reasoning again');
     assert.equal(await firstRow.locator('.tone-input').getAttribute('aria-label'), 'Input: 1000');
@@ -181,17 +195,20 @@ function parseCsv(text) {
     assert.equal(await firstRow.locator('.tone-cache-read').textContent(), '400');
     assert.equal(await firstRow.locator('.tone-cache-write').textContent(), '50');
     assert.equal(await firstRow.locator('.usage-td-time small').count(), 1, 'The request date remains visible below its time');
-    assert.ok((await firstRow.locator('.usage-td-latency small').textContent()).includes('200'), 'The latency cell includes first-token latency');
+    assert.equal(await firstRow.locator('.usage-td-latency .usage-latency-line').count(), 2, 'The latency cell shows first-token and total latency');
+    assert.ok((await firstRow.locator('.usage-td-latency .usage-latency-line').first().locator('.usage-latency-value').textContent()).includes('200'), 'The latency cell includes first-token latency');
     assert.equal(await page.locator('.usage-events-summary').count(), 0, 'There is no separate toolbar above the request table');
     assert.equal(await page.locator('.usage-events-footer .usage-page-size-select').count(), 1, 'Pagination remains in the bottom footer');
 
     // Multiple input updates can arrive before the next animation frame. None
     // may be dropped, and queued programmatic scroll events must not echo back.
+    // The 11 restored columns leave about 350px of horizontal range at 1100px; keep every position inside it.
+    assert.ok(await page.locator('.usage-table-wrap').evaluate(element => element.scrollWidth - element.clientWidth) >= 330, 'The wide column set scrolls horizontally');
     const rapidScroll = await page.evaluate(async () => {
       const bar = document.querySelector('.usage-table-top-scrollbar');
       const table = document.querySelector('.usage-table-wrap');
       await new Promise(requestAnimationFrame);
-      const positions = [80, 180, 320, 240, 420];
+      const positions = [60, 140, 250, 190, 330];
       const samples = positions.map((position) => {
         bar.scrollLeft = position;
         bar.dispatchEvent(new Event('scroll'));
@@ -204,19 +221,19 @@ function parseCsv(text) {
     for (const { expected, actual } of rapidScroll.samples) {
       assert.equal(actual, expected, 'Every scrollbar position reaches the table without a frame lock');
     }
-    assert.equal(rapidScroll.table, 420);
-    assert.equal(rapidScroll.bar, 420);
+    assert.equal(rapidScroll.table, 330);
+    assert.equal(rapidScroll.bar, 330);
 
     const reverseScroll = await page.evaluate(async () => {
       const bar = document.querySelector('.usage-table-top-scrollbar');
       const table = document.querySelector('.usage-table-wrap');
-      const samples = [360, 200, 90].map((position) => {
+      const samples = [300, 160, 70].map((position) => {
         table.scrollLeft = position;
         table.dispatchEvent(new Event('scroll'));
         return { expected: position, actual: bar.scrollLeft };
       });
       // A vertical scroll / delayed echo must not overwrite a newer bar input.
-      bar.scrollLeft = 300;
+      bar.scrollLeft = 240;
       table.scrollTop = 200;
       table.dispatchEvent(new Event('scroll'));
       bar.dispatchEvent(new Event('scroll'));
@@ -225,14 +242,14 @@ function parseCsv(text) {
       return { samples, bar: bar.scrollLeft, table: table.scrollLeft };
     });
     for (const { expected, actual } of reverseScroll.samples) assert.equal(actual, expected);
-    assert.equal(reverseScroll.bar, 300, 'Vertical scrolling cannot rewind pending horizontal input');
-    assert.equal(reverseScroll.table, 300);
+    assert.equal(reverseScroll.bar, 240, 'Vertical scrolling cannot rewind pending horizontal input');
+    assert.equal(reverseScroll.table, 240);
 
     await page.waitForTimeout(1200); // Exercise the existing one-second background refresh.
     assert.deepEqual(await page.evaluate(() => ({
       bar: document.querySelector('.usage-table-top-scrollbar').scrollLeft,
       table: document.querySelector('.usage-table-wrap').scrollLeft,
-    })), { bar: 300, table: 300 }, 'Background refresh preserves the horizontal position');
+    })), { bar: 240, table: 240 }, 'Background refresh preserves the horizontal position');
 
     for (const width of [850, 1400, 1100]) {
       await page.setViewportSize({ width, height: 700 });
@@ -291,7 +308,7 @@ function parseCsv(text) {
 
     await page.locator('.usage-col-settings-btn').click();
     const checkboxes = page.locator('.usage-column-option input');
-    assert.equal(await checkboxes.count(), 13, 'Column settings contain only the remaining columns');
+    assert.equal(await checkboxes.count(), 12, 'Column settings contain only the remaining columns');
     for (let index = 2; index < await checkboxes.count(); index += 1) await checkboxes.nth(index).uncheck();
     await page.locator('.usage-column-dialog-actions .primary-button').click();
     await page.waitForFunction(() => document.querySelector('.usage-table-top-scrollbar').classList.contains('is-hidden'));
@@ -300,16 +317,15 @@ function parseCsv(text) {
     assert.equal(await page.locator('.usage-table-wrap').evaluate((element) => element.scrollLeft), 0);
 
     // Export carries complete request data even when most display columns are hidden.
-    const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Export Page CSV' }).click();
-    const download = await downloadPromise;
-    assert.match(download.suggestedFilename(), /^usage-events-page-1-\d{4}-\d{2}-\d{2}\.csv$/);
-    const stream = await download.createReadStream();
-    const chunks = [];
-    for await (const chunk of stream) chunks.push(chunk);
-    const exported = parseCsv(Buffer.concat(chunks).toString('utf8').replace(/^\uFEFF/, ''));
+    // The export goes through the native save dialog and is written by the backend.
+    await page.getByRole('button', { name: 'Export Filtered CSV' }).click();
+    await page.waitForFunction(() => window.__usageExport);
+    const exportCall = await page.evaluate(() => ({ dialog: window.__usageExportDialog, ...window.__usageExport }));
+    assert.match(exportCall.dialog?.defaultPath ?? '', /^usage-events-\d{4}-\d{2}-\d{2}\.csv$/);
+    assert.equal(exportCall.path, 'C:/fixture/usage-events.csv', 'The CSV is written to the path chosen in the save dialog');
+    const exported = parseCsv(exportCall.contents.replace(/^\uFEFF/, ''));
     const [headers, ...records] = exported;
-    assert.equal(records.length, 200, 'CSV contains exactly the current page');
+    assert.equal(records.length, 400, 'CSV contains every filtered request, not only the 200 on the current page');
     const values = Object.fromEntries(headers.map((header, index) => [header, records[0][index]]));
     assert.deepEqual(Object.fromEntries(['input_tokens', 'output_tokens', 'reasoning_tokens', 'cache_read_tokens', 'cache_creation_tokens', 'total_tokens'].map(key => [key, values[key]])), {
       input_tokens: '1000', output_tokens: '200', reasoning_tokens: '100', cache_read_tokens: '400', cache_creation_tokens: '50', total_tokens: '1200',
@@ -317,7 +333,7 @@ function parseCsv(text) {
     assert.equal(values.api_key_remark, 'Test key, "local"', 'CSV correctly escapes commas and quotes');
     assert.equal(values.endpoint, '/v1/responses');
     assert.equal(values.row_id, '1');
-    assert.equal(records.at(-1)[headers.indexOf('row_id')], '200');
+    assert.equal(records.at(-1)[headers.indexOf('row_id')], '400');
 
     await page.locator('.usage-col-settings-btn').click();
     await page.locator('.usage-column-select-all').click();
@@ -332,7 +348,7 @@ function parseCsv(text) {
     await page.keyboard.press('ArrowRight');
     assert.equal(Number(await timeResize.getAttribute('aria-valuenow')), beforeWidth + 10, 'Keyboard resizing remains available');
     await page.keyboard.press('Home');
-    assert.equal(Number(await timeResize.getAttribute('aria-valuenow')), 84);
+    assert.equal(Number(await timeResize.getAttribute('aria-valuenow')), 82, 'Home restores the time column default width');
 
     await page.locator('.usage-page-size-select').selectOption('20');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-info').textContent.trim() === '1 / 20');
@@ -343,30 +359,39 @@ function parseCsv(text) {
     assert.equal(await page.locator('.usage-pagination-summary').textContent(), 'Showing 21 - 40 of 400');
 
     assert.equal(await page.getByRole('button', { name: 'Reset Filters', exact: true }).count(), 0, 'The request log has no reset filters control');
-    await page.getByRole('combobox', { name: 'Model', exact: true }).selectOption('test-model');
+    // Filters are SelectMenu comboboxes; Source and Request result live behind "More filters".
+    const filterTrigger = name => page.locator(`.usage-filter-panel .select-menu-trigger[aria-label="${name}"]`);
+    const chooseFilter = async (name, option) => {
+      if (await filterTrigger(name).count() === 0) await page.locator('.usage-filter-panel .usage-filter-more').click();
+      await filterTrigger(name).click();
+      await page.getByRole('listbox', { name, exact: true }).getByRole('option', { name: option, exact: true }).click();
+      await page.waitForFunction(({ name, option }) => document.querySelector(`.usage-filter-panel .select-menu-trigger[aria-label="${name}"]`)?.textContent.trim() === option, { name, option });
+    };
+    const filterValue = async name => (await filterTrigger(name).textContent()).trim();
+    await chooseFilter('Model', 'test-model');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-summary').textContent === 'Showing 1 - 20 of 266');
     assert.deepEqual(await page.locator('.usage-td-model > strong').allTextContents(), Array(20).fill('test-model'), 'Changing a filter resets pagination and shows matching models');
-    await page.getByRole('combobox', { name: 'Source', exact: true }).selectOption('test-source');
+    await chooseFilter('Source', 'Test source');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-summary').textContent === 'Showing 1 - 20 of 133');
     assert.ok((await page.locator('.usage-td-source').allTextContents()).every(text => text === 'Test source'));
-    await page.getByRole('combobox', { name: 'Request result', exact: true }).selectOption('failed');
+    await chooseFilter('Request result', 'Failed');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-summary').textContent === 'Showing 1 - 20 of 66');
     assert.equal(await page.locator('.usage-events-table tbody .usage-result.failed').count(), 20);
     assert.equal(await page.getByRole('button', { name: 'Reset Filters', exact: true }).count(), 0, 'Active filters do not show a reset filters control');
-    await page.locator('.usage-filter-panel select').first().selectOption('custom');
+    await chooseFilter('Time range', 'Custom');
     const customInputs = page.locator('.usage-custom-range input');
     assert.equal(await customInputs.count(), 2, 'Custom time range inputs remain available');
     await customInputs.first().fill('2026-10-01T00:00');
     await customInputs.last().fill('2026-10-03T23:59');
-    assert.equal(await page.locator('.usage-filter-panel button').count(), 0, 'Custom time ranges do not show a reset filters control');
-    await page.locator('.usage-filter-panel select').first().selectOption('4h');
-    await page.getByRole('combobox', { name: 'Model', exact: true }).selectOption('');
-    await page.getByRole('combobox', { name: 'Source', exact: true }).selectOption('');
-    await page.getByRole('combobox', { name: 'Request result', exact: true }).selectOption('all');
+    assert.equal(await page.locator('.usage-filter-panel button:not(.select-menu-trigger):not(.usage-filter-more)').count(), 0, 'Custom time ranges do not show a reset filters control');
+    await chooseFilter('Time range', 'Last 4 Hours');
+    await chooseFilter('Model', 'All Models');
+    await chooseFilter('Source', 'All Sources');
+    await chooseFilter('Request result', 'All Results');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-summary').textContent === 'Showing 1 - 20 of 400');
-    assert.equal(await page.getByRole('combobox', { name: 'Model', exact: true }).inputValue(), '');
-    assert.equal(await page.getByRole('combobox', { name: 'Source', exact: true }).inputValue(), '');
-    assert.equal(await page.getByRole('combobox', { name: 'Request result', exact: true }).inputValue(), 'all');
+    assert.equal(await filterValue('Model'), 'All Models');
+    assert.equal(await filterValue('Source'), 'All Sources');
+    assert.equal(await filterValue('Request result'), 'All Results');
     assert.deepEqual(errors, [], 'Request log interactions do not produce runtime errors');
 
     console.log('PASS: stable navigation/filter geometry across all five tabs, loading, and refresh at 1167/1375/1024/800/640px; responsive filters without reset controls, custom ranges, request values, CSV export, pagination, column visibility/resizing, and synchronized horizontal scrolling with 200 rows.');

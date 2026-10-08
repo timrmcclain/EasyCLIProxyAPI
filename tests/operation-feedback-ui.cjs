@@ -128,9 +128,24 @@ const base = process.env.FEEDBACK_TEST_BASE_URL || 'http://127.0.0.1:1421';
     await notice.getByRole('button').click(); await waitNotices(0);
     assert.deepEqual(await table.boundingBox(), priceBefore);
     await page.evaluate(() => { window.feedbackFixture.failSync = true; });
-    await sync.click(); await waitNotices(1);
-    assert.ok((await notice.innerText()).includes('price sync failed'));
-    assert.deepEqual(await table.boundingBox(), priceBefore, 'Real pricing error never shifts table');
+    // Errors stay inline where the action happened (between the pricing actions and the table)
+    // until dismissed, instead of floating in the shared stack.
+    await sync.click();
+    const inlineError = page.locator('.usage-records-page .inline-notice.error');
+    await inlineError.waitFor();
+    assert.equal(await stack.count(), 0, 'Pricing errors do not float in the shared stack');
+    assert.ok((await inlineError.innerText()).includes('price sync failed'));
+    assert.equal(await inlineError.getAttribute('role'), 'alert');
+    const actionsBox = await page.locator('.usage-pricing-actions').boundingBox();
+    const errorBox = await inlineError.boundingBox();
+    const tableWithError = await table.boundingBox();
+    assert.ok(errorBox.y >= actionsBox.y + actionsBox.height - 1 && errorBox.y + errorBox.height <= tableWithError.y + 1, 'The error sits between the pricing actions and the table');
+    assert.deepEqual([tableWithError.x, tableWithError.width], [priceBefore.x, priceBefore.width], 'The inline error does not resize the table');
+    await page.clock.fastForward(30000);
+    assert.equal(await inlineError.count(), 1, 'Pricing errors persist until dismissed');
+    await inlineError.getByRole('button').click();
+    await inlineError.waitFor({ state: 'detached' });
+    assert.deepEqual(await table.boundingBox(), priceBefore, 'Dismissing the pricing error restores the table position');
     assert.deepEqual(errors, []);
     console.log('PASS: no layout shifts, shared stack, owner cleanup, success expiry/repeat/hover/focus, persistent errors, quota details, native modal, light/dark at 3 widths, real pricing success/error.');
   } finally { await browser.close(); }

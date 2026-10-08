@@ -240,8 +240,10 @@
   --surface-page: #f3f5f8;
   --surface-3: var(--surface-page);
   --bg-secondary: var(--surface-page);
-  --text-muted: #64748b;
-  --text-placeholder: #7b8798;
+  /* #64748b is 4.36:1 on the grey page; this is the lightest slate that keeps 4.5:1 there. */
+  --text-muted: #5b6b80;
+  /* 4.5:1 on white and on the grey page (#7b8798 was ~3.3-3.6:1). */
+  --text-placeholder: #5b6b80;
 }
 
 :root:not([data-theme='dark']),
@@ -257,7 +259,7 @@
   --bg-hover: #f1f4f8;
   --bg-tertiary: #f8fafc;
   --bg-quinary: #f8fafc;
-  --text-quaternary: #64748b;
+  --text-quaternary: #5b6b80;
 }
 
 /* Dark theme: readable disabled/muted text, and a warning color distinct from errors. */
@@ -276,6 +278,12 @@
   [role='menuitem'], [role='option'], [tabindex]:not([tabindex='-1'])):focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color) !important;
   outline-offset: var(--focus-ring-offset);
+}
+
+/* A field wrapper that rings itself via :focus-within owns the indicator; its inner input must not draw a second ring.
+   (The attribute selector only lifts specificity above the global rule above.) */
+.plugin-search input[type='search']:focus-visible {
+  outline: none !important;
 }
 
 /* Lighter icon strokes read better at 14-16px. */

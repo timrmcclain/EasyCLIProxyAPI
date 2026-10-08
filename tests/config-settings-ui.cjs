@@ -44,7 +44,7 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
         await page.locator('.app-shell').waitFor();
         await page.addStyleTag({ content: '#browser-mock-toolbar { display: none; }' });
         await page.locator('.nav-section').getByRole('button', {
-          name: locale === 'en' ? 'Advanced Features' : '高级功能', exact: true,
+          name: locale === 'en' ? 'Settings' : '高级功能', exact: true,
         }).click();
         await page.locator('#config-subpage-panel').waitFor();
 
@@ -115,9 +115,16 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           }
           assert.equal(metrics.reachable, true, `${label} ${context}: control must remain reachable: ${JSON.stringify(metrics)}`);
         };
-        const hasDirtyMarker = async id => page.locator(`#config-subpage-tab-${id}`).evaluate(element =>
-          Boolean(element.querySelector('.config-nav-dirty, .config-settings-dirty, [data-dirty="true"]'))
-          || /未保存|unsaved/i.test([element.getAttribute('aria-label'), element.getAttribute('title'), element.textContent].join(' ')));
+        const dirtyMarkerOf = element => Boolean(element.querySelector('.config-nav-dirty, .config-settings-dirty, [data-dirty="true"]'))
+          || /未保存|unsaved/i.test([element.getAttribute('aria-label'), element.getAttribute('title'), element.textContent].join(' '));
+        // Category markers follow card drafts asynchronously, so wait (bounded) for the expected state before reading it.
+        const hasDirtyMarker = async (id, expected = true) => {
+          await page.waitForFunction(([selector, want, source]) => {
+            const element = document.querySelector(selector);
+            return Boolean(element) && new Function(`return (${source})`)()(element) === want;
+          }, [`#config-subpage-tab-${id}`, expected, dirtyMarkerOf.toString()], { timeout: 3000 }).catch(() => {});
+          return page.locator(`#config-subpage-tab-${id}`).evaluate(dirtyMarkerOf);
+        };
         const search = page.getByLabel(locale === 'en' ? 'Search settings' : '搜索设置', { exact: true });
         const retrySection = page.locator('#config-retry-section-title').locator('xpath=ancestor::section[1]');
         const exerciseHelp = async (trigger, context) => {
@@ -145,7 +152,7 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           assert.equal(await trigger.getAttribute('aria-expanded'), 'false', `${label}: clicking outside closes field help`);
         };
 
-        assert.equal(await page.getByRole('heading', { level: 1, name: locale === 'en' ? 'Advanced settings' : '高级设置', exact: true }).count(), 1);
+        assert.equal(await page.getByRole('heading', { level: 1, name: locale === 'en' ? 'Settings' : '设置', exact: true }).count(), 1);
         assert.equal(await page.locator('.config-page [role="tabpanel"]').count(), 1);
         assert.equal(await page.locator('.config-settings-header p').count(), 0,
           `${label}: settings header must not repeat layout explanations`);
@@ -371,6 +378,13 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
         await templateVisible('extensions-inflight');
         await noOverflow('diagnostics');
         await tab('extensions');
+        // Extensions lead with a short plugin guide; the plugin folder/store settings sit behind "Show advanced settings".
+        assert.equal(await page.locator('.config-extension-guide').isVisible(), true, `${label}: extensions show the plugin guide`);
+        await templateVisible('extensions-plugins', false);
+        const pluginAdvanced = page.locator('.config-extension-guide').getByRole('button', { name: locale === 'en' ? 'Show advanced settings' : '显示高级设置', exact: true });
+        assert.equal(await pluginAdvanced.getAttribute('aria-expanded'), 'false');
+        await pluginAdvanced.click();
+        assert.equal(await page.locator('.config-extension-guide').getByRole('button', { name: locale === 'en' ? 'Hide advanced settings' : '隐藏高级设置', exact: true }).getAttribute('aria-expanded'), 'true');
         await templateVisible('extensions-plugins');
         await templateVisible('extensions-concurrency', false);
         await templateVisible('extensions-inflight', false);
@@ -485,14 +499,14 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           await page.waitForFunction(button => {
             return button?.disabled && !/正在保存|保存中|saving/i.test(button.textContent);
           }, await retrySave.elementHandle());
-          assert.equal(await hasDirtyMarker('routing'), false, `${label}: saving clears the category marker`);
+          assert.equal(await hasDirtyMarker('routing', false), false, `${label}: saving clears the category marker`);
           await tab('general');
           assert.equal(await remoteManagement.isChecked(), true, `${label}: saving another category preserves template drafts`);
           assert.equal(await hasDirtyMarker('general'), true);
           const management = page.locator('#template-group-management').locator('xpath=ancestor::section[1]');
           await management.getByRole('button', { name: locale === 'en' ? 'Discard changes' : '放弃本组修改', exact: true }).click();
           assert.equal(await remoteManagement.isChecked(), false);
-          assert.equal(await hasDirtyMarker('general'), false, `${label}: discarding clears the category marker`);
+          assert.equal(await hasDirtyMarker('general', false), false, `${label}: discarding clears the category marker`);
 
           await tab('requests');
           const sensitiveWord = page.locator('.config-sensitive-words-row input').first();

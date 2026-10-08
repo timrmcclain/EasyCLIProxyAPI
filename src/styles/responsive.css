@@ -22,6 +22,12 @@
     /* Loading a shorter tab must not stretch the navigation row above it. */
     grid-template-rows: max-content minmax(0, 1fr);
   }
+
+  /* The stacked shell scrolls the document; switching between a tall tab and a
+     fitted one must not shift the toolbar by a scrollbar's width. */
+  :root:has(.usage-records-page) {
+    scrollbar-gutter: stable;
+  }
 }
 
 /* Let toolbar rows keep their height instead of overlapping the table. */

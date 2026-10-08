@@ -66,7 +66,8 @@ const { mkdirSync } = require('node:fs');
     await page.evaluate(() => { window.fixtureFailFetch = true; });
     await dialog.getByRole('button', { name: 'Refresh', exact: true }).click();
     await ready();
-    assert.match(await page.locator('.app-notice-stack').getByRole('alert').innerText(), /Fixture discovery failed/);
+    // Discovery failures are reported inline inside the model dialog.
+    assert.match(await dialog.getByRole('alert').innerText(), /Fixture discovery failed/);
     assert.equal(await rows(right).count(), 1, 'Failed refresh keeps selected models');
     await left.getByRole('button', { name: 'Clear search', exact: true }).click();
     await counts(401, 1);
@@ -174,7 +175,7 @@ const { mkdirSync } = require('node:fs');
     await expectExclusions(['dsv4', 'other']);
 
     const manualRules = 'dsv4\nother\nmanual-model\ndsv*';
-    await page.locator('.provider-advanced-settings summary').press('Enter');
+    await page.locator('.provider-advanced-settings > summary').press('Enter');
     await exclusions.fill(manualRules);
     await aliasInput.fill('other');
     await page.getByRole('button', { name: 'Save', exact: true }).click();

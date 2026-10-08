@@ -37,17 +37,17 @@ const files: Record<string, unknown>[] = Array.from({ length: smallList ? 3 : 12
 updateQuotaCache(Object.fromEntries(files.map((file, index) => {
   if (smallList) return [quotaKey(file), { status: 'idle', rows: [] } satisfies QuotaState];
   const quota: QuotaState = {
-    status: 'success', plan: String(file.plan_type),
+    status: 'success', fetchedAt: startedAt, plan: String(file.plan_type),
     subscriptionActiveUntil: index === 0 ? '2026-11-01T00:00:00Z' : undefined,
     resetCredits: index === 0 ? 2 : undefined,
     resetCreditsApplicable: index === 0 ? 0 : undefined,
-    rows: index === 4 ? [{ label: 'Paid API account', remainingPercent: null, detail: 'Upstream does not report remaining quota.' }]
+    rows: index === 4 ? [{ label: 'Paid API account', scope: 'paid', remainingPercent: null, detail: 'Upstream does not report remaining quota.' }]
       : [
-        { label: '5h', remainingPercent: index === 1 ? 0 : index === 2 ? 8 : 72 - index * 3, resetAtMs: startedAt + 3 * 3600000 },
-        { label: 'Weekly', remainingPercent: 83 - index * 5, resetAtMs: startedAt + 5 * 86400000 },
+        { label: '5h', scope: 'account', remainingPercent: index === 1 ? 0 : index === 2 ? 8 : 72 - index * 3, resetAtMs: startedAt + 3 * 3600000 },
+        { label: 'Weekly', scope: 'account', remainingPercent: 83 - index * 5, resetAtMs: startedAt + 5 * 86400000 },
         ...(index === 3 ? [
-          { label: 'Additional model A', remainingPercent: 34, resetAtMs: startedAt + 3600000 },
-          { label: 'Additional model B', remainingPercent: null, detail: 'No quota limit supplied for this model.' },
+          { label: 'Additional model A', scope: 'model', remainingPercent: 34, resetAtMs: startedAt + 3600000 },
+          { label: 'Additional model B', scope: 'model', remainingPercent: null, detail: 'No quota limit supplied for this model.' },
         ] : []),
       ],
   };

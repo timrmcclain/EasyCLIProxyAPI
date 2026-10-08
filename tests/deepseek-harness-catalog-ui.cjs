@@ -112,6 +112,10 @@ const path = require('node:path');
       assert.ok(Math.abs(viewport.width - nestedBounds.x - nestedBounds.width - 24) < 1, 'Nested modal notices stay at the viewport right edge');
       assert.ok(nestedBounds.y >= 0 && nestedBounds.y + nestedBounds.height <= viewport.height, 'Nested notices fit the viewport');
       const discard = confirmation.getByRole('button', { name: '放弃修改', exact: true });
+      // The focus trap moves initial focus to "继续编辑" on the next animation frame; let that land
+      // first so it cannot steal focus back from the button focused below.
+      await page.waitForFunction(() => document.activeElement?.closest('[role="alertdialog"]')
+        && document.activeElement.textContent === '继续编辑');
       await discard.focus();
       await page.keyboard.press('Tab');
       assert.equal(await nestedNotice.locator('.action-feedback-text').evaluate(el => el === document.activeElement), true);

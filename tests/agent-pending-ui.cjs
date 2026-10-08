@@ -88,6 +88,8 @@ const assert = require('node:assert/strict');
 
     // Claude role mappings and runtime settings are real form edits, too.
     await open('client=claude-code');
+    // Role pickers, 1M toggles and runtime settings live in the collapsed advanced section.
+    await page.locator('.agent-advanced-settings summary').filter({ hasText: '高级：角色模型与上下文设置' }).click();
     await selectModel('gpt-two', 0); await expectPending(true);
     await selectModel('gpt-one', 0); await expectPending(false);
     const context = page.locator('.agent-claude-context-toggle input').first();
@@ -97,7 +99,7 @@ const assert = require('node:assert/strict');
     await expectPending(true);
     await page.getByRole('spinbutton', { name: '最大窗口', exact: true }).fill('200000');
     await expectPending(false);
-    const compact = page.locator('.agent-claude-code-disable-compact input');
+    const compact = page.locator('.agent-claude-code-disable-compact').filter({ hasText: '禁止自动压缩' }).locator('input');
     await compact.check(); await expectPending(true);
     await compact.uncheck(); await expectPending(false);
     await selectModel('gpt-two', 1); await apply();
@@ -106,7 +108,7 @@ const assert = require('node:assert/strict');
     await open('fail-apply');
     await selectModel('gpt-two');
     await page.getByRole('button', { name: '更新配置', exact: true }).click();
-    await page.getByText(/模拟配置写入失败/).waitFor();
+    await page.locator('.connection-error').filter({ hasText: /模拟配置写入失败/ }).waitFor();
     await expectPending(true);
     await apply();
 
@@ -125,8 +127,8 @@ const assert = require('node:assert/strict');
         await page.locator('.agent-backup-modal').waitFor({ state: 'detached' });
       } else {
         await page.getByRole('button', { name: '应用 ezcpa 模板', exact: true }).click();
-        await page.getByRole('button', { name: '确认覆盖', exact: true }).click();
-        await page.getByRole('button', { name: '确认覆盖', exact: true }).waitFor({ state: 'detached' });
+        await page.getByRole('alertdialog').getByRole('button', { name: '覆盖', exact: true }).click();
+        await page.getByRole('alertdialog').getByRole('button', { name: '覆盖', exact: true }).waitFor({ state: 'detached' });
       }
       await expectPending(false);
     }

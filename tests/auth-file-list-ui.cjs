@@ -48,24 +48,42 @@ const fs = require('node:fs/promises');
       )), `${label}: only intermediate widths may scroll inside the table; cards must fit ${JSON.stringify(dimensions)}`);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${label}: page overflow`);
     };
+    // The usage column folds into the Details panel when the list container is of medium width (701-1147px).
+    const usageInRow = async () => {
+      const listWidth = await page.locator('.auth-files-page .auth-file-table-scroll').evaluate(node => node.parentElement.getBoundingClientRect().width);
+      return listWidth <= 700 || listWidth > 1147;
+    };
     const assertMainInformation = async (label, width) => {
-      for (const selector of ['.auth-card-filename', '.auth-list-plan', '.auth-list-status', '.auth-list-recent', '.auth-list-usage', '.auth-list-quota', '.auth-card-actions']) {
+      const inRow = await usageInRow();
+      for (const selector of ['.auth-card-filename', '.auth-list-plan', '.auth-list-status', '.auth-list-recent', '.auth-list-quota', '.auth-card-actions']) {
         assert.equal(await card(1).locator(selector).isVisible(), true, `${label}: ${selector} is visible without opening details`);
       }
+      assert.equal(await card(1).locator('.auth-list-usage').isVisible(), inRow, `${label}: usage column is in the row only outside medium widths`);
       assert.equal(await card(1).locator('.auth-list-recent .auth-file-request-block:visible').count(), 20, `${label}: the request timeline remains visible`);
-      assert.equal(await card(1).locator('.auth-file-usage-metric:visible').count(), 4, `${label}: all four runtime counters remain visible`);
-      assert.equal(await card(1).locator('.auth-list-icon-actions > button:visible').count(), 5, `${label}: all five actions are directly available`);
+      if (inRow) {
+        assert.equal(await card(1).locator('.auth-file-usage-metric:visible').count(), 4, `${label}: all four runtime counters remain visible`);
+      } else {
+        await expand(card(1));
+        assert.equal(await card(1).locator('.auth-list-details-usage .auth-file-usage-metric:visible').count(), 4, `${label}: all four runtime counters are in Details at medium width`);
+        await card(1).locator('.auth-list-details-button').click();
+      }
+      assert.equal(await card(1).locator('.auth-list-icon-actions > button:visible').count(), 2, `${label}: refresh and settings are directly available`);
       assert.equal(await card(1).getByRole('switch').isVisible(), true);
       assert.equal(await card(1).locator('.auth-list-details-button').isVisible(), true);
       assert.equal(await card(1).locator('.auth-list-details').isVisible(), false, `${label}: file metadata and the expanded request summary start collapsed`);
       if (width >= 1280) {
-        const heights = await page.locator('.auth-credential-row').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().height));
-        assert.ok(heights.every(height => height >= 88 && height <= 120), `${label}: dense desktop rows stay near 104px, including quota footnotes: ${JSON.stringify(heights)}`);
-        const cells = await card(1).locator('.auth-credential-row > .auth-list-cell').evaluateAll(nodes => nodes.map(node => {
+        // The quota cell also carries the availability notice (state, wait time, reason); only that notice may extend the dense row.
+        const heights = await page.locator('.auth-credential-row').evaluateAll(nodes => nodes.map(node => {
+          const notice = node.querySelector('.auth-list-quota .quota-availability');
+          return { height: node.getBoundingClientRect().height, notice: notice ? notice.getBoundingClientRect().height : 0 };
+        }));
+        // 130px (was 120px) leaves room for the reset-credits button and the normalised spacing tokens.
+        assert.ok(heights.every(({ height, notice }) => height >= 88 && height - notice <= 130), `${label}: dense desktop rows stay near 104px plus the availability notice, including quota footnotes: ${JSON.stringify(heights)}`);
+        const cells = await card(1).locator('.auth-credential-row > .auth-list-cell').evaluateAll(nodes => nodes.filter(node => node.getClientRects().length).map(node => {
           const bounds = node.getBoundingClientRect(); return { left: bounds.left, right: bounds.right };
         }));
-        assert.equal(cells.length, 7, `${label}: desktop has seven information columns`);
-        assert.ok(cells.slice(1).every((cell, index) => cell.left >= cells[index].right - 1), `${label}: all seven columns remain in one row`);
+        assert.equal(cells.length, inRow ? 7 : 6, `${label}: desktop has seven information columns (six when usage folds into Details)`);
+        assert.ok(cells.slice(1).every((cell, index) => cell.left >= cells[index].right - 1), `${label}: all columns remain in one row`);
       }
     };
     await fs.mkdir(screenshotDir, { recursive: true });
@@ -78,7 +96,10 @@ const fs = require('node:fs/promises');
     assert.equal(await card(2).locator('.auth-file-health-compact').isVisible(), true, 'Cooldown summary is directly visible below the main row');
     assert.equal(await card(2).locator('.auth-health-body').isVisible(), false, 'Individual cooldown records start collapsed');
     assert.equal(await card(2).getByRole('button', { name: '清除冷却', exact: true }).isVisible(), true, 'Clear cooldown is available without opening file details');
-    assert.equal(await card(1).getByRole('button', { name: '删除', exact: true }).isVisible(), true, 'Delete is directly available alongside the other actions');
+    assert.equal(await card(1).getByRole('button', { name: '删除', exact: true }).isVisible(), false, 'Delete lives in the row Details panel');
+    await expand(card(1));
+    for (const name of ['删除', '复制文件名']) assert.equal(await card(1).locator('.auth-list-detail-actions').getByRole('button', { name, exact: true }).isVisible(), true, `${name} is available in Details`);
+    await card(1).locator('.auth-list-details-button').click();
     assert.equal(await card(4).locator('.credential-quota-row:visible').count(), 2, 'The first two quota windows are always shown');
     assert.equal(await card(2).locator('.credential-quota-row.low .credential-quota-label strong').first().innerText(), '0%', 'Exhausted quota stays explicitly zero');
     assert.equal(await card(2).getByRole('progressbar').first().getAttribute('aria-valuenow'), '0');
@@ -92,8 +113,10 @@ const fs = require('node:fs/promises');
     assert.ok((await resetTimes.nth(1).innerText()).includes('10/08 12:00'), 'Weekly window preserves its exact reset timestamp');
     const resetTitle = await resetTimes.first().getAttribute('title');
     assert.ok(resetTitle.startsWith(await resetTimes.first().innerText()) && resetTitle.includes('小时后'), 'Compact timestamps retain their exact time and relative countdown on hover');
+    // Credentials are listed in routing order (priority desc, then filename), so page two holds 07 and 10.
     await next().click();
-    await card(11).waitFor();
+    await card(7).waitFor();
+    await card(10).waitFor();
     assert.equal(await cards().count(), 2);
     assert.equal(await next().isDisabled(), true);
     assert.ok((await pagination().innerText()).includes('2 / 2'));
@@ -168,6 +191,7 @@ const fs = require('node:fs/promises');
     assert.equal(await card(1).getByRole('switch').getAttribute('aria-checked'), 'true');
     assert.equal(await card(3).getByRole('switch').getAttribute('aria-checked'), 'false', 'Sibling status stays unchanged');
 
+    await expand(card(12));
     await card(12).getByRole('button', { name: '删除', exact: true }).click();
     const deleteDialog = page.getByRole('alertdialog', { name: '删除', exact: true });
     await deleteDialog.waitFor();
@@ -226,7 +250,7 @@ const fs = require('node:fs/promises');
       assert.equal(await pagination().count(), 0, 'Small lists omit unnecessary pagination');
       assert.equal(await page.locator('.auth-list-details:visible, .auth-file-health:visible').count(), 0, 'Small idle list starts with diagnostics collapsed');
       await assertMainInformation(`${locale} ${theme} ${width} small idle`, width);
-      assert.equal(await page.locator('.auth-file-usage-metric:visible').count(), 12, 'Idle counters stay visible on all three rows');
+      if (await usageInRow()) assert.equal(await page.locator('.auth-file-usage-metric:visible').count(), 12, 'Idle counters stay visible on all three rows');
       assert.equal(await page.locator('.auth-list-quota:visible').count(), 3, 'Disabled and idle quota states remain visible');
       await assertFits(`${locale} ${theme} ${width} small idle`);
       await page.screenshot({ path: path.join(screenshotDir, `small-idle-${locale}-${theme}-${width}.png`), fullPage: true });
@@ -235,7 +259,7 @@ const fs = require('node:fs/promises');
     await page.setViewportSize({ width: 1800, height: 1200 });
     await open('theme=light&locale=zh-CN');
     const tableBounds = await page.locator('.auth-file-table-scroll').boundingBox();
-    const seventhBounds = await card(7).boundingBox();
+    const seventhBounds = await cards().nth(6).boundingBox();
     await page.screenshot({ path: path.join(screenshotDir, 'reference-dense-preview.png'), clip: {
       x: tableBounds.x, y: tableBounds.y, width: tableBounds.width,
       height: seventhBounds.y + seventhBounds.height - tableBounds.y,

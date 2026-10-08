@@ -13,14 +13,31 @@ const assert = require('node:assert/strict');
     page.on('pageerror', error => errors.push(String(error)));
     const tab = name => page.getByRole('tab', { name, exact: true });
     const button = name => page.getByRole('button', { name, exact: true });
+    // The client list re-paginates a frame after the panel height changes (tab or client switch);
+    // wait until it is stable before reading which clients are on the current page.
+    const settleClientList = () => page.evaluate(() => new Promise(resolve => {
+      let previous = '';
+      let stableFrames = 0;
+      const tick = () => {
+        const list = document.querySelector('.agent-list-items');
+        const current = list ? `${list.clientHeight}/${list.textContent}` : '';
+        stableFrames = current === previous ? stableFrames + 1 : 0;
+        previous = current;
+        if (stableFrames >= 3) resolve();
+        else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }));
     const client = name => ({ click: async () => {
       const row = page.locator('.agent-list-items button').filter({ has: page.getByText(name, { exact: true }) });
       const previous = button('上一页客户端');
-      while (await previous.isEnabled()) await previous.click();
+      await settleClientList();
+      while (await previous.isEnabled()) { await previous.click(); await settleClientList(); }
       for (let index = 0; index < 13 && !(await row.count()); index++) {
         const next = button('下一页客户端');
         assert.ok(await next.isEnabled(), `${name} must be reachable in the saved client list`);
         await next.click();
+        await settleClientList();
       }
       await row.click();
     } });
@@ -58,22 +75,22 @@ const assert = require('node:assert/strict');
       await button('手动备份').click();
       const notice = page.getByText('已手动备份当前磁盘配置，未包含未保存的表单修改。', { exact: true });
       await notice.waitFor();
+      // Success results are now a brief page-level toast rather than per-agent remembered text;
+      // per-agent failure feedback is still remembered and is checked with fail-apply below.
+      assert.equal(await page.locator('.app-notice-stack').getByText('已手动备份当前磁盘配置，未包含未保存的表单修改。', { exact: true }).count(), 1);
       await client('OpenCode').click();
       await active('基础配置');
-      assert.equal(await notice.count(), 0);
       assert.equal(await tab('会话管理').count(), 0);
       await tab('配置管理').click();
       await client('Pi').click();
       await active('基础配置');
       await client('Codex').click();
       await active('配置管理');
-      await notice.waitFor();
       await page.getByText('待应用', { exact: true }).waitFor();
       await client('Codex').click();
       await active('配置管理');
       await remount();
       await active('配置管理');
-      await notice.waitFor();
       await tab('配置管理').press('Home');
       await active('基础配置');
       assert.equal(await tab('基础配置').evaluate(el => el === document.activeElement), true);
@@ -90,11 +107,11 @@ const assert = require('node:assert/strict');
     await page.locator('.agent-model-trigger').click();
     await page.getByRole('option', { name: 'gpt-two' }).click();
     await button('更新配置').click();
-    await page.getByText(/模拟配置写入失败/).waitFor();
+    await page.locator('.connection-error').filter({ hasText: /模拟配置写入失败/ }).waitFor();
     await client('OpenCode').click();
-    assert.equal(await page.getByText(/模拟配置写入失败/).count(), 0);
+    assert.equal(await page.locator('.connection-error').filter({ hasText: /模拟配置写入失败/ }).count(), 0);
     await client('Codex').click();
-    await page.getByText(/模拟配置写入失败/).waitFor();
+    await page.locator('.connection-error').filter({ hasText: /模拟配置写入失败/ }).waitFor();
     await page.getByText('待应用', { exact: true }).waitFor();
 
     // Full and compact navigation remain independent, including Codex-only sessions.
@@ -103,7 +120,7 @@ const assert = require('node:assert/strict');
     await sessionsReady();
     await button('下一页').click();
     await sessionPage(2);
-    await button('多选').click();
+    // Row checkboxes are always shown now (no separate "多选" mode).
     const selectedSession = page.getByRole('checkbox', { name: '选择会话 session-51', exact: true });
     await selectedSession.check();
     await client('OpenCode').click();

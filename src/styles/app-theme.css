@@ -83,23 +83,30 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .agent-client-list { display: flex; flex-direction: column; }
 .agent-client-list > .personal-provider-toggle { flex: 0 0 auto; }
 .agent-client-list > .agent-list-items { position: static; flex: 1 1 auto; min-height: 0; }
-.app-shell:has(.agents-page:not(.agents-page-embedded)) .agents-page:not(.agents-page-embedded) { grid-template-rows: auto auto minmax(0, 1fr); }
+/* The connection note only renders for Claude Desktop; the workbench always takes the last, filling row. */
+.app-shell:has(.agents-page:not(.agents-page-embedded)) .agents-page:not(.agents-page-embedded) { grid-template-rows: minmax(0, 1fr); }
+.app-shell:has(.agents-page:not(.agents-page-embedded)) .agents-page:not(.agents-page-embedded):has(> .personal-context) { grid-template-rows: auto minmax(0, 1fr); }
 @media (max-width: 900px) and (min-width: 761px) {
   .app-shell { grid-template-columns: 195px minmax(0, 1fr); }
-  .sidebar { padding-inline: 10px; }
+  .sidebar { padding-inline: 10px; overflow-y: auto; }
   .content { padding-inline: 20px; }
 }
 @media (max-width: 760px) {
   .app-shell { grid-template-columns: minmax(0, 1fr); }
   .sidebar { position: relative; height: auto; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--border-color); gap: 8px; }
   .sidebar-brand { display: none; }
-  .nav-section { display: flex; flex-wrap: wrap; gap: 4px; }
-  .nav-section > button { width: auto; flex: 1 0 auto; min-height: 34px; padding: 8px 8px; font-size: 11px; }
+  /* One scrolling row keeps the stacked sidebar short; Advanced tools opens onto its own line. */
+  .nav-section { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 4px; }
+  .nav-section:has(> .personal-advanced[open]) { flex-wrap: wrap; }
+  .nav-section > * { flex: 0 0 auto; align-self: flex-start; }
+  .nav-section > button { width: auto; min-width: 0; flex: 1 0 auto; min-height: 34px; padding: 8px 8px; font-size: 11px; }
   .personal-advanced { margin: 0; padding: 0; border: 0; }
   .personal-advanced summary { padding: 10px 6px; }
   .personal-advanced[open] { flex-basis: 100%; }
   .personal-advanced > div { display: flex; flex-wrap: wrap; }
   .sidebar-bottom { display: flex; flex-direction: row; gap: 10px; margin: 0; padding: 0; }
+  /* The stacked-sidebar spacing must not push the compact footer row taller. */
+  .sidebar-command-button, .sidebar-bottom > .sidebar-density-selector, .sidebar-bottom > .sidebar-glossary-link { margin: 0; }
   .sidebar-language { flex: 1; }
   .personal-runtime { display: none; }
   .content { padding: 20px 16px 32px; }

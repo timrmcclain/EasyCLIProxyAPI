@@ -157,6 +157,8 @@ const fs = require('node:fs');
     await page.locator('.plugin-settings').getByRole('alert').waitFor();
     assert.equal(await page.evaluate(() => window.pluginsFixture.settings.dir), 'plugins');
     await sources.fill('https://another.example.test/registry.json');
+    // Store authentication rules open in the form view; switch to the raw JSON editor to type rules directly.
+    await page.locator('.plugin-settings').getByRole('button', { name: 'Edit as JSON', exact: true }).click();
     await auth.fill('[{"host":"another.example.test","token-env":"PLUGIN_TEST_TOKEN"}]');
     await page.locator('.plugin-settings').getByRole('button', { name: 'Save', exact: true }).click();
     await page.waitForFunction(() => window.pluginsFixture.settings.dir === 'custom-plugins');

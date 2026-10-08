@@ -28,6 +28,9 @@ const path = require('node:path');
       await page.getByRole('heading', { name: 'Codex OAuth', exact: true }).waitFor();
       await page.waitForFunction(() => window.pluginOAuthProvidersFixture.calls.some(call => call.cmd === 'get_plugin_support'));
       await page.waitForFunction(() => document.querySelector('.oauth-browser-picker select')?.disabled === false);
+      // Only Codex and Claude show by default; reveal every built-in provider so the full grid is exercised.
+      assert.equal(await page.locator('.oauth-card').filter({ has: page.getByRole('heading', { name: 'Antigravity OAuth', exact: true }) }).count(), 0, 'other built-ins start hidden');
+      await page.locator('.personal-provider-toggle input[type="checkbox"]').check();
     };
     const card = name => page.locator('.oauth-card').filter({ has: page.getByRole('heading', { name, exact: true }) });
     const calls = cmd => page.evaluate(command => window.pluginOAuthProvidersFixture.calls.filter(call => call.cmd === command), cmd);

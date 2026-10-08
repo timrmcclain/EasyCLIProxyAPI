@@ -886,7 +886,7 @@ body, html, #root {
 }
 
 /* Responsive Shell (Preserved from existing accessibility rules) */
-@media (max-width: 900px) {
+@media (max-width: 760px) {
   .app-shell:not(.app-shell-easy-mode) {
     grid-template-columns: minmax(0, 1fr);
   }

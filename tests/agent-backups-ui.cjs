@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
     const errors = []; page.on('pageerror', e => errors.push(String(e)));
     const calls = cmd => page.evaluate(cmd => window.fixtureCalls.filter(c => c.cmd === cmd), cmd);
     const manage = () => page.getByRole('tab', { name: '配置管理', exact: true }).click();
-    const open = async query => { await page.goto('http://localhost:1421/tests/fixtures/agent-backups.html?' + query); await page.getByRole('tab', { name: '基础配置', exact: true }).waitFor(); };
+    const open = async query => { await page.goto('http://localhost:1421/tests/fixtures/agent-backups.html?' + query, { timeout: 60000 }); await page.getByRole('tab', { name: '基础配置', exact: true }).waitFor(); };
     const backup = async () => { await manage(); await page.getByRole('button', { name: '手动备份', exact: true }).click(); await page.getByText('已手动备份当前磁盘配置，未包含未保存的表单修改。', { exact: true }).waitFor(); };
     const choose = async () => { await manage(); await page.getByRole('button', { name: '恢复备份', exact: true }).click(); await page.locator('.agent-backup-columns nav button').first().click(); };
     for (const query of ['fresh', 'embedded&fresh']) {
@@ -19,17 +19,20 @@ const assert = require('node:assert/strict');
       await page.getByText('配置已更新。', { exact: true }).waitFor();
       await page.getByRole('button', { name: '关闭配置修改', exact: true }).waitFor();
       assert.equal((await calls('close_codex_config_modification')).length, 0);
-      assert.equal((await calls('create_agent_config_backup')).length, 0);
-      await backup();
+      // Applying takes one automatic pre-apply snapshot (the Undo point); manual backup adds the second.
+      assert.equal((await calls('create_agent_config_backup')).length, 1);
       assert.deepEqual((await calls('create_agent_config_backup'))[0].args, { client: 'codex' });
+      await backup();
+      assert.equal((await calls('create_agent_config_backup')).length, 2);
+      assert.deepEqual((await calls('create_agent_config_backup'))[1].args, { client: 'codex' });
       await page.getByRole('button', { name: '应用 ezcpa 模板', exact: true }).click();
-      await page.getByRole('button', { name: '确认覆盖', exact: true }).waitFor();
+      await page.getByRole('alertdialog').getByRole('button', { name: '覆盖', exact: true }).waitFor();
       assert.equal(await page.locator('.agent-template-files li').count(), 3);
       assert.equal((await calls('apply_agent_config_template')).length, 0);
-      await page.getByRole('button', { name: '确认覆盖', exact: true }).click();
-      await page.getByRole('button', { name: '确认覆盖', exact: true }).waitFor({ state: 'detached' });
+      await page.getByRole('alertdialog').getByRole('button', { name: '覆盖', exact: true }).click();
+      await page.getByRole('alertdialog').getByRole('button', { name: '覆盖', exact: true }).waitFor({ state: 'detached' });
       assert.equal((await calls('apply_agent_config_template'))[0].args.revision, 'template1');
-      assert.equal((await calls('create_agent_config_backup')).length, 1);
+      assert.equal((await calls('create_agent_config_backup')).length, 2);
       await choose();
       await page.getByText('备份时不存在；恢复时删除', { exact: true }).waitFor();
       assert.equal(await page.locator('.agent-backup-files li').count(), 3);
@@ -44,9 +47,16 @@ const assert = require('node:assert/strict');
       await page.getByRole('button', { name: '删除此版本', exact: true }).click();
       assert.equal((await calls('delete_agent_config_backup')).length, 0);
       await page.getByRole('button', { name: '确认删除', exact: true }).click();
+      await page.locator('.agent-backup-columns nav button').nth(1).waitFor({ state: 'detached' });
+      assert.equal((await calls('delete_agent_config_backup')).length, 1);
+      // Delete the remaining (pre-apply) snapshot too; the empty state must then show.
+      await page.locator('.agent-backup-columns nav button').first().click();
+      await page.getByRole('button', { name: '删除此版本', exact: true }).click();
+      await page.getByRole('button', { name: '确认删除', exact: true }).click();
       await page.getByText('暂无手动备份。点击“手动备份”保存当前磁盘配置。', { exact: true }).waitFor();
+      assert.equal((await calls('delete_agent_config_backup')).length, 2);
       assert.equal((await calls('restore_agent_config_backup')).length, 1);
-      assert.equal((await calls('create_agent_config_backup')).length, 1);
+      assert.equal((await calls('create_agent_config_backup')).length, 2);
     }
     await open('state=invalid');
     assert.ok(await page.getByRole('button', { name: '更新配置', exact: true }).isDisabled());
@@ -68,7 +78,7 @@ const assert = require('node:assert/strict');
     await page.locator('.agent-desktop-model-row').nth(2).waitFor();
     assert.ok(await page.getByRole('button', { name: '更新配置', exact: true }).isDisabled());
     for (const query of ['client=pi', 'embedded&client=pi']) {
-      await page.goto('http://localhost:1421/tests/fixtures/agent-backups.html?' + query);
+      await page.goto('http://localhost:1421/tests/fixtures/agent-backups.html?' + query, { timeout: 60000 });
       await page.getByRole('button', { name: '更新配置', exact: true }).waitFor();
       await manage();
       for (const name of ['手动备份', '恢复备份', '应用 ezcpa 模板']) {

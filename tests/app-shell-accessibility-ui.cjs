@@ -50,13 +50,24 @@ const path = require('node:path');
     const shellSurfaces = await page.evaluate(() => {
       const shell = document.querySelector('.app-shell');
       const content = document.querySelector('.content');
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = 'var(--surface-page)';
+      document.body.appendChild(probe);
+      const pageToken = getComputedStyle(probe).backgroundColor;
+      probe.remove();
       return {
+        pageToken,
         shell: shell ? getComputedStyle(shell).backgroundColor : '',
         content: content ? getComputedStyle(content).backgroundColor : '',
       };
     });
-    assert.equal(shellSurfaces.shell, 'rgb(255, 255, 255)', 'light app shell stays pure white');
-    assert.equal(shellSurfaces.content, 'rgb(255, 255, 255)', 'light content stays pure white');
+    // Surface hierarchy: the light page is a soft grey (--surface-page) and the cards on it stay white.
+    assert.notEqual(shellSurfaces.pageToken, 'rgb(255, 255, 255)', 'light --surface-page is a soft grey, not white');
+    assert.notEqual(shellSurfaces.pageToken, 'rgba(0, 0, 0, 0)', '--surface-page must resolve to a colour');
+    assert.equal(shellSurfaces.shell, shellSurfaces.pageToken, 'light app shell uses the grey page surface');
+    assert.ok([shellSurfaces.pageToken, 'rgba(0, 0, 0, 0)'].includes(shellSurfaces.content),
+      `light content shows the grey page surface, got ${shellSurfaces.content}`);
+    assert.notEqual(usageSurfaces.row, shellSurfaces.shell, 'white cards stand out from the grey page');
     await page.getByRole('tab', { name: /数据管理/ }).click();
     assert.equal(await page.locator('.usage-filter-panel').count(), 0);
 
@@ -127,10 +138,13 @@ const path = require('node:path');
     assert.ok(sidebarHeight < 150, `compact sidebar is too tall: ${sidebarHeight}px`);
 
     await page.locator('.personal-advanced summary').click();
-    await page.locator('.sidebar-easy-entry').click();
-    const steps = page.locator('.simple-mode-step-status-item');
-    assert.equal(await steps.count(), 2);
-    assert.equal(await steps.first().evaluate((element) => element.tagName), 'BUTTON');
+    // Easy mode was removed; the compact shell must still expose every advanced page as a reachable button.
+    const advancedEntries = page.locator('.personal-advanced[open] button');
+    assert.ok(await advancedEntries.count() >= 3, 'advanced tools should list their pages');
+    for (const entry of await advancedEntries.all()) {
+      assert.equal(await entry.evaluate((element) => element.tagName), 'BUTTON');
+      assert.equal(await entry.isVisible(), true);
+    }
 
     console.log('PASS: page hierarchy, tabs, contextual filters, modal focus and compact shell.');
   } finally {

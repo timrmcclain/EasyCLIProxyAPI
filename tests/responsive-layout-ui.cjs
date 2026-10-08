@@ -25,7 +25,7 @@ const viewports = [
         root: path.resolve(__dirname, '..'),
         plugins: [react()],
         logLevel: 'error',
-        server: { host: '127.0.0.1', port: 1421, strictPort: false },
+        server: { host: '127.0.0.1', port: 1421, strictPort: false, watch: null },
       });
       await server.listen();
       base = `http://127.0.0.1:${server.httpServer.address().port}/`;
@@ -41,7 +41,10 @@ const viewports = [
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
     const open = async (label, ready) => {
-      await page.locator('.nav-section button').filter({ has: page.getByText(label, { exact: true }) }).click();
+      const navButton = page.locator('.nav-section button').filter({ has: page.getByText(label, { exact: true }) });
+      // Secondary pages live in the collapsed "Advanced tools" section of the sidebar.
+      if (!await navButton.isVisible()) await page.locator('.nav-section .personal-advanced > summary').click();
+      await navButton.click();
       await page.locator(ready).first().waitFor();
       await settle();
     };
@@ -70,6 +73,13 @@ const viewports = [
       }), true, `${label}: the control must be visible and unobstructed after scrolling`);
     };
     const assertRequestToolbar = async label => {
+      // The log shows five columns by default; turn every column on so the table is wider than the
+      // viewport and the horizontal-scroll layout is exercised.
+      await page.locator('.usage-col-settings-btn').click();
+      await page.locator('.usage-column-select-all').click();
+      await page.locator('.usage-column-dialog-actions .primary-button').click();
+      await page.locator('.usage-events-panel .usage-table-top-scrollbar:not(.is-hidden)').waitFor();
+      await settle();
       const metrics = await page.locator('.usage-events-panel').evaluate(panel => {
         const table = panel.querySelector('.usage-table-wrap');
         const scrollbar = panel.querySelector('.usage-table-top-scrollbar');
@@ -110,7 +120,8 @@ const viewports = [
       assert.equal(scrolled.scrolled, true, `${label}: request columns remain reachable by horizontal scrolling`);
     };
     const assertExpandedPricing = async () => {
-      await page.getByRole('combobox', { name: '时间范围', exact: true }).selectOption('custom');
+      await page.locator('.usage-filter-panel .select-menu-trigger[aria-label="时间范围"]').click();
+      await page.getByRole('listbox', { name: '时间范围', exact: true }).getByRole('option', { name: '自定义', exact: true }).click();
       await page.locator('.usage-custom-range').waitFor();
       await page.getByRole('button', { name: '手动添加', exact: true }).click();
       const editor = page.locator('.usage-price-editor');
@@ -161,18 +172,25 @@ const viewports = [
       await page.route('**/*', route => route.request().url().startsWith(base) ? route.continue() : route.abort());
       await page.addInitScript(() => localStorage.setItem('easy-cli-proxy-api.locale', 'zh-CN'));
       await page.goto(`${base}?mock=running`, { waitUntil: 'domcontentloaded' });
-      await page.locator('.home-page .client-api-card').first().waitFor();
+      await page.locator('.home-page .home-status').waitFor();
       // The native app does not include the development scenario picker overlay.
       await page.addStyleTag({ content: '#browser-mock-toolbar { display: none; }' });
       await settle();
       await assertNoPageOverflow(`${label} home`);
+      // Connection and protocol details now live in a collapsed section below the dashboard.
+      await page.locator('.home-page .home-proxy-details > summary').click();
+      await page.locator('.home-page .client-api-card').first().waitFor();
+      await settle();
+      await assertNoPageOverflow(`${label} home connection details`);
 
       if (viewport.width === 964) {
         assert.equal(await page.locator('.sidebar-bottom').evaluate(footer => {
           const rect = footer.getBoundingClientRect();
           return rect.top >= 0 && rect.bottom <= innerHeight + 1;
         }), true, `${label}: desktop sidebar footer must stay visible without scrolling the page`);
-        await assertReachable(page.locator('.sidebar-contact'), `${label} sidebar contact`);
+        // The footer's last controls (glossary and language) stay reachable in a short window.
+        await assertReachable(page.locator('.sidebar-bottom .sidebar-glossary-link'), `${label} sidebar glossary`);
+        await assertReachable(page.locator('.sidebar-bottom .sidebar-language-trigger'), `${label} sidebar language`);
       }
 
       await open('API 接入', '.real-provider-row');
@@ -193,7 +211,7 @@ const viewports = [
       await assertNoPageOverflow(`${label} OAuth credentials`);
       await open('额度查询', '.quota-page .real-quota-card');
       assert.equal(await page.locator('.nav-section button.active').innerText(), '额度查询', `${label}: quota activates its sidebar entry`);
-      assert.equal(await page.locator('.quota-page h1').innerText(), '额度查询', `${label}: standalone quota page has its own heading`);
+      assert.equal(await page.locator('.quota-page').getAttribute('aria-label'), '额度查询', `${label}: standalone quota page has its own accessible name`);
       assert.equal(await page.locator('.oauth-subpage-tabs').count(), 0, `${label}: standalone quota page does not contain OAuth navigation`);
       await assertNoPageOverflow(`${label} quota`);
 
@@ -225,7 +243,7 @@ const viewports = [
       }
 
       await open('高级功能', '#config-subpage-panel');
-      for (const id of ['general', 'routing', 'requests', 'oauth', 'diagnostics', 'extensions', 'software']) {
+      for (const id of ['general', 'aliases', 'routing', 'requests', 'oauth', 'diagnostics', 'extensions', 'software']) {
         await tab(`config-subpage-tab-${id}`, `#config-subpage-panel[aria-labelledby="config-subpage-tab-${id}"]`);
         await assertNoPageOverflow(`${label} settings ${id}`);
       }
@@ -249,8 +267,8 @@ const viewports = [
     await page.goto(`${base}?mock=running`, { waitUntil: 'domcontentloaded' });
     await page.locator('.home-page').waitFor();
     await page.addStyleTag({ content: '#browser-mock-toolbar { display: none; }' });
-    await open('Advanced Features', '.config-subpage-tabs');
-    for (const id of ['general', 'routing', 'requests', 'oauth', 'diagnostics', 'extensions', 'software']) {
+    await open('Settings', '.config-subpage-tabs');
+    for (const id of ['general', 'aliases', 'routing', 'requests', 'oauth', 'diagnostics', 'extensions', 'software']) {
       await tab(`config-subpage-tab-${id}`, `#config-subpage-panel[aria-labelledby="config-subpage-tab-${id}"]`);
       await assertNoPageOverflow(`640x600 English settings ${id}`);
       const button = page.locator(`#config-subpage-tab-${id}`);

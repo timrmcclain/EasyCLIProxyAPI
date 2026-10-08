@@ -25,6 +25,30 @@ const path = require('node:path');
     const button = name => page.getByRole('button', { name, exact: true });
     const calls = cmd => page.evaluate(cmd => window.fixtureCalls.filter(call => call.cmd === cmd), cmd);
     const pending = () => page.getByText('待应用', { exact: true }).waitFor();
+    // The client list paginates to the panel height (re-measured a frame after a tab switch), so wait
+    // for it to settle and page forward until the requested client is listed before clicking it.
+    const settleClientList = () => page.evaluate(() => new Promise(resolve => {
+      let previous = '';
+      let stableFrames = 0;
+      const tick = () => {
+        const list = document.querySelector('.agent-list-items');
+        const current = list ? `${list.clientHeight}/${list.textContent}` : '';
+        stableFrames = current === previous ? stableFrames + 1 : 0;
+        previous = current;
+        if (stableFrames >= 3) resolve();
+        else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }));
+    const selectListedClient = async name => {
+      const row = page.locator('.agent-list-items button').filter({ hasText: name });
+      await settleClientList();
+      while (!await row.count()) {
+        await button('下一页客户端').click();
+        await settleClientList();
+      }
+      await row.click();
+    };
     const assertPanelContentFullyVisible = async context => {
       const layout = await page.locator('.agent-config-panel').evaluate(panel => {
         const tolerance = 1.5;
@@ -126,7 +150,7 @@ const path = require('node:path');
       await button('更新配置').click();
       await page.waitForFunction(() => document.documentElement.dataset.fixtureApplied === '1');
       await tab('配置管理').click();
-      await page.locator('.agent-list-items button').filter({ hasText: 'OpenCode' }).click();
+      await selectListedClient('OpenCode');
       assert.equal(await tab('基础配置').getAttribute('aria-selected'), 'true');
       assert.equal(await tab('会话管理').count(), 0);
 
@@ -188,9 +212,12 @@ const path = require('node:path');
       await tab('配置管理').click();
       await button('清除接入').click();
       await button('确认清除接入').click();
+      // The shared confirmation closes once confirmed; the failure is reported inline in the
+      // management tab and the integration stays in place so the user can retry.
       await page.getByText(/模拟清除失败/).waitFor();
-      assert.ok(await page.getByRole('alertdialog').isVisible());
-      await button('取消').click();
+      assert.equal(await page.getByRole('alertdialog').count(), 0);
+      assert.ok(await page.locator('#agent-subpage-panel-management').getByText(/模拟清除失败/).isVisible());
+      assert.ok(await button('清除接入').isEnabled());
 
       await open(mode + 'client=pi&update');
       assert.equal(await button('卸载 Pi 插件').count(), 0);
@@ -202,7 +229,8 @@ const path = require('node:path');
       assert.ok(await button('安装 Pi 插件').isEnabled());
       await open(mode + 'client=pi&config-only=pi&no-plugin&fresh');
       assert.ok(await button('安装 Pi 插件').isEnabled());
-      assert.ok(await button('启动 CLI').isDisabled());
+      // With no detected launch target the single launch button is labelled with the client name.
+      assert.ok(await button('启动 Pi').isDisabled());
       await button('安装 Pi 插件').click();
       await page.waitForFunction(() => window.fixtureCalls.some(call => call.cmd === 'install_pi_provider'));
 
