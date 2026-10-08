@@ -84,3 +84,22 @@ describe('scheduled model health checks', () => {
     saveAutoCheckState({ enabled: true, lastRunAt: 1 });
   });
 });
+
+describe('model-not-found results stay out of bulk checks', () => {
+  const { isModelNotFound, bulkCheckTargets } = require('../src/services/coreHealthAuto') as typeof import('../src/services/coreHealthAuto');
+  const failed = (error: string) => ({ model: 'm', success: false, status: 'failed' as const, error, checkedAt: 1 });
+  const retiredError = 'Upstream returned HTTP 404: {"type":"error","error":{"type":"not_found_error","message":"model: claude-3-5-haiku-20241022"}}';
+  it('recognizes a 404 model-not-found answer and nothing else', () => {
+    expect(isModelNotFound(failed(retiredError))).toBe(true);
+    expect(isModelNotFound(failed('Upstream returned HTTP 429: rate limited'))).toBe(false);
+    expect(isModelNotFound(failed('request timed out'))).toBe(false);
+    expect(isModelNotFound({ model: 'm', success: true, status: 'healthy', checkedAt: 1 })).toBe(false);
+    expect(isModelNotFound(undefined)).toBe(false);
+  });
+  it('skips known missing models in Check all and the automatic pick', () => {
+    const models = [{ name: 'claude-3-5-haiku-20241022', provider: 'anthropic' }, { name: 'claude-haiku-5-5', provider: 'anthropic' }, { name: 'claude-opus-5-5', provider: 'anthropic' }];
+    const results = { 'claude-3-5-haiku-20241022': failed(retiredError) };
+    expect(bulkCheckTargets(models, results).map((model) => model.name)).toEqual(['claude-haiku-5-5', 'claude-opus-5-5']);
+    expect(pickAutoCheckModels(models, results).map((model) => model.name)).toEqual(['claude-haiku-5-5']);
+  });
+});

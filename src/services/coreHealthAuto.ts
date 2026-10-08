@@ -24,9 +24,20 @@ const costRank = (name: string) => {
 };
 
 /** One inexpensive chat model per provider, in first-seen provider order. */
-export function pickAutoCheckModels(models: CoreHealthModel[]): CoreHealthModel[] {
+// The proxy cools a model down after the provider answers "model not found", so probing a
+// retired model again would bench it on every account. Bulk runs skip such models; the row
+// button still checks one on request.
+export function isModelNotFound(result: Pick<CoreModelHealthResult, 'success' | 'error'> | undefined): boolean {
+  return Boolean(result && !result.success && /HTTP 404|not_found_error|model[^.]{0,40}(?:not found|does not exist)/i.test(result.error ?? ''));
+}
+
+export function bulkCheckTargets(models: CoreHealthModel[], results: Record<string, StoredHealthResult>): CoreHealthModel[] {
+  return models.filter((model) => !isModelNotFound(results[model.name]));
+}
+
+export function pickAutoCheckModels(models: CoreHealthModel[], results: Record<string, StoredHealthResult> = {}): CoreHealthModel[] {
   const picks = new Map<string, CoreHealthModel>();
-  for (const model of models) {
+  for (const model of bulkCheckTargets(models, results)) {
     if (!model.name.trim() || NON_CHAT.test(model.name)) continue;
     const key = providerKey(model);
     const current = picks.get(key);

@@ -13,6 +13,8 @@ import {
   CORE_HEALTH_AUTO_TICK_MS,
   isAutoCheckDue,
   pickAutoCheckModels,
+  bulkCheckTargets,
+  isModelNotFound,
   pruneHealthResults,
   readAutoCheckState,
   readStoredHealthResults,
@@ -111,7 +113,7 @@ export function CoreHealthPanel({
     }
   }, [canCheck, open]);
 
-  const autoTargets = useMemo(() => pickAutoCheckModels(models), [modelIds]);
+  const autoTargets = useMemo(() => pickAutoCheckModels(models, results), [modelIds, results]);
   const runChecksRef = useRef(runChecks);
   runChecksRef.current = runChecks;
   useEffect(() => {
@@ -178,7 +180,7 @@ export function CoreHealthPanel({
           </button>
           {running ? <button className="secondary-button" onClick={stopChecks} disabled={stopped}>
             <Square size={14} aria-hidden="true" />{t('home.health.stop')}
-          </button> : <button className="primary-button" disabled={!canCheck} onClick={() => { void runChecks(models); }}>
+          </button> : <button className="primary-button" disabled={!canCheck} onClick={() => { void runChecks(bulkCheckTargets(models, results)); }}>
             <Play size={14} aria-hidden="true" />{t('home.health.checkAll')}
           </button>}
         </div>
@@ -213,7 +215,7 @@ export function CoreHealthPanel({
                     const statusText = checking ? t('apiAccess.health.checking') : queued ? t('home.health.queued') : !result ? t('apiAccess.health.notChecked') : t(result.success ? 'apiAccess.health.healthy' : 'apiAccess.health.failed');
                     const error = !checking && !queued && result && !result.success ? (result.timedOut ? t('apiAccess.health.timeout') : result.error) : '';
                     return <tr key={model.name}>
-                      <td><strong className="core-health-model-name" title={model.name}>{model.name}</strong>{error && <details className="core-health-model-error"><summary>{t('apiAccess.health.failed')}</summary><p>{error}</p></details>}</td>
+                      <td><strong className="core-health-model-name" title={model.name}>{model.name}</strong>{error && <details className="core-health-model-error"><summary>{t('apiAccess.health.failed')}</summary><p>{error}</p>{isModelNotFound(result) && <p>{t('home.health.notFoundSkipped')}</p>}</details>}</td>
                       <td><span className={`core-health-status ${status}`}>{checking ? <LoaderCircle size={12} className="spin" aria-hidden="true" /> : result?.success && !queued ? <Check size={12} aria-hidden="true" /> : result && !queued ? <X size={12} aria-hidden="true" /> : <Circle size={8} aria-hidden="true" />}{statusText}</span></td>
                       <td className="core-health-latency">{result?.success && !pending.has(model.name) ? <>{latency(result.firstTokenLatencyMs)}<span> / {latency(result.responseLatencyMs)}</span></> : '—'}</td>
                       <td className="core-health-time">{result ? <time dateTime={new Date(result.checkedAt).toISOString()} title={formatDate(result.checkedAt)}>{time(result.checkedAt)}</time> : '—'}</td>
