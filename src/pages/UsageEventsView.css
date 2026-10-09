@@ -144,7 +144,7 @@
 }
 
 .usage-request-log .usage-events-table tbody tr:hover td {
-  background: var(--usage-log-hover) !important;
+  background: var(--usage-log-hover);
 }
 
 .usage-request-log .usage-th-total,

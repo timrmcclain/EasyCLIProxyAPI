@@ -8844,12 +8844,12 @@ textarea:focus-visible {
 }
 
 .usage-trend-x-axis span.is-start {
-  left: 0 !important;
+  left: 0;
   transform: none;
 }
 
 .usage-trend-x-axis span.is-end {
-  left: 100% !important;
+  left: 100%;
   transform: translateX(-100%);
 }
 
@@ -9872,7 +9872,7 @@ textarea:focus-visible {
 }
 
 .usage-events-table tbody tr:hover td {
-  background-color: var(--surface-13) !important;
+  background-color: var(--surface-13);
 }
 
 .usage-events-table th {
@@ -9955,7 +9955,7 @@ textarea:focus-visible {
 
 .usage-col-resizer:hover::after,
 .usage-col-resizer.active::after {
-  background-color: var(--ink-blue-3) !important;
+  background-color: var(--ink-blue-3);
   width: 2px;
   height: 100%;
   opacity: 1;

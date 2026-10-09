@@ -179,7 +179,7 @@
 
 :root:not([data-theme='dark']) .workspace .usage-records-page
   .usage-pricing-table tbody tr:hover td {
-  background: #fff !important;
+  background: #fff;
 }
 
 :root:not([data-theme='dark']) .workspace .usage-records-page
