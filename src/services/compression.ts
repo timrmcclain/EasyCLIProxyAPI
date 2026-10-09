@@ -81,6 +81,7 @@ export const compressionService = {
   setRoutes: (claudeCode: boolean, claudeDesktop: boolean) =>
     invoke<CompressionStatus>('headroom_set_routes', { claudeCode, claudeDesktop }),
   setMemory: (memory: boolean) => invoke<CompressionStatus>('headroom_set_memory', { memory }),
+  stopService: () => invoke<CompressionStatus>('headroom_stop_service'),
   stats: () => invoke<CompressionStats>('headroom_stats'),
   learnPreview: (project: string) => invoke<LearnPreview>('headroom_learn_preview', { project }),
   learnApply: (path: string, content: string) => invoke<void>('headroom_learn_apply', { path, content }),

@@ -286,6 +286,35 @@ fn stop_process() {
     let _ = fs::remove_file(pid_path);
 }
 
+/// Stop any Headroom serving our port that the PID file no longer points at (e.g. after the hub
+/// restarted it). Matches the exact command line the hub starts, so nothing else is touched.
+fn stop_strays() {
+    let pattern = format!("proxy --port {HEADROOM_PORT}");
+    #[cfg(windows)]
+    {
+        let script = format!(
+            "Get-CimInstance Win32_Process | Where-Object {{ $_.CommandLine -like '*headroom*' -and $_.CommandLine -like '*{pattern}*' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}"
+        );
+        let mut command = Command::new("powershell");
+        command
+            .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        configure_background_command(&mut command);
+        let _ = command.status();
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = Command::new("pkill").args(["-f", &format!("headroom.*{pattern}")]).status();
+    }
+}
+
+fn stop_service() {
+    stop_process();
+    stop_strays();
+}
+
 async fn wait_until(running: bool, attempts: u32) -> bool {
     for _ in 0..attempts {
         if is_running().await == running {
@@ -375,8 +404,24 @@ pub(crate) async fn headroom_set_enabled(app: tauri::AppHandle, enabled: bool) -
         }
     } else {
         route_apps(&app, &mut settings, false)?;
-        stop_process();
+        stop_service();
         wait_until(false, 20).await;
+    }
+    headroom_status(app).await
+}
+
+/// Stop the service while compression is off. Apps are already pointed at the proxy, so this only
+/// ends the background process; turning compression on starts it again.
+#[tauri::command]
+pub(crate) async fn headroom_stop_service(app: tauri::AppHandle) -> Result<HeadroomStatus, String> {
+    let mut settings = read_settings();
+    if settings.enabled {
+        return Err("Turn compression off before stopping the service".to_string());
+    }
+    route_apps(&app, &mut settings, false)?;
+    stop_service();
+    if !wait_until(false, 20).await {
+        return Err("Compression service is still running".to_string());
     }
     headroom_status(app).await
 }

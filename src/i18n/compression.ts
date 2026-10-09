@@ -18,6 +18,14 @@ const messages = {
   stateOn: ['已开启 · 端口 {port}', 'On · port {port}', 'オン · ポート {port}'],
   stateOff: ['已关闭', 'Off', 'オフ'],
   stateStarting: ['正在启动…', 'Starting…', '起動中…'],
+  strayTitle: ['压缩服务仍在后台运行', 'The compression service is still running', '圧縮サービスがまだバックグラウンドで動いています'],
+  strayBody: [
+    '压缩已关闭，新会话直接连接代理。只有在关闭压缩之前打开的会话还在使用它，请先重新启动这些会话。',
+    'Compression is off, so new sessions go straight to the proxy. Only sessions opened before you turned it off still use it, so restart those first.',
+    '圧縮はオフなので、新しいセッションはプロキシに直接接続します。オフにする前に開いたセッションだけがまだ使っているため、先にそれらを再起動してください。',
+  ],
+  stopService: ['停止服务', 'Stop service', 'サービスを停止'],
+  stopFailed: ['无法停止压缩服务：{error}', 'Couldn’t stop the compression service: {error}', '圧縮サービスを停止できません：{error}'],
   stateFallback: ['压缩服务未响应，应用已直接连接代理', 'Compression service isn’t answering — apps are using the proxy directly', '圧縮サービスが応答しません。アプリはプロキシに直接接続しています'],
   notInstalled: ['未安装压缩服务', 'Compression service not installed', '圧縮サービスが未インストールです'],
   notInstalledBody: [

@@ -2654,6 +2654,7 @@ fn main() {
             headroom::headroom_set_enabled,
             headroom::headroom_set_routes,
             headroom::headroom_set_memory,
+            headroom::headroom_stop_service,
             headroom::headroom_stats,
             headroom::headroom_learn_preview,
             headroom::headroom_learn_apply,

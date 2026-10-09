@@ -77,6 +77,17 @@ export default function CompressionPage() {
     }
   };
 
+  const stopService = async () => {
+    setBusy(true);
+    try {
+      setStatus(await compressionService.stopService());
+    } catch (error) {
+      feedback.showNotice(t('stopFailed', { error: String(error) }), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const setMemory = async (memory: boolean) => {
     setBusy(true);
     try {
@@ -154,6 +165,17 @@ export default function CompressionPage() {
             {stateText}
           </p>
           {status?.lastError && fallback ? <p className="compression-error">{status.lastError}</p> : null}
+          {status && !status.enabled && status.running ? (
+            <div className="compression-stray" role="status">
+              <div>
+                <strong>{t('strayTitle')}</strong>
+                <p>{t('strayBody')}</p>
+              </div>
+              <button type="button" className="secondary-button" disabled={busy} onClick={() => void stopService()}>
+                {t('stopService')}
+              </button>
+            </div>
+          ) : null}
           <fieldset className="compression-apps" disabled={busy || !status}>
             <legend>{t('appsTitle')}</legend>
             <label>

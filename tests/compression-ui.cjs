@@ -84,6 +84,25 @@ const path = require('node:path');
     await page.getByRole('switch', { name: 'Compress context' }).click();
     await page.waitForFunction(() => document.querySelectorAll('.compression-metric').length === 0);
 
+    // Turning it off through the switch stops the service, so there's nothing to stop.
+    assert.equal(await page.locator('.compression-stray').count(), 0, 'no stop prompt once the service is down');
+
+    // Off but still running (e.g. left behind for open sessions): offer to stop it, and only then.
+    const stray = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    stray.on('pageerror', error => errors.push(String(error)));
+    await stray.addInitScript(() => {
+      localStorage.setItem('easy-cli-proxy-api.locale', 'en');
+      localStorage.setItem('personal.lastPage', 'compression');
+    });
+    await stray.goto(`${base}/?mock=running&mockDelay=5&mockHeadroom=stray`, { timeout: 60000 });
+    const prompt = stray.locator('.compression-stray');
+    await prompt.waitFor({ timeout: 15000 });
+    assert.equal(await stray.getByRole('switch', { name: 'Compress context' }).isChecked(), false);
+    assert.match(await prompt.innerText(), /still running/);
+    await prompt.getByRole('button', { name: 'Stop service' }).click();
+    await prompt.waitFor({ state: 'detached' });
+    assert.match(await stray.locator('.compression-state').innerText(), /Off/);
+
     assert.deepEqual(errors, []);
     console.log('compression-ui passed');
   } finally {

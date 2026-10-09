@@ -32,13 +32,20 @@ const PROVIDER_SECTIONS = [
 ] as const;
 type ProviderSection = (typeof PROVIDER_SECTIONS)[number];
 // Compression (Headroom) in the browser mock: installed, off, with a little saved history.
-const mockCompression = { enabled: false, routeClaudeCode: true, routeClaudeDesktop: true, memory: false };
+const mockCompression = {
+  enabled: false,
+  routeClaudeCode: true,
+  routeClaudeDesktop: true,
+  memory: false,
+  // ?mockHeadroom=stray: compression off but the service left running.
+  serviceRunning: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mockHeadroom') === 'stray',
+};
 function mockCompressionStatus() {
   return {
     installed: true,
     binary: 'C:/Users/you/.local/bin/headroom.exe',
     enabled: mockCompression.enabled,
-    running: mockCompression.enabled,
+    running: mockCompression.enabled || mockCompression.serviceRunning,
     port: 8787,
     proxyPort: 8317,
     logPath: 'C:/Hub/headroom.log',
@@ -1228,6 +1235,12 @@ export function createBrowserMockRuntime(
       case 'headroom_status': return mockCompressionStatus();
       case 'headroom_set_enabled': {
         mockCompression.enabled = Boolean((payload as { enabled?: boolean } | undefined)?.enabled);
+        mockCompression.serviceRunning = false;
+        return mockCompressionStatus();
+      }
+      case 'headroom_stop_service': {
+        if (mockCompression.enabled) throw new Error('Turn compression off before stopping the service');
+        mockCompression.serviceRunning = false;
         return mockCompressionStatus();
       }
       case 'headroom_set_routes': {
