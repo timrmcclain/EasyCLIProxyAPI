@@ -14,12 +14,11 @@ const base = process.env.META_OAUTH_TEST_BASE_URL || process.env.DEVIN_TEST_BASE
 
     const open = async (query = '') => {
       await page.goto(base + '/tests/fixtures/meta-oauth.html?' + query, { waitUntil: 'domcontentloaded' });
-      await page.locator('.oauth-card, .simple-mode-provider-card').first().waitFor();
+      await page.locator('.oauth-card').first().waitFor();
       // The OAuth sign-in page lists only Claude and Codex until "Show other providers" is checked.
-      if (!/(^|&)view=easy/.test(query)) await page.locator('.oauth-login-page .personal-provider-toggle input').check();
+      await page.locator('.oauth-login-page .personal-provider-toggle input').check();
     };
     const managementCard = () => page.locator('.oauth-card').filter({ hasText: /Muse \(Meta\) OAuth|Muse OAuth|Meta OAuth/ });
-    const easyCard = () => page.locator('.simple-mode-provider-card').filter({ hasText: /Muse \(Meta\) OAuth|Muse OAuth|Meta OAuth/ });
     const calls = () => page.evaluate(() => window.metaFixture.calls);
     const fixture = () => page.evaluate(() => window.metaFixture);
     const installClipboard = () => page.evaluate(() => {
@@ -91,35 +90,9 @@ const base = process.env.META_OAUTH_TEST_BASE_URL || process.env.DEVIN_TEST_BASE
     await page.evaluate(() => { window.metaFixture.status = 'ok'; });
     await retry.getByText('Completed', { exact: true }).waitFor();
 
-    // Easy mode uses the same Meta flow and keeps the browser selection explicit.
-    await open('view=easy&locale=en&openError=1');
-    const easy = easyCard();
-    assert.equal(await page.locator('.simple-mode-provider-card').count(), 7, 'Easy mode should expose Meta OAuth');
-    await installClipboard();
-    await easy.getByRole('button', { name: 'Start Sign-In', exact: true }).click();
-    await easy.getByText('META-CODE-1', { exact: true }).waitFor();
-    assert.equal(await easy.getByText('Device Code', { exact: true }).count(), 1);
-    assert.equal(await easy.getByRole('textbox').count(), 0);
-    await easy.getByRole('button', { name: 'Copy Device Code', exact: true }).click();
-    await page.waitForFunction(() => window.metaFixture.copied.includes('META-CODE-1'));
-    await easy.getByRole('button', { name: 'Copy Link', exact: true }).click();
-    await page.waitForFunction(() => window.metaFixture.copied.includes('https://auth.meta.ai/device?state=meta-attempt-1'));
-    await easy.getByRole('button', { name: 'Open Link', exact: true }).click();
-    assert.ok((await calls()).some(call => call.cmd === 'open_oauth_url'
-      && call.args.url === 'https://auth.meta.ai/device?state=meta-attempt-1'
-      && call.args.browser === 'default'), 'Easy mode retains a usable fallback link when automatic browser launch fails');
-    await page.waitForFunction(() => window.metaFixture.calls.some(call => call.cmd === 'start_oauth_login' && call.args.provider === 'meta'));
-    const easyStart = (await calls()).find(call => call.cmd === 'start_oauth_login' && call.args.provider === 'meta');
-    assert.equal(easyStart.args.browser, 'default');
-    await waitForStatusCall();
-    await page.evaluate(() => { window.metaFixture.status = 'ok'; });
-    await easy.locator('.state-pill.success').waitFor();
-    assert.equal(await easy.getByText('META-CODE-1', { exact: true }).count(), 0, 'Easy mode success clears the device code');
-    assert.equal(await easy.locator('.simple-mode-oauth-authorization').count(), 0, 'Easy mode success clears its authorization link');
-
     // Meta's 900-second expiry outlives the old ten-minute fallback, then clears stale controls.
-    await open('view=easy&locale=en');
-    const expiring = easyCard();
+    await open('locale=en');
+    const expiring = managementCard();
     await expiring.getByRole('button', { name: 'Start Sign-In', exact: true }).click();
     await expiring.getByText('META-CODE-1', { exact: true }).waitFor();
     const pollsBeforeClockAdvance = await page.evaluate(() => {
@@ -128,19 +101,12 @@ const base = process.env.META_OAUTH_TEST_BASE_URL || process.env.DEVIN_TEST_BASE
     });
     await page.waitForFunction((previous) => window.metaFixture.statusCalls > previous, pollsBeforeClockAdvance);
     assert.ok(await expiring.getByText('META-CODE-1', { exact: true }).isVisible(), 'device code is still valid after 601 seconds');
-    assert.ok(await expiring.getByRole('button', { name: 'Waiting for browser authorization...', exact: true }).isDisabled());
+    assert.ok(await expiring.locator('.primary-button').first().isDisabled(), 'sign-in stays locked while the device code is valid');
     await page.evaluate(() => { window.metaFixture.clockOffsetMs = 901_000; });
     await page.getByText('Authorization timed out. Please initiate login again.', { exact: true }).waitFor();
     assert.equal(await expiring.getByText('META-CODE-1', { exact: true }).count(), 0, 'expiry clears the device code');
-    assert.equal(await expiring.locator('.simple-mode-oauth-authorization').count(), 0, 'expiry clears the authorization link');
+    assert.equal(await expiring.getByRole('button', { name: 'Copy Link', exact: true }).count(), 0, 'expiry clears the authorization link');
     assert.ok(await expiring.getByRole('button', { name: 'Start Sign-In', exact: true }).isEnabled());
-
-    // Existing kimi-ai credentials continue to map to Kimi in Easy mode.
-    await open('view=easy&locale=en&kimiAi=1');
-    const kimi = page.locator('.simple-mode-provider-card').filter({ hasText: 'Kimi OAuth' });
-    await kimi.locator('.state-pill.success').waitFor();
-    assert.ok((await kimi.getAttribute('class')).split(' ').includes('connected'));
-    assert.equal((await calls()).filter(call => call.cmd === 'start_oauth_login').length, 0);
 
     // Check the rendered labels and width constraints in both themes and viewport classes.
     fs.mkdirSync('misc', { recursive: true });
@@ -156,18 +122,10 @@ const base = process.env.META_OAUTH_TEST_BASE_URL || process.env.DEVIN_TEST_BASE
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${theme} viewport overflows horizontally`);
       await page.screenshot({ path: `misc/meta-oauth-${theme}.png`, fullPage: true });
 
-      await open(`view=easy&locale=zh-CN&theme=${theme}`);
-      const easyResponsive = easyCard();
-      await easyResponsive.getByRole('button', { name: /开始登录/ }).click();
-      await easyResponsive.getByText('META-CODE-1', { exact: true }).waitFor();
-      assert.equal(await easyResponsive.getByText('设备码', { exact: true }).count(), 1);
-      assert.equal(await easyResponsive.getByRole('button', { name: '复制设备码', exact: true }).count(), 1);
-      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Easy mode ${theme} viewport overflows horizontally`);
-      await easyResponsive.screenshot({ path: `misc/meta-oauth-easy-${theme}.png` });
     }
 
     assert.deepEqual(errors, []);
-    console.log('Meta OAuth browser checks passed: provider card, device code copy/open, refresh cancellation, stale poll isolation, success priority, retry, Easy mode expiry, Kimi credential compatibility and responsive labels.');
+    console.log('Meta OAuth browser checks passed: provider card, device code copy/open, refresh cancellation, stale poll isolation, success priority, retry, device-code expiry and responsive labels.');
   } finally {
     await browser.close();
   }

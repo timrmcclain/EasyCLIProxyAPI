@@ -51,7 +51,6 @@ body, html, #root {
 }
 
 .app-shell,
-.app-shell.app-shell-easy-mode,
 .workspace,
 .content {
   background: var(--bg-secondary);
@@ -97,21 +96,6 @@ body, html, #root {
 }
 
 /* Sidebar Easy Mode Button */
-.sidebar-easy-entry {
-  border: 1px solid #ccfbf1 !important;
-  background: #f0fdfa !important;
-  color: #0f766e !important;
-  border-radius: 8px;
-  font-weight: 600;
-  box-shadow: var(--shadow-sm);
-  transition: all var(--dur-base) ease;
-}
-
-.sidebar-easy-entry:hover {
-  background: #ccfbf1 !important;
-  border-color: #99f6e4 !important;
-  color: #0b5d57 !important;
-}
 
 /* Sidebar Theme Selector (Clean Segmented Control) */
 .sidebar-theme-selector {
@@ -749,26 +733,6 @@ body, html, #root {
 }
 
 /* 9. Easy Mode / Simple Mode Polish */
-.simple-mode-step-status-item {
-  width: 100%;
-  background: transparent;
-  font: inherit;
-  text-align: left;
-}
-
-.simple-mode-step-status-item:not(:disabled):hover {
-  border-color: color-mix(in srgb, var(--ui-accent) 32%, var(--line-5));
-  background: var(--bg-tertiary);
-}
-
-.simple-mode-step-status-item:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
-}
-
-.simple-mode-step-status-item.active:disabled {
-  opacity: 1;
-}
 
 /* 10. Status Badges & Pills */
 .state-pill.success {
@@ -887,21 +851,6 @@ body, html, #root {
 
 /* Responsive Shell (Preserved from existing accessibility rules) */
 @media (max-width: 760px) {
-  .app-shell:not(.app-shell-easy-mode) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .app-shell:not(.app-shell-easy-mode) .sidebar {
-    position: static;
-    display: grid;
-    grid-template-columns: minmax(190px, 1fr) auto;
-    grid-template-rows: auto auto;
-    align-items: center;
-    gap: 10px 14px;
-    width: 100%;
-    height: auto;
-    padding: 12px 14px;
-  }
 
   .sidebar-brand {
     grid-column: 1;
@@ -942,16 +891,10 @@ body, html, #root {
     border: 0;
   }
 
-  .sidebar-easy-entry,
   .sidebar-language,
   .sidebar-contact {
     width: auto;
     flex: none;
-  }
-
-  .sidebar-easy-entry {
-    min-height: 36px;
-    padding-inline: 8px;
   }
 
   .sidebar-theme-selector {
@@ -998,9 +941,6 @@ body, html, #root {
 }
 
 @media (max-width: 700px) {
-  .app-shell:not(.app-shell-easy-mode) .sidebar {
-    grid-template-columns: minmax(150px, 1fr) auto;
-  }
 
   .sidebar-brand div > span {
     display: none;
@@ -1097,18 +1037,6 @@ body, html, #root {
 
 :root[data-theme='dark'] .usage-token-bar-track {
   background: var(--bg-hover);
-}
-
-:root[data-theme='dark'] .sidebar-easy-entry {
-  background: rgba(15, 118, 110, 0.18) !important;
-  border-color: rgba(15, 118, 110, 0.35) !important;
-  color: #2dd4bf !important;
-}
-
-:root[data-theme='dark'] .sidebar-easy-entry:hover {
-  background: rgba(15, 118, 110, 0.28) !important;
-  border-color: rgba(15, 118, 110, 0.5) !important;
-  color: #5eead4 !important;
 }
 
 :root[data-theme='dark'] .home-quick-card {

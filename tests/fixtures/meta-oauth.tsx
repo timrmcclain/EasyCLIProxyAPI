@@ -2,7 +2,6 @@ import { createRoot } from 'react-dom/client';
 import { mockIPC } from '@tauri-apps/api/mocks';
 import { I18nProvider } from '../../src/i18n';
 import { OAuthLoginPage } from '../../src/pages/ManagementPages';
-import { EasyModePage } from '../../src/pages/EasyModePage';
 import '../../src/styles/index.css';
 
 type MetaStatus = 'wait' | 'ok' | 'error';
@@ -127,7 +126,7 @@ mockIPC(async (cmd, args: any = {}) => {
 createRoot(document.getElementById('root')!).render(
   <I18nProvider>
     <main style={{ padding: 24 }}>
-      {view === 'easy' ? <EasyModePage /> : <OAuthLoginPage />}
+      <OAuthLoginPage />
     </main>
   </I18nProvider>,
 );

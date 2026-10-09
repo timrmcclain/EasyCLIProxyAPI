@@ -50,14 +50,6 @@ const base = process.env.DEVIN_TEST_BASE_URL || 'http://127.0.0.1:1421';
     await page.getByText('Cancellation failed', { exact: false }).waitFor();
     assert.equal(await page.evaluate(() => window.devinFixture.attempts), 2);
 
-    await open('view=easy');
-    const easy = page.locator('.simple-mode-provider-card').filter({ hasText: 'Devin OAuth' });
-    await easy.getByRole('button').click();
-    await page.waitForFunction(() => window.devinFixture.attempts === 1);
-    await page.evaluate(() => { window.devinFixture.status = 'ok'; });
-    await page.waitForFunction(() => document.querySelectorAll('.simple-mode-provider-card.connected').length === 1);
-    assert.ok((await calls()).some(call => call.cmd === 'start_oauth_login' && call.args.provider === 'devin'));
-
     await open('view=files');
     await page.getByText('devin-test.json', { exact: true }).first().waitFor();
     // The auth-file list shows a compact quota cell; fetching is the row's "Refresh Quota" action.

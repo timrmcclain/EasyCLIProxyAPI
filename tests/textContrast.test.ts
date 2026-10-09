@@ -130,7 +130,7 @@ it('renders placeholders at full opacity using the shared readable color', () =>
   expect(declarations('input::placeholder,\ntextarea::placeholder')).toMatchObject({
     color: 'var(--text-placeholder)', opacity: '1',
   });
-  for (const selector of ['.compact-text-input::placeholder', '.simple-mode-field .text-input::placeholder']) {
+  for (const selector of ['.compact-text-input::placeholder']) {
     expect(declarations(selector).color).toBe('var(--text-placeholder)');
   }
 });

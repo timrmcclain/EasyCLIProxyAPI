@@ -248,6 +248,8 @@ export function OAuthLoginPage() {
     [],
   );
 
+  const pollingDeadlines = useRef<Partial<Record<OAuthProviderId, { state: string; at: number }>>>({});
+
   const clearPollingTimer = useCallback((provider: OAuthProviderId) => {
     const timer = pollingTimers.current[provider];
     if (timer !== undefined) window.clearInterval(timer);
@@ -295,12 +297,33 @@ export function OAuthLoginPage() {
   }, []);
 
   const startPolling = useCallback(
-    (provider: OAuthProviderId, state: string) => {
+    (provider: OAuthProviderId, state: string, expiresIn?: number | null) => {
       clearPollingTimer(provider);
       pollingSessions.current[provider] = state;
+      // Device codes expire; stop polling a stale one. Providers that don't say get ten minutes.
+      if (pollingDeadlines.current[provider]?.state !== state || expiresIn != null) {
+        const lifetimeMs = typeof expiresIn === 'number' && Number.isFinite(expiresIn) && expiresIn > 0
+          ? expiresIn * 1000 : 10 * 60_000;
+        pollingDeadlines.current[provider] = { state, at: Date.now() + lifetimeMs };
+      }
       const isCurrent = () => pollingSessions.current[provider] === state;
       const checkStatus = async () => {
         if (pollingRequests.current[provider]) return;
+        if (Date.now() > (pollingDeadlines.current[provider]?.at ?? Infinity)) {
+          clearPollingTimer(provider);
+          delete pollingDeadlines.current[provider];
+          delete credentialSnapshots.current[provider];
+          updateProviderState(provider, {
+            url: undefined,
+            state: undefined,
+            userCode: undefined,
+            status: 'error',
+            error: t('oauth.timedOut'),
+            polling: false,
+          });
+          showProviderError(provider, t('oauth.timedOut'));
+          return;
+        }
         pollingRequests.current[provider] = true;
         try {
           const result = await invoke<OAuthStatusResult>('get_oauth_status', { state });
@@ -399,7 +422,7 @@ export function OAuthLoginPage() {
         status: 'waiting',
         polling: true,
       });
-      startPolling(provider, result.state);
+      startPolling(provider, result.state, result.expiresIn);
 
       if (!result.opened) {
         showNotice(

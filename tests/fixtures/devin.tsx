@@ -4,7 +4,6 @@ import { I18nProvider } from '../../src/i18n';
 import { OAuthLoginPage } from '../../src/pages/ManagementPages';
 import { QuotaPage } from '../../src/pages/QuotaPage';
 import { AuthFileManagementPage } from '../../src/pages/AuthFileManagementPage';
-import { EasyModePage } from '../../src/pages/EasyModePage';
 import '../../src/styles/index.css';
 
 const params = new URLSearchParams(location.search);
@@ -63,5 +62,5 @@ mockIPC(async (cmd, args: any) => {
   throw new Error('Unexpected command: ' + cmd + ' ' + JSON.stringify(args));
 }, { shouldMockEvents: true });
 createRoot(document.getElementById('root')!).render(<I18nProvider><main style={{ padding: 24 }}>
-  {view === 'quota' ? <QuotaPage /> : view === 'files' ? <AuthFileManagementPage /> : view === 'easy' ? <EasyModePage /> : <OAuthLoginPage />}
+  {view === 'quota' ? <QuotaPage /> : view === 'files' ? <AuthFileManagementPage /> : <OAuthLoginPage />}
 </main></I18nProvider>);
