@@ -102,7 +102,7 @@
 }
 
 .agent-client-manager::backdrop {
-  background: #0007;
+  background: color-mix(in srgb, var(--p-neutral-1000) 47%, transparent);
 }
 
 .agent-client-manager header,

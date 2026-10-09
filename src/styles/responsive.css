@@ -960,7 +960,7 @@
 
 .codex-session-row .codex-session-delete-button.icon-button:hover:not(:disabled),
 .codex-session-row .codex-session-delete-button.icon-button:focus-visible {
-  color: var(--danger-color, #b91c1c);
+  color: var(--danger-color, var(--p-red-700));
 }
 
 @media (max-width: 720px) {

@@ -16,7 +16,7 @@
 .compression-switch { display: inline-flex; align-items: center; gap: var(--space-3); font-weight: 600; cursor: pointer; width: fit-content; }
 .compression-switch input { width: 36px; height: 20px; accent-color: var(--primary-color); cursor: pointer; }
 .compression-state { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: 13px; color: var(--text-muted); }
-.compression-state.on { color: var(--success-color, #15803d); }
+.compression-state.on { color: var(--success-color, var(--p-green-600)); }
 .compression-state.warn { color: var(--warning-color); }
 .compression-stray { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-secondary); }
 .compression-stray strong { font-size: 13px; }

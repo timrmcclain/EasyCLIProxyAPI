@@ -98,7 +98,10 @@ const os = require('node:os');
     await page.getByRole('button', { name: 'Dark', exact: true }).click();
     await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
     const colors = await nav.getByRole('button', { name: 'Accounts', exact: true }).evaluate((el) => ({ text: getComputedStyle(el).color, background: getComputedStyle(el.closest('.sidebar')).backgroundColor }));
-    assert.equal(colors.text, 'rgb(189, 201, 210)', 'Dark navigation must use readable text');
+    const channel = (value) => { const c = value / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const lum = (rgb) => { const [r, g, b] = rgb.match(/\d+/g).map(Number).map(channel); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const [hi, lo] = [lum(colors.text), lum(colors.background)].sort((a, b) => b - a);
+    assert.ok((hi + 0.05) / (lo + 0.05) >= 4.5, `Dark navigation must use readable text (${colors.text} on ${colors.background})`);
     // The connection card lives in the collapsed Proxy & connection details section on Overview.
     await page.locator('.home-proxy-details > summary').click();
     await page.waitForFunction(() => getComputedStyle(document.querySelector('.client-api-card')).backgroundColor === 'rgba(255, 255, 255, 0.035)');

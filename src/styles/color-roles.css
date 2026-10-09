@@ -1,0 +1,48 @@
+/* Colour roles: points the app's shared colour variables at palette.css roles, loaded last so
+   every page agrees. Red = blocked or failing, amber = running low or expiring, green = healthy
+   where that needs saying, teal = actions, selection, links and charts.
+   ':root:root' outranks the ':root[data-theme=...]' blocks earlier in the cascade. */
+:root:root {
+  --primary-color: var(--c-accent);
+  --primary-hover: var(--c-accent-strong);
+  --primary-active: var(--c-accent-strong);
+  --ui-accent: var(--c-accent);
+  --ui-accent-strong: var(--c-accent-strong);
+  --ui-accent-soft: var(--c-accent-soft);
+  --ui-focus-ring: color-mix(in srgb, var(--c-accent) 30%, transparent);
+  --focus-ring-color: var(--c-accent);
+
+  --success-color: var(--c-status-success);
+  --warning-color: var(--c-status-warning);
+  --error-color: var(--c-status-danger);
+  --danger-color: var(--c-status-danger);
+  --info-color: var(--c-status-info);
+  --amber-color: var(--c-status-warning);
+  --amber-text: var(--c-warning);
+  --bg-error-light: var(--c-danger-soft);
+
+  --success-badge-bg: var(--c-success-soft);
+  --success-badge-text: var(--c-success);
+  --success-badge-border: var(--c-success-border);
+  --failure-badge-bg: var(--c-danger-soft);
+  --failure-badge-text: var(--c-danger);
+  --failure-badge-border: var(--c-danger-border);
+
+  --quota-green: var(--c-status-success);
+  --quota-amber: var(--c-warning-solid);
+  --quota-red: var(--c-status-danger);
+  --viz-success: var(--c-chart);
+
+  --personal-nav-active: var(--c-accent-soft);
+  --personal-accent-text: var(--c-accent-strong);
+}
+
+:root:root:not([data-theme='dark']) {
+  --primary-contrast: var(--p-neutral-0);
+  --ui-accent-contrast: var(--p-neutral-0);
+}
+
+:root:root[data-theme='dark'] {
+  --primary-contrast: var(--p-neutral-1000);
+  --ui-accent-contrast: var(--p-neutral-1000);
+}

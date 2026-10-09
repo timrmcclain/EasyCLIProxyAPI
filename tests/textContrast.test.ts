@@ -2,7 +2,9 @@ import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import postcss from 'postcss';
 
+// palette.css first: the app's colour variables resolve to its --p-* ramp values.
 const stylesheet = postcss.parse([
+  '../src/styles/palette.css',
   '../src/styles.css',
   '../src/styles/feature-pages.css',
   '../src/styles/ui-refinements.css',
@@ -110,12 +112,14 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     it('preserves background layers and reserves lower contrast for disabled text', () => {
-      expect(value('--bg-primary')).toBe(theme === 'light' ? '#ffffff' : '#141720');
-      expect(value('--bg-card')).toBe(theme === 'light' ? '#ffffff' : '#141720');
-      expect(value('--bg-secondary')).toBe(theme === 'light' ? '#f6f7f5' : '#0b0d11');
-      expect(value('--bg-tertiary')).toBe(theme === 'light' ? '#eff3f0' : '#1c212c');
-      expect(value('--bg-hover')).toBe(theme === 'light' ? '#f6f8f6' : '#252b38');
-      expect(value('--surface-3')).toBe(theme === 'light' ? '#f6f7f5' : '#0b0d11');
+      // Surfaces sit on fixed steps of the neutral ramp (scripts/palette.py).
+      const step = (name: string) => value(`--p-neutral-${name}`);
+      expect(value('--bg-primary')).toBe(step(theme === 'light' ? '0' : '950'));
+      expect(value('--bg-card')).toBe(step(theme === 'light' ? '0' : '950'));
+      expect(value('--bg-secondary')).toBe(step(theme === 'light' ? '50' : '1000'));
+      expect(value('--bg-tertiary')).toBe(step(theme === 'light' ? '75' : '925'));
+      expect(value('--bg-hover')).toBe(step(theme === 'light' ? '50' : '875'));
+      expect(value('--surface-3')).toBe(step(theme === 'light' ? '50' : '1000'));
       const background = color(value('--bg-card'));
       const hierarchy = ['primary', 'secondary', 'tertiary', 'quaternary', 'disabled']
         .map((role) => contrast(color(value(`--text-${role}`)), background));

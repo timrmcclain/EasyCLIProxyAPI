@@ -1,7 +1,7 @@
 .usage-activity-card {
-  --usage-activity-success: var(--analysis-success, #28a786);
-  --usage-activity-failed: var(--analysis-failed, #e66b70);
-  --usage-activity-canceled: var(--analysis-canceled, #a8b1bf);
+  --usage-activity-success: var(--analysis-success, var(--p-teal-500));
+  --usage-activity-failed: var(--analysis-failed, var(--p-red-400));
+  --usage-activity-canceled: var(--analysis-canceled, var(--p-neutral-300));
   display: flex;
   min-width: 0;
   flex-direction: column;

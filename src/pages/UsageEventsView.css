@@ -1,20 +1,20 @@
 /* The request log is deliberately scoped away from the other usage tabs. */
 .usage-records-page .usage-request-log {
-  --usage-log-surface: #fff;
-  --usage-log-text: #24343b;
-  --usage-log-muted: #63767d;
-  --usage-log-line: #e8e8e8;
-  --usage-log-hover: #f7f7f7;
-  --usage-log-soft: #f5f5f5;
-  --usage-log-input: #2563eb;
-  --usage-log-output: #0f766e;
-  --usage-log-reasoning: #b45309;
-  --usage-log-cache-read: #0f766e;
-  --usage-log-cache-write: #b45309;
-  --usage-log-response-model: #9a5808;
-  --usage-log-duration-good: #16a34a;
-  --usage-log-duration-warn: #d97706;
-  --usage-log-duration-bad: #dc2626;
+  --usage-log-surface: var(--p-neutral-0);
+  --usage-log-text: var(--p-neutral-850);
+  --usage-log-muted: var(--p-neutral-600);
+  --usage-log-line: var(--p-neutral-100);
+  --usage-log-hover: var(--p-neutral-50);
+  --usage-log-soft: var(--p-neutral-50);
+  --usage-log-input: var(--p-blue-600);
+  --usage-log-output: var(--p-teal-600);
+  --usage-log-reasoning: var(--p-orange-600);
+  --usage-log-cache-read: var(--p-teal-600);
+  --usage-log-cache-write: var(--p-orange-600);
+  --usage-log-response-model: var(--c-warning);
+  --usage-log-duration-good: var(--p-green-500);
+  --usage-log-duration-warn: var(--p-orange-500);
+  --usage-log-duration-bad: var(--p-red-600);
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -329,7 +329,7 @@
 
 .usage-request-log .usage-result.success {
   background: transparent;
-  color: #16756a;
+  color: var(--p-teal-700);
 }
 
 .usage-request-log .usage-result.failed {
@@ -376,13 +376,13 @@
 
 .usage-request-log .usage-table-top-scrollbar::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
-  background-color: #d6d5d2;
+  background-color: var(--p-neutral-200);
 }
 
 .usage-request-log .usage-table-top-scrollbar::-webkit-scrollbar-thumb:hover,
 .usage-request-log .usage-table-top-scrollbar::-webkit-scrollbar-thumb:active {
   border-width: 2px;
-  background-color: #b4b1ac;
+  background-color: var(--p-neutral-300);
 }
 
 .usage-request-log .usage-events-footer {
@@ -449,33 +449,33 @@
 
 :root[data-theme='dark'] .usage-records-page .usage-request-log {
   --usage-log-surface: var(--bg-card);
-  --usage-log-text: #edece9;
-  --usage-log-muted: #aaa8a4;
-  --usage-log-line: #34363b;
-  --usage-log-hover: #26282c;
-  --usage-log-soft: #292b30;
-  --usage-log-input: #93c5fd;
-  --usage-log-output: #5eead4;
-  --usage-log-reasoning: #fbbf24;
-  --usage-log-cache-read: #5eead4;
-  --usage-log-cache-write: #fbbf24;
-  --usage-log-response-model: #f0bc73;
-  --usage-log-duration-good: #4ade80;
-  --usage-log-duration-warn: #fbbf24;
-  --usage-log-duration-bad: #f87171;
+  --usage-log-text: var(--p-neutral-100);
+  --usage-log-muted: var(--p-neutral-400);
+  --usage-log-line: var(--p-neutral-800);
+  --usage-log-hover: var(--p-neutral-875);
+  --usage-log-soft: var(--p-neutral-875);
+  --usage-log-input: var(--p-blue-300);
+  --usage-log-output: var(--p-teal-300);
+  --usage-log-reasoning: var(--p-amber-300);
+  --usage-log-cache-read: var(--p-teal-300);
+  --usage-log-cache-write: var(--p-amber-300);
+  --usage-log-response-model: var(--c-warning);
+  --usage-log-duration-good: var(--p-green-300);
+  --usage-log-duration-warn: var(--p-amber-300);
+  --usage-log-duration-bad: var(--p-red-400);
   border-color: var(--usage-log-line);
   background: var(--usage-log-surface);
   box-shadow: none;
 }
 
 :root[data-theme='dark'] .usage-request-log .usage-result.success {
-  border-color: #17664e;
+  border-color: var(--p-teal-700);
   background: transparent;
-  color: #6ee7b7;
+  color: var(--p-green-300);
 }
 
 :root[data-theme='dark'] .usage-request-log .usage-table-top-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #505258;
+  background-color: var(--p-neutral-700);
 }
 
 @container workspace (max-width: 760px) {

@@ -166,7 +166,7 @@ function parseCsv(text) {
       assert.equal(details[0].title, `${labels.request}: astra\n${labels.upstream}: gpt-6-astra\n${labels.response}: gpt-5.6-luna`, `${locale}: model title localizes all three labels`);
     }
 
-    for (const [theme, color] of [['light', 'rgb(154, 88, 8)'], ['dark', 'rgb(240, 188, 115)']]) {
+    for (const [theme, color] of [['light', 'rgb(99, 63, 3)'], ['dark', 'rgb(243, 184, 107)']]) {
       await open('zh-CN', theme);
       assert.equal(await modelCells().first().locator('.usage-response-model').evaluate(element => getComputedStyle(element).color), color, `${theme}: response line uses the theme's mismatch text color`);
       if (process.env.USAGE_RESPONSE_MODEL_SCREENSHOT_DIR) {

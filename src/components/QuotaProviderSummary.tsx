@@ -6,10 +6,10 @@ import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { resetCountdown } from '../services/accountDashboard';
 import { orderedQuotaRows, primaryQuotaRow, quotaPercentLeft } from '../services/quotaLedger';
 
-export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale, labelFor, selected = false, onSelect }: {
+export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale, labelFor, selected = false, onSelect, provider }: {
   accounts: AuthFile[]; quotas: Record<string, QuotaState>; name: string; icon: ReactNode;
   now: number; stale: boolean; labelFor: (file: AuthFile) => string;
-  selected?: boolean; onSelect?: () => void;
+  selected?: boolean; onSelect?: () => void; provider?: string;
 }) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -32,7 +32,9 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
   const groupUnknown = !groups.length || groups.every(group => group.kind === 'unknown' || group.kind === 'resetDue');
   const summaryLabel = groupBased ? groups.length ? 'availability.ofGroups' : states.length === 1 ? `availability.${states[0].kind}` as const : 'availability.unknown'
     : unconfirmed ? 'availability.unknown' : 'availability.ofAccounts';
-  return <div className={`quota-provider-summary-cell${selected ? ' is-selected' : ''}`}>
+  // Each provider keeps one identity colour (palette.css --provider-*), shown as the card's top stripe.
+  const accent = provider ? { '--provider-accent': `var(--provider-${provider}, var(--provider-other))` } as CSSProperties : undefined;
+  return <div className={`quota-provider-summary-cell${selected ? ' is-selected' : ''}`} style={accent}>
     <div className="quota-summary-heading">{onSelect
       ? <button type="button" className="quota-summary-filter" aria-pressed={selected} title={t('glance.runway.filter', { provider: name })} onClick={onSelect}>{icon}<strong>{name}</strong></button>
       : <>{icon}<strong>{name}</strong></>}<span>{accounts.length === 1 ? t('quotaLedger.credential') : t('quotaLedger.credentials', { count: accounts.length })}</span></div>

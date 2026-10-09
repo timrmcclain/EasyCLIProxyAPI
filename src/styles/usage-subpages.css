@@ -1,11 +1,11 @@
 /* Shared surfaces for usage subpages; the overview keeps its own chart palette. */
 .usage-records-page .usage-tab-panel:not([aria-labelledby='usage-tab-overview']) {
-  --usage-page-surface: #ffffff;
-  --usage-page-soft: #fafafa;
-  --usage-page-hover: #f4f4f5;
-  --usage-page-text: #17212f;
-  --usage-page-muted: #526071;
-  --usage-page-border: #e4e7ec;
+  --usage-page-surface: var(--p-neutral-0);
+  --usage-page-soft: var(--p-neutral-25);
+  --usage-page-hover: var(--p-neutral-50);
+  --usage-page-text: var(--p-neutral-925);
+  --usage-page-muted: var(--p-neutral-600);
+  --usage-page-border: var(--p-neutral-100);
   --bg-primary: var(--usage-page-surface);
   --bg-card: var(--usage-page-surface);
   --bg-secondary: var(--usage-page-soft);
@@ -33,12 +33,12 @@
 }
 
 :root[data-theme='dark'] .usage-records-page .usage-tab-panel:not([aria-labelledby='usage-tab-overview']) {
-  --usage-page-surface: #222936;
-  --usage-page-soft: #2b3443;
-  --usage-page-hover: #333e4f;
-  --usage-page-text: #f4f7fb;
-  --usage-page-muted: #c0cbda;
-  --usage-page-border: #414d60;
+  --usage-page-surface: var(--p-neutral-875);
+  --usage-page-soft: var(--p-neutral-850);
+  --usage-page-hover: var(--p-neutral-800);
+  --usage-page-text: var(--p-neutral-50);
+  --usage-page-muted: var(--p-neutral-200);
+  --usage-page-border: var(--p-neutral-700);
 }
 
 .usage-records-page .usage-tab-panel:not([aria-labelledby='usage-tab-overview']) :is(
@@ -184,7 +184,7 @@
   top: 0;
   border: 0;
   background: var(--usage-log-surface);
-  color: #3e4c5a;
+  color: var(--p-neutral-700);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: .01em;
@@ -315,7 +315,7 @@ body.table-col-resizing .usage-records-page .usage-request-log .usage-events-tab
 }
 
 :root[data-theme='dark'] .usage-records-page .usage-request-log .usage-events-table th {
-  color: #d5deea;
+  color: var(--p-neutral-150);
 }
 
 .usage-records-page .usage-request-log .usage-event-metrics {

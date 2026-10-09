@@ -355,7 +355,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
           </button>
           {accountStatus && accountStatus.total > 0 && <span className="home-status-accounts">
             {accountStatus.problems > 0
-              ? <span key={`problems-${accountStatus.problems}`} className="home-status-verdict attention status-changed">
+              ? <span key={`problems-${accountStatus.problems}`} className={`home-status-verdict attention severity-${accountStatus.worst?.severity ?? 'blocked'} status-changed`}>
                 <strong>{accountStatus.problems === 1 ? t('glance.verdict.one') : t('glance.verdict.many', { count: accountStatus.problems })}</strong>
                 {accountStatus.worst && <span title={worstText(accountStatus.worst)}>{worstText(accountStatus.worst)}</span>}
               </span>

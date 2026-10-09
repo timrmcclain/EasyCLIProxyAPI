@@ -165,7 +165,7 @@
   line-height: 1.5;
 }
 .home-connection-state > span { width: 8px; height: 8px; flex: none; border-radius: 50%; background: currentColor; }
-.home-connection-state.ready { color: var(--success-color, #15986b); }
+.home-connection-state.ready { color: var(--success-color, var(--p-green-500)); }
 
 .home-protocol-tabs {
   display: flex;
@@ -282,7 +282,7 @@
   background: var(--bg-card);
 }
 .home-stat-card::before { content: ''; width: 28px; height: 3px; margin-bottom: 2px; border-radius: 2px; background: var(--stat-color); opacity: .75; }
-.home-stat-card.success { --stat-color: var(--success-color, #15986b); }
+.home-stat-card.success { --stat-color: var(--success-color, var(--p-green-500)); }
 .home-stat-card.warning { --stat-color: var(--amber-text); }
 .home-stat-card.error { --stat-color: var(--failure-badge-text); }
 .home-stat-card h3 { margin: 0; color: var(--text-secondary); font-size: 12px; font-weight: 500; line-height: 1.5; }
@@ -378,7 +378,7 @@
 
 .home-status-proxy.success .home-runtime-dot { background: var(--success-color); }
 .home-status-proxy.error .home-runtime-dot { background: var(--error-color); }
-.home-status-proxy.pending .home-runtime-dot { background: var(--warning-color); }
+.home-status-proxy.pending .home-runtime-dot { background: var(--c-warning-solid); }
 
 .home-status-accounts {
   display: inline-flex;

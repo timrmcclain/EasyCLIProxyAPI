@@ -1,5 +1,5 @@
 .agent-backup-modal { width: min(1000px, calc(100vw - 40px)); max-height: calc(100vh - 40px); overflow: auto; box-sizing: border-box; padding: 22px; border: 1px solid var(--line-5); border-radius: 12px; background: var(--surface-2); color: var(--ink-1); box-shadow: var(--shadow-lg); }
-.agent-backup-modal::backdrop { background: #0007; }
+.agent-backup-modal::backdrop { background: color-mix(in srgb, var(--p-neutral-1000) 47%, transparent); }
 .agent-backup-modal header, .agent-backup-modal footer { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
 .agent-backup-modal h2 { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-panel-title); margin: 0; }
 .agent-backup-modal p { font-size: var(--font-size-meta); line-height: 1.6; }

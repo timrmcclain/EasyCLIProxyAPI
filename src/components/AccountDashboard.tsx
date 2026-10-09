@@ -235,7 +235,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
         const accounts = files.filter((file) => dashboardProvider(file) === provider);
         return <QuotaProviderSummary key={provider} accounts={accounts} quotas={quotas} name={providerNames[provider] ?? provider} icon={<ProviderLogo provider={provider} />} now={now} stale={stale} labelFor={labelFor}
-          selected={filter === provider} onSelect={() => selectProvider(provider)} />;
+          selected={filter === provider} onSelect={() => selectProvider(provider)} provider={provider} />;
       })}
     </div>
     <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined}

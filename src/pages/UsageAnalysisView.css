@@ -1,7 +1,7 @@
 .usage-analysis-grid.usage-analysis-view {
-  --analysis-success: #28a786;
-  --analysis-failed: #e66b70;
-  --analysis-canceled: #a8b1bf;
+  --analysis-success: var(--p-teal-500);
+  --analysis-failed: var(--p-red-400);
+  --analysis-canceled: var(--p-neutral-300);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -154,9 +154,9 @@
 .usage-analysis-empty p, .usage-analysis-muted { font-size: 13px; color: var(--text-tertiary); }
 
 :root[data-theme='dark'] .usage-analysis-view {
-  --analysis-success: #49b7a1;
-  --analysis-failed: #eb8c80;
-  --analysis-canceled: #8896a9;
+  --analysis-success: var(--p-teal-400);
+  --analysis-failed: var(--p-red-400);
+  --analysis-canceled: var(--p-neutral-400);
 }
 
 @container workspace (max-width: 760px) {

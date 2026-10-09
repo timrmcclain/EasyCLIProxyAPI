@@ -121,7 +121,7 @@ function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore }:
   const shown = attention.slice(0, ATTENTION_ROWS);
   const status = (item: AttentionItem) => item.severity === 'blocked' ? t('glance.attention.blocked')
     : item.severity === 'low' ? t('glance.attention.low', { percent: quotaPercent(item.percent ?? 0) }) : t('glance.attention.unconfirmed');
-  return <article className={`glance-tile glance-attention ${attention.length ? '' : 'is-clear'}`} aria-labelledby="glance-attention-title">
+  return <article className={`glance-tile glance-attention ${attention.length ? `worst-${attention[0].severity}` : 'is-clear'}`} aria-labelledby="glance-attention-title">
     <header><h3 id="glance-attention-title">{t('glance.attention.title')}{attention.length > 0 && <span className="glance-count">{attention.length}</span>}</h3></header>
     {!attention.length ? <div className="glance-clear"><CircleCheck size={18} aria-hidden="true" /><span><strong>{t('glance.attention.none')}</strong><small>{t('glance.attention.noneDetail')}</small></span></div>
       : <ul className="glance-attention-list">

@@ -1,8 +1,8 @@
 /* ---- surface layer (formerly workspace-white.css) ---- */
 /* Light-mode workspace surfaces. Keep the sidebar and semantic status colors separate. */
 :root:not([data-theme='dark']) {
-  --surface-3: #fff;
-  --bg-secondary: #fff;
+  --surface-3: var(--p-neutral-0);
+  --bg-secondary: var(--p-neutral-0);
 }
 
 :root:not([data-theme='dark']),
@@ -11,35 +11,35 @@
 :root:not([data-theme='dark']) .app-shell,
 :root:not([data-theme='dark']) .workspace,
 :root:not([data-theme='dark']) .workspace .content {
-  background: #fff;
+  background: var(--p-neutral-0);
 }
 
 :root:not([data-theme='dark']) :is(.workspace, .config-dialog, dialog) {
-  --bg-primary: #fff;
-  --bg-secondary: #fff;
-  --bg-card: #fff;
-  --bg-tertiary: #fff;
-  --bg-quinary: #fff;
-  --bg-hover: #fff;
-  --surface-28: #fff;
-  --surface-30: #fff;
-  --surface-25: #fff;
-  --surface-24: #fff;
-  --surface-13: #fff;
-  --surface-16: #fff;
-  --surface-11: #fff;
-  --surface-9: #fff;
-  --surface-8: #fff;
-  --surface-7: #fff;
-  --surface-5: #fff;
-  --surface-4: #fff;
-  --surface-3: #fff;
-  --surface-2: #fff;
-  --border-color: #dce3eb;
-  --border-secondary: #e5eaf0;
-  --text-secondary: #253449;
-  --text-tertiary: #475569;
-  --text-quaternary: #526174;
+  --bg-primary: var(--p-neutral-0);
+  --bg-secondary: var(--p-neutral-0);
+  --bg-card: var(--p-neutral-0);
+  --bg-tertiary: var(--p-neutral-0);
+  --bg-quinary: var(--p-neutral-0);
+  --bg-hover: var(--p-neutral-0);
+  --surface-28: var(--p-neutral-0);
+  --surface-30: var(--p-neutral-0);
+  --surface-25: var(--p-neutral-0);
+  --surface-24: var(--p-neutral-0);
+  --surface-13: var(--p-neutral-0);
+  --surface-16: var(--p-neutral-0);
+  --surface-11: var(--p-neutral-0);
+  --surface-9: var(--p-neutral-0);
+  --surface-8: var(--p-neutral-0);
+  --surface-7: var(--p-neutral-0);
+  --surface-5: var(--p-neutral-0);
+  --surface-4: var(--p-neutral-0);
+  --surface-3: var(--p-neutral-0);
+  --surface-2: var(--p-neutral-0);
+  --border-color: var(--p-neutral-150);
+  --border-secondary: var(--p-neutral-100);
+  --text-secondary: var(--p-neutral-850);
+  --text-tertiary: var(--p-neutral-700);
+  --text-quaternary: var(--p-neutral-600);
 }
 
 :root:not([data-theme='dark']) .workspace :is(
@@ -47,12 +47,12 @@
   .plugin-tabs,
   .credential-quota, .usage-collector-state
 ) {
-  background: #fff;
+  background: var(--p-neutral-0);
   border: 1px solid var(--border-color);
 }
 
 :root:not([data-theme='dark']) .workspace .usage-stat-grid {
-  background: #fff;
+  background: var(--p-neutral-0);
   border: 1px solid var(--border-color);
   box-shadow: none;
 }
@@ -66,7 +66,7 @@
   .routing-segmented button, .plugin-tabs button,
   .usage-refresh-btn, .usage-price-row-actions button
 ) {
-  background: #fff;
+  background: var(--p-neutral-0);
   color: var(--text-secondary);
   border-color: var(--border-color);
   box-shadow: none;
@@ -76,7 +76,7 @@
   .agent-list-items button.active,
   .routing-segmented button.active, .plugin-tabs button.active
 ) {
-  background: #fff;
+  background: var(--p-neutral-0);
   border: 1px solid var(--ui-accent);
   color: var(--ui-accent-strong);
   box-shadow: none;
@@ -87,7 +87,7 @@
   border: 1px solid transparent;
   border-left: 3px solid var(--ui-accent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--ui-accent) 8%, #fff);
+  background: color-mix(in srgb, var(--ui-accent) 8%, var(--p-neutral-0));
   color: var(--ui-accent-strong);
   box-shadow: none;
 }
@@ -97,7 +97,7 @@
   .routing-segmented button, .plugin-tabs button,
   .agent-list-items button, .usage-refresh-btn, .usage-price-row-actions button
 ):hover:not(:disabled) {
-  background: #fff;
+  background: var(--p-neutral-0);
   border-color: var(--ui-accent);
   color: var(--ui-accent-strong);
 }
@@ -121,14 +121,14 @@
 
 /* Do not let local subpage palettes bring the neutral fills back. */
 :root:not([data-theme='dark']) .workspace .usage-tab-panel {
-  --usage-page-soft: #fff;
-  --usage-page-hover: #fff;
-  --bg-secondary: #fff;
+  --usage-page-soft: var(--p-neutral-0);
+  --usage-page-hover: var(--p-neutral-0);
+  --bg-secondary: var(--p-neutral-0);
 }
 
 :root:not([data-theme='dark']) .workspace .usage-request-log {
-  --usage-log-soft: #fff;
-  --usage-log-hover: #f2fbf9;
+  --usage-log-soft: var(--p-neutral-0);
+  --usage-log-hover: var(--p-neutral-25);
 }
 
 /* The usage views and outer panels should read as clean white documents in light mode.
@@ -139,7 +139,7 @@
   .usage-tab-panel,
   .usage-filter-panel
 ) {
-  background: #fff;
+  background: var(--p-neutral-0);
 }
 
 :root:not([data-theme='dark']) .workspace .usage-records-page :is(
@@ -147,7 +147,7 @@
   .usage-health-panel,
   .usage-events-panel
 ) {
-  background: #fff;
+  background: var(--p-neutral-0);
   border: 1px solid var(--border-color);
   box-shadow: none;
 }
@@ -156,7 +156,7 @@
   .usage-filter-item,
   .usage-filter-toggle
 ) {
-  background: #fff;
+  background: var(--p-neutral-0);
   border-color: var(--border-color);
 }
 
@@ -164,29 +164,29 @@
   .usage-request-log .usage-events-table tbody tr td,
 :root:not([data-theme='dark']) .workspace .usage-records-page
   .usage-request-log .usage-events-table tbody tr:nth-child(even) td {
-  background: #fff;
+  background: var(--p-neutral-0);
 }
 
 :root:not([data-theme='dark']) .workspace .usage-records-page
   .usage-request-log .usage-events-table tbody tr:hover td {
-  background: #f2fbf9;
+  background: var(--p-neutral-25);
 }
 
 :root:not([data-theme='dark']) .workspace .usage-records-page
   .usage-pricing-table :is(th, td) {
-  background: #fff;
+  background: var(--p-neutral-0);
 }
 
 :root:not([data-theme='dark']) .workspace .usage-records-page
   .usage-pricing-table tbody tr:hover td {
-  background: #fff;
+  background: var(--p-neutral-0);
 }
 
 :root:not([data-theme='dark']) .workspace .usage-records-page
   .usage-collector-state,
 :root:not([data-theme='dark']) .workspace .usage-records-page
   .usage-refresh-btn {
-  background: #fff;
+  background: var(--p-neutral-0);
   border: 1px solid var(--border-color);
 }
 
@@ -237,13 +237,13 @@
 
 /* Light theme: a soft gray page so white cards stand out, and hints that actually recede. */
 :root:not([data-theme='dark']) {
-  --surface-page: #f3f5f8;
+  --surface-page: var(--c-canvas);
   --surface-3: var(--surface-page);
   --bg-secondary: var(--surface-page);
   /* #64748b is 4.36:1 on the grey page; this is the lightest slate that keeps 4.5:1 there. */
-  --text-muted: #5b6b80;
+  --text-muted: var(--p-neutral-600);
   /* 4.5:1 on white and on the grey page (#7b8798 was ~3.3-3.6:1). */
-  --text-placeholder: #5b6b80;
+  --text-placeholder: var(--p-neutral-600);
 }
 
 :root:not([data-theme='dark']),
@@ -256,18 +256,18 @@
 }
 
 :root:not([data-theme='dark']) :is(.workspace, .config-dialog, dialog) {
-  --bg-hover: #f1f4f8;
-  --bg-tertiary: #f8fafc;
-  --bg-quinary: #f8fafc;
-  --text-quaternary: #5b6b80;
+  --bg-hover: var(--p-neutral-50);
+  --bg-tertiary: var(--p-neutral-25);
+  --bg-quinary: var(--p-neutral-25);
+  --text-quaternary: var(--p-neutral-600);
 }
 
 /* Dark theme: readable disabled/muted text, and a warning color distinct from errors. */
 :root[data-theme='dark'] {
-  --text-muted: #94a3b8;
-  --text-disabled: #8b97a8;
-  --warning-color: #d39a4a;
-  --amber-color: #d39a4a;
+  --text-muted: var(--p-neutral-400);
+  --text-disabled: var(--p-neutral-400);
+  --warning-color: var(--p-amber-400);
+  --amber-color: var(--p-amber-400);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
@@ -397,7 +397,7 @@ svg.lucide {
 .home-checklist li.done .home-checklist-mark {
   background: var(--success-color);
   border-color: var(--success-color);
-  color: #fff;
+  color: var(--p-neutral-0);
 }
 
 .home-checklist-state {
