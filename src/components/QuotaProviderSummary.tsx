@@ -1,9 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { useI18n } from '../i18n';
-import { quotaAvailability } from '../services/quotaAvailability';
+import { quotaAvailability, quotaPercent } from '../services/quotaAvailability';
 import { providerForFile, quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { resetCountdown } from '../services/accountDashboard';
+import { orderedQuotaRows, primaryQuotaRow, quotaPercentLeft } from '../services/quotaLedger';
 
 export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale, labelFor }: {
   accounts: AuthFile[]; quotas: Record<string, QuotaState>; name: string; icon: ReactNode;
@@ -15,6 +16,10 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
   const unknownReasons = [...new Set(states.filter(state => state.kind === 'unknown').map(state => state.reason))];
   const summaryReason = unknownReasons.length === 1 ? unknownReasons[0] : undefined;
   const count = (kind: string) => states.filter(state => state.kind === kind).length;
+  // Available accounts fill to their primary window's remaining quota, matching the account rows below.
+  const fills = accounts.map((file, index) => states[index].kind === 'available'
+    ? quotaPercentLeft(primaryQuotaRow(orderedQuotaRows(quotas[quotaKey(file)]?.rows ?? []), states[index].blockers)) : null);
+  const runningLow = fills.filter(fill => fill !== null && fill.tone === 'critical').length;
   const creditOnly = states.length > 0 && states.every(state => state.kind === 'creditBacked');
   const resets = states.flatMap(state => state.kind === 'exhausted' && state.recoveryAt ? [state.recoveryAt] : []);
   const groupBased = accounts.every(file => providerForFile(file) === 'antigravity');
@@ -26,8 +31,13 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
   return <div className="quota-provider-summary-cell">
     <div className="quota-summary-heading">{icon}<strong>{name}</strong><span>{accounts.length === 1 ? t('quotaLedger.credential') : t('quotaLedger.credentials', { count: accounts.length })}</span></div>
     <div className="quota-summary-total" title={t(groupBased ? 'availability.reportedGroups' : 'availability.included')}><strong className="quota-summary-value">{creditOnly ? '—' : groupBased ? (groupUnknown ? '—' : groups.filter(group => group.kind === 'available').length) : unconfirmed ? '—' : count('available')}</strong><span>{creditOnly ? t('credits.reported') : t(summaryLabel, { count: groupBased && groups.length ? groups.length : accounts.length })}</span></div>
-    <div className="quota-account-states">{states.map((state, index) => <span key={quotaKey(accounts[index])} className={`quota-account-state ${state.kind}`} title={`${labelFor(accounts[index])}: ${t(`availability.${state.kind}`)}`} aria-label={`${labelFor(accounts[index])}: ${t(`availability.${state.kind}`)}`} />)}</div>
-    <div className="quota-state-counts">{(['exhausted', 'creditBacked', 'limited', 'unknown', 'resetDue', 'unavailable', 'disabled'] as const).filter(kind => count(kind)).map(kind => <span key={kind} className={`quota-count-${kind}`}>{count(kind)} {kind === 'unknown' && summaryReason ? t(`availability.${summaryReason}Short`) : kind === 'unavailable' && states.filter(state => state.kind === 'unavailable').every(state => state.reason === 'planBlocked') ? t('availability.planBlockedLabel') : t(`availability.${kind}`)}</span>)}</div>
+    <div className="quota-account-states">{states.map((state, index) => {
+      const fill = fills[index];
+      const label = `${labelFor(accounts[index])}: ${t(`availability.${state.kind}`)}${fill ? ` · ${t('accountDashboard.remaining', { percent: quotaPercent(fill.percent) })}` : ''}`;
+      return <span key={quotaKey(accounts[index])} className={`quota-account-state ${state.kind}${fill ? ` tone-${fill.tone}` : ''}`}
+        style={fill ? { '--quota-fill': `${fill.percent}%` } as CSSProperties : undefined} title={label} aria-label={label} />;
+    })}</div>
+    <div className="quota-state-counts">{!!runningLow && <span className="quota-count-runningLow">{runningLow} {t('availability.runningLow')}</span>}{(['exhausted', 'creditBacked', 'limited', 'unknown', 'resetDue', 'unavailable', 'disabled'] as const).filter(kind => count(kind)).map(kind => <span key={kind} className={`quota-count-${kind}`}>{count(kind)} {kind === 'unknown' && summaryReason ? t(`availability.${summaryReason}Short`) : kind === 'unavailable' && states.filter(state => state.kind === 'unavailable').every(state => state.reason === 'planBlocked') ? t('availability.planBlockedLabel') : t(`availability.${kind}`)}</span>)}</div>
     {!!resets.length && !groupBased && <div className="quota-summary-reset">{accounts.every(file => providerForFile(file) === 'codex') ? t('credits.renews', { time: resetCountdown(Math.min(...resets), now) }) : `${t('availability.recovery')} · ${resetCountdown(Math.min(...resets), now)}`}</div>}
     <div className="quota-summary-extra"><button type="button" aria-expanded={expanded} title={t('availability.scopeHint')} onClick={() => setExpanded(value => !value)}>{t(expanded ? 'quotaLedger.hide' : 'quotaLedger.show')}</button></div>
     {expanded && groupBased && <div className="quota-provider-groups">{groups.map(group => <div key={`${quotaKey(group.account)}:${group.id}`} className={`quota-availability-${group.kind}`}>

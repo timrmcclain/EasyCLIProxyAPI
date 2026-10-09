@@ -64,6 +64,7 @@ export const en: Record<MessageKey, string> = {
   "availability.available": "Quota available",
   "availability.exhausted": "Included quota exhausted",
   "availability.limited": "Model limit reached",
+  "availability.runningLow": "running low",
   "availability.unknown": "Availability unconfirmed",
   "availability.disabled": "Disabled",
   "availability.unavailable": "Account unavailable",

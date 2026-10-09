@@ -60,6 +60,16 @@ const path = require('node:path');
     assert.equal(await page.locator('.quota-provider-summary-cell').first().locator('.quota-summary-value').innerText(), '5');
     assert.ok((await page.locator('.quota-provider-summary-cell').first().innerText()).includes('of 5 accounts clear'));
     assert.equal(await page.locator('.quota-provider-summary-cell').nth(1).locator('.quota-summary-value').innerText(), '3');
+    // Summary segments fill to each account's tightest window, like the rows: Claude stays green, Codex (5-7% left) runs low.
+    const segments = cell => page.locator('.quota-provider-summary-cell').nth(cell).locator('.quota-account-state').evaluateAll(nodes => nodes.map(node => ({ tone: [...node.classList].find(name => name.startsWith('tone-')), fill: node.style.getPropertyValue('--quota-fill'), label: node.getAttribute('aria-label') })));
+    const claudeSegments = await segments(0);
+    assert.ok(claudeSegments.every(segment => segment.tone === 'tone-healthy'), JSON.stringify(claudeSegments));
+    assert.deepEqual(claudeSegments.map(segment => segment.fill), ['58%', '100%', '100%', '51%', '100%']);
+    const codexSegments = await segments(1);
+    assert.deepEqual(codexSegments.map(segment => [segment.tone, segment.fill]), [['tone-critical', '5%'], ['tone-critical', '7%'], ['tone-critical', '5%']]);
+    assert.match(codexSegments[1].label, /Quota available · 7% left$/);
+    assert.match(await page.locator('.quota-provider-summary-cell').nth(1).innerText(), /3 running low/);
+    assert.doesNotMatch(await page.locator('.quota-provider-summary-cell').first().innerText(), /running low/);
     const claude = page.locator('.quota-account-group').first();
     assert.equal(await claude.locator('.ad-card').count(), 5);
     // The aligned three-limit ledger is an opt-in layout; compact one-row cards are the default.

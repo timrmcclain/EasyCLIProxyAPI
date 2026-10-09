@@ -48,3 +48,22 @@ export function orderedQuotaRows(rows: QuotaRow[], columns?: string[]): QuotaRow
   return [...columns.map(label => rows.find(row => row.label === label) ?? { label, remainingPercent: null }),
     ...rows.filter(row => !columns.includes(row.label))];
 }
+
+/** The window that decides an account's state: a blocker if any, otherwise the lowest remaining. */
+export function primaryQuotaRow(rows: QuotaRow[], blockers: QuotaRow[]): QuotaRow | undefined {
+  const lowest = rows.reduce<QuotaRow | undefined>((best, row) => {
+    const value = remaining(row.remainingPercent);
+    if (value === null) return best;
+    const bestValue = best ? remaining(best.remainingPercent) : null;
+    return bestValue === null || value < bestValue ? row : best;
+  }, undefined);
+  return blockers.find(row => rows.includes(row)) ?? lowest ?? rows[0];
+}
+
+export const quotaTone = (percent: number | null): 'critical' | 'low' | 'healthy' | 'unknown' =>
+  percent === null ? 'unknown' : percent < 15 ? 'critical' : percent < 50 ? 'low' : 'healthy';
+
+export function quotaPercentLeft(row: QuotaRow | undefined): { percent: number; tone: 'critical' | 'low' | 'healthy' } | null {
+  const percent = remaining(row?.remainingPercent);
+  return percent === null ? null : { percent, tone: quotaTone(percent) as 'critical' | 'low' | 'healthy' };
+}

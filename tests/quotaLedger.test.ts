@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { ledgerWindows, orderedQuotaRows, summarizeWindow, summaryWindows } from '../src/services/quotaLedger';
+import { ledgerWindows, orderedQuotaRows, primaryQuotaRow, quotaPercentLeft, quotaTone, summarizeWindow, summaryWindows } from '../src/services/quotaLedger';
 import { quotaKey, type QuotaState } from '../src/services/quotaService';
 
 describe('quota ledger evidence', () => {
@@ -29,5 +29,30 @@ describe('quota ledger evidence', () => {
     expect(rows.map(row => row.label)).toEqual(columns);
     expect(rows.find(row => row.label === '5-hour window')?.remainingPercent).toBeNull();
     expect(summarizeWindow(files, quotas, '7-day Fable 5').total).toBe(409);
+  });
+});
+
+describe('primary quota window', () => {
+  const week = { label: '7-day window', remainingPercent: 7 };
+  const fable = { label: '7-day Fable window', remainingPercent: 100 };
+  it('picks the lowest remaining window, like the account row', () => {
+    expect(primaryQuotaRow([fable, week], [])).toBe(week);
+    expect(primaryQuotaRow([{ label: 'x', remainingPercent: null }, fable], [])).toBe(fable);
+  });
+  it('prefers a blocking window over a lower-looking one', () => {
+    const blocker = { label: 'model', remainingPercent: 0 };
+    expect(primaryQuotaRow([week, blocker], [blocker])).toBe(blocker);
+  });
+  it('falls back to the first window when none report a value', () => {
+    const unknown = { label: 'x', remainingPercent: null };
+    expect(primaryQuotaRow([unknown], [])).toBe(unknown);
+    expect(primaryQuotaRow([], [])).toBeUndefined();
+  });
+  it('uses the row thresholds: red under 15%, amber under 50%', () => {
+    expect(quotaTone(7)).toBe('critical'); expect(quotaTone(14.9)).toBe('critical');
+    expect(quotaTone(15)).toBe('low'); expect(quotaTone(49)).toBe('low');
+    expect(quotaTone(50)).toBe('healthy'); expect(quotaTone(null)).toBe('unknown');
+    expect(quotaPercentLeft({ label: 'w', remainingPercent: 7 })).toEqual({ percent: 7, tone: 'critical' });
+    expect(quotaPercentLeft({ label: 'w', remainingPercent: null })).toBeNull(); expect(quotaPercentLeft(undefined)).toBeNull();
   });
 });

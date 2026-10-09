@@ -63,6 +63,7 @@ export const zhCN = {
   "availability.available": "额度可用",
   "availability.exhausted": "套餐额度已耗尽",
   "availability.limited": "模型额度已用尽",
+  "availability.runningLow": "额度即将用尽",
   "availability.unknown": "可用状态未确认",
   "availability.disabled": "已禁用",
   "availability.unavailable": "账号不可用",

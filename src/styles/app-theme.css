@@ -247,6 +247,11 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .quota-account-states { display:flex; gap:6px; margin:16px 0 12px; }
 .quota-account-state { height:8px; flex:1; background:var(--text-tertiary); border-radius:4px; }
 .quota-account-state.available { background:var(--quota-green,#16845c); }
+/* Available accounts fill to their remaining quota, coloured like the account rows' meters. */
+.quota-account-state.available[class*="tone-"] { --quota-fill-color:var(--quota-green,#16845c); background:linear-gradient(to right,var(--quota-fill-color) var(--quota-fill,100%),var(--bg-tertiary) var(--quota-fill,100%)); }
+.quota-account-state.available.tone-low { --quota-fill-color:var(--warning-color); }
+.quota-account-state.available.tone-critical { --quota-fill-color:var(--error-color); }
+.quota-count-runningLow { color:var(--error-color); }
 .quota-account-state.exhausted,.quota-account-state.unavailable { background:var(--quota-red,#bf4438); }
 .quota-account-state.limited { background:var(--quota-amber,#b58a22); }
 .quota-account-state.unknown,.quota-account-state.resetDue { background:repeating-linear-gradient(135deg,var(--text-tertiary) 0 2px,transparent 2px 5px); }

@@ -64,6 +64,7 @@ export const jaOverrides = {
   "availability.available": "利用枠あり",
   "availability.exhausted": "プランの利用枠を消費済み",
   "availability.limited": "モデルの上限に到達",
+  "availability.runningLow": "残りわずか",
   "availability.unknown": "利用可否は未確認",
   "availability.disabled": "無効",
   "availability.unavailable": "アカウント利用不可",

@@ -11,7 +11,7 @@ import { useQuotaCache } from '../services/quotaCache';
 import { refreshDashboardQuotas } from '../services/accountDashboardRefresh';
 import { fileName, idleQuota, providerForFile, quotaKey, type AuthFile, type QuotaRow, type QuotaState } from '../services/quotaService';
 import { useQuotaClock } from '../services/quotaTime';
-import { ledgerWindows, orderedQuotaRows, remaining } from '../services/quotaLedger';
+import { ledgerWindows, orderedQuotaRows, primaryQuotaRow, quotaTone, remaining } from '../services/quotaLedger';
 import { quotaAvailability, quotaPercent } from '../services/quotaAvailability';
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { QuotaProviderSummary } from './QuotaProviderSummary';
@@ -319,13 +319,6 @@ function AccountMenu({ label, items }: { label: string; items: MenuItem[] }) {
   </div>;
 }
 
-const lowestRow = (rows: QuotaRow[]) => rows.reduce<QuotaRow | undefined>((best, row) => {
-  const value = remaining(row.remainingPercent);
-  if (value === null) return best;
-  const bestValue = best ? remaining(best.remainingPercent) : null;
-  return bestValue === null || value < bestValue ? row : best;
-}, undefined);
-
 export function AccountCard({ file, quota, now, disabled, stale = false, onSave, onRefresh, refreshing = false, columns, label, hideEmails = false, requests, activityStale = false, friendlyName = '', onName, onAlternatives, layout = 'compact' }: {
   friendlyName?: string; onName?: (file: AuthFile, value: string) => boolean; onAlternatives?: (file: AuthFile) => void;
   columns?: string[]; refreshing?: boolean; onRefresh?: (file: AuthFile) => Promise<void>;
@@ -361,7 +354,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
   // Compact rows show one window per account, so don't pad them with other accounts' columns.
   const orderedRows = orderedQuotaRows(quota.rows, layout === 'ledger' ? columns : undefined);
   // The face shows the window that decides availability: a blocker if any, otherwise the lowest remaining.
-  const primary = availability.blockers.find(row => orderedRows.includes(row)) ?? lowestRow(orderedRows) ?? orderedRows[0];
+  const primary = primaryQuotaRow(orderedRows, availability.blockers);
   const faceRows = layout === 'ledger'
     ? [...(primary ? [primary] : []), ...orderedRows.filter(row => row !== primary)].slice(0, 3)
     : primary ? [primary] : [];
@@ -392,7 +385,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
     const isBlocker = availability.blockers.includes(row);
     // A window can still show healthy remaining% while the account is blocked by a different, already-exhausted window (e.g. 5-hour looks fine while the 7-day cap is at zero). Don't paint that green.
     const blockedElsewhere = !isBlocker && ['exhausted', 'creditBacked', 'resetDue'].includes(availability.kind);
-    const tone = isBlocker ? 'ad-critical' : blockedElsewhere ? 'ad-blocked' : percent === null ? 'ad-unknown' : percent < 15 ? 'ad-critical' : percent < 50 ? 'ad-low' : '';
+    const tone = isBlocker ? 'ad-critical' : blockedElsewhere ? 'ad-blocked' : ({ critical: 'ad-critical', low: 'ad-low', healthy: '', unknown: 'ad-unknown' } as const)[quotaTone(percent)];
     const notes = [
       blockedElsewhere ? t('authFiles.quota.blockedElsewhere') : '',
       row.justReset ? t('authFiles.quota.justReset') : '',
