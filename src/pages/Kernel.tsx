@@ -10,8 +10,9 @@ import { useAppUpdate } from '../appUpdate';
 import { FloatingNotice, useAppNotice } from '../appNotice';
 import { VersionManagementPage, displayAppVersion } from './VersionManagementPage';
 import { AccountDashboard, type AccountStatusSummary } from '../components/AccountDashboard';
+import { resetCountdown } from '../services/accountDashboard';
+import { quotaPercent } from '../services/quotaAvailability';
 import { HomeAccessPanel } from './HomeAccessPanel';
-import { HomeOverviewCards } from './HomeOverviewCards';
 import { CoreHealthPanel } from './CoreHealthPanel';
 import { CompressionStatusChip } from './CompressionStatusChip';
 import { useHomeOverview } from './useHomeOverview';
@@ -329,6 +330,12 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   };
   useEffect(() => { if (setupComplete && !setupState) rememberSetup('done'); }, [setupComplete, setupState]);
   const showChecklist = !setupState && !setupComplete && (accountStatus !== null || !coreRunning);
+  const worstText = (worst: NonNullable<AccountStatusSummary['worst']>) => {
+    const time = worst.resetAt ? resetCountdown(worst.resetAt, Date.now()) : '';
+    if (worst.severity === 'blocked') return time ? t('glance.verdict.blocked', { account: worst.label, time }) : t('glance.verdict.blockedNoReset', { account: worst.label });
+    const percent = quotaPercent(worst.percent ?? 0);
+    return time ? t('glance.verdict.low', { account: worst.label, percent, time }) : t('glance.verdict.lowNoReset', { account: worst.label, percent });
+  };
 
   if (view === 'home') {
     return (
@@ -347,8 +354,12 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
             {coreRunning ? t('kernel.action.stop') : t('kernel.action.start')}
           </button>
           {accountStatus && accountStatus.total > 0 && <span className="home-status-accounts">
-            <span>{t('home.status.accounts', { available: accountStatus.available, total: accountStatus.total })}</span>
-            {accountStatus.problems > 0 && <span key={`problems-${accountStatus.problems}`} className="home-status-chip error status-changed">{t('home.status.problems', { count: accountStatus.problems })}</span>}
+            {accountStatus.problems > 0
+              ? <span key={`problems-${accountStatus.problems}`} className="home-status-verdict attention status-changed">
+                <strong>{accountStatus.problems === 1 ? t('glance.verdict.one') : t('glance.verdict.many', { count: accountStatus.problems })}</strong>
+                {accountStatus.worst && <span title={worstText(accountStatus.worst)}>{worstText(accountStatus.worst)}</span>}
+              </span>
+              : <span className="home-status-verdict clear"><strong>{t('glance.verdict.clear')}</strong></span>}
             {accountStatus.unconfirmed > 0 && <span key={`unconfirmed-${accountStatus.unconfirmed}`} className="home-status-chip neutral status-changed">{t('home.status.unconfirmed', { count: accountStatus.unconfirmed })}</span>}
           </span>}
           <CompressionStatusChip />
@@ -378,8 +389,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
             ))}
           </ol>
         </section>}
-        <HomeOverviewCards snapshot={overview.snapshot} loading={overview.loading} coreReady={coreReady} onRefresh={overview.refresh} />
-        <AccountDashboard ready={coreReady} onSummary={publishAccountStatus} />
+        <AccountDashboard ready={coreReady} onSummary={publishAccountStatus} usage={overview.snapshot?.usage ?? null} usageLoading={overview.loading} />
         <details className="home-proxy-details">
           <summary>{t('home.status.connectionDetails')}</summary>
           {proxyPanel}

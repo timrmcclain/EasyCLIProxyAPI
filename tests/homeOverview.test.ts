@@ -16,6 +16,9 @@ describe('home overview aggregation', () => {
     expect(summarizeHomeUsage({ totalRequests: 2, successCount: 0, failureCount: 2, canceledCount: 0 }).successRate).toBe(0);
     expect(() => summarizeHomeUsage({ totalRequests: 0 })).toThrow();
     expect(() => summarizeHomeUsage({ totalRequests: 1, successCount: 2, failureCount: 0, canceledCount: 0 })).toThrow();
+    const counts = { totalRequests: 3, successCount: 3, failureCount: 0, canceledCount: 0 };
+    expect(summarizeHomeUsage({ ...counts, timeline: [{ hour: '2026-10-09T10:00:00Z', requests: 3, failure: 0 }, { hour: 4 }, 'x'] }).timeline).toEqual([{ hour: '2026-10-09T10:00:00Z', requests: 3, failure: 0 }]);
+    expect(summarizeHomeUsage(counts).timeline).toEqual([]);
   });
 
   it('deduplicates OAuth files and excludes runtime/API key records', () => {
@@ -102,7 +105,7 @@ describe('home overview loading', () => {
       return usage;
     });
     expect(await loadHomeOverview(false, Date.parse('2026-10-03T08:30:00Z'))).toEqual({
-      usage: { ...usage, successRate: 80 }, credentials: null, providerKeys: null, models: null, errors: {},
+      usage: { ...usage, successRate: 80, timeline: [] }, credentials: null, providerKeys: null, models: null, errors: {},
     });
     expect(calls).toEqual(['get_usage_overview']);
   });
@@ -121,7 +124,7 @@ describe('home overview loading', () => {
       throw new Error(`Unexpected path ${request.path}`);
     });
     expect(await loadHomeOverview(true)).toEqual({
-      usage: { ...usage, successRate: 80 }, credentials: { total: 1, available: 1, unavailable: 0, unknown: 0 },
+      usage: { ...usage, successRate: 80, timeline: [] }, credentials: { total: 1, available: 1, unavailable: 0, unknown: 0 },
       providerKeys: 1, models: [{ name: 'exposed-alias' }], errors: {},
     });
     expect(requests.sort()).toEqual(['/config/api-keys', '/credentials']);
@@ -136,7 +139,7 @@ describe('home overview loading', () => {
       throw new Error('Management API error (401): unauthorized');
     });
     expect(await loadHomeOverview(true)).toEqual({
-      usage: { ...usage, successRate: 80 }, credentials: { total: 0, available: 0, unavailable: 0, unknown: 0 },
+      usage: { ...usage, successRate: 80, timeline: [] }, credentials: { total: 0, available: 0, unavailable: 0, unknown: 0 },
       providerKeys: null, models: null,
       errors: { providerKeys: 'Management API error (401): unauthorized', models: 'Model list unavailable' },
     });

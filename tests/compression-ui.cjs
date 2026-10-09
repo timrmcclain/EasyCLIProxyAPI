@@ -32,7 +32,8 @@ const path = require('node:path');
     await page.locator('.compression-page').waitFor();
     const toggle = page.getByRole('switch', { name: 'Compress context' });
     assert.equal(await toggle.isChecked(), false);
-    assert.match(await page.locator('.compression-state').innerText(), /Off/);
+    // The page reads "Starting…" until its first status check returns.
+    await page.locator('.compression-state').filter({ hasText: /Off/ }).waitFor({ timeout: 15000 });
     assert.equal(await page.locator('.compression-metric').count(), 0, 'no stats while off');
 
     // On: state, four totals, a 14-day chart and the tables.

@@ -56,7 +56,9 @@ mockIPC(async (cmd, args: any = {}) => {
   if (cmd === 'get_usage_overview') {
     if (fixture.usageError) throw new Error('Fixture usage unavailable');
     if (params.has('noRequests')) return { totalRequests: 0, successCount: 0, failureCount: 0, canceledCount: 0, successRate: 0 };
-    return { totalRequests: 503, successCount: 492, failureCount: 11, canceledCount: 0, successRate: 0 };
+    const hour = (back: number) => new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000 - back * 3_600_000).toISOString();
+    return { totalRequests: 503, successCount: 492, failureCount: 11, canceledCount: 0, successRate: 0,
+      timeline: [{ hour: hour(0), requests: 300, failure: 0 }, { hour: hour(2), requests: 150, failure: 11 }, { hour: hour(5), requests: 53, failure: 0 }] };
   }
   if (cmd === 'management_request' && args.request.path === '/credentials') {
     if (params.has('noCredentials')) return { files: [] };

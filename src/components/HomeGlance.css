@@ -1,0 +1,65 @@
+/* At-a-glance row under the provider runway. Same surface and border as the runway cards; colour only for status. */
+.home-glance { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; margin: 0 0 32px; }
+.account-dashboard.quota-ledger .quota-provider-summary:has(+ .home-glance) { margin-bottom: 16px; }
+.glance-tile { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 18px 20px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-primary); }
+:root[data-theme='light'] .glance-tile { background: var(--bg-card); border-color: var(--border-color); }
+.glance-tile header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.glance-tile h3 { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.glance-count { min-width: 20px; padding: 1px 7px; border-radius: 10px; background: color-mix(in srgb, var(--error-color) 14%, transparent); color: var(--error-color); font-size: 11px; text-align: center; }
+.glance-open { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--text-tertiary); font-size: 12px; cursor: pointer; }
+.glance-open:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.glance-figure { display: flex; align-items: baseline; gap: 6px; margin: 0; }
+.glance-figure strong { font-size: 26px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.glance-figure span { color: var(--text-secondary); font-size: 13px; }
+.glance-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; color: var(--text-secondary); font-size: 12px; }
+.glance-latest { margin: auto 0 0; overflow: hidden; color: var(--text-tertiary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.glance-muted { margin: 0; color: var(--text-tertiary); font-size: 13px; }
+.glance-warn { color: var(--warning-color); }
+.glance-bad { color: var(--error-color); }
+
+.glance-spark { display: block; width: 100%; height: 40px; }
+.glance-spark .spark-ok { fill: var(--quota-green, var(--success-color)); opacity: .75; }
+.glance-spark .spark-empty { fill: var(--bg-tertiary); }
+.glance-spark .spark-failed { fill: var(--error-color); }
+.glance-spark g:hover .spark-ok { opacity: 1; }
+
+.glance-compression.is-off .glance-figure strong { color: var(--text-tertiary); }
+
+.glance-clear { display: flex; align-items: center; gap: 10px; color: var(--quota-green, var(--success-color)); }
+.glance-clear span { display: flex; flex-direction: column; gap: 2px; }
+.glance-clear strong { color: var(--text-primary); font-size: 15px; font-weight: 600; }
+.glance-clear small { color: var(--text-tertiary); font-size: 12px; }
+.glance-attention-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.glance-attention-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: 30px; font-size: 13px; }
+.glance-attention-list li > svg, .glance-attention-list li > img { width: 16px; height: 16px; }
+.glance-attention-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.glance-attention-state { display: flex; flex-direction: column; align-items: flex-end; font-weight: 600; font-variant-numeric: tabular-nums; }
+.glance-attention-state small { color: var(--text-tertiary); font-size: 11px; font-weight: 400; }
+.attention-blocked .glance-attention-state, .attention-low .glance-attention-state { color: var(--error-color); }
+.attention-unconfirmed .glance-attention-state { color: var(--text-tertiary); font-weight: 500; }
+.glance-attention-list li.glance-attention-more { display: block; }
+
+/* Runway tiles double as the provider filter. */
+.quota-summary-filter { display: inline-flex; align-items: center; gap: 8px; margin: -4px -6px; padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.quota-summary-filter:hover { background: var(--bg-tertiary); }
+.quota-provider-summary-cell.is-selected { box-shadow: inset 0 -2px 0 var(--personal-accent-text); }
+
+/* The account list opens on the accounts that need attention. */
+.ad-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
+.ad-list-heading h3 { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
+.ad-list-heading h3 span { color: var(--text-tertiary); font-weight: 500; }
+.account-dashboard .ad-footnote { margin: 16px 0 0; color: var(--text-tertiary); font-size: 11px; }
+
+/* Status-line verdict. */
+/* The verdict line shrinks and truncates (full text on hover) so the status bar stays one row. */
+.home-page .home-status-accounts { flex: 1 1 0; min-width: 0; flex-wrap: nowrap; }
+.home-status-verdict { display: inline-flex; align-items: baseline; gap: 10px; min-width: 0; }
+.home-status-verdict strong { flex: none; white-space: nowrap; }
+.home-status-verdict span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-status-accounts .home-status-chip, .home-status-latest { flex: none; white-space: nowrap; }
+.home-status-verdict.clear strong { color: var(--quota-green, var(--success-color)); }
+.home-status-verdict.attention strong { color: var(--error-color); }
+.home-status-verdict span { color: var(--text-secondary); font-size: 13px; }
+
+@media (max-width: 1100px) { .home-glance { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .glance-attention { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .home-glance { grid-template-columns: minmax(0, 1fr); } }

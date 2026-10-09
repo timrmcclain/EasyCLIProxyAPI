@@ -20,15 +20,14 @@ const os = require('node:os');
     await page.getByRole('heading', { name: 'Accounts & quota' }).waitFor();
     assert.equal(await nav.getByRole('button').count(), 6, 'Six everyday pages are visible; the rest sit under Advanced tools');
     assert.equal(await nav.locator('.personal-advanced').evaluate(node => node.open), false, 'Advanced tools start collapsed');
-    await page.locator('.quota-ledger-notes > summary').click();
-    await page.locator('.ledger-evidence strong').filter({ hasText: 'codex-personal.json' }).waitFor();
+    await page.locator('.glance-latest').filter({ hasText: 'codex-personal.json' }).waitFor();
     // The mock serves the provider fixtures: Claude, Antigravity, Codex, Grok, Kimi, Devin and Gemini accounts.
     assert.equal(await page.locator('.quota-provider-summary-cell').count(), 7);
     assert.equal(await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Gemini' }).locator('.quota-summary-value').innerText(), '—', 'Unknown availability must not look like zero allowance');
     assert.ok((await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Gemini' }).innerText()).includes('Availability unconfirmed'));
     assert.equal(await page.locator('.ad-metrics').count(), 0, 'Overview uses provider quota strip instead of generic metric cards');
-    assert.ok((await page.locator('.ledger-evidence').boundingBox()).height < 110, 'Latest request stays compact');
-    const filters = page.getByRole('group', { name: 'Filter accounts by provider' });
+    assert.ok((await page.locator('.glance-latest').boundingBox()).height < 110, 'Latest request stays compact');
+    const filters = page.locator('.quota-provider-summary');
     await filters.getByRole('button', { name: /^Claude/ }).click();
     assert.equal(await page.locator('.ad-card').count(), 2, 'Filtering shows both Claude accounts, healthy or not');
     const team = page.locator('.ad-card').filter({ hasText: 'claude-team.json' });
@@ -41,7 +40,7 @@ const os = require('node:os');
     await page.getByText('No accounts match these filters', { exact: true }).waitFor();
     await page.locator('.quota-no-results').getByRole('button', { name: 'Clear filters', exact: true }).click();
     // Healthy accounts collapse behind a toggle once no filter is active.
-    await page.locator('.ad-healthy-toggle').getByRole('button', { name: 'Show all', exact: true }).click();
+    await page.locator('.ad-list-heading').getByRole('button', { name: /^Show all \d+$/ }).click();
     assert.ok(await page.locator('.ad-card').count() >= 3);
     await page.getByLabel('Hide emails', { exact: true }).check();
     assert.ok(!(await page.locator('.account-dashboard').innerText()).includes('@example.com'));

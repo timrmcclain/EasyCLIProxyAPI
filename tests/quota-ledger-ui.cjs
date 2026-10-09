@@ -51,9 +51,13 @@ const path = require('node:path');
       };
     });
     await page.getByRole('button', { name: 'Refresh accounts', exact: true }).click();
-    await page.waitForFunction(() => !document.querySelector('.quota-refresh').disabled && document.querySelector('.ad-healthy-toggle'));
+    await page.waitForFunction(() => !document.querySelector('.quota-refresh').disabled && document.querySelector('.ad-list-heading'));
     // Healthy accounts collapse behind a toggle by default; show them all for the density checks.
-    await page.locator('.ad-healthy-toggle').getByRole('button', { name: 'Show all', exact: true }).click();
+    // The list opens on the accounts that need attention: the three Codex ones (plus Grok, which is unconfirmed).
+    assert.match(await page.locator('.ad-list-heading h3').innerText(), /^Accounts that need attention/);
+    assert.equal(await page.locator('.ad-card').count(), 4);
+    assert.equal(await page.locator('.quota-workflow-tools').count(), 0, 'list controls stay hidden until Show all');
+    await page.locator('.ad-list-heading').getByRole('button', { name: 'Show all 10', exact: true }).click();
     await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 10);
     assert.equal(await page.locator('.quota-provider-summary-cell').count(), 4);
     assert.match(await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Grok' }).innerText(), /Remaining quota not reported/);
@@ -69,6 +73,30 @@ const path = require('node:path');
     assert.deepEqual(codexSegments.map(segment => [segment.tone, segment.fill]), [['tone-critical', '5%'], ['tone-critical', '7%'], ['tone-critical', '5%']]);
     assert.match(codexSegments[1].label, /Quota available · 7% left$/);
     assert.match(await page.locator('.quota-provider-summary-cell').nth(1).innerText(), /3 running low/);
+    // Glance row: the status line names the worst account, and the attention tile lists the Codex accounts lowest first.
+    const verdict = page.locator('.home-status-verdict');
+    assert.match(await verdict.innerText(), /^3 accounts need attention/);
+    assert.match(await verdict.innerText(), /codex-account-0[68]\.json has 5% left, resets in 2d/);
+    const attention = page.locator('.glance-attention');
+    // Unconfirmed Grok is listed too, after the accounts running low; the status-line verdict only counts the three that can stop work.
+    assert.equal(await attention.locator('.glance-count').innerText(), '4');
+    const attentionRows = await attention.locator('.glance-attention-list li').evaluateAll(nodes => nodes.map(node => node.innerText.replace(/\s+/g, ' ').trim()));
+    assert.equal(attentionRows.length, 4, JSON.stringify(attentionRows));
+    assert.ok(attentionRows[0].includes('5% left') && attentionRows[2].includes('7% left') && attentionRows[3].includes('Unconfirmed'), `worst first: ${JSON.stringify(attentionRows)}`);
+    assert.match(attentionRows[0], /resets in 2d/);
+    // "View" scrolls to that account's row in the list and focuses it.
+    await attention.getByRole('button', { name: 'View: codex-account-07.json' }).click();
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'codex-account-07.json');
+    // Clicking a runway tile filters the list to that provider; clicking it again clears the filter.
+    const codexFilter = page.locator('.quota-summary-filter').filter({ hasText: 'Codex' });
+    await codexFilter.click();
+    assert.equal(await codexFilter.getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('.ad-card').count(), 3);
+    assert.ok(await page.locator('.quota-provider-summary-cell.is-selected').count() === 1);
+    await codexFilter.click();
+    assert.equal(await codexFilter.getAttribute('aria-pressed'), 'false');
+    // Tiles: compression mock is off; activity reads the mock usage.
+    assert.equal(await page.locator('.glance-tile').count(), 3);
     assert.doesNotMatch(await page.locator('.quota-provider-summary-cell').first().innerText(), /running low/);
     const claude = page.locator('.quota-account-group').first();
     assert.equal(await claude.locator('.ad-card').count(), 5);
@@ -165,7 +193,7 @@ const path = require('node:path');
     await page.getByRole('searchbox', {name:'Search accounts'}).fill('claude-account-01');
     assert.equal(await page.locator('.ad-card').count(), 1);
     await page.getByRole('searchbox', {name:'Search accounts'}).fill('');
-    await page.getByRole('button', {name:'Claude 5',exact:true}).click();
+    await page.locator('.quota-summary-filter').filter({hasText:'Claude'}).click();
     await page.getByLabel('All states', {exact:true}).selectOption('attention');
     await page.getByRole('navigation', {name:'Main navigation'}).getByRole('button', {name:'Accounts',exact:true}).click();
     // While an account is exhausted, Overview carries a red attention dot (part of its accessible name).
@@ -173,7 +201,7 @@ const path = require('node:path');
     assert.equal(await overviewNav.locator('.nav-attention-dot').count(), 1, 'Overview flags the limited account');
     await overviewNav.click();
     await page.waitForFunction(() => !document.querySelector('.quota-refresh')?.disabled);
-    assert.equal(await page.getByRole('button', {name:'Claude 5',exact:true}).getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('.quota-summary-filter').filter({hasText:'Claude'}).getAttribute('aria-pressed'), 'true');
     assert.equal(await page.getByLabel('All states', {exact:true}).inputValue(), 'attention');
     await page.getByRole('searchbox', {name:'Search accounts'}).fill('no-such-account');
     await page.getByText('No accounts match these filters', {exact:true}).waitFor();

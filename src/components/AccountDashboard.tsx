@@ -1,8 +1,7 @@
 import { AlternativeComparison, RecoveryTimeline, OverviewAlerts } from './OverviewInsights';
 import { subscribeActivity } from '../services/activitySubscription';
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { Activity, ArrowDownWideNarrow, ChevronDown, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { accountSummary, nextAccountReset, resetCountdown } from '../services/accountDashboard';
 import { dedupeAuthFiles, normalizeAuthFilePriorityInput } from '../services/authFiles';
@@ -15,6 +14,9 @@ import { ledgerWindows, orderedQuotaRows, primaryQuotaRow, quotaTone, remaining 
 import { quotaAvailability, quotaPercent } from '../services/quotaAvailability';
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { QuotaProviderSummary } from './QuotaProviderSummary';
+import { HomeGlance } from './HomeGlance';
+import { attentionItems, type AttentionSeverity } from '../services/homeGlance';
+import type { HomeUsageSummary } from '../services/homeOverview';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
 import { readAccountNames, saveAccountNames } from '../services/accountNames';
 import { privateAccountLabel } from '../services/accountPrivacy';
@@ -23,24 +25,24 @@ import { loadPlanBlocks, withPlanBlocks } from '../services/planBlock';
 import { accountRequests, loadDashboardActivity, requestClient, successfulRequest, privateText, type DashboardActivity, type DashboardRequest } from '../services/dashboardActivity';
 import './AccountDashboard.css';
 
-type Routing = { routingStrategy: string; routingSessionAffinity: boolean };
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 const providers = ['claude', 'antigravity', 'codex', 'xai', 'kimi'];
 const dashboardProvider = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
 // Problems sort first so the accounts that need a decision are at the top of each provider.
 const attentionRank: Record<string, number> = { exhausted: 0, unavailable: 0, limited: 0, resetDue: 0, unknown: 1, creditBacked: 2, available: 3, disabled: 4 };
-const problemKinds = ['exhausted', 'unavailable', 'limited', 'resetDue'];
-// Above this many accounts the search, state filter and provider chips are worth their space.
-const TOOLBAR_THRESHOLD = 8;
+export type AccountStatusSummary = {
+  total: number; available: number; problems: number; unconfirmed: number; latestAt?: string;
+  /** The account most likely to stop work: blocked first, then the lowest one running low. */
+  worst?: { label: string; severity: AttentionSeverity; percent: number | null; resetAt?: number };
+};
 
-export type AccountStatusSummary = { total: number; available: number; problems: number; unconfirmed: number; latestAt?: string };
-
-export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSummary?: (summary: AccountStatusSummary) => void }) {
+export function AccountDashboard({ ready, onSummary, usage = null, usageLoading = false }: {
+  ready: boolean; onSummary?: (summary: AccountStatusSummary) => void; usage?: HomeUsageSummary | null; usageLoading?: boolean;
+}) {
   const { t } = useI18n();
   const [files, setFiles] = useState<AuthFile[]>([]);
   const [names, setNames] = useState(readAccountNames);
   const [alternatives, setAlternatives] = useState(false);
-  const [routing, setRouting] = useState<Routing | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [updatedAt, setUpdatedAt] = useState<number>();
@@ -70,14 +72,10 @@ export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSumma
     setLoading(true);
     setError('');
     try {
-      const [payload, settings] = await Promise.all([
-        managementApi.get('/credentials'),
-        invoke<Routing>('get_core_config_settings'),
-      ]);
+      const payload = await managementApi.get('/credentials');
       const next = dedupeAuthFiles(responseList(payload, 'files'));
       if (!mounted.current || !readyRef.current) return;
       setFiles(withPlanBlocks(next, planBlocks.current));
-      setRouting(settings);
       setUpdatedAt(Date.now());
       await Promise.all([
         refreshDashboardQuotas(next.filter((file) => providerForFile(file)), force, lastAttempt.current, () => mounted.current && readyRef.current),
@@ -141,14 +139,21 @@ export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSumma
   };
 
   const stale = !ready || Boolean(error);
+  const latest = activity?.latest;
+  const latestFile = latest ? files.find((file) => accountRequests(file, [latest]).length) : undefined;
+  const labelFor = (file: AuthFile) => hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : names[privateAccountLabel(file, dashboardProvider(file))] || fileName(file) || accountSummary(file).label;
   const kindOf = (file: AuthFile) => quotaAvailability(file, quotas[quotaKey(file)], now, stale).kind;
   const kinds = files.map(kindOf);
+  const attention = attentionItems(files, quotas, now, stale);
+  const urgent = attention.filter((item) => item.severity !== 'unconfirmed');
+  const attentionKeys = new Set(attention.map((item) => quotaKey(item.file)));
   const summaryCounts: AccountStatusSummary = {
     total: files.length,
     available: kinds.filter((kind) => kind === 'available' || kind === 'creditBacked').length,
-    problems: kinds.filter((kind) => problemKinds.includes(kind)).length,
+    problems: urgent.length,
     unconfirmed: kinds.filter((kind) => kind === 'unknown').length,
     latestAt: activity?.latest?.timestamp,
+    worst: urgent[0] ? { label: labelFor(urgent[0].file), severity: urgent[0].severity, percent: urgent[0].percent, resetAt: urgent[0].resetAt } : undefined,
   };
   const summaryKey = JSON.stringify(summaryCounts);
   useEffect(() => { onSummary?.(JSON.parse(summaryKey) as AccountStatusSummary); }, [summaryKey, onSummary]);
@@ -178,9 +183,6 @@ export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSumma
       && (!query || (hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : `${names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} ${fileName(file)} ${accountSummary(file).label} ${dashboardProvider(file)}`).toLowerCase().includes(query))
       && (stateFilter === 'all' || (stateFilter === 'available' ? state.kind === 'available' : state.kind !== 'available' && state.kind !== 'disabled'));
   });
-  const latest = activity?.latest;
-  const latestFile = latest ? files.find((file) => accountRequests(file, [latest]).length) : undefined;
-  const labelFor = (file: AuthFile) => hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : names[privateAccountLabel(file, dashboardProvider(file))] || fileName(file) || accountSummary(file).label;
   const saveName = (file: AuthFile, value: string) => {
     const key = privateAccountLabel(file, dashboardProvider(file));
     const next = { ...names };
@@ -191,51 +193,69 @@ export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSumma
   const viewAlternatives = (_file: AuthFile) => { setAlternatives(true); };
   const providerList = [...providers, ...[...new Set(files.map(dashboardProvider))].filter((provider) => !providers.includes(provider))];
   const filtered = filter !== 'all' || stateFilter !== 'all' || search.trim() !== '';
-  const showToolbar = files.length > TOOLBAR_THRESHOLD || filtered;
+  // The list shows only accounts that need attention until you ask for all of them; its controls come with "Show all".
   const collapseHealthy = !showHealthy && !filtered;
-  const healthyCount = visible.filter((file) => kindOf(file) === 'available').length;
-  const cardFiles = collapseHealthy ? visible.filter((file) => kindOf(file) !== 'available') : visible;
+  const showToolbar = !collapseHealthy;
+  // Same set as the Needs attention tile; disabled accounts only appear under Show all.
+  const healthy = (file: AuthFile) => !attentionKeys.has(quotaKey(file));
+  const healthyCount = visible.filter((file) => healthy(file) && kindOf(file) !== 'disabled').length;
+  const cardFiles = collapseHealthy ? visible.filter((file) => !healthy(file)) : visible;
   const toggleHealthy = (value: boolean) => { setShowHealthy(value); saveDashboardPreference('showHealthy', String(value)); };
   const clearFilters = () => {
     setAlternatives(false);
     setFilter('all'); setStateFilter('all'); setSearch('');
     saveDashboardPreference('quotaProvider', 'all'); saveDashboardPreference('quotaState', 'all');
   };
+  const viewAccount = (file: AuthFile) => {
+    if (filtered) clearFilters();
+    window.requestAnimationFrame(() => {
+      const card = [...document.querySelectorAll<HTMLElement>('[data-account-key]')].find((node) => node.dataset.accountKey === quotaKey(file));
+      card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card?.focus({ preventScroll: true });
+    });
+  };
+  const selectProvider = (provider: string) => {
+    const next = filter === provider ? 'all' : provider;
+    setFilter(next); saveDashboardPreference('quotaProvider', next);
+  };
 
+  const listHeading = useRef<HTMLDivElement>(null);
   return <section className={`account-dashboard quota-ledger quota-layout-${layout}`} aria-labelledby="account-dashboard-title">
     <div className="ad-heading">
-      <div><h2 id="account-dashboard-title">{t('accountDashboard.title')}</h2>
-        <p className="quota-load-status"><span className={`ad-dot ${ready ? 'online' : ''}`} />{t('quotaLedger.credentials', { count: files.length })}<span aria-hidden="true">·</span><span className="quota-loaded">{loading ? t('accountDashboard.refreshing') : ready ? t('quotaLedger.loaded', { count: files.filter(file => quotas[quotaKey(file)]?.status === 'success').length }) : t('accountDashboard.offline')}</span></p></div>
-      <div className="quota-heading-actions">{summaryCounts.problems > 0 && <button type="button" className="secondary-button quota-compare" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button>}<label className="ledger-privacy"><input type="checkbox" checked={hideEmails} onChange={(event) => { setHideEmails(event.target.checked); if (event.target.checked) setSearch(''); saveDashboardPreference('hideEmails', String(event.target.checked)); }} />{t('ledger.hideEmails')}</label>
+      <h2 id="account-dashboard-title">{t('accountDashboard.title')}</h2>
+      <div className="quota-heading-actions">{summaryCounts.problems > 0 && <button type="button" className="secondary-button quota-compare" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button>}
       <button className="secondary-button quota-refresh" disabled={!ready || loading || saving || refreshingKey !== null} onClick={() => void refresh(true)}>
-        <RefreshCw size={16} aria-hidden="true" /> {loading ? t('accountDashboard.refreshing') : t('accountDashboard.refresh')}
+        <RefreshCw size={16} aria-hidden="true" className={loading ? 'spin' : undefined} /> {loading ? t('accountDashboard.refreshing') : t('accountDashboard.refresh')}
       </button></div>
     </div>
     {!ready ? <p className="ad-notice">{t('accountDashboard.start')}</p> : null}
     {error ? <p role="alert" className="ad-notice ad-error">{error} {t('accountDashboard.staleWarning')}</p> : null}
     {ready && !loading && !error && !files.length ? <p className="ad-notice">{t('accountDashboard.empty')}</p> : null}
-    {showToolbar && <><div className="ledger-filters">
-      <div className="ledger-provider-filters" role="group" aria-label={t('ledger.providers')}>
-        {['all', ...providerList].map((provider) =>
-          <button type="button" key={provider} aria-pressed={filter === provider} onClick={() => { setFilter(provider); saveDashboardPreference('quotaProvider', provider); }}>
-            <ProviderLogo provider={provider} />{provider === 'all' ? t('ledger.all') : providerNames[provider] ?? t('ledger.other')} <span>{provider === 'all' ? files.length : files.filter((file) => dashboardProvider(file) === provider).length}</span>
-          </button>)}
-      </div>
-      <select className="quota-layout-select" aria-label={t('quotaLedger.layout')} value={layout} onChange={event => { const value = event.target.value as 'ledger' | 'compact'; setLayout(value); saveDashboardPreference('quotaLayout', value); }}>
-        <option value="ledger">{t('quotaLedger.ledger')}</option><option value="compact">{t('quotaLedger.compact')}</option>
-      </select>
-    </div>
-    <div className="quota-workflow-tools"><input type="search" aria-label={t('availability.search')} placeholder={t('availability.search')} value={search} onChange={event => setSearch(event.target.value)} /><select aria-label={t('availability.all')} value={stateFilter} onChange={event => { const value = event.target.value as typeof stateFilter; setStateFilter(value); saveDashboardPreference('quotaState', value); }}><option value="all">{t('availability.all')}</option><option value="available">{t('availability.known')}</option><option value="attention">{t('availability.attention')}</option></select><span className="quota-result-count" role="status">{t('availability.results', { shown: visible.length, total: files.length })}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div></>}
     <div className="quota-provider-summary">
       {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
         const accounts = files.filter((file) => dashboardProvider(file) === provider);
-        return <QuotaProviderSummary key={provider} accounts={accounts} quotas={quotas} name={providerNames[provider] ?? provider} icon={<ProviderLogo provider={provider} />} now={now} stale={stale} labelFor={labelFor} />;
+        return <QuotaProviderSummary key={provider} accounts={accounts} quotas={quotas} name={providerNames[provider] ?? provider} icon={<ProviderLogo provider={provider} />} now={now} stale={stale} labelFor={labelFor}
+          selected={filter === provider} onSelect={() => selectProvider(provider)} />;
       })}
     </div>
+    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined}
+      onView={viewAccount} onMore={() => listHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
     {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
-    {healthyCount > 0 && <div className="ad-healthy-toggle" role="status">
-      <span>{t(collapseHealthy ? 'home.accounts.healthyHidden' : 'home.accounts.healthyShown', { count: healthyCount })}</span>
-      {!filtered && <button type="button" className="secondary-button compact-button" aria-expanded={!collapseHealthy} onClick={() => toggleHealthy(collapseHealthy)}>{t(collapseHealthy ? 'home.accounts.showHealthy' : 'home.accounts.hideHealthy')}</button>}
+    {files.length > 0 && <div ref={listHeading} className="ad-list-heading">
+      <h3 role="status">{!collapseHealthy ? t('glance.list.all') : cardFiles.length ? t('glance.list.problems') : t('glance.list.healthy', { count: healthyCount })}{collapseHealthy && cardFiles.length > 0 && <span>{cardFiles.length}</span>}</h3>
+      {filtered
+        ? <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>
+        : <button type="button" className="secondary-button compact-button" aria-expanded={!collapseHealthy} onClick={() => toggleHealthy(collapseHealthy)}>{collapseHealthy ? t('glance.list.showAll', { count: files.length }) : t('glance.list.showProblems')}</button>}
+    </div>}
+    {showToolbar && files.length > 0 && <div className="quota-workflow-tools">
+      <input type="search" aria-label={t('availability.search')} placeholder={t('availability.search')} value={search} onChange={event => setSearch(event.target.value)} />
+      <select aria-label={t('availability.all')} value={stateFilter} onChange={event => { const value = event.target.value as typeof stateFilter; setStateFilter(value); saveDashboardPreference('quotaState', value); }}><option value="all">{t('availability.all')}</option><option value="available">{t('availability.known')}</option><option value="attention">{t('availability.attention')}</option></select>
+      <select aria-label={t('accountDashboard.sort')} value={sort} onChange={(event) => { setSort(event.target.value as typeof sort); saveDashboardPreference('quotaSort', event.target.value); }}><option value="priority">{t('accountDashboard.prioritySort')}</option><option value="reset">{t('accountDashboard.resetSort')}</option><option value="recovery">{t('availability.recovery')}</option></select>
+      <select className="quota-layout-select" aria-label={t('quotaLedger.layout')} value={layout} onChange={event => { const value = event.target.value as 'ledger' | 'compact'; setLayout(value); saveDashboardPreference('quotaLayout', value); }}>
+        <option value="ledger">{t('quotaLedger.ledger')}</option><option value="compact">{t('quotaLedger.compact')}</option>
+      </select>
+      <label className="ledger-privacy"><input type="checkbox" checked={hideEmails} onChange={(event) => { setHideEmails(event.target.checked); if (event.target.checked) setSearch(''); saveDashboardPreference('hideEmails', String(event.target.checked)); }} />{t('ledger.hideEmails')}</label>
+      <span className="quota-result-count" role="status">{t('availability.results', { shown: visible.length, total: files.length })}</span>
     </div>}
     <div className="ad-accounts">
       {providerList.map((provider) => {
@@ -253,28 +273,9 @@ export function AccountDashboard({ ready, onSummary }: { ready: boolean; onSumma
     </div>
     <RecoveryTimeline files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} />
     <OverviewAlerts key={String(hideEmails)} files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} items={activity?.items} activityStale={activityError || stale} />
-    <details className="quota-ledger-notes"><summary>{t('quotaLedger.notes')}</summary><div className="ad-toolbar">
-      <div className="ad-routing"><span className={`ad-dot ${ready ? 'online' : ''}`} />{ready ? t('accountDashboard.online') : t('accountDashboard.offline')}
-        <span>{t('accountDashboard.routing', { strategy: routing?.routingStrategy ?? '—' })}</span>
-        <span>{t('accountDashboard.affinity', { state: routing ? routing.routingSessionAffinity ? t('accountDashboard.on') : t('accountDashboard.off') : '—' })}</span></div>
-      <label className="ad-sort"><ArrowDownWideNarrow size={14} aria-hidden="true" /><span>{t('accountDashboard.sort')}</span>
-        <select aria-label={t('accountDashboard.sort')} value={sort} onChange={(event) => { setSort(event.target.value as typeof sort); saveDashboardPreference('quotaSort', event.target.value); }}><option value="priority">{t('accountDashboard.prioritySort')}</option><option value="reset">{t('accountDashboard.resetSort')}</option><option value="recovery">{t('availability.recovery')}</option></select>
-      </label>
-    </div>
-    <p className="ledger-snapshot">{t('ledger.snapshot', { count: activity?.items.length ?? 0 })}{activity ? ` · ${t('accountDashboard.checked', { time: new Date(activity.checkedAt).toLocaleTimeString() })}` : ''}</p>
-    <div className="ad-footnote"><span>{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.loading')} · {t('accountDashboard.cadence')}</span>
-      <span>{t('accountDashboard.routingHint')}</span></div>
-    <section className="ledger-evidence" aria-label={t('ledger.latest')} title={t('ledger.evidenceHint')}>
-      <span className="ledger-evidence-label"><Activity size={16} aria-hidden="true" />{t('ledger.latest')}</span>
-      {latest ? <><strong>{requestClient(latest) ?? t('ledger.unknownClient')} <span aria-hidden="true">→</span> {latestFile ? labelFor(latestFile) : t('ledger.unmatched')}</strong>
-        <span>{privateText(latest.model, hideEmails)} · <time dateTime={latest.timestamp}>{new Date(latest.timestamp).toLocaleString()}</time></span></>
-        : <strong>{activity ? t('ledger.noSuccess') : t('ledger.waiting')}</strong>}
-      {(!ready || activityError || Boolean(error)) && <span role="status">{t('ledger.stale')}</span>}
-    </section>
-    </details>
+    <p className="ad-footnote">{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.loading')} · {t('accountDashboard.cadence')}</p>
   </section>;
 }
-
 
 type MenuItem = { key: string; label: string; onSelect: () => void; disabled?: boolean; movesFocus?: boolean };
 
@@ -405,7 +406,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
     </div>;
   };
   const detailsLabel = detailRows.length ? t('accountDashboard.moreLimits', { count: detailRows.length }) : t('quotaLedger.details');
-  return <article className={`ad-card ad-row-card quota-account-${availability.kind} ${stale || quota.status === 'error' ? 'quota-row-stale' : ''}`} aria-label={displayLabel}>
+  return <article className={`ad-card ad-row-card quota-account-${availability.kind} ${stale || quota.status === 'error' ? 'quota-row-stale' : ''}`} aria-label={displayLabel} data-account-key={quotaKey(file)} tabIndex={-1}>
     <div className="ad-row">
       <ProviderLogo provider={provider} className="ad-row-logo" />
       <div className="ad-row-name"><h3 title={hideEmails ? displayLabel : `${displayLabel}\n${fileName(file)}`}>{displayLabel}</h3>

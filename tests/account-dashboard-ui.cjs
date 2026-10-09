@@ -18,8 +18,8 @@ const path = require('node:path');
     await page.getByRole('heading', { name: 'Accounts & quota' }).waitFor();
     await page.getByRole('button', { name: 'Refresh accounts', exact: true }).waitFor();
     // Healthy accounts collapse behind a toggle; expand them so every account card is checked.
-    await page.locator('.ad-card, .ad-healthy-toggle').first().waitFor();
-    const showAll = page.getByRole('button', { name: 'Show all', exact: true });
+    await page.locator('.ad-card, .ad-list-heading').first().waitFor();
+    const showAll = page.locator('.ad-list-heading').getByRole('button', { name: /^Show all \d+$/ });
     if (await showAll.count()) await showAll.click();
     const cards = page.locator('.ad-card');
     assert.ok(await cards.count() >= 2, 'Expected Claude and Codex account cards');
@@ -52,7 +52,6 @@ const path = require('node:path');
     await page.evaluate(() => window.finishDashboardSave());
     await page.getByRole('status').filter({ hasText: 'Priority saved.' }).waitFor();
     assert.equal(await card.getByRole('spinbutton').inputValue(), '8');
-    await page.locator('.quota-ledger-notes > summary').click();
     await page.getByLabel('Sort', { exact: true }).selectOption('reset');
     assert.equal(await page.getByLabel('Sort', { exact: true }).inputValue(), 'reset');
     const dashboard = await page.locator('.account-dashboard').boundingBox();

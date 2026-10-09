@@ -1,6 +1,8 @@
 import { uxImprovementsEn, uxImprovementsJa, uxImprovementsZhCN } from './uxImprovements';
+import { homeGlanceEn, homeGlanceJa, homeGlanceZhCN } from './homeGlance';
 export const accountDashboardEn = {
   ...uxImprovementsEn,
+  ...homeGlanceEn,
   "accountDashboard.eyebrow": "ACCOUNT OVERVIEW",
   "accountDashboard.title": "Accounts & quota",
   "accountDashboard.description": "Compare your accounts, reported limits, and recent requests. Account health does not guarantee available quota.",
@@ -67,6 +69,7 @@ export const accountDashboardEn = {
 } as const;
 export const accountDashboardZhCN = {
   ...uxImprovementsZhCN,
+  ...homeGlanceZhCN,
   "accountDashboard.eyebrow": "账户面板",
   "accountDashboard.title": "账号与额度",
   "accountDashboard.description": "在一处查看账户、剩余额度和重置时间。",
@@ -133,6 +136,7 @@ export const accountDashboardZhCN = {
 } as const;
 export const accountDashboardJa = {
   ...uxImprovementsJa,
+  ...homeGlanceJa,
   "accountDashboard.eyebrow": "アカウントデスク",
   "accountDashboard.title": "アカウントと利用枠",
   "accountDashboard.description": "アカウント、残りの利用枠、リセット時刻をまとめて確認。",

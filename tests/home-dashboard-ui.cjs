@@ -46,9 +46,8 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     const probes = target => target.evaluate(() => window.homeFixture.calls.filter(call => call.cmd === 'core_health_probe'));
     const checkAll = target => target.locator('.core-health-actions').getByRole('button', { name: 'Check All', exact: true });
     const awaitIdle = target => target.waitForFunction(() => !document.querySelector('.core-health-progress'));
-    const value = id => page.locator(`[data-stat="${id}"] .home-stat-value`);
+    const activity = page.locator('.glance-activity');
     const runtimeValue = label => page.locator('.control-panel .panel-detail-row').filter({ has: page.getByText(label, { exact: true }) }).locator('dd');
-    const meter = id => page.locator(`[data-stat="${id}"] .home-stat-track[role="meter"]`);
     // Runtime controls and connection details now sit in a collapsed "Proxy & connection details" section.
     const showProxyDetails = async (target = page) => {
       const details = target.locator('.home-proxy-details');
@@ -57,25 +56,26 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     };
 
     await open('', page, false);
-    await page.locator('.home-overview[aria-busy="false"]').waitFor();
+    await page.locator('.glance-activity[aria-busy="false"]').waitFor();
     fs.mkdirSync('misc', { recursive: true });
     await page.screenshot({ path: 'misc/home-dashboard-initial.png', fullPage: true, animations: 'disabled' });
     console.log('Initial homepage rendered: misc/home-dashboard-initial.png');
-    assert.equal(await page.locator('.home-stat-card').count(), 4);
+    assert.equal(await page.locator('.glance-tile').count(), 3, 'activity, compression and attention tiles');
+    assert.equal(await page.locator('.home-stat-card').count(), 0, 'the static count tiles are gone');
     assert.equal(await page.locator('.home-proxy-details').evaluate(node => node.open), false, 'proxy and connection details start collapsed');
     await showProxyDetails();
     assert.equal(await runtimeValue('Installation Status').innerText(), 'Installed');
     assert.equal(await runtimeValue('Runtime Status').innerText(), 'Running');
     assert.equal(await page.locator('.home-runtime-details .panel-detail-row').count(), 6, 'runtime details retain both statuses, both versions, PID, and port');
-    for (const [id, expected] of [['usage', '97.8%'], ['credentials', '11'], ['providerKeys', '2'], ['models', '6']]) {
-      assert.equal(await value(id).innerText(), expected, `incorrect ${id} aggregate`);
-    }
-    assert.match(await page.locator('[data-stat="credentials"] p').innerText(), /5 available · 6 not in rotation/);
-    assert.match(await page.locator('[data-stat="usage"] p').innerText(), /503 requests/);
-    assert.ok(Math.abs(Number(await meter('usage').getAttribute('aria-valuenow')) - 492 / 503 * 100) < 0.000001, 'success meter must use the measured success rate');
-    assert.ok(Math.abs(Number(await meter('credentials').getAttribute('aria-valuenow')) - 5 / 11 * 100) < 0.000001, 'credential meter must use the available share');
-    assert.equal(await page.getByRole('meter', { name: 'Available credential share', exact: true }).count(), 1);
-    assert.equal(await page.locator('[data-stat="providerKeys"] [role="meter"], [data-stat="models"] [role="meter"]').count(), 0, 'counts without a denominator must not display a ratio');
+    assert.equal(await activity.locator('.glance-figure strong').innerText(), '503');
+    assert.match(await activity.locator('.glance-meta').innerText(), /97\.8% success/, 'success rate is measured over completed requests (492 of 503)');
+    assert.match(await activity.locator('.glance-meta').innerText(), /11 failed/);
+    const spark = activity.getByRole('img', { name: /Requests per hour over the last 24 hours, 503 in total/ });
+    assert.equal(await spark.locator('g').count(), 24, 'one bar per hour');
+    const bars = await spark.locator('rect.spark-ok, rect.spark-empty').evaluateAll(nodes => nodes.map(node => Number(node.getAttribute('height'))));
+    assert.equal(Math.max(...bars), bars[23], 'the busiest hour (the current one) is the tallest bar');
+    assert.equal(bars.filter(height => height > 1).length, 3, 'only the three hours with requests have bars');
+    assert.equal(await spark.locator('rect.spark-failed').count(), 1, 'failures show on the hour they happened');
     const usageQuery = await page.evaluate(() => window.homeFixture.calls.find(call => call.cmd === 'get_usage_overview').args.query);
     assert.equal(Date.parse(usageQuery.end) - Date.parse(usageQuery.start), 86_400_000);
     assert.equal((await probes(page)).length, 0, 'opening the dashboard must not perform inference');
@@ -207,22 +207,19 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await open('modelError=1');
     await page.locator('.core-health-error').waitFor();
     assert.equal(await checkAll(page).isDisabled(), true);
-    assert.equal(await value('models').innerText(), '—');
     await page.evaluate(() => { window.homeFixture.modelError = ''; });
     await page.getByRole('button', { name: 'Refresh Models', exact: true }).click();
     await page.locator('.core-health-table tbody tr').first().waitFor();
     await open('offline=1');
     await page.getByRole('dialog').getByText('Start the proxy to check model health', { exact: true }).waitFor();
-    await page.locator('.home-overview[aria-busy="false"]').waitFor();
+    await page.locator('.glance-activity[aria-busy="false"]').waitFor();
     await page.keyboard.press('Escape');
     await showProxyDetails();
     await showHealth(page, 'offline=1');
-    assert.equal(await value('usage').innerText(), '97.8%');
-    assert.equal(await value('models').innerText(), '—');
+    assert.match(await activity.locator('.glance-meta').innerText(), /97\.8% success/);
     assert.equal(await runtimeValue('Installation Status').innerText(), 'Installed');
     assert.equal(await runtimeValue('Runtime Status').innerText(), 'Stopped');
-    assert.equal(await meter('usage').count(), 1, 'local usage stays measured while the core is stopped');
-    assert.equal(await meter('credentials').count(), 0, 'unavailable credential data must not display a ratio');
+    assert.equal(await activity.locator('.glance-figure').count(), 1, 'local usage stays measured while the core is stopped');
     assert.equal(await checkAll(page).isDisabled(), true);
     assert.equal(await page.evaluate(() => window.homeFixture.calls.filter(call => call.cmd === 'get_core_models').length), 0);
     await open('noKey=1', page, false);
@@ -233,21 +230,13 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     await showProxyDetails();
     assert.equal(await page.getByRole('tabpanel').locator('code').innerText(), 'https://127.0.0.1:8317/v1');
     await open('noRequests=1&unknownCredentials=1', page, false);
-    await page.locator('.home-overview[aria-busy="false"]').waitFor();
-    assert.equal(await value('usage').innerText(), '—', 'an empty request window has no measured success rate');
-    assert.equal(await page.locator('[data-stat="usage"] p').innerText(), 'No completed requests yet');
-    assert.equal(await value('credentials').innerText(), '11');
-    assert.match(await page.locator('[data-stat="credentials"] p').innerText(), /0 available · 0 not in rotation · 11 with unknown status/);
-    for (const id of ['usage', 'credentials']) {
-      assert.equal(await meter(id).count(), 0, `unmeasured ${id} must not display a zero-percent meter`);
-      assert.equal(await page.locator(`[data-stat="${id}"] .home-stat-track[aria-hidden="true"]`).count(), 1);
-    }
+    await page.locator('.glance-activity[aria-busy="false"]').waitFor();
+    assert.equal(await activity.locator('.glance-muted').innerText(), 'No requests in the last 24 hours');
+    assert.equal(await activity.locator('.glance-figure, .glance-spark').count(), 0, 'an empty window shows no zero figure or empty chart');
     await open('noCredentials=1&usageError=1', page, false);
-    await page.locator('.home-overview[aria-busy="false"]').waitFor();
-    assert.equal(await value('usage').innerText(), '—');
-    assert.equal(await value('credentials').innerText(), '0');
-    assert.equal(await meter('usage').count(), 0, 'a failed usage read must not display a ratio');
-    assert.equal(await meter('credentials').count(), 0, 'an empty credential list has no denominator');
+    await page.locator('.glance-activity[aria-busy="false"]').waitFor();
+    assert.equal(await activity.locator('.glance-muted').innerText(), 'Temporarily unavailable');
+    assert.equal(await activity.locator('.glance-figure, .glance-spark').count(), 0, 'a failed usage read shows no figures');
     console.log('Modal dismissal/focus/retention/cancellation, stop, stale configuration, loading/offline/retry/key/TLS checks passed.');
 
     // Overview refreshes and elapsed five-minute periods must never trigger inference.
@@ -298,7 +287,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     const auto = await makePage();
     await auto.clock.install({ time: new Date('2026-10-03T04:00:00Z') });
     await open('autoHealth=1', auto, false);
-    await auto.locator('.home-overview[aria-busy="false"]').waitFor();
+    await auto.locator('.glance-activity[aria-busy="false"]').waitFor();
     await auto.clock.runFor(30000);
     assert.equal((await probes(auto)).length, 0, 'automatic checks wait for the start delay');
     await auto.clock.runFor(31000);
@@ -314,7 +303,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
       const height = width < 640 ? 844 : 1050;
       await page.setViewportSize({ width, height });
       await open(`locale=zh-CN&theme=${theme}`, page, false);
-      await page.locator('.home-overview[aria-busy="false"]').waitFor();
+      await page.locator('.glance-activity[aria-busy="false"]').waitFor();
       assert.equal(await page.locator('.core-health-table').count(), 0);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${theme}/${width} collapsed homepage overflows horizontally`);
       await page.screenshot({ path: `misc/home-dashboard-${theme}-${width}.png`, fullPage: true, animations: 'disabled' });
@@ -333,10 +322,10 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
         localStorage.setItem('easy-cli-proxy-api.theme', theme);
       }, theme);
       await page.goto(`${base}/?mock=running`, { waitUntil: 'domcontentloaded' });
-      await page.locator('.home-overview[aria-busy="false"]').waitFor();
+      await page.locator('.glance-activity[aria-busy="false"]').waitFor();
       const toolbar = page.locator('#browser-mock-toolbar');
       if (await toolbar.count()) await toolbar.evaluate(node => { node.style.display = 'none'; });
-      assert.equal(await page.locator('.home-stat-card').count(), 4);
+      assert.equal(await page.locator('.glance-tile').count(), 3);
       assert.equal(await page.locator('.home-status .core-health-open').count(), 1);
       assert.equal(await page.locator('.home-page > .core-health-entry').count(), 0);
       assert.equal(await page.locator('.core-health-table').count(), 0);
@@ -365,7 +354,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
           localStorage.setItem('easy-cli-proxy-api.theme', theme);
         }, { locale, theme });
         await page.goto(`${base}/?mock=running`, { waitUntil: 'domcontentloaded' });
-        await page.locator('.home-overview[aria-busy="false"]').waitFor();
+        await page.locator('.glance-activity[aria-busy="false"]').waitFor();
         const toolbar = page.locator('#browser-mock-toolbar');
         if (await toolbar.count()) await toolbar.evaluate(node => { node.style.display = 'none'; });
         assert.equal(await page.locator('html').getAttribute('lang'), locale);
@@ -377,18 +366,19 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             window.scrollTo(0, 0);
             const root = document.scrollingElement;
-            const cards = [...document.querySelectorAll('.home-status, .home-stat-card')].map(node => {
+            const cards = [...document.querySelectorAll('.home-status, .quota-provider-summary')].map(node => {
               const bounds = node.getBoundingClientRect();
               return { name: node.getAttribute('data-stat') || node.className, top: bounds.top, bottom: bounds.bottom, height: bounds.height };
             });
             const accounts = document.querySelector('#account-dashboard-title')?.getBoundingClientRect();
-            return { scrollHeight: root.scrollHeight, clientHeight: root.clientHeight, viewportHeight: innerHeight, cards, accountsTop: accounts ? accounts.top : Infinity };
+            const glance = document.querySelector('.home-glance')?.getBoundingClientRect();
+            return { scrollHeight: root.scrollHeight, clientHeight: root.clientHeight, viewportHeight: innerHeight, cards, accountsTop: accounts ? accounts.top : Infinity, glanceTop: glance ? glance.top : Infinity };
           });
           const context = `${locale}/${theme}/${viewport.width}x${viewport.height}`;
-          assert.equal(layout.cards.length, 5, `${context} must show the status bar and all four overview cards`);
-          // Home now continues with the account dashboard and proxy details, so the page itself may scroll;
-          // the status bar and overview must still be fully visible and the accounts section must start above the fold.
+          assert.equal(layout.cards.length, 2, `${context} must show the status bar and the provider runway`);
+          // The page may scroll, but the verdict and the runway must be fully visible and the glance tiles must start on the first screen.
           assert.ok(layout.accountsTop < layout.viewportHeight, `${context} accounts section must start within the first screen: ${layout.accountsTop}px`);
+          assert.ok(layout.glanceTop < layout.viewportHeight, `${context} glance tiles must start within the first screen: ${layout.glanceTop}px`);
           for (const card of layout.cards) {
             assert.ok(card.height > 0 && card.top >= -1 && card.bottom <= layout.viewportHeight + 1,
               `${context} ${card.name} must be fully visible without scrolling: ${JSON.stringify(card)}`);
@@ -396,7 +386,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
         }
       }
     }
-    console.log('Desktop homepage status bar and overview fit all four viewport sizes in Chinese/English and light/dark themes, with accounts starting above the fold.');
+    console.log('Desktop homepage status bar and runway fit all four viewport sizes in Chinese/English and light/dark themes, with the glance tiles starting above the fold.');
     assert.deepEqual(errors, []);
     console.log('Home dashboard browser checks passed. Screenshots: misc/home-{dashboard,health-dialog}-{light,dark}-{1280,640,390}.png and app.png');
   } finally {

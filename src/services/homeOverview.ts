@@ -3,6 +3,7 @@ import { dedupeAuthFiles, isOAuthCredentialFile } from './authFiles';
 import { authFileHealth, normalizeAuthFileCooldowns } from './authFileHealth';
 import type { CoreHealthModel } from './coreHealthCheck';
 import { isRecord, managementApi, readBoolean, readString } from './managementApi';
+import type { TimelinePoint } from './homeGlance';
 
 export type HomeUsageSummary = {
   totalRequests: number;
@@ -10,6 +11,7 @@ export type HomeUsageSummary = {
   failureCount: number;
   canceledCount: number;
   successRate: number | null;
+  timeline: TimelinePoint[];
 };
 
 export type HomeCredentialSummary = {
@@ -49,6 +51,9 @@ export function summarizeHomeUsage(payload: unknown): HomeUsageSummary {
     // Canceled requests do not indicate provider failure. With no completed
     // requests there is no measured success rate, including an empty window.
     successRate: completed > 0 ? successCount / completed * 100 : null,
+    // The hourly timeline only feeds the activity sparkline, so malformed points are dropped rather than failing the summary.
+    timeline: Array.isArray(payload.timeline) ? payload.timeline.filter(isRecord).flatMap((point) => typeof point.hour === 'string'
+      ? [{ hour: point.hour, requests: Number(point.requests) || 0, failure: Number(point.failure) || 0 }] : []) : [],
   };
 }
 
