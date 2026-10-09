@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Building2, Check, ExternalLink, FileText, Flame, GitBranch, Globe, Mail, Monitor, Network, Plug, RefreshCw, Sparkles, Undo2, type LucideIcon } from 'lucide-react';
+import { Building2, Check, ExternalLink, FileText, Flame, Monitor, Network, Plug, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
+import type { ComponentType } from 'react';
+import { GitHubMark, GoogleMark, PlaywrightMark } from '../components/BrandMarks';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { useI18n } from '../i18n';
 import { connectorDynamicText, connectorText, type ConnectorTextKey } from '../i18n/connectors';
@@ -40,14 +42,14 @@ const guideLinks = {
 } as const;
 
 /**
- * Per-connector icons. src/assets/icons has no GitHub, Google, Microsoft, Firecrawl or
- * Playwright logos, so these are generic glyphs; unknown ids fall back to the plug.
+ * Per-connector icons: brand marks where Simple Icons has one, generic glyphs otherwise
+ * (it carries no Microsoft or Firecrawl logos). Unknown ids fall back to the plug.
  */
-const connectorIcons: Partial<Record<ConnectorId, LucideIcon>> = {
-  google: Mail,
+const connectorIcons: Partial<Record<ConnectorId, ComponentType<{ size?: number }>>> = {
+  google: GoogleMark,
   microsoft365: Building2,
-  github: GitBranch,
-  playwright: Globe,
+  github: GitHubMark,
+  playwright: PlaywrightMark,
   windows: Monitor,
   firecrawl: Flame,
   codegraph: Network,
