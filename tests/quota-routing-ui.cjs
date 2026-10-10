@@ -56,6 +56,7 @@ const path = require('node:path');
     await page.locator('#config-subpage-tab-routing').click();
     const setting = page.locator('.qrouting');
     await setting.waitFor();
+    await setting.locator('summary', { hasText: 'Order right now' }).click();
     await page.waitForFunction(() => document.querySelectorAll('.qrouting-preview ol li').length === 2);
     const order = await setting.locator('.qrouting-preview ol li').allInnerTexts();
     assert.match(order[0], /claude-account-02/, `the account resetting soonest goes first: ${order}`);

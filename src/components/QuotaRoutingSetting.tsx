@@ -63,9 +63,9 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
         </label>
       </div>
       <FeedbackNotice feedback={notice} />
-      {strategy && strategy !== 'fill-first' && <p className="qrouting-note">{t('qrouting.notFillFirst')}</p>}
-      <div className="qrouting-preview" aria-label={t('qrouting.preview')}>
-        <span className="qrouting-preview-title">{t('qrouting.preview')}</span>
+      <details className="qrouting-preview">
+        <summary className="qrouting-preview-title">{t('qrouting.preview')}</summary>
+        {strategy && strategy !== 'fill-first' && <p className="qrouting-note">{t('qrouting.notFillFirst')}</p>}
         {plans.length === 0 ? <p className="qrouting-note">{t('qrouting.previewEmpty')}</p> : (
           <ul>
             {plans.map(plan => (
@@ -83,7 +83,7 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
             ))}
           </ul>
         )}
-      </div>
+      </details>
     </div>
   );
 }
