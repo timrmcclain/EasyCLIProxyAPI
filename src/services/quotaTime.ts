@@ -73,3 +73,5 @@ const subscribe = (listener: () => void) => {
   };
 };
 export const useQuotaClock = () => useSyncExternalStore(subscribe, () => now, () => now);
+/** The time quota views are showing; it ticks once a minute, so it can trail Date.now() slightly. */
+export const quotaClockNow = () => now;

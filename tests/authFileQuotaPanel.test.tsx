@@ -5,12 +5,14 @@ import { I18nProvider } from '../src/i18n';
 import type { QuotaState } from '../src/services/quotaService';
 import { QuotaCard } from '../src/pages/QuotaPage';
 import { quotaAvailability } from '../src/services/quotaAvailability';
+import { quotaClockNow } from '../src/services/quotaTime';
 
 const render = (quota: QuotaState) => renderToStaticMarkup(<I18nProvider><AuthFileQuotaPanel file={{ name: 'test.json' }} quota={quota} disabled={false} onRefresh={() => {}} /></I18nProvider>);
 
 it.each(['exhausted', 'available', 'unknown', 'disabled', 'resetDue', 'limited', 'refreshing', 'stale'])(
   'keeps both secondary pages consistent with Overview for %s', scenario => {
-    const now = Date.now();
+    // The pages read the shared quota clock, which can trail Date.now(); expectations must use the same time.
+    const now = quotaClockNow();
     const file = { name: 'test.json', provider: 'claude', status: 'active', disabled: scenario === 'disabled' };
     const quota: QuotaState = { status: scenario === 'refreshing' ? 'loading' : 'success', fetchedAt: now, rows: [
       { label: 'Model window', scope: 'model', remainingPercent: scenario === 'limited' ? 0 : 100 },
