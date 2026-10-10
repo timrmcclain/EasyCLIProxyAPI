@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { healthChecks, type HealthInput } from '../src/services/healthCheck';
 
 const healthy: HealthInput = {
-  proxyRunning: true, host: '127.0.0.1', allowLan: false, keyCount: 1, managementSecretConfigured: true,
+  proxyRunning: true, host: '127.0.0.1', exposed: false, portBlockedBy: null, keyCount: 1, managementSecretConfigured: true,
   signInNeeded: [], disabledAccounts: 0, totalAccounts: 7, driftedApps: [],
   compression: { enabled: false, running: false }, notificationsAllowed: true, notificationsEnabled: true,
 };
@@ -21,11 +21,16 @@ describe('health check', () => {
   });
 
   it('flags a proxy reachable from the network, and fails it without a management secret', () => {
-    expect(levels({ allowLan: true })).toMatchObject({ network: 'warn' });
-    expect(levels({ host: '0.0.0.0' })).toMatchObject({ network: 'warn' });
-    expect(levels({ host: 'localhost' })).toMatchObject({ network: 'ok' });
-    expect(levels({ host: '0.0.0.0', managementSecretConfigured: false })).toMatchObject({ management: 'fail' });
+    expect(levels({ exposed: true })).toMatchObject({ network: 'warn' });
+    expect(levels({ exposed: false })).toMatchObject({ network: 'ok' });
+    expect(levels({ exposed: true, managementSecretConfigured: false })).toMatchObject({ management: 'fail' });
     expect(levels({ managementSecretConfigured: false }).management).toBeUndefined();
+  });
+
+  it('names the program holding the port when the proxy cannot start', () => {
+    const blocked = healthChecks({ ...healthy, proxyRunning: false, portBlockedBy: { port: 8317, name: 'node.exe', pid: 4242 } });
+    expect(blocked.find(check => check.id === 'proxy')).toMatchObject({ level: 'fail', key: 'health.proxy.portBlocked', variables: { port: 8317, name: 'node.exe', pid: 4242 } });
+    expect(healthChecks({ ...healthy, proxyRunning: false }).find(check => check.id === 'proxy')?.key).toBe('health.proxy.stopped');
   });
 
   it('names expired sign-ins and drifted apps', () => {

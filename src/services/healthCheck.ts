@@ -15,9 +15,12 @@ export type HealthCheck = {
 
 export type HealthInput = {
   proxyRunning: boolean;
-  /** Address the proxy listens on; anything but loopback is reachable from the network. */
+  /** Address the proxy listens on, for the message. */
   host: string;
-  allowLan: boolean;
+  /** From the proxy's config: an empty or wildcard host listens on every interface. */
+  exposed: boolean;
+  /** Another program holds the proxy's port, so the proxy can't start. Only checked while the proxy is stopped. */
+  portBlockedBy: { port: number; name: string; pid: number } | null;
   keyCount: number;
   managementSecretConfigured: boolean;
   /** Labels of accounts whose sign-in expired or was revoked. */
@@ -32,16 +35,17 @@ export type HealthInput = {
   notificationsEnabled: boolean;
 };
 
-const loopback = (host: string) => ['', '127.0.0.1', 'localhost', '::1', '[::1]'].includes(host.trim().toLowerCase());
 const rank: Record<HealthLevel, number> = { fail: 0, warn: 1, ok: 2 };
 
 export function healthChecks(input: HealthInput): HealthCheck[] {
   const checks: HealthCheck[] = [];
   checks.push(input.proxyRunning
     ? { id: 'proxy', level: 'ok', key: 'health.proxy.ok' }
-    : { id: 'proxy', level: 'fail', key: 'health.proxy.stopped', target: 'home' });
+    : input.portBlockedBy
+      ? { id: 'proxy', level: 'fail', key: 'health.proxy.portBlocked', variables: { ...input.portBlockedBy }, target: 'home' }
+      : { id: 'proxy', level: 'fail', key: 'health.proxy.stopped', target: 'home' });
 
-  const exposed = input.allowLan || !loopback(input.host);
+  const exposed = input.exposed;
   checks.push(exposed
     ? { id: 'network', level: 'warn', key: 'health.network.exposed', variables: { host: input.host || '0.0.0.0' }, target: 'config' }
     : { id: 'network', level: 'ok', key: 'health.network.local' });

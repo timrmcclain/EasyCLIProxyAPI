@@ -977,6 +977,7 @@ export function createBrowserMockRuntime(
       }
       case 'get_gui_settings': return clone(state.guiSettings);
       case 'get_core_config_settings': return clone(state.coreConfig);
+      case 'proxy_listen_status': return { host: '127.0.0.1', port: 8317, exposed: false, portInUse: true, owner: { pid: 26036, name: 'cli-proxy-api.exe' } };
       case 'get_extended_core_config': return clone(state.extendedConfig);
       case 'save_extended_core_config': {
         const changes = asArray(payload.changes) as TemplateConfigChange[];

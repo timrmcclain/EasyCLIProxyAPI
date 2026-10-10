@@ -16,7 +16,8 @@ import { diagnosticReport, type DiagnosticInput } from '../services/diagnostics'
 import { managementApi, readString, responseList } from '../services/managementApi';
 import './HealthCheckPage.css';
 
-type CoreSettings = { host: string; allowLan: boolean; apiKeys: unknown[]; managementSecretConfigured: boolean };
+type CoreSettings = { apiKeys: unknown[]; managementSecretConfigured: boolean };
+type ListenStatus = { host: string; port: number; exposed: boolean; portInUse: boolean; owner: { pid: number; name: string } | null };
 
 const icons: Record<HealthLevel, typeof CircleCheck> = { ok: CircleCheck, warn: AlertTriangle, fail: CircleX };
 
@@ -33,8 +34,9 @@ export function HealthCheckPage() {
   const run = useCallback(async () => {
     setChecking(true);
     try {
-      const [settings, files, apps, compression, allowed] = await Promise.all([
+      const [settings, listen, files, apps, compression, allowed] = await Promise.all([
         invoke<CoreSettings>('get_core_config_settings').catch(() => null),
+        invoke<ListenStatus>('proxy_listen_status').catch(() => null),
         proxyRunning ? managementApi.get('/credentials').then(payload => dedupeAuthFiles(responseList(payload, 'files'))).catch(() => []) : Promise.resolve([]),
         loadAppStatuses(true).catch(() => []),
         compressionService.status().catch(() => null),
@@ -43,8 +45,8 @@ export function HealthCheckPage() {
       setSnapshot({
         platform: navigator.userAgent.includes('Windows') ? 'windows' : navigator.platform,
         proxy: { running: Boolean(status?.running), ready: proxyRunning, version: status?.currentVersion ?? null, managed: Boolean(status?.managed) },
-        host: settings?.host ?? '127.0.0.1',
-        allowLan: settings?.allowLan ?? false,
+        host: listen ? `${listen.host || '0.0.0.0'}:${listen.port}` : 'unknown',
+        allowLan: listen?.exposed ?? false,
         keyCount: settings?.apiKeys.length ?? 0,
         accounts: files.map(file => {
           const summary = accountSummary(file);
@@ -55,8 +57,11 @@ export function HealthCheckPage() {
       });
       setChecks(healthChecks({
         proxyRunning,
-        host: settings?.host ?? '127.0.0.1',
-        allowLan: settings?.allowLan ?? false,
+        host: listen?.host || '0.0.0.0',
+        exposed: listen?.exposed ?? false,
+        // Our own proxy holding the port isn't a conflict, just a proxy the hub hasn't connected to yet.
+        portBlockedBy: !proxyRunning && listen?.portInUse && listen.owner && !/cli-proxy-api/i.test(listen.owner.name)
+          ? { port: listen.port, name: listen.owner.name, pid: listen.owner.pid } : null,
         keyCount: settings?.apiKeys.length ?? 1,
         managementSecretConfigured: settings?.managementSecretConfigured ?? true,
         signInNeeded: files.filter(needsSignIn).map(file => readString(file, 'label', 'email', 'name') || accountSummary(file).label),
