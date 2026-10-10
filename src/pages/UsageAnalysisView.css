@@ -111,12 +111,13 @@
 .usage-analysis-total { padding-top: 4px; white-space: nowrap; color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
 .usage-request-results { display: flex; flex-direction: column; }
 .usage-results-chart { display: grid; grid-template-columns: minmax(120px, 150px) minmax(100px, 1fr); align-items: center; gap: 18px; flex: 1; }
-.usage-results-ring { position: relative; width: 100%; max-width: 150px; aspect-ratio: 1; }
+.usage-results-ring { position: relative; width: 100%; max-width: 150px; aspect-ratio: 1; container-type: inline-size; }
 .usage-results-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); }
-.usage-results-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-.usage-results-center > span { color: var(--text-secondary); font-size: 12px; }
-.usage-results-center strong { font-size: 28px; font-weight: 600; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
-.usage-results-center small { color: var(--text-tertiary); font-size: 11px; }
+/* The hole is about two thirds of the ring; keep its text inside it and scale it with the ring. */
+.usage-results-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 20%; text-align: center; }
+.usage-results-center > span { color: var(--text-secondary); font-size: min(12px, 8cqi); line-height: 1.2; }
+.usage-results-center strong { font-size: min(28px, 17cqi); font-weight: 600; letter-spacing: -1px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.usage-results-note { grid-column: 1 / -1; margin: 0; color: var(--text-tertiary); font-size: 11px; }
 .usage-results-legend { display: grid; gap: 12px; margin: 0; }
 .usage-results-legend > div { display: grid; gap: 4px; }
 .usage-results-legend dt { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 12px; line-height: 1.3; }
@@ -176,5 +177,5 @@
   .usage-analysis-heading { flex-wrap: wrap; }
   .usage-model-bar-detail { grid-template-columns: 78px minmax(0, 1fr) 42px; gap: 6px; }
   .usage-results-chart { grid-template-columns: 125px minmax(80px, 1fr); gap: 12px; }
-  .usage-results-center strong { font-size: 24px; }
+  .usage-results-center strong { font-size: min(24px, 17cqi); }
 }

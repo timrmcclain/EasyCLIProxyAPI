@@ -153,8 +153,7 @@ function RequestResults({ overview, models }: { overview: AnalysisOverview; mode
             })}
           </svg>
           <div className="usage-results-center"><span>{t('usage.analysis.successRate')}</span>
-            <strong>{rate === null ? '—' : `${formatNumber(rate, { maximumFractionDigits: 1 })}%`}</strong>
-            <small>{t('usage.analysis.excludingCanceled')}</small></div>
+            <strong>{rate === null ? '—' : `${formatNumber(rate, { maximumFractionDigits: 1 })}%`}</strong></div>
         </div>
         <dl className="usage-results-legend">
           {statuses.map(status => <div key={status.key}>
@@ -162,6 +161,8 @@ function RequestResults({ overview, models }: { overview: AnalysisOverview; mode
             <dd title={formatNumber(status.value)}>{formatUsageNumber(status.value, locale)}<span>{formatNumber(total > 0 ? status.value / total * 100 : 0, { maximumFractionDigits: 1 })}%</span></dd>
           </div>)}
         </dl>
+        {/* Outside the ring: the hole is too small for a sentence at any text size. */}
+        <p className="usage-results-note">{t('usage.analysis.excludingCanceled')}</p>
       </div>
       <div className="usage-failure-models">
         {failures.length ? <>
