@@ -108,11 +108,12 @@ export const zhCN = {
   'quotaLedger.notes': '路由与活动详情',
   'quotaLedger.reporting': '{total} 个账户中有 {count} 个报告此额度',
 
-  'app.nav.plugins': '插件',
+  'app.nav.plugins': '代理插件',
   'app.nav.connectors': '连接器',
   'app.nav.compression': '上下文压缩',
   'app.nav.health': "健康检查",
   'app.nav.jev': "Jev",
+  'app.nav.claudeExtensions': '技能与插件',
   ...homeZhCN,
   ...authFileListZhCN,
   'apiAccess.entries.addKey': '添加 API Key',

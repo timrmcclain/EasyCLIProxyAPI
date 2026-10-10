@@ -1384,7 +1384,7 @@ fn parse_ai_test_output(output: &str, exit_ok: bool) -> ConnectorTestResult {
     ConnectorTestResult { status, tool_count: None, message: Some(detail).filter(|text| !text.is_empty()) }
 }
 
-fn find_claude_code(home: &Path) -> Option<PathBuf> {
+pub(crate) fn find_claude_code(home: &Path) -> Option<PathBuf> {
     [home.join(".local/bin/claude.exe"), home.join(".local/bin/claude")]
         .into_iter()
         .chain(find_on_path("claude"))

@@ -109,11 +109,12 @@ export const en: Record<MessageKey, string> = {
   'quotaLedger.notes': 'Routing and activity details',
   'quotaLedger.reporting': '{count} of {total} accounts reporting this limit',
 
-  'app.nav.plugins': 'Plugins',
+  'app.nav.plugins': 'Proxy plugins',
   'app.nav.connectors': 'Connectors',
   'app.nav.compression': 'Compression',
   'app.nav.health': "Health check",
   'app.nav.jev': "Jev",
+  'app.nav.claudeExtensions': 'Skills & plugins',
   ...homeEn,
   ...authFileListEn,
   'apiAccess.entries.addKey': 'Add API Key',

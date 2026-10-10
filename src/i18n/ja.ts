@@ -109,11 +109,12 @@ export const jaOverrides = {
   'quotaLedger.notes': 'ルーティングと履歴の詳細',
   'quotaLedger.reporting': '{total} 件中 {count} 件がこの利用枠を報告',
 
-  'app.nav.plugins': 'プラグイン',
+  'app.nav.plugins': 'プロキシ プラグイン',
   'app.nav.connectors': 'コネクタ',
   'app.nav.compression': 'コンテキスト圧縮',
   'app.nav.health': "ヘルスチェック",
   'app.nav.jev': "Jev",
+  'app.nav.claudeExtensions': 'スキルとプラグイン',
   ...homeJa,
   ...authFileListJa,
   'apiAccess.entries.addKey': 'API キーを追加',

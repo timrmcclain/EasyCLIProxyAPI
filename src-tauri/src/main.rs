@@ -31,6 +31,7 @@ mod provider_health;
     target_os = "macos",
     target_os = "windows"
 ))]
+mod claude_extensions;
 mod jev;
 mod statusline;
 mod tray;
@@ -2747,6 +2748,15 @@ fn main() {
             jev::jev_overview,
             jev::refresh_jev_report,
             jev::open_jev_report,
+            claude_extensions::claude_extensions_overview,
+            claude_extensions::claude_plugin_details,
+            claude_extensions::claude_plugin_install,
+            claude_extensions::claude_plugin_set_enabled,
+            claude_extensions::claude_plugin_uninstall,
+            claude_extensions::claude_skill_preview,
+            claude_extensions::claude_skill_install,
+            claude_extensions::claude_skill_preview_discard,
+            claude_extensions::claude_skill_remove,
             set_core_management_secret_key,
             clear_core_management_secret_key,
             management_api::management_request,

@@ -1,0 +1,40 @@
+/* Skills & plugins: same surfaces as the Jev page; colour only for warnings and removal. */
+.ext-notice { border-color: var(--c-success-border); background: var(--c-success-soft); color: var(--c-text); }
+.ext-subheading { margin: 4px 0 0; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+
+.ext-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ext-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--border-color); font-size: 13px; }
+.ext-row:first-child { border-top: 0; }
+.ext-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ext-main strong { font-weight: 600; color: var(--text-primary); }
+.ext-meta { color: var(--text-tertiary); font-size: 12px; }
+.ext-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext-description { color: var(--text-secondary); line-height: 1.45; }
+.ext-scripts { color: var(--c-warning); font-size: 12px; overflow-wrap: anywhere; }
+.ext-actions { display: flex; flex-shrink: 0; align-items: center; gap: 8px; }
+.ext-actions .secondary-button { display: inline-flex; align-items: center; gap: 6px; }
+.ext-danger:not(:disabled):hover { border-color: var(--c-danger-border); color: var(--c-danger); }
+
+.ext-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px; white-space: nowrap; }
+
+.ext-switch { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 12px; cursor: pointer; }
+.ext-switch input { width: 16px; height: 16px; margin: 0; accent-color: var(--c-accent-solid); cursor: pointer; }
+.ext-switch span { min-width: 22px; }
+
+.ext-details { margin: 6px 0 0; padding: 10px 12px; max-height: 280px; overflow: auto; border-radius: var(--radius-md, 6px); background: var(--bg-tertiary); color: var(--text-primary); font-family: var(--font-mono, ui-monospace, monospace); font-size: 11.5px; line-height: 1.5; white-space: pre; }
+.ext-review { border-color: var(--c-accent); }
+
+.ext-search, .ext-add-skill { display: flex; align-items: center; gap: 8px; }
+.ext-search { padding: 0 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 6px); background: var(--bg-primary); color: var(--text-tertiary); }
+.ext-search input { flex: 1; min-width: 0; padding: 7px 0; border: 0; outline: none; background: transparent; color: var(--text-primary); font-size: 13px; }
+.ext-search:focus-within { border-color: var(--c-accent); }
+.ext-add-skill input { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 6px); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; }
+
+.ext-preview { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 6px); background: var(--bg-secondary); font-size: 13px; }
+.ext-preview p { margin: 0; color: var(--text-primary); }
+.ext-preview .ext-warning { display: flex; align-items: flex-start; gap: 8px; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.ext-warning svg { flex-shrink: 0; margin-top: 2px; color: var(--c-warning); }
+
+@media (max-width: 720px) {
+  .ext-row { flex-direction: column; gap: 8px; }
+}

@@ -4,6 +4,37 @@ import { createQuotaMock, createQuotaMockFiles } from './quotaMock';
 
 let mockClaudeStatusLine = false;
 let mockJevRefreshed = false;
+// Skills & plugins page: installs, switches and removals change what the next overview returns.
+const mockSkill = (folder: string, description: string, scripts: string[] = [], extra: Record<string, boolean> = {}) => ({
+  folder, name: folder, description, files: scripts.length + 1, bytes: 4096 + scripts.length * 2048, scripts, linked: false, notASkill: false, ...extra,
+});
+let mockExtPlugins = [
+  { id: 'superpowers@claude-plugins-official', version: '6.4.1', scope: 'user', enabled: true, projectPath: null as string | null },
+  { id: 'github@claude-plugins-official', version: 'fbe07fb6ce7d', scope: 'user', enabled: false, projectPath: null as string | null },
+  { id: 'typesafe@typesafe-ai', version: '0.5.7', scope: 'project', enabled: false, projectPath: 'C:\\Users\\Mock\\Projects\\Crestbid' as string | null },
+  { id: 'jev-panel@inline', version: '', scope: 'session', enabled: true, projectPath: null as string | null },
+];
+let mockExtSkills = [
+  mockSkill('brainstorming', 'Explore intent and requirements before building.'),
+  mockSkill('pdf', 'Read and fill PDF files.', ['scripts/fill_form.py', 'scripts/extract.py']),
+  mockSkill('hyperframes-registry', 'Install registry blocks.', [], { linked: true }),
+  mockSkill('synced', '', [], { notASkill: true }),
+];
+const mockExtAvailable = [
+  { id: 'code-review@claude-plugins-official', name: 'code-review', description: 'Review pull requests with several agents.', marketplace: 'claude-plugins-official', sourceUrl: 'https://github.com/anthropics/claude-plugins-official/tree/HEAD/plugins/code-review', installCount: 492072 },
+  { id: 'context7@claude-plugins-official', name: 'context7', description: 'Up-to-date library docs.', marketplace: 'claude-plugins-official', sourceUrl: 'https://github.com/anthropics/claude-plugins-official/tree/HEAD/external_plugins/context7', installCount: 458090 },
+  { id: 'npx-tool@claude-plugins-official', name: 'npx-tool', description: 'Installs by running a command.', marketplace: 'claude-plugins-official', sourceUrl: null, installCount: 120 },
+];
+const mockExtDetails = (id: string) => `${id.split('@')[0]} 1.0.0
+  Source: ${id}
+
+Component inventory
+  Skills (2)  review, summarize
+  Hooks (0)
+  MCP servers (0)
+
+Projected token cost
+  Always-on:   ~120 tok   added to every session`;
 
 export type BrowserMockScenario = 'running' | 'stopped' | 'empty' | 'error';
 export type BrowserMockMode = BrowserMockScenario | 'off';
@@ -1492,6 +1523,29 @@ export function createBrowserMockRuntime(
         };
       }
       case 'refresh_jev_report': mockJevRefreshed = true; return null;
+      case 'claude_extensions_overview':
+        return { claudeFound: true, skillsDir: 'C:\\Users\\Mock\\.claude\\skills', skills: mockExtSkills, plugins: mockExtPlugins, available: mockExtAvailable, pluginError: null };
+      case 'claude_plugin_details': return mockExtDetails(String(payload.id));
+      case 'claude_plugin_install': {
+        const id = String(payload.id);
+        if (id.startsWith('npx-tool') && !payload.acceptCommand) return { status: 'needsCommandApproval', command: 'npx -y @example/npx-tool install', sha256: 'abc123' };
+        mockExtPlugins = [...mockExtPlugins, { id, version: '1.0.0', scope: 'user', enabled: false, projectPath: null }];
+        return { status: 'installed', details: mockExtDetails(id) };
+      }
+      case 'claude_plugin_set_enabled':
+        mockExtPlugins = mockExtPlugins.map(plugin => (plugin.id === payload.id ? { ...plugin, enabled: Boolean(payload.enabled) } : plugin));
+        return null;
+      case 'claude_plugin_uninstall': mockExtPlugins = mockExtPlugins.filter(plugin => plugin.id !== payload.id); return null;
+      case 'claude_skill_preview': {
+        if (!/^[\w.-]+\/[\w.-]+$/.test(String(payload.source))) throw new Error('Enter a GitHub repository, like owner/repo or a github.com link');
+        return { previewId: '1-0', repo: String(payload.source), skills: [
+          { path: 'skills/slides', skill: mockSkill('slides', 'Build slide decks.', ['scripts/render.js']), exists: false },
+          { path: 'skills/pdf', skill: mockSkill('pdf', 'Read and fill PDF files.'), exists: true },
+        ] };
+      }
+      case 'claude_skill_install': mockExtSkills = [...mockExtSkills, mockSkill(String(payload.folder), 'Build slide decks.', ['scripts/render.js'])]; return null;
+      case 'claude_skill_preview_discard': return null;
+      case 'claude_skill_remove': mockExtSkills = mockExtSkills.filter(skill => skill.folder !== payload.folder); return null;
       case 'open_jev_report': return null;
       case 'plugin:notification|is_permission_granted': return true;
       default:
