@@ -1,0 +1,43 @@
+/* Jev page: same surfaces as Health check; colour only for status. */
+.jev-section-title { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.jev-card { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
+.jev-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.jev-card-heading .jev-section-title { margin: 0; }
+.jev-subtitle { margin: 2px 0 0; color: var(--text-tertiary); font-size: 12px; }
+.jev-actions { display: flex; gap: 8px; }
+.jev-actions .secondary-button { display: inline-flex; align-items: center; gap: 6px; }
+.jev-error { margin: 0; color: var(--c-danger); font-size: 13px; }
+
+.jev-answers { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.jev-answers li { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 4px 16px; padding: 10px 0; border-top: 1px solid var(--border-color); font-size: 13px; }
+.jev-answers li:first-child { border-top: 0; padding-top: 0; }
+.jev-question { color: var(--text-secondary); }
+.jev-answer { font-weight: 600; color: var(--text-primary); }
+.jev-answers .tone-good .jev-answer { color: var(--c-success); }
+.jev-answers .tone-bad .jev-answer { color: var(--c-warning); }
+.jev-answers details { grid-column: 2; color: var(--text-tertiary); font-size: 12px; }
+.jev-answers summary { cursor: pointer; width: max-content; }
+.jev-answers details p { margin: 6px 0 0; line-height: 1.5; }
+
+.jev-alerts h3 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.jev-alerts ul { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.jev-alerts li { display: flex; align-items: flex-start; gap: 8px; color: var(--text-primary); font-size: 13px; line-height: 1.5; }
+.jev-alerts li svg { flex-shrink: 0; margin-top: 3px; color: var(--c-warning); }
+
+.jev-counts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 12px; margin: 0; color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.jev-interventions { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.jev-interventions li { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border-color); font-size: 13px; }
+.jev-interventions li:first-child { border-top: 0; }
+.jev-interventions time { color: var(--text-tertiary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.jev-intervention-text { display: flex; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
+.jev-intervention-text strong { font-weight: 600; color: var(--text-primary); }
+.jev-intervention-text span { overflow-wrap: anywhere; color: var(--text-secondary); }
+.jev-project { padding: 1px 8px; border-radius: 10px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px; }
+.jev-interventions .jev-kind-blocked strong { color: var(--c-danger); }
+.jev-interventions .jev-kind-sentBack strong, .jev-interventions .jev-kind-guarded strong, .jev-interventions .jev-kind-asked strong { color: var(--c-warning); }
+
+@media (max-width: 640px) {
+  .jev-card-heading { flex-direction: column; }
+  .jev-answers li { grid-template-columns: minmax(0, 1fr); }
+  .jev-answers details { grid-column: 1; }
+}

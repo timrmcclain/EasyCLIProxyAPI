@@ -23,7 +23,7 @@ import {
   X,
   Search,
   Shrink,
-  Stethoscope,
+  ShieldCheck, Stethoscope,
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime } from './coreRuntime';
@@ -42,6 +42,7 @@ import { PluginsPage } from './pages/PluginsPage';
 import { ConnectorsPage } from './pages/ConnectorsPage';
 import CompressionPage from './pages/CompressionPage';
 import { HealthCheckPage } from './pages/HealthCheckPage';
+import { JevPage } from './pages/JevPage';
 import { languageOptions, useI18n } from './i18n';
 import { AppUpdateDialog, AppUpdateProvider, useAppUpdate } from './appUpdate';
 import { appUpdateIndicatorState } from './appUpdateModel';
@@ -120,6 +121,12 @@ const pages = [
     component: HealthCheckPage,
   },
   {
+    id: 'jev',
+    labelKey: 'app.nav.jev',
+    icon: ShieldCheck,
+    component: JevPage,
+  },
+  {
     id: 'config',
     labelKey: 'app.nav.config',
     icon: Settings,
@@ -136,7 +143,7 @@ const pages = [
 type PageId = (typeof pages)[number]['id'];
 // Six everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
 const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'agents', 'connectors', 'config'];
-const advancedNav: PageId[] = ['health', 'compression', 'api', 'plugins', 'quota', 'proxy', 'versions'];
+const advancedNav: PageId[] = ['health', 'jev', 'compression', 'api', 'plugins', 'quota', 'proxy', 'versions'];
 const LAST_PAGE_KEY = 'personal.lastPage';
 
 function initialPage(): PageId {

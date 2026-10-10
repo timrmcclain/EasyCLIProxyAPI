@@ -31,6 +31,7 @@ mod provider_health;
     target_os = "macos",
     target_os = "windows"
 ))]
+mod jev;
 mod statusline;
 mod tray;
 mod usage;
@@ -2743,6 +2744,9 @@ fn main() {
             statusline::enable_claude_statusline,
             statusline::disable_claude_statusline,
             statusline::write_claude_quota_line,
+            jev::jev_overview,
+            jev::refresh_jev_report,
+            jev::open_jev_report,
             set_core_management_secret_key,
             clear_core_management_secret_key,
             management_api::management_request,

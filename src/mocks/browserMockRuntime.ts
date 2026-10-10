@@ -3,6 +3,7 @@ import { createPluginMock } from './pluginMock';
 import { createQuotaMock, createQuotaMockFiles } from './quotaMock';
 
 let mockClaudeStatusLine = false;
+let mockJevRefreshed = false;
 
 export type BrowserMockScenario = 'running' | 'stopped' | 'empty' | 'error';
 export type BrowserMockMode = BrowserMockScenario | 'off';
@@ -1461,6 +1462,37 @@ export function createBrowserMockRuntime(
       case 'claude_statusline_state': return { enabled: mockClaudeStatusLine, wrapsExisting: mockClaudeStatusLine };
       case 'enable_claude_statusline': mockClaudeStatusLine = true; return { enabled: true, wrapsExisting: true };
       case 'disable_claude_statusline': mockClaudeStatusLine = false; return { enabled: false, wrapsExisting: false };
+      case 'jev_overview': {
+        const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
+        return {
+          installed: true,
+          hooks: [
+            { event: 'PreToolUse', script: 'rule_enforcer.py' }, { event: 'PreToolUse', script: 'global_guard.py' },
+            { event: 'Stop', script: 'stop_verifier.py' }, { event: 'UserPromptSubmit', script: 'skill_picker.py' },
+          ],
+          selftest: { ts: at(2), passed: 73, total: 73, failures: [] },
+          replay: { ts: at(2), problems: 0, commands: 350 },
+          report: {
+            generated: at(mockJevRefreshed ? 0 : 60), days: 7,
+            answers: [
+              { tone: 'bad', question: 'Saved Claude tokens?', answer: 'NO — cost about 1.6M more (estimate)', evidence: '12 compactions; 11 of 12 within 5 min of a request.' },
+              { tone: 'good', question: 'Made the work better?', answer: "YES — 2 unsupported 'done/live' claims sent back and corrected", evidence: '82 edits checked against rules.' },
+              { tone: 'good', question: 'Saved waiting time?', answer: 'YES — about 24 min (estimate)' },
+            ],
+            spend_usd: 0.05, ms_per_check: 142,
+            alerts: ['2 patch script(s) were blocked as unreadable and never rerun in a checkable form: /tmp/a.cjs, /tmp/b.json'],
+          },
+          reportPath: 'C:\Users\Mock\.claude\jev\state\jev-report.html',
+          interventions: [
+            { ts: at(1), kind: 'sentBack', detail: '', project: null },
+            { ts: at(3), kind: 'guarded', detail: '`git restore .` throws away uncommitted changes', project: null },
+            { ts: at(5), kind: 'blocked', detail: 'remote patch', project: 'Crestbid' },
+            { ts: at(9), kind: 'loopStopped', detail: '3', project: null },
+          ],
+        };
+      }
+      case 'refresh_jev_report': mockJevRefreshed = true; return null;
+      case 'open_jev_report': return null;
       case 'plugin:notification|is_permission_granted': return true;
       default:
         if (command.startsWith('plugin:window|') || command.startsWith('plugin:webview|')) return null;

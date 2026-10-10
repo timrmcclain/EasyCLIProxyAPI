@@ -112,6 +112,7 @@ export const zhCN = {
   'app.nav.connectors': '连接器',
   'app.nav.compression': '上下文压缩',
   'app.nav.health': "健康检查",
+  'app.nav.jev': "Jev",
   ...homeZhCN,
   ...authFileListZhCN,
   'apiAccess.entries.addKey': '添加 API Key',
