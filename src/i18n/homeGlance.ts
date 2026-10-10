@@ -164,6 +164,8 @@ export const homeGlanceEn = {
   'health.notifications.blocked': "Windows is blocking the hub's notifications. Allow them in Windows Settings → Notifications.",
   'health.accounts.signInOne': "1 account needs signing in again: {accounts}.",
   'health.accounts.disabledOne': "1 account is turned off and won't take requests.",
+  'health.accounts.duplicateOne': "An account is signed in twice: {{accounts}}. Both copies share one quota, so the extra one only adds failed retries. Remove one copy.",
+  'health.accounts.duplicate': "{{count}} accounts are signed in more than once: {{accounts}}. Copies share one quota, so remove the extras.",
   'health.accounts.okOne': "The account is signed in.",
   'health.apps.driftedOne': "{apps} no longer matches the hub, so its requests would fail.",
 };
@@ -334,6 +336,8 @@ export const homeGlanceZhCN: Record<keyof typeof homeGlanceEn, string> = {
   'health.notifications.blocked': "Windows 阻止了中心的通知。请在 Windows 设置 → 通知中允许。",
   'health.accounts.signInOne': "1 个账号需要重新登录：{accounts}。",
   'health.accounts.disabledOne': "1 个账号已停用，不会处理请求。",
+  'health.accounts.duplicateOne': "有账号被登录了两次：{{accounts}}。两份副本共享同一配额，多余的一份只会增加失败重试。请删除其中一份。",
+  'health.accounts.duplicate': "{{count}} 个账号被重复登录：{{accounts}}。副本共享同一配额，请删除多余的副本。",
   'health.accounts.okOne': "该账号已登录。",
   'health.apps.driftedOne': "{apps} 与中心不再一致，其请求将会失败。",
 };
@@ -504,6 +508,8 @@ export const homeGlanceJa: Record<keyof typeof homeGlanceEn, string> = {
   'health.notifications.blocked': "Windows がハブの通知をブロックしています。Windows の設定 → 通知で許可してください。",
   'health.accounts.signInOne': "1 件のアカウントで再サインインが必要です：{accounts}。",
   'health.accounts.disabledOne': "1 件のアカウントがオフになっており、リクエストを受け付けません。",
+  'health.accounts.duplicateOne': "同じアカウントが 2 回サインインされています：{{accounts}}。両方のコピーは同じクォータを共有するため、余分なコピーは失敗する再試行を増やすだけです。1 つ削除してください。",
+  'health.accounts.duplicate': "{{count}} 件のアカウントが重複してサインインされています：{{accounts}}。コピーは同じクォータを共有するため、余分なものを削除してください。",
   'health.accounts.okOne': "アカウントはサインイン済みです。",
   'health.apps.driftedOne': "{apps} がハブと一致しなくなったため、リクエストは失敗します。",
 };

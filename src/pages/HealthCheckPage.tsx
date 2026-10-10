@@ -11,7 +11,7 @@ import { dedupeAuthFiles } from '../services/authFiles';
 import { compressionService } from '../services/compression';
 import { driftedApps, loadAppStatuses } from '../services/connectedApps';
 import { readDesktopAlertsPreference } from '../services/dashboardPreferences';
-import { healthChecks, type HealthCheck, type HealthLevel } from '../services/healthCheck';
+import { findDuplicateAccounts, healthChecks, type HealthCheck, type HealthLevel } from '../services/healthCheck';
 import { diagnosticReport, type DiagnosticInput } from '../services/diagnostics';
 import { managementApi, readString, responseList } from '../services/managementApi';
 import './HealthCheckPage.css';
@@ -65,6 +65,7 @@ export function HealthCheckPage() {
         keyCount: settings?.apiKeys.length ?? 1,
         managementSecretConfigured: settings?.managementSecretConfigured ?? true,
         signInNeeded: files.filter(needsSignIn).map(file => readString(file, 'label', 'email', 'name') || accountSummary(file).label),
+        duplicateAccounts: findDuplicateAccounts(files.map(file => ({ provider: readString(file, 'provider', 'type'), email: readString(file, 'email') }))),
         disabledAccounts: files.filter(file => accountSummary(file).health.disabled).length,
         totalAccounts: files.length,
         driftedApps: driftedApps(apps).map(app => app.name),

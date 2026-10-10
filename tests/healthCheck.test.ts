@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { healthChecks, type HealthInput } from '../src/services/healthCheck';
+import { findDuplicateAccounts, healthChecks, type HealthInput } from '../src/services/healthCheck';
 
 const healthy: HealthInput = {
   proxyRunning: true, host: '127.0.0.1', exposed: false, portBlockedBy: null, keyCount: 1, managementSecretConfigured: true,
-  signInNeeded: [], disabledAccounts: 0, totalAccounts: 7, driftedApps: [],
+  signInNeeded: [], disabledAccounts: 0, duplicateAccounts: [], totalAccounts: 7, driftedApps: [],
   compression: { enabled: false, running: false }, notificationsAllowed: true, notificationsEnabled: true,
 };
 const levels = (input: Partial<HealthInput>) => Object.fromEntries(healthChecks({ ...healthy, ...input }).map(check => [check.id, check.level]));
@@ -31,6 +31,15 @@ describe('health check', () => {
     const blocked = healthChecks({ ...healthy, proxyRunning: false, portBlockedBy: { port: 8317, name: 'node.exe', pid: 4242 } });
     expect(blocked.find(check => check.id === 'proxy')).toMatchObject({ level: 'fail', key: 'health.proxy.portBlocked', variables: { port: 8317, name: 'node.exe', pid: 4242 } });
     expect(healthChecks({ ...healthy, proxyRunning: false }).find(check => check.id === 'proxy')?.key).toBe('health.proxy.stopped');
+  });
+
+  it('finds an account signed in twice, ignoring case and accounts without an email', () => {
+    expect(findDuplicateAccounts([
+      { provider: 'claude', email: 'Me@Example.com' }, { provider: 'claude', email: 'me@example.com ' },
+      { provider: 'codex', email: 'me@example.com' }, { provider: 'claude', email: '' }, { provider: 'claude', email: '' },
+    ])).toEqual(['claude: Me@Example.com (2)']);
+    const check = healthChecks({ ...healthy, duplicateAccounts: ['claude: me@example.com (2)'] }).find(item => item.id === 'duplicates');
+    expect(check).toMatchObject({ level: 'warn', key: 'health.accounts.duplicateOne', target: 'oauth' });
   });
 
   it('names expired sign-ins and drifted apps', () => {

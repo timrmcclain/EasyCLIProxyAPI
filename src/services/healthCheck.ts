@@ -26,6 +26,8 @@ export type HealthInput = {
   /** Labels of accounts whose sign-in expired or was revoked. */
   signInNeeded: string[];
   disabledAccounts: number;
+  /** One entry per account signed in more than once, e.g. "claude: someone@example.com (2)". */
+  duplicateAccounts: string[];
   totalAccounts: number;
   /** Names of connected apps whose settings stopped matching the hub. */
   driftedApps: string[];
@@ -36,6 +38,23 @@ export type HealthInput = {
 };
 
 const rank: Record<HealthLevel, number> = { fail: 0, warn: 1, ok: 2 };
+
+/**
+ * Accounts signed in more than once: separate credential files for the same provider and email.
+ * Each copy takes a rotation slot but shares one quota, so the proxy keeps retrying an exhausted account.
+ */
+export function findDuplicateAccounts(accounts: { provider: string; email: string }[]): string[] {
+  const counts = new Map<string, { label: string; count: number }>();
+  for (const { provider, email } of accounts) {
+    const address = email.trim().toLowerCase();
+    if (!address.includes('@')) continue;
+    const key = `${provider.toLowerCase()}|${address}`;
+    const entry = counts.get(key) ?? { label: `${provider}: ${email.trim()}`, count: 0 };
+    entry.count += 1;
+    counts.set(key, entry);
+  }
+  return [...counts.values()].filter(entry => entry.count > 1).map(entry => `${entry.label} (${entry.count})`);
+}
 
 export function healthChecks(input: HealthInput): HealthCheck[] {
   const checks: HealthCheck[] = [];
@@ -53,6 +72,7 @@ export function healthChecks(input: HealthInput): HealthCheck[] {
   if (!input.totalAccounts) checks.push({ id: 'accounts', level: 'fail', key: 'health.accounts.none', target: 'oauth' });
   else if (input.signInNeeded.length) checks.push({ id: 'accounts', level: 'fail', key: input.signInNeeded.length === 1 ? 'health.accounts.signInOne' : 'health.accounts.signIn', variables: { count: input.signInNeeded.length, accounts: input.signInNeeded.join(', ') }, target: 'oauth' });
   else checks.push({ id: 'accounts', level: 'ok', key: input.totalAccounts === 1 ? 'health.accounts.okOne' : 'health.accounts.ok', variables: { count: input.totalAccounts } });
+  if (input.duplicateAccounts.length) checks.push({ id: 'duplicates', level: 'warn', key: input.duplicateAccounts.length === 1 ? 'health.accounts.duplicateOne' : 'health.accounts.duplicate', variables: { count: input.duplicateAccounts.length, accounts: input.duplicateAccounts.join(', ') }, target: 'oauth' });
   if (input.disabledAccounts) checks.push({ id: 'disabled', level: 'warn', key: input.disabledAccounts === 1 ? 'health.accounts.disabledOne' : 'health.accounts.disabled', variables: { count: input.disabledAccounts }, target: 'oauth' });
 
   checks.push(input.driftedApps.length
