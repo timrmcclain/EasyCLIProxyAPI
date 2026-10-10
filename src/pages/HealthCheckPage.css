@@ -11,3 +11,5 @@
 .health-item.level-warn svg { color: var(--c-warning); }
 .health-item.level-fail { background: color-mix(in srgb, var(--c-danger) 8%, var(--bg-card)); }
 .health-item.level-fail svg { color: var(--c-danger); }
+
+.health-actions { display: flex; flex-wrap: wrap; gap: 8px; }

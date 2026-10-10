@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { getVersion } from '@tauri-apps/api/app';
 import { isPermissionGranted } from '@tauri-apps/plugin-notification';
-import { AlertTriangle, ArrowRight, CircleCheck, CircleX, RefreshCw } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, CircleCheck, CircleX, ClipboardCopy, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useCoreRuntime } from '../coreRuntime';
 import { needsSignIn } from '../components/AuthFileProviderIcon';
@@ -11,6 +12,7 @@ import { compressionService } from '../services/compression';
 import { driftedApps, loadAppStatuses } from '../services/connectedApps';
 import { readDesktopAlertsPreference } from '../services/dashboardPreferences';
 import { healthChecks, type HealthCheck, type HealthLevel } from '../services/healthCheck';
+import { diagnosticReport, type DiagnosticInput } from '../services/diagnostics';
 import { managementApi, readString, responseList } from '../services/managementApi';
 import './HealthCheckPage.css';
 
@@ -22,6 +24,8 @@ const icons: Record<HealthLevel, typeof CircleCheck> = { ok: CircleCheck, warn: 
 export function HealthCheckPage() {
   const { t } = useI18n();
   const { status } = useCoreRuntime();
+  const [snapshot, setSnapshot] = useState<Omit<DiagnosticInput, 'generatedAt' | 'hubVersion' | 'checks'> | null>(null);
+  const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
   const proxyRunning = Boolean(status?.ready);
   const [checks, setChecks] = useState<HealthCheck[] | null>(null);
   const [checking, setChecking] = useState(false);
@@ -36,6 +40,19 @@ export function HealthCheckPage() {
         compressionService.status().catch(() => null),
         isPermissionGranted().catch(() => null),
       ]);
+      setSnapshot({
+        platform: navigator.userAgent.includes('Windows') ? 'windows' : navigator.platform,
+        proxy: { running: Boolean(status?.running), ready: proxyRunning, version: status?.currentVersion ?? null, managed: Boolean(status?.managed) },
+        host: settings?.host ?? '127.0.0.1',
+        allowLan: settings?.allowLan ?? false,
+        keyCount: settings?.apiKeys.length ?? 0,
+        accounts: files.map(file => {
+          const summary = accountSummary(file);
+          return { provider: readString(file, 'provider', 'type') || 'unknown', state: t(summary.health.label).toLowerCase(), disabled: summary.health.disabled };
+        }),
+        apps: apps.map(app => ({ name: app.name, installed: app.installed, state: app.connectionState, connectionMatches: app.connectionMatches })),
+        compression: compression ? { enabled: compression.enabled, running: compression.running } : null,
+      });
       setChecks(healthChecks({
         proxyRunning,
         host: settings?.host ?? '127.0.0.1',
@@ -53,11 +70,27 @@ export function HealthCheckPage() {
     } finally {
       setChecking(false);
     }
-  }, [proxyRunning]);
+  }, [proxyRunning, status?.running, status?.currentVersion, status?.managed, t]);
 
   useEffect(() => { void run(); }, [run]);
 
   const problems = checks?.filter(check => check.level !== 'ok').length ?? 0;
+  const copyReport = async () => {
+    if (!snapshot || !checks) return;
+    try {
+      const report = diagnosticReport({
+        ...snapshot,
+        generatedAt: new Date(),
+        hubVersion: await getVersion().catch(() => 'unknown'),
+        checks: checks.map(check => ({ level: check.level, text: t(check.key as 'health.title', check.variables) })),
+      });
+      await navigator.clipboard.writeText(report);
+      setCopied('ok');
+    } catch {
+      setCopied('failed');
+    }
+    window.setTimeout(() => setCopied(null), 4000);
+  };
   const open = (target: HealthCheck['target']) => window.dispatchEvent(new CustomEvent('app:navigate', { detail: target }));
   return <div className="health-page">
     <header className="health-heading">
@@ -65,9 +98,16 @@ export function HealthCheckPage() {
         <h1>{t('health.title')}</h1>
         <p>{checks === null ? t('health.checking') : problems ? t(problems === 1 ? 'health.summary.one' : 'health.summary.many', { count: problems }) : t('health.summary.clear')}</p>
       </div>
-      <button type="button" className="secondary-button compact-button" disabled={checking} onClick={() => void run()}>
-        <RefreshCw size={14} className={checking ? 'spin' : undefined} aria-hidden="true" />{t('health.recheck')}
-      </button>
+      <div className="health-actions">
+        <button type="button" className="secondary-button compact-button" disabled={checking || !snapshot} onClick={() => void copyReport()}
+          title={t('health.copyReport.hint')}>
+          {copied === 'ok' ? <Check size={14} aria-hidden="true" /> : <ClipboardCopy size={14} aria-hidden="true" />}
+          {copied === 'ok' ? t('health.copyReport.done') : copied === 'failed' ? t('health.copyReport.failed') : t('health.copyReport')}
+        </button>
+        <button type="button" className="secondary-button compact-button" disabled={checking} onClick={() => void run()}>
+          <RefreshCw size={14} className={checking ? 'spin' : undefined} aria-hidden="true" />{t('health.recheck')}
+        </button>
+      </div>
     </header>
     <ul className="health-list" aria-busy={checking || undefined}>
       {checks?.map(check => {

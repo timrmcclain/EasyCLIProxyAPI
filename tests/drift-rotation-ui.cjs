@@ -37,6 +37,18 @@ const path = require('node:path');
     assert.equal(await firstCheck.getAttribute('class'), 'health-item level-fail');
     assert.match(await firstCheck.innerText(), /Claude Code no longer matches the hub/);
     assert.ok(await page.locator('.health-item.level-ok').filter({ hasText: 'The proxy is running.' }).count());
+    // Copy diagnostic report: plain text with the hub version, the checks and accounts by provider, and no emails.
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__copied = text; } } });
+    });
+    await page.getByRole('button', { name: 'Copy diagnostic report' }).click();
+    await page.getByRole('button', { name: 'Copied' }).waitFor();
+    const report = await page.evaluate(() => window.__copied);
+    assert.match(report, /^Tim's AI Hub diagnostic report\n/);
+    assert.match(report, /Hub: 0\.2\.97-mock/);
+    assert.match(report, /\[fail\] Claude Code no longer matches the hub/);
+    assert.match(report, /Accounts \(\d+\)\n {2}\S+: \d+ /);
+    assert.doesNotMatch(report, /[\w.+-]+@[\w-]+\.\w+/, 'no email addresses');
     await firstCheck.getByRole('button', { name: 'Fix' }).click();
     assert.equal(await page.evaluate(() => localStorage.getItem('personal.lastPage')), 'agents');
     await page.locator('.nav-section').getByRole('button', { name: /^Overview/ }).first().click();
