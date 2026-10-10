@@ -80,13 +80,12 @@ export function startQuotaWatcher(): () => void {
   let stopped = false;
   let memory: AlertMemory | null = null;
   let driftBaseline: Set<string> | null = null;
-  const lastAttempt: Record<string, number> = {};
 
   const check = async () => {
     try {
       const files = dedupeAuthFiles(responseList(await managementApi.get('/credentials'), 'files'));
       if (stopped) return;
-      await refreshDashboardQuotas(files.filter(file => providerForFile(file)), false, lastAttempt, () => !stopped);
+      await refreshDashboardQuotas(files.filter(file => providerForFile(file)), false, () => !stopped);
       if (stopped) return;
       const now = Date.now();
       const quotas = getQuotaCacheSnapshot();

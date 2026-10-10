@@ -55,6 +55,8 @@ export type QuotaState = {
   subscriptionActiveUntil?: string;
   serverTimeOffsetMs?: number;
   fetchedAt?: number;
+  /** Set when a later check failed and this reading was kept instead; the failure's message. */
+  refreshError?: string;
   pendingAction?: 'reset';
   actionResult?: { action: 'reset'; status: 'success' | 'refresh-error' | 'error'; error?: string };
 };

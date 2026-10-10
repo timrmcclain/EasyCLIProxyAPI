@@ -96,3 +96,32 @@ describe('额度跨页面缓存', () => {
     expect(getQuotaCacheSnapshot().fresh.rows[0].justReset).toBeUndefined();
   });
 });
+
+describe('keeping the last good reading', () => {
+  const row = { label: '7-day window', windowId: 'seven_day', remainingPercent: 81, resetAtMs: 1 };
+  const now = Date.now();
+
+  it('keeps a recent successful reading when a later check fails, and says why', () => {
+    updateQuotaCache({ acct: { status: 'success', rows: [row], plan: 'Max', fetchedAt: now - 10 * 60_000 } });
+    updateQuotaCache(quotaResultUpdater('acct', { status: 'error', rows: [], error: 'HTTP 429: Rate limited' }));
+    const kept = getQuotaCacheSnapshot().acct;
+    expect(kept.status).toBe('success');
+    expect(kept.rows).toEqual([row]);
+    expect(kept.plan).toBe('Max');
+    expect(kept.fetchedAt).toBe(now - 10 * 60_000);
+    expect(kept.refreshError).toBe('HTTP 429: Rate limited');
+  });
+
+  it('a later success replaces it and clears the failure note', () => {
+    updateQuotaCache(quotaResultUpdater('acct', { status: 'success', rows: [{ ...row, remainingPercent: 80 }], fetchedAt: now }));
+    expect(getQuotaCacheSnapshot().acct.refreshError).toBeUndefined();
+    expect(getQuotaCacheSnapshot().acct.rows[0].remainingPercent).toBe(80);
+  });
+
+  it('does not keep readings older than 30 minutes', () => {
+    updateQuotaCache({ acct: { status: 'success', rows: [row], fetchedAt: now - 31 * 60_000 } });
+    updateQuotaCache(quotaResultUpdater('acct', { status: 'error', rows: [], error: 'boom' }));
+    expect(getQuotaCacheSnapshot().acct.status).toBe('error');
+    updateQuotaCache({});
+  });
+});

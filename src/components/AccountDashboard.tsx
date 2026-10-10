@@ -61,7 +61,6 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const mounted = useRef(true);
   const readyRef = useRef(ready);
   readyRef.current = ready;
-  const lastAttempt = useRef<Record<string, number>>({});
   const planBlocks = useRef<Record<string, string>>({});
   const quotas = useQuotaCache();
   const now = useQuotaClock();
@@ -78,7 +77,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       setFiles(withPlanBlocks(next, planBlocks.current));
       setUpdatedAt(Date.now());
       await Promise.all([
-        refreshDashboardQuotas(next.filter((file) => providerForFile(file)), force, lastAttempt.current, () => mounted.current && readyRef.current),
+        refreshDashboardQuotas(next.filter((file) => providerForFile(file)), force, () => mounted.current && readyRef.current),
         loadPlanBlocks(next).then((blocks) => {
           planBlocks.current = blocks;
           if (mounted.current && readyRef.current) setFiles(withPlanBlocks(next, blocks));
@@ -131,7 +130,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     busy.current = true;
     setRefreshingKey(quotaKey(file));
     try {
-      await refreshDashboardQuotas([file], true, lastAttempt.current, () => mounted.current && readyRef.current);
+      await refreshDashboardQuotas([file], true, () => mounted.current && readyRef.current);
     } finally {
       busy.current = false;
       if (mounted.current) setRefreshingKey(null);
@@ -444,7 +443,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
         </div>
         <div className="ad-card-footer"><label>{t('accountDashboard.priority')}<input ref={priorityInput} type="number" step="1" value={draft} onChange={(event) => { setDraft(event.target.value); setFeedback(''); }} aria-label={t('accountDashboard.priorityLabel', { account: displayLabel })} disabled={disabled || pending} /></label>
           <button className="secondary-button" disabled={disabled || pending || draft === String(summary.priority)} onClick={() => void save()}>{pending ? t('accountDashboard.saving') : t('accountDashboard.save')}</button>
-          <span className="ad-freshness">{quota.fetchedAt ? t('accountDashboard.quotaChecked', { time: new Date(quota.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.noSnapshot')}</span></div>
+          <span className="ad-freshness" title={quota.refreshError}>{quota.fetchedAt ? t(quota.refreshError ? 'accountDashboard.quotaKept' : 'accountDashboard.quotaChecked', { time: new Date(quota.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.noSnapshot')}</span></div>
         {feedback && <p role="status" className="ad-card-note">{feedback}</p>}
       </div>
     </details>

@@ -4,7 +4,8 @@ import { AccountCard } from '../src/components/AccountDashboard';
 import { I18nProvider } from '../src/i18n';
 import { accountSummary, nextAccountReset, resetCountdown } from '../src/services/accountDashboard';
 import type { QuotaState } from '../src/services/quotaService';
-import { refreshDashboardQuotas } from '../src/services/accountDashboardRefresh';
+import { quotaBackoffUntil, refreshDashboardQuotas } from '../src/services/accountDashboardRefresh';
+import { quotaKey } from '../src/services/quotaService';
 import { getQuotaCacheSnapshot, pruneQuotaCache, updateQuotaCache } from '../src/services/quotaCache';
 
 const now = Date.parse('2030-01-01T00:00:00Z');
@@ -18,7 +19,7 @@ describe('account dashboard evidence', () => {
     updateQuotaCache({});
     const files = [1, 2, 3].map((id) => ({ ...file, name: `${id}.json`, auth_index: String(id) }));
     const finish: Array<(value: QuotaState) => void> = [];
-    const loading = refreshDashboardQuotas(files, true, {}, () => true,
+    const loading = refreshDashboardQuotas(files, true, () => true,
       async () => new Promise<QuotaState>((resolve) => finish.push(resolve)));
     expect(finish.length).toBe(2);
     pruneQuotaCache(new Set());
@@ -31,13 +32,36 @@ describe('account dashboard evidence', () => {
     updateQuotaCache({});
     let mounted = true;
     const finish: Array<(value: QuotaState) => void> = [];
-    const loading = refreshDashboardQuotas([1, 2, 3].map((id) => ({ ...file, name: `${id}.json` })), true, {}, () => mounted,
+    const loading = refreshDashboardQuotas([1, 2, 3].map((id) => ({ ...file, name: `${id}.json` })), true, () => mounted,
       async () => new Promise<QuotaState>((resolve) => finish.push(resolve)));
     mounted = false;
     finish.forEach((resolve) => resolve({ status: 'success', rows: [] }));
     await loading;
     expect(finish.length).toBe(2);
     expect(Object.values(getQuotaCacheSnapshot()).every((value) => value.status === 'success')).toBe(true);
+    updateQuotaCache({});
+  });
+  it('shares one refresh timer between callers, so the watcher and pages do not double the checks', async () => {
+    updateQuotaCache({});
+    const shared = [{ ...file, name: 'shared.json', auth_index: 'shared' }];
+    let loads = 0;
+    const load = async (): Promise<QuotaState> => { loads += 1; return { status: 'success', rows: [], fetchedAt: Date.now() }; };
+    await refreshDashboardQuotas(shared, true, () => true, load);
+    await refreshDashboardQuotas(shared, false, () => true, load);
+    expect(loads).toBe(1);
+    updateQuotaCache({});
+  });
+  it('backs off for 15 minutes after a provider rate-limits the check, unless asked directly', async () => {
+    updateQuotaCache({});
+    const limited = [{ ...file, name: 'limited.json', auth_index: 'limited' }];
+    const before = Date.now();
+    await refreshDashboardQuotas(limited, true, () => true, async () => ({ status: 'error', rows: [], error: 'HTTP 429: Rate limited. Please try again later.' }));
+    const until = quotaBackoffUntil(quotaKey(limited[0]));
+    expect(until).toBeGreaterThanOrEqual(before + 15 * 60_000);
+    let loads = 0;
+    await refreshDashboardQuotas(limited, true, () => true, async () => { loads += 1; return { status: 'success', rows: [] }; });
+    expect(loads).toBe(1);
+    expect(quotaBackoffUntil(quotaKey(limited[0]))).toBeUndefined();
     updateQuotaCache({});
   });
   it('does not invent a reset for missing, failed, or expired quota data', () => {
