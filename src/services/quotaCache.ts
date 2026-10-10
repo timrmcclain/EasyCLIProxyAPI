@@ -23,17 +23,22 @@ const annotateQuotaReset = (previous: QuotaState | undefined, next: QuotaState):
 /** How long a successful reading stays on screen after later checks fail (rate limits, network blips). */
 const KEEP_GOOD_READING_MS = 30 * 60_000;
 
-/** A failed check keeps a recent successful reading instead of blanking it, and records why the refresh failed. */
+export const isRateLimitedQuota = (result: QuotaState) => result.status === 'error' && /429|rate.?limit/i.test(result.error ?? '');
+
+/** A rate-limited background check keeps a recent successful reading instead of blanking it, and records why.
+ *  Other failures (an expired sign-in, a refresh you clicked) still show, because they tell you something. */
 const keepLastGoodReading = (previous: QuotaState | undefined, next: QuotaState): QuotaState => {
-  if (next.status !== 'error' || !previous?.rows.length || !previous.fetchedAt) return next;
+  if (!isRateLimitedQuota(next) || !previous?.rows.length || !previous.fetchedAt) return next;
   if (previous.status !== 'success' && previous.status !== 'loading') return next;
   if (Date.now() - previous.fetchedAt > KEEP_GOOD_READING_MS) return next;
   return { ...previous, status: 'success', refreshError: next.error ?? 'Refresh failed' };
 };
 
 /** Writes a freshly-fetched quota result into the cache, flagging any row whose reset we can detect from the previous snapshot. */
-export const quotaResultUpdater = (key: string, result: QuotaState) => (current: QuotaCache): QuotaCache =>
-  ({ ...current, [key]: keepLastGoodReading(current[key], annotateQuotaReset(current[key], result)) });
+export const quotaResultUpdater = (key: string, result: QuotaState, keepOnRateLimit = false) => (current: QuotaCache): QuotaCache => {
+  const next = annotateQuotaReset(current[key], result);
+  return { ...current, [key]: keepOnRateLimit ? keepLastGoodReading(current[key], next) : next };
+};
 
 let cache: QuotaCache = {};
 let generation = 0;

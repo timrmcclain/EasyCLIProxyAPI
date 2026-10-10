@@ -1,5 +1,5 @@
 import { accountSummary } from './accountDashboard';
-import { captureQuotaCacheGeneration, commitQuotaCacheIfCurrent, getQuotaCacheSnapshot, quotaResultUpdater, updateQuotaCache } from './quotaCache';
+import { captureQuotaCacheGeneration, commitQuotaCacheIfCurrent, getQuotaCacheSnapshot, isRateLimitedQuota, quotaResultUpdater, updateQuotaCache } from './quotaCache';
 import { loadQuota, quotaKey, type AuthFile, type QuotaState } from './quotaService';
 
 const QUOTA_TTL = 5 * 60_000;
@@ -9,7 +9,6 @@ const RATE_LIMIT_BACKOFF = 15 * 60_000;
 const lastAttempt: Record<string, number> = {};
 /** Accounts whose provider rate-limited the quota check, and when to try again. */
 const backoffUntil: Record<string, number> = {};
-const isRateLimited = (result: QuotaState) => result.status === 'error' && /429|rate.?limit/i.test(result.error ?? '');
 
 export const quotaBackoffUntil = (key: string): number | undefined =>
   (backoffUntil[key] ?? 0) > Date.now() ? backoffUntil[key] : undefined;
@@ -39,10 +38,10 @@ export async function refreshDashboardQuotas(
       let result: QuotaState;
       try { result = await load(file); }
       catch { result = { status: 'error', rows: [] }; }
-      if (isRateLimited(result)) backoffUntil[key] = Date.now() + RATE_LIMIT_BACKOFF;
+      if (isRateLimitedQuota(result)) backoffUntil[key] = Date.now() + RATE_LIMIT_BACKOFF;
       else delete backoffUntil[key];
       // Finish already-started entries on unmount; pruning invalidates their generation.
-      commitQuotaCacheIfCurrent(generation, () => updateQuotaCache(quotaResultUpdater(key, result)));
+      commitQuotaCacheIfCurrent(generation, () => updateQuotaCache(quotaResultUpdater(key, result, !force)));
     }));
   }
 }
