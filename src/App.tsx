@@ -26,7 +26,8 @@ import {
   Blocks, ShieldCheck, Stethoscope,
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
-import { CoreRuntimeProvider, useCoreRuntime } from './coreRuntime';
+import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
+import { useConfirmation } from './components/ConfirmationDialog';
 import { startQuotaWatcher } from './services/quotaWatcher';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
@@ -225,8 +226,9 @@ function AppContent() {
   });
   const languageMenuRef = useRef<HTMLDivElement>(null);
   const languageButtonRef = useRef<HTMLButtonElement>(null);
-  const { status } = useCoreRuntime();
+  const { status, publishStatus } = useCoreRuntime();
   const coreReady = Boolean(status?.ready);
+  const { askConfirmation, confirmationDialog } = useConfirmation();
   // Quota checks, run-out forecasts and Windows notifications keep working with the window in the tray.
   useEffect(() => (coreReady ? startQuotaWatcher() : undefined), [coreReady]);
   const activePage = pages.find((page) => page.id === active) ?? pages[0];
@@ -448,6 +450,13 @@ function AppContent() {
     { id: 'density-compact', label: t('density.compact'), group: t('palette.appearance'), disabled: density === 'compact', run: () => setDensity('compact') },
     { id: 'density-comfortable', label: t('density.comfortable'), group: t('palette.appearance'), disabled: density === 'comfortable', run: () => setDensity('comfortable') },
     { id: 'glossary', label: t('glossary.title'), group: t('palette.help'), run: () => setGlossaryOpen(true) },
+    { id: 'check-quota', label: t('palette.action.checkQuota'), group: t('palette.actions'), disabled: !coreReady,
+      run: () => window.dispatchEvent(new CustomEvent('app:check-quota')) },
+    { id: 'restart-proxy', label: t('palette.action.restartProxy'), group: t('palette.actions'), disabled: !status?.installed,
+      run: () => void (async () => {
+        if (!(await askConfirmation({ title: t('palette.action.restartProxy'), message: t('palette.action.restartProxyConfirm'), confirmText: t('palette.action.restartProxy') }))) return;
+        publishStatus(await invoke<CoreStatus>('restart_core_process'));
+      })() },
   ];
 
   const renderNavigationPage = (page: (typeof pages)[number]) => {
@@ -713,6 +722,7 @@ function AppContent() {
       <AppUpdateDialog />
       <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
+      {confirmationDialog}
     </>
   );
 }

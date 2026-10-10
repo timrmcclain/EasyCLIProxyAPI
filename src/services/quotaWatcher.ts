@@ -82,11 +82,11 @@ export function startQuotaWatcher(): () => void {
   let memory: AlertMemory | null = null;
   let driftBaseline: Set<string> | null = null;
 
-  const check = async () => {
+  const check = async (force = false) => {
     try {
       const files = dedupeAuthFiles(responseList(await managementApi.get('/credentials'), 'files'));
       if (stopped) return;
-      await refreshDashboardQuotas(files.filter(file => providerForFile(file)), false, () => !stopped);
+      await refreshDashboardQuotas(files.filter(file => providerForFile(file)), force, () => !stopped);
       if (stopped) return;
       const now = Date.now();
       const quotas = getQuotaCacheSnapshot();
@@ -116,5 +116,8 @@ export function startQuotaWatcher(): () => void {
 
   void check();
   const timer = window.setInterval(() => { void check(); }, CHECK_EVERY_MS);
-  return () => { stopped = true; window.clearInterval(timer); };
+  // "Check all quotas now" in the command palette: a forced check that skips the rate-limit backoff.
+  const checkNow = () => { void check(true); };
+  window.addEventListener('app:check-quota', checkNow);
+  return () => { stopped = true; window.clearInterval(timer); window.removeEventListener('app:check-quota', checkNow); };
 }

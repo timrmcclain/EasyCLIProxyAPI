@@ -913,6 +913,9 @@ export function createBrowserMockRuntime(
   const invoke = async (command: string, rawPayload?: unknown): Promise<unknown> => {
     await sleep(delayMs);
     const payload = asObject(rawPayload);
+    // Browser tests read this to see which commands the app sent.
+    const requestPath = (payload.request as { path?: unknown } | undefined)?.path;
+    ((window as unknown as { __mockCalls?: string[] }).__mockCalls ??= []).push(typeof requestPath === 'string' ? `${command} ${requestPath}` : command);
     if (scenario === 'error' && ERROR_SCENARIO_COMMANDS.has(command)) {
       throw new Error(`Browser Mock error scenario: ${command}`);
     }
