@@ -71,6 +71,16 @@ const path = require('node:path');
     await page.locator('.quota-summary-forecast').first().waitFor({ timeout: 20000 });
     assert.match(await page.locator('.quota-summary-forecast').first().innerText(), /^Runs out in about .+ at this pace$/);
 
+    // Runway & resets: with pace data, providers get a verdict; the soonest partly used windows are listed.
+    const runway = page.locator('.glance-runway');
+    const verdicts = await runway.locator('.glance-runway-verdict').allInnerTexts();
+    assert.ok(verdicts.length > 0 && verdicts.length <= 5, 'the five worst providers');
+    if (verdicts.length === 5) assert.match(await runway.locator('.glance-runway-more').innerText(), /^and \d+ more$/);
+    assert.ok(verdicts.some(text => /^(Out in about .+|Lasts until reset)$/.test(text)), `a provider has a measured runway: ${verdicts.join(' | ')}`);
+    const resetTimes = await runway.locator('.glance-runway-resets time').evaluateAll(nodes => nodes.map(node => Date.parse(node.getAttribute('datetime'))));
+    assert.ok(resetTimes.length > 0 && resetTimes.length <= 2, 'up to two resets');
+    assert.deepEqual(resetTimes, [...resetTimes].sort((a, b) => a - b), 'soonest first');
+
     // Key rotation: the new key goes first, apps are re-applied, the old key waits to be removed.
     await page.locator('.nav-section').getByRole('button', { name: 'Settings', exact: true }).click();
     await page.locator('#config-subpage-panel').waitFor();

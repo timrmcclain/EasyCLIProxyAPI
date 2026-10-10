@@ -1,5 +1,5 @@
 /* At-a-glance row under the provider runway. Same surface and border as the runway cards; colour only for status. */
-.home-glance { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; margin: 0 0 32px; }
+.home-glance { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr); gap: 16px; margin: 0 0 32px; }
 .account-dashboard.quota-ledger .quota-provider-summary:has(+ .home-glance) { margin-bottom: 16px; }
 .glance-tile { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 18px 20px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-primary); }
 :root[data-theme='light'] .glance-tile { background: var(--bg-card); border-color: var(--border-color); }
@@ -73,5 +73,19 @@
 .home-status-verdict.severity-unconfirmed strong { border-color: var(--c-border); background: var(--bg-tertiary); color: var(--text-secondary); }
 .home-status-verdict span { color: var(--text-secondary); font-size: 13px; }
 
-@media (max-width: 1100px) { .home-glance { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .glance-attention { grid-column: 1 / -1; } }
+@media (max-width: 1400px) { .home-glance { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 640px) { .home-glance { grid-template-columns: minmax(0, 1fr); } }
+/* Runway & resets: one line per provider, then the next windows to give quota back. */
+.glance-runway-list, .glance-runway-resets { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.glance-runway-list li, .glance-runway-resets li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 28px; font-size: 13px; }
+.glance-runway-list li > svg, .glance-runway-list li > img, .glance-runway-resets li > svg, .glance-runway-resets li > img { width: 16px; height: 16px; }
+.glance-runway-verdict { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.glance-runway-verdict small { display: block; color: var(--text-tertiary); font-size: 11px; font-weight: 400; }
+.runway-lasts { color: var(--c-success); }
+.runway-out { color: var(--c-warning); }
+.runway-all-out { color: var(--c-danger); }
+.runway-unknown { color: var(--text-tertiary); font-weight: 500; }
+.glance-runway-subhead { margin: 4px 0 0; padding-top: 8px; border-top: 1px solid var(--border-color); color: var(--text-tertiary); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
+.glance-runway-resets .glance-attention-name small { display: block; color: var(--text-tertiary); font-size: 11px; }
+.glance-runway-list li.glance-runway-more { display: block; min-height: 0; color: var(--text-tertiary); font-size: 12px; }
+.glance-runway-resets time { color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }

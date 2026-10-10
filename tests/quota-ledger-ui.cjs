@@ -96,7 +96,7 @@ const path = require('node:path');
     await codexFilter.click();
     assert.equal(await codexFilter.getAttribute('aria-pressed'), 'false');
     // Tiles: compression mock is off; activity reads the mock usage.
-    assert.equal(await page.locator('.glance-tile').count(), 3);
+    assert.equal(await page.locator('.glance-tile').count(), 4);
     assert.doesNotMatch(await page.locator('.quota-provider-summary-cell').first().innerText(), /running low/);
     const claude = page.locator('.quota-account-group').first();
     assert.equal(await claude.locator('.ad-card').count(), 5);

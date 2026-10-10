@@ -238,7 +238,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
           selected={filter === provider} onSelect={() => selectProvider(provider)} provider={provider} />;
       })}
     </div>
-    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined}
+    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} nameFor={(provider) => providerNames[provider] ?? provider}
       onView={viewAccount} onMore={() => listHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
     {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
     {files.length > 0 && <div ref={listHeading} className="ad-list-heading">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, ArrowRight, CircleCheck, Shrink } from 'lucide-react';
+import { Activity, ArrowRight, CircleCheck, Hourglass, Shrink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { compressionService, lifetimeSavingsPercent, type CompressionStats, type CompressionStatus } from '../services/compression';
 import { busiestClient, hourlyActivity, type AttentionItem } from '../services/homeGlance';
@@ -8,13 +8,17 @@ import { requestClient, type DashboardActivity } from '../services/dashboardActi
 import { resetCountdown } from '../services/accountDashboard';
 import { navigateHelp } from '../services/uxNavigation';
 import { quotaPercent } from '../services/quotaAvailability';
-import { quotaKey, type AuthFile } from '../services/quotaService';
+import { quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
+import { providerRunways, upcomingResets, type ProviderRunway } from '../services/quotaRunway';
 import { forecastQuota, useQuotaHistory } from '../services/quotaForecast';
 import { formatTokens } from '../pages/CompressionPage';
 import { ProviderLogo } from './AuthFileProviderIcon';
 import './HomeGlance.css';
 
 const ATTENTION_ROWS = 4;
+const RESET_ROWS = 2;
+/** Worst providers shown; the rest fold into one line so the tile row stays short. */
+const RUNWAY_ROWS = 5;
 const COMPRESSION_REFRESH_MS = 30_000;
 
 type GlanceProps = {
@@ -23,6 +27,7 @@ type GlanceProps = {
   /** The account that served the latest successful request, if it could be matched. */
   latestAccount?: string;
   onView: (file: AuthFile) => void; onMore: () => void;
+  files: AuthFile[]; quotas: Record<string, QuotaState>; stale: boolean; nameFor: (provider: string) => string;
 };
 
 /** The at-a-glance row under the provider runway: what the proxy is doing, what compression saves, and what needs you. */
@@ -31,6 +36,7 @@ export function HomeGlance(props: GlanceProps) {
     <ActivityTile usage={props.usage} loading={props.usageLoading} activity={props.activity} now={props.now} latestAccount={props.latestAccount} />
     <CompressionTile />
     <AttentionTile {...props} />
+    <RunwayTile {...props} />
   </div>;
 }
 
@@ -140,6 +146,43 @@ function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore }:
           <button type="button" className="glance-open" onClick={() => onView(item.file)} aria-label={`${t('glance.attention.view')}: ${labelFor(item.file)}`}>{t('glance.attention.view')}</button>
         </li>)}
         {attention.length > shown.length && <li className="glance-attention-more"><button type="button" className="glance-open" onClick={onMore}>{t('glance.attention.more', { count: attention.length - shown.length })}</button></li>}
+      </ul>}
+  </article>;
+}
+
+/** How long each provider lasts at the current pace, and which windows give quota back next. */
+function RunwayTile({ files, quotas, stale, now, providerOf, nameFor, labelFor }: GlanceProps) {
+  const { t } = useI18n();
+  const history = useQuotaHistory();
+  const runways = providerRunways(files, quotas, history, now, stale, providerOf);
+  const resets = upcomingResets(files, quotas, now, RESET_ROWS);
+  const verdict = (runway: ProviderRunway) => {
+    switch (runway.kind) {
+      case 'lasts': return <span className="runway-lasts">{t('glance.runway.lasts')}</span>;
+      case 'runsOut': return <span className="runway-out">{t('glance.runway.runsOut', { time: resetCountdown(runway.emptyAt, now) })}</span>;
+      case 'allOut': return <span className="runway-all-out">{t('glance.runway.allOut')}{runway.backAt ? <small>{t('glance.runway.backIn', { time: resetCountdown(runway.backAt, now) })}</small> : null}</span>;
+      case 'unconfirmed': return <span className="runway-unknown">{t('glance.attention.unconfirmed')}</span>;
+      case 'unknown': return <span className="runway-unknown">{t('glance.runway.unknown')}</span>;
+    }
+  };
+  return <article className="glance-tile glance-runway" aria-labelledby="glance-runway-title">
+    <header><h3 id="glance-runway-title"><Hourglass size={14} aria-hidden="true" />{t('glance.runway.title')}</h3></header>
+    <ul className="glance-runway-list">
+      {runways.slice(0, RUNWAY_ROWS).map(runway => <li key={runway.provider}>
+        <ProviderLogo provider={runway.provider} />
+        <span className="glance-attention-name">{nameFor(runway.provider)}</span>
+        <span className="glance-runway-verdict">{verdict(runway)}</span>
+      </li>)}
+      {runways.length > RUNWAY_ROWS && <li className="glance-runway-more">{t('glance.runway.more', { count: runways.length - RUNWAY_ROWS })}</li>}
+    </ul>
+    <p className="glance-runway-subhead">{t('glance.runway.next')}</p>
+    {!resets.length ? <p className="glance-muted">{t('glance.runway.none')}</p>
+      : <ul className="glance-runway-resets">
+        {resets.map(reset => <li key={`${quotaKey(reset.file)}-${reset.label}`}>
+          <ProviderLogo provider={providerOf(reset.file)} />
+          <span className="glance-attention-name" title={labelFor(reset.file)}>{labelFor(reset.file)}<small>{t('glance.runway.reset', { label: reset.label, percent: quotaPercent(reset.percent) })}</small></span>
+          <time dateTime={new Date(reset.at).toISOString()} title={new Date(reset.at).toLocaleString()}>{resetCountdown(reset.at, now)}</time>
+        </li>)}
       </ul>}
   </article>;
 }

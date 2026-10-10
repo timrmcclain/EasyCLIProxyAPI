@@ -60,11 +60,12 @@ const path = require('node:path');
     assert.ok(dashboard.y < runtime.y, 'Accounts should appear before runtime controls');
     await page.locator('.workspace').evaluate((el) => { el.scrollTop = 0; }).catch(() => {});
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.screenshot({ path: process.env.DASHBOARD_SCREENSHOT || 'account-dashboard-preview.png', fullPage: true });
+    // Screenshots only when asked for, so test runs leave the committed previews alone.
+    if (process.env.DASHBOARD_SCREENSHOT) await page.screenshot({ path: process.env.DASHBOARD_SCREENSHOT, fullPage: true });
     await page.getByRole('button', { name: 'Dark', exact: true }).click();
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
     await page.clock.runFor(1000);
-    await page.screenshot({ path: (process.env.DASHBOARD_SCREENSHOT || 'account-dashboard-preview.png').replace('.png', '-dark.png'), fullPage: true });
+    if (process.env.DASHBOARD_SCREENSHOT) await page.screenshot({ path: process.env.DASHBOARD_SCREENSHOT.replace('.png', '-dark.png'), fullPage: true });
     await page.setViewportSize({ width: 720, height: 900 });
     assert.ok(await page.locator('.account-dashboard').evaluate((el) => el.scrollWidth <= el.clientWidth + 1), 'Dashboard overflows at 720px');
     await page.goto('http://127.0.0.1:1422/?mock=stopped');
