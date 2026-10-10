@@ -58,6 +58,8 @@ async function updateTray(files: AuthFile[], attention: ReturnType<typeof attent
   });
   const menuText = parts.length ? translate(locale, 'tray.quota', { summary: parts.join(' · ') }) : translate(locale, 'tray.none');
   await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · ') }).catch(() => undefined);
+  // Read by the Claude Code status line wrapper, when switched on in Settings.
+  await invoke('write_claude_quota_line', { text: menuText }).catch(() => undefined);
 }
 
 async function send(messages: { title: string; body: string }[]) {

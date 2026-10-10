@@ -216,6 +216,14 @@ export function ConfigPanelPage() {
   const [showPluginAdvanced, setShowPluginAdvanced] = useState(false);
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
   const [desktopAlerts, setDesktopAlerts] = useState(() => readDesktopAlertsPreference());
+  const [claudeStatusLine, setClaudeStatusLine] = useState<boolean | null>(null);
+  const [claudeStatusLineBusy, setClaudeStatusLineBusy] = useState(false);
+
+  useEffect(() => {
+    invoke<{ enabled: boolean }>('claude_statusline_state')
+      .then(state => setClaudeStatusLine(state.enabled))
+      .catch(() => setClaudeStatusLine(null));
+  }, []);
   const [settingsSearch, setSettingsSearch] = useState('');
   const [dirtyTemplateGroups, setDirtyTemplateGroups] = useState<readonly string[]>([]);
   const [sensitiveWordsDirty, setSensitiveWordsDirty] = useState(false);
@@ -844,6 +852,21 @@ export function ConfigPanelPage() {
     softwareFeedback.showNotice({ key: 'common.saved' }, 'success', offerUndo ? {
       action: { label: { key: 'common.undo' }, onAction: () => changeDesktopAlerts(!enabled, false) },
     } : undefined);
+  };
+
+  const changeClaudeStatusLine = async (enabled: boolean, offerUndo = true) => {
+    setClaudeStatusLineBusy(true);
+    try {
+      const state = await invoke<{ enabled: boolean }>(enabled ? 'enable_claude_statusline' : 'disable_claude_statusline');
+      setClaudeStatusLine(state.enabled);
+      softwareFeedback.showNotice({ key: 'common.saved' }, 'success', offerUndo ? {
+        action: { label: { key: 'common.undo' }, onAction: () => void changeClaudeStatusLine(!enabled, false) },
+      } : undefined);
+    } catch (error) {
+      softwareFeedback.showNotice(t('statusline.error', { error: String(error) }), 'error');
+    } finally {
+      setClaudeStatusLineBusy(false);
+    }
   };
 
   const saveNetworkEndpointSettings = async () => {
@@ -2233,6 +2256,29 @@ export function ConfigPanelPage() {
                     <span className="switch-track" />
                   </label>
                 </div>
+                {claudeStatusLine !== null && (
+                  <div className="config-software-setting-row">
+                    <div className="config-software-setting-copy">
+                      <span className="config-software-setting-icon" aria-hidden="true">
+                        <Terminal size={18} />
+                      </span>
+                      <div>
+                        <span className="config-field-label"><strong>{t('statusline.setting')}</strong><SettingsHelp label={t('statusline.setting')}>{t('statusline.settingHint')}</SettingsHelp></span>
+                      </div>
+                    </div>
+                    <label className="switch-control" title={t('statusline.setting')}>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        aria-label={t('statusline.setting')}
+                        checked={claudeStatusLine}
+                        disabled={claudeStatusLineBusy}
+                        onChange={(event) => void changeClaudeStatusLine(event.currentTarget.checked)}
+                      />
+                      <span className="switch-track" />
+                    </label>
+                  </div>
+                )}
                 <div className="config-software-setting-row config-software-close-row">
                   <div className="config-software-setting-copy">
                     <span className="config-software-setting-icon" aria-hidden="true">

@@ -49,6 +49,8 @@ const path = require('node:path');
     const tray = await page.evaluate(() => window.__mockTray);
     assert.match(tray.menuText, /^Quota: .*(ok|low|out)/);
     assert.ok(tray.tooltipText.length > 0 && !tray.tooltipText.startsWith('Quota:'));
+    // The same line is written for the Claude Code status line wrapper.
+    assert.equal(await page.evaluate(() => window.__mockQuotaLine), tray.menuText);
 
     // Forecast: give every account a falling series ending at its current reading, then reload.
     await page.waitForFunction(() => Object.keys(JSON.parse(localStorage.getItem('personal.quotaHistory') || '{}')).length > 0, null, { timeout: 20000 });
@@ -97,6 +99,14 @@ const path = require('node:path');
     assert.equal(await notifications.isChecked(), true);
     await notifications.click();
     assert.equal(await page.evaluate(() => localStorage.getItem('personal.desktopAlerts')), 'false');
+
+    // Claude Code status line: off by default, switches on and back off through Undo.
+    const statusLine = page.getByRole('switch', { name: "Quota in Claude Code's status line" });
+    assert.equal(await statusLine.isChecked(), false);
+    await statusLine.click();
+    await page.waitForFunction(() => document.querySelector('[role="switch"][aria-label^="Quota in Claude"]')?.checked === true);
+    await page.getByRole('button', { name: 'Undo', exact: true }).last().click();
+    await page.waitForFunction(() => document.querySelector('[role="switch"][aria-label^="Quota in Claude"]')?.checked === false);
 
     assert.deepEqual(errors, []);
     console.log('drift-rotation-ui: ok');

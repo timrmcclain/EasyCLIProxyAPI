@@ -2,6 +2,8 @@ import { applyTemplateChanges, readTemplatePath, sameTemplateValue, type Templat
 import { createPluginMock } from './pluginMock';
 import { createQuotaMock, createQuotaMockFiles } from './quotaMock';
 
+let mockClaudeStatusLine = false;
+
 export type BrowserMockScenario = 'running' | 'stopped' | 'empty' | 'error';
 export type BrowserMockMode = BrowserMockScenario | 'off';
 
@@ -1452,6 +1454,13 @@ export function createBrowserMockRuntime(
         (window as unknown as { __mockTray?: unknown }).__mockTray = { menuText: payload.menuText, tooltipText: payload.tooltipText };
         return null;
       }
+      case 'write_claude_quota_line': {
+        (window as unknown as { __mockQuotaLine?: unknown }).__mockQuotaLine = payload.text;
+        return null;
+      }
+      case 'claude_statusline_state': return { enabled: mockClaudeStatusLine, wrapsExisting: mockClaudeStatusLine };
+      case 'enable_claude_statusline': mockClaudeStatusLine = true; return { enabled: true, wrapsExisting: true };
+      case 'disable_claude_statusline': mockClaudeStatusLine = false; return { enabled: false, wrapsExisting: false };
       case 'plugin:notification|is_permission_granted': return true;
       default:
         if (command.startsWith('plugin:window|') || command.startsWith('plugin:webview|')) return null;

@@ -31,6 +31,7 @@ mod provider_health;
     target_os = "macos",
     target_os = "windows"
 ))]
+mod statusline;
 mod tray;
 mod usage;
 mod model_preset;
@@ -2736,6 +2737,10 @@ fn main() {
             delete_core_api_key,
             promote_core_api_key,
             tray::set_tray_quota_summary,
+            statusline::claude_statusline_state,
+            statusline::enable_claude_statusline,
+            statusline::disable_claude_statusline,
+            statusline::write_claude_quota_line,
             set_core_management_secret_key,
             clear_core_management_secret_key,
             management_api::management_request,
