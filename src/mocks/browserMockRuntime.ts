@@ -3,6 +3,7 @@ import { createPluginMock } from './pluginMock';
 import { createQuotaMock, createQuotaMockFiles } from './quotaMock';
 
 let mockClaudeStatusLine = false;
+let mockClaudeFallback: string | null = null;
 let mockJevRefreshed = false;
 // Skills & plugins page: installs, switches and removals change what the next overview returns.
 const mockSkill = (folder: string, description: string, scripts: string[] = [], extra: Record<string, boolean> = {}) => ({
@@ -1493,6 +1494,9 @@ export function createBrowserMockRuntime(
       case 'claude_statusline_state': return { enabled: mockClaudeStatusLine, wrapsExisting: mockClaudeStatusLine };
       case 'enable_claude_statusline': mockClaudeStatusLine = true; return { enabled: true, wrapsExisting: true };
       case 'disable_claude_statusline': mockClaudeStatusLine = false; return { enabled: false, wrapsExisting: false };
+      case 'claude_fallback_state': return { model: mockClaudeFallback };
+      case 'switch_claude_code_model': mockClaudeFallback = String((payload as { model?: string } | undefined)?.model ?? ''); return { model: mockClaudeFallback };
+      case 'switch_claude_code_back': mockClaudeFallback = null; return { model: null };
       case 'jev_overview': {
         const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
         return {

@@ -47,6 +47,7 @@ import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { TemplateConfigSection } from '../components/TemplateConfigSection';
 import { SettingsHelp } from '../components/SettingsHelp';
+import { QuotaRoutingSetting } from '../components/QuotaRoutingSetting';
 import { templateMessages, templateText } from '../i18n/templateConfig';
 import {
   settingsCategories, settingsTemplateGroups,
@@ -1719,6 +1720,7 @@ export function ConfigPanelPage() {
                       : routingStrategyLabel(settings.routingStrategy, t, locale)}
                 </small>
               </div>
+              <QuotaRoutingSetting strategy={settings?.routingStrategy} disabled={controlsDisabled} />
             </div>
 
             <details className="config-advanced-details">

@@ -13,13 +13,14 @@ import { providerTallies, quotaAlerts, type AlertMemory, type QuotaAlert } from 
 import { invoke } from '@tauri-apps/api/core';
 import { getQuotaCacheSnapshot } from './quotaCache';
 import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaForecast';
+import { applyQuotaRouting } from './quotaRoutingControl';
 import { fileName, providerForFile, type AuthFile } from './quotaService';
 
 const CHECK_EVERY_MS = 5 * 60_000;
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 const providerOf = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
 
-function labelFor(file: AuthFile): string {
+export function labelFor(file: AuthFile): string {
   const privateLabel = privateAccountLabel(file, providerOf(file));
   if (readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true') return privateLabel;
   return readAccountNames()[privateLabel] || fileName(file) || readString(file, 'email', 'label') || privateLabel;
@@ -90,6 +91,8 @@ export function startQuotaWatcher(): () => void {
       const now = Date.now();
       const quotas = getQuotaCacheSnapshot();
       setQuotaHistory(recordQuotaSamples(getQuotaHistory(), files, quotas, now));
+      // Soonest-reset-first routing, when switched on in Settings → Routing.
+      await applyQuotaRouting(files).catch(() => undefined);
       const attention = attentionItems(files, quotas, now, false);
       await updateTray(files, attention);
       const result = quotaAlerts(memory, files, attention, providerOf, labelFor);

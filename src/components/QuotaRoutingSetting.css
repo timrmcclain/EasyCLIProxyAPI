@@ -1,0 +1,14 @@
+.qrouting { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
+.qrouting-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.qrouting-head .config-field-label { display: inline-flex; align-items: center; gap: 6px; }
+.qrouting-note { margin: 0; color: var(--text-tertiary); font-size: 12px; }
+.qrouting-preview { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); }
+.qrouting-preview-title { color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.qrouting-preview ul { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.qrouting-preview ul > li { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px; }
+.qrouting-preview ol { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 0; padding: 0; list-style: none; }
+.qrouting-preview ol li + li::before { content: '→'; margin-right: 10px; color: var(--text-tertiary); }
+.qrouting-preview ol li { overflow-wrap: anywhere; }
+.qrouting-tier { margin-left: 6px; padding: 0 6px; border-radius: 999px; font-size: 11px; }
+.qrouting-tier-low .qrouting-tier { color: var(--c-warning); background: var(--c-warning-soft); }
+.qrouting-tier-out .qrouting-tier { color: var(--c-danger); background: var(--c-danger-soft); }

@@ -34,6 +34,7 @@ mod provider_health;
 mod claude_extensions;
 mod jev;
 mod statusline;
+mod claude_fallback;
 mod tray;
 mod usage;
 mod model_preset;
@@ -2743,6 +2744,9 @@ fn main() {
             tray::set_tray_quota_summary,
             statusline::claude_statusline_state,
             statusline::enable_claude_statusline,
+            claude_fallback::claude_fallback_state,
+            claude_fallback::switch_claude_code_model,
+            claude_fallback::switch_claude_code_back,
             statusline::disable_claude_statusline,
             statusline::write_claude_quota_line,
             jev::jev_overview,

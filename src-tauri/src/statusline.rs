@@ -112,7 +112,7 @@ fi
     )
 }
 
-fn read_settings(path: &Path) -> Result<Map<String, Value>, String> {
+pub(crate) fn read_settings(path: &Path) -> Result<Map<String, Value>, String> {
     if !path.is_file() {
         return Ok(Map::new());
     }
@@ -127,7 +127,7 @@ fn read_settings(path: &Path) -> Result<Map<String, Value>, String> {
     }
 }
 
-fn write_settings(path: &Path, settings: &Map<String, Value>) -> Result<(), String> {
+pub(crate) fn write_settings(path: &Path, settings: &Map<String, Value>) -> Result<(), String> {
     fs::create_dir_all(path.parent().unwrap_or(Path::new(".")))
         .map_err(|error| format!("Failed to create {}: {error}", path.display()))?;
     let text = serde_json::to_string_pretty(settings).map_err(|error| error.to_string())?;

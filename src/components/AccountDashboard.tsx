@@ -8,6 +8,7 @@ import { dedupeAuthFiles, normalizeAuthFilePriorityInput } from '../services/aut
 import { managementApi, responseList, readString } from '../services/managementApi';
 import { useQuotaCache } from '../services/quotaCache';
 import { refreshDashboardQuotas } from '../services/accountDashboardRefresh';
+import { readQuotaRoutingPreference } from '../services/quotaRoutingControl';
 import { fileName, idleQuota, providerForFile, quotaKey, type AuthFile, type QuotaRow, type QuotaState } from '../services/quotaService';
 import { useQuotaClock } from '../services/quotaTime';
 import { ledgerWindows, orderedQuotaRows, primaryQuotaRow, quotaTone, remaining } from '../services/quotaLedger';
@@ -444,6 +445,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
         <div className="ad-card-footer"><label>{t('accountDashboard.priority')}<input ref={priorityInput} type="number" step="1" value={draft} onChange={(event) => { setDraft(event.target.value); setFeedback(''); }} aria-label={t('accountDashboard.priorityLabel', { account: displayLabel })} disabled={disabled || pending} /></label>
           <button className="secondary-button" disabled={disabled || pending || draft === String(summary.priority)} onClick={() => void save()}>{pending ? t('accountDashboard.saving') : t('accountDashboard.save')}</button>
           <span className="ad-freshness" title={quota.refreshError}>{quota.fetchedAt ? t(quota.refreshError ? 'accountDashboard.quotaKept' : 'accountDashboard.quotaChecked', { time: new Date(quota.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.noSnapshot')}</span></div>
+        {readQuotaRoutingPreference() && <p className="ad-card-note">{t('qrouting.manualNote')}</p>}
         {feedback && <p role="status" className="ad-card-note">{feedback}</p>}
       </div>
     </details>
