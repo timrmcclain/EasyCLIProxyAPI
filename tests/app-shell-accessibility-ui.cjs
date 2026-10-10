@@ -30,7 +30,8 @@ const path = require('node:path');
 
     await page.locator('.nav-section').getByRole('button', { name: '使用记录' }).click();
     const tabs = page.getByRole('tab');
-    assert.equal(await tabs.count(), 5);
+    assert.equal(await tabs.count(), 6);
+    assert.equal(await page.getByRole('tab', { name: '按项目' }).count(), 1);
     assert.deepEqual(await tabs.evaluateAll((elements) => elements
       .map((element) => element.getAttribute('aria-controls'))
       .filter((id) => !id || !document.getElementById(id))), []);
