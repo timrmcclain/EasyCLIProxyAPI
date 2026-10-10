@@ -2434,6 +2434,7 @@ fn main() {
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -2733,6 +2734,7 @@ fn main() {
             add_core_api_key,
             update_core_api_key,
             delete_core_api_key,
+            promote_core_api_key,
             set_core_management_secret_key,
             clear_core_management_secret_key,
             management_api::management_request,

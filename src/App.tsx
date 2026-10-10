@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime } from './coreRuntime';
+import { startQuotaWatcher } from './services/quotaWatcher';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
 import { ApiAccessPage } from './pages/ApiAccessPage';
@@ -204,6 +205,8 @@ function AppContent() {
   const languageButtonRef = useRef<HTMLButtonElement>(null);
   const { status } = useCoreRuntime();
   const coreReady = Boolean(status?.ready);
+  // Quota checks, run-out forecasts and Windows notifications keep working with the window in the tray.
+  useEffect(() => (coreReady ? startQuotaWatcher() : undefined), [coreReady]);
   const activePage = pages.find((page) => page.id === active) ?? pages[0];
   const ActivePage = activePage.component;
   const selectedLanguage = languageOptions.find((option) => option.value === locale)

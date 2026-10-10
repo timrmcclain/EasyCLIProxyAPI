@@ -1,3 +1,4 @@
+import { AppDriftBanner } from '../components/AppDriftBanner';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
@@ -372,6 +373,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
           /></span>
         </section>
         {processNotice}
+        <AppDriftBanner coreReady={coreReady} />
         {showChecklist && <section className="home-checklist" aria-labelledby="home-checklist-title">
           <header>
             <h2 id="home-checklist-title">{t('home.checklist.title')}</h2>

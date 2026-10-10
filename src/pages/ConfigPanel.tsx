@@ -1,4 +1,5 @@
-import { readOverviewAlertsPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
+import { rotateProxyKey, type ReapplyOutcome } from '../services/connectedApps';
+import { readDesktopAlertsPreference, readOverviewAlertsPreference, saveDesktopAlertsPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
 import { FormEvent, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -33,7 +34,7 @@ import {
   Power,
   Terminal,
   Trash2,
-  X, Bell } from 'lucide-react';
+  X, Bell, BellRing, LoaderCircle, RotateCw } from 'lucide-react';
 import { useCoreRuntime, type CoreStatus } from '../coreRuntime';
 import { useI18n } from '../i18n';
 import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
@@ -84,6 +85,7 @@ type CoreApiKey = {
 
 type ConfigAction =
   | 'add-key'
+  | 'rotate-key'
   | 'update-key'
   | 'delete-key'
   | 'management-secret'
@@ -200,6 +202,7 @@ export function ConfigPanelPage() {
   const [loggingError, setLoggingError] = useState('');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const keyFeedback = useAppNotice();
+  const [rotation, setRotation] = useState<{ previousKey: string; outcomes: ReapplyOutcome[] } | null>(null);
   const managementFeedback = useAppNotice();
   const loggingFeedback = useAppNotice();
   const networkFeedback = useAppNotice();
@@ -212,6 +215,7 @@ export function ConfigPanelPage() {
   const [activeSubpage, setActiveSubpage] = useState<ConfigSubpage>('general');
   const [showPluginAdvanced, setShowPluginAdvanced] = useState(false);
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
+  const [desktopAlerts, setDesktopAlerts] = useState(() => readDesktopAlertsPreference());
   const [settingsSearch, setSettingsSearch] = useState('');
   const [dirtyTemplateGroups, setDirtyTemplateGroups] = useState<readonly string[]>([]);
   const [sensitiveWordsDirty, setSensitiveWordsDirty] = useState(false);
@@ -650,6 +654,38 @@ export function ConfigPanelPage() {
     }
   };
 
+  // Replaces the key every connected app uses; the old key stays until removed, so open sessions keep working.
+  const rotateKeys = async () => {
+    const confirmed = await askConfirmation({ title: t('rotate.title'), message: t('rotate.message'), confirmText: t('rotate.confirm') });
+    if (!confirmed) return;
+    setBusyAction('rotate-key');
+    keyFeedback.clearNotice();
+    try {
+      const result = await rotateProxyKey(t('rotate.remark', { date: new Date().toLocaleDateString(locale) }));
+      await loadSettings('preserve');
+      const reapplied = result.outcomes.filter(outcome => outcome.result === 'reapplied').map(outcome => outcome.name);
+      const manual = result.outcomes.filter(outcome => outcome.result !== 'reapplied').map(outcome => outcome.name);
+      const message = [reapplied.length ? t('rotate.done', { apps: reapplied.join(', ') }) : t('rotate.doneNone'),
+        manual.length ? t('rotate.manual', { apps: manual.join(', ') }) : ''].filter(Boolean).join(' ');
+      keyFeedback.showNotice(message, manual.length ? 'error' : 'success');
+      setRotation(result.previousKey ? { previousKey: result.previousKey, outcomes: result.outcomes } : null);
+    } catch (error) {
+      keyFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      void loadSettings('preserve');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const removeOldKey = async () => {
+    if (!rotation) return;
+    const confirmed = await askConfirmation({
+      title: t('rotate.removeTitle'), message: t('rotate.removeMessage'), confirmText: t('common.delete'), variant: 'danger',
+    });
+    if (!confirmed) return;
+    if (await runMutation('delete-key', 'delete_core_api_key', { apiKey: rotation.previousKey }, t('config.notice.keyDeleted'))) setRotation(null);
+  };
+
   const requestDeleteKey = async (index: number) => {
     const apiKey = settings?.apiKeys[index]?.apiKey || '';
     if (!apiKey) return;
@@ -799,6 +835,14 @@ export function ConfigPanelPage() {
     saveOverviewAlertsPreference(enabled);
     softwareFeedback.showNotice({ key: 'common.saved' }, 'success', offerUndo ? {
       action: { label: { key: 'common.undo' }, onAction: () => changeOverviewAlerts(!enabled, false) },
+    } : undefined);
+  };
+
+  const changeDesktopAlerts = (enabled: boolean, offerUndo = true) => {
+    setDesktopAlerts(enabled);
+    saveDesktopAlertsPreference(enabled);
+    softwareFeedback.showNotice({ key: 'common.saved' }, 'success', offerUndo ? {
+      action: { label: { key: 'common.undo' }, onAction: () => changeDesktopAlerts(!enabled, false) },
     } : undefined);
   };
 
@@ -1134,8 +1178,22 @@ export function ConfigPanelPage() {
               >
                 <Plus size={18} aria-hidden="true" />
               </button>
+              <button
+                type="button"
+                className="secondary-button compact-button"
+                onClick={() => void rotateKeys()}
+                disabled={controlsDisabled || !settings?.apiKeys.length}
+              >
+                {busyAction === 'rotate-key' ? <LoaderCircle size={14} className="spin" aria-hidden="true" /> : <RotateCw size={14} aria-hidden="true" />}
+                {t('rotate.button')}
+              </button>
             </div>
           </div>
+
+          {rotation && settings?.apiKeys.some(entry => entry.apiKey === rotation.previousKey) && <div className="config-rotation-pending">
+            <span><strong>{maskApiKey(rotation.previousKey)}</strong><small>{t('rotate.removeOldHint')}</small></span>
+            <button type="button" className="secondary-button compact-button" disabled={controlsDisabled} onClick={() => void removeOldKey()}>{t('rotate.removeOld')}</button>
+          </div>}
 
           <div className="config-key-list" aria-busy={loading || undefined}>
             {loading ? (
@@ -2151,6 +2209,26 @@ export function ConfigPanelPage() {
                       aria-label={t('ux.alerts')}
                       checked={overviewAlerts}
                       onChange={(event) => changeOverviewAlerts(event.currentTarget.checked)}
+                    />
+                    <span className="switch-track" />
+                  </label>
+                </div>
+                <div className="config-software-setting-row">
+                  <div className="config-software-setting-copy">
+                    <span className="config-software-setting-icon" aria-hidden="true">
+                      <BellRing size={18} />
+                    </span>
+                    <div>
+                      <span className="config-field-label"><strong>{t('notify.setting')}</strong><SettingsHelp label={t('notify.setting')}>{t('notify.settingHint')}</SettingsHelp></span>
+                    </div>
+                  </div>
+                  <label className="switch-control" title={t('notify.setting')}>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-label={t('notify.setting')}
+                      checked={desktopAlerts}
+                      onChange={(event) => changeDesktopAlerts(event.currentTarget.checked)}
                     />
                     <span className="switch-track" />
                   </label>

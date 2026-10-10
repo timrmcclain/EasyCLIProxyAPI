@@ -249,6 +249,8 @@ function createUsageEvents() {
 }
 
 function createAgentStatuses() {
+  // ?mockDrift=claude-code: that app still points at the hub but with an old key, as after a key change.
+  const drifted = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('mockDrift') : null;
   const ids = [
     ['claude-code', 'Claude Code'],
     ['claude-desktop', 'Claude Desktop'],
@@ -293,8 +295,8 @@ function createAgentStatuses() {
     pluginVersion: id === 'pi' ? '0.4.2' : null,
     configExists: true,
     configValid: true,
-    configured: id !== 'openclaw',
-    connectionState: id === 'openclaw' ? 'not-configured' : 'configured',
+    configured: id !== 'openclaw' && id !== drifted,
+    connectionState: id === 'openclaw' ? 'not-configured' : id === drifted ? 'needs-update' : 'configured',
     configurationSynchronized: true,
     currentModel: id.startsWith('claude') ? 'claude-sonnet-4-6' : 'gpt-5.2-codex',
     oauthConfiguration: id === 'codex',
@@ -1002,6 +1004,15 @@ export function createBrowserMockRuntime(
         if (entry) Object.assign(entry, { apiKey: readString(payload.apiKey), remark: readString(payload.remark) });
         return clone(state.coreConfig);
       }
+      case 'promote_core_api_key': {
+        const entry = state.coreConfig.apiKeys.find((item) => item.apiKey === payload.apiKey);
+        if (entry) state.coreConfig.apiKeys = [entry, ...state.coreConfig.apiKeys.filter((item) => item !== entry)];
+        // Apps were given the previous first key, so every connected one now needs re-applying.
+        for (const status of state.agentStatuses) {
+          if (status.connectionState === 'configured') Object.assign(status, { configured: false, connectionState: 'needs-update' });
+        }
+        return clone(state.coreConfig);
+      }
       case 'delete_core_api_key': {
         state.coreConfig.apiKeys = state.coreConfig.apiKeys.filter((item) => item.apiKey !== payload.apiKey);
         return clone(state.coreConfig);
@@ -1289,7 +1300,11 @@ export function createBrowserMockRuntime(
         matches: [{ id: 'request-inspector', why: 'Browser demo: shows what each request contains so you can see what is happening.', changes: 'Requests are sampled and their metadata is shown on a status page.', risk: 'Captured metadata may include prompt details; keep secret redaction on.' }],
         note: 'This is a canned browser demo answer.',
       });
-      case 'update_agent_config':
+      case 'update_agent_config': {
+        const status = state.agentStatuses.find((item) => item.id === payload.client);
+        if (status) Object.assign(status, { configured: true, connectionState: 'configured' });
+        return createActionResult(payload);
+      }
       case 'apply_agent_config_template':
       case 'install_pi_provider':
       case 'update_pi_provider':

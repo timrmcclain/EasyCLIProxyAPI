@@ -1,0 +1,16 @@
+.app-drift-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--c-warning-border);
+  border-radius: var(--radius-lg);
+  background: var(--c-warning-soft);
+  color: var(--c-warning);
+}
+.app-drift-copy { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.app-drift-copy strong { font-size: 13px; }
+.app-drift-copy small { color: var(--text-secondary); font-size: 12px; }
+.app-drift-copy .app-drift-manual { color: var(--c-warning); }
+.app-drift-actions { display: flex; flex-shrink: 0; gap: 8px; }

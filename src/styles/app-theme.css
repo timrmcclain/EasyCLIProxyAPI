@@ -311,6 +311,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .quota-ledger .quota-summary-reset { display:flex; flex-wrap:wrap; gap:4px 6px; font-size:12px; color:var(--text-secondary); line-height:1.6; min-height:20px; }
 .quota-ledger .quota-summary-reset time { color:var(--text-tertiary); }
 .quota-ledger .quota-summary-reset time::before { content:'· '; }
+.quota-ledger .quota-summary-forecast { font-size:12px; line-height:1.6; color:var(--amber-text); font-weight:600; }
 .quota-ledger .quota-partial { display:block; font-size:11px; margin-top:4px; }
 .quota-ledger .quota-summary-extra { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; border-top:1px solid var(--border-primary); padding-top:8px; margin-top:8px; font-size:13px; color:var(--text-secondary); }
 .quota-ledger .quota-summary-extra strong { color:var(--text-primary); font-weight:500; margin-left:4px; }

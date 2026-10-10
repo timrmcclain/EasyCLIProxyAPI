@@ -18,3 +18,12 @@ export function readOverviewAlertsPreference(): boolean {
 export function saveOverviewAlertsPreference(enabled: boolean): void {
   saveDashboardPreference('overviewAlerts', String(enabled));
 }
+
+/** Windows notifications for quota changes are on unless turned off in Settings → App preferences. */
+export function readDesktopAlertsPreference(): boolean {
+  return readDashboardPreference('desktopAlerts', ['true', 'false'], 'true') === 'true';
+}
+
+export function saveDesktopAlertsPreference(enabled: boolean): void {
+  saveDashboardPreference('desktopAlerts', String(enabled));
+}

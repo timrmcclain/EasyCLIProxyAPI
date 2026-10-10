@@ -555,3 +555,9 @@
 .config-page .config-settings-content .config-settings-save-row { align-items: center; }
 .config-page .config-settings-content .config-settings-save-row > .config-card-status { margin-left: 0; font-size: var(--font-size-caption); }
 .config-page .config-settings-content .config-settings-save-row > .config-card-status:empty { display: none; }
+
+/* After replacing the key: the old one waits here until open sessions are restarted. */
+.config-rotation-pending { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--c-warning-border); border-radius: var(--radius-md); background: var(--c-warning-soft); }
+.config-rotation-pending span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.config-rotation-pending strong { font: 600 12px ui-monospace, monospace; color: var(--c-warning); }
+.config-rotation-pending small { font-size: 12px; color: var(--text-secondary); }

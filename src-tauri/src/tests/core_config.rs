@@ -77,6 +77,18 @@ fn initial_default_api_key_can_be_edited_and_deleted() {
 }
 
 #[test]
+fn promoting_a_key_moves_it_first_and_keeps_the_rest_in_order() {
+    let mut api_keys = vec!["old".to_string(), "other".to_string(), "new".to_string()];
+
+    promote_core_api_key_value(&mut api_keys, "new").unwrap();
+    assert_eq!(api_keys, vec!["new", "old", "other"]);
+
+    promote_core_api_key_value(&mut api_keys, "new").unwrap();
+    assert_eq!(api_keys, vec!["new", "old", "other"]);
+    assert!(promote_core_api_key_value(&mut api_keys, "missing").is_err());
+}
+
+#[test]
 fn core_config_view_exposes_api_key_metadata_for_the_webview() {
     let mut config = GuiConfigFile::default();
     ensure_strong_management_secret(&mut config).unwrap();

@@ -5,6 +5,7 @@ import { providerForFile, quotaKey, type AuthFile, type QuotaState } from '../se
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { resetCountdown } from '../services/accountDashboard';
 import { orderedQuotaRows, primaryQuotaRow, quotaPercentLeft } from '../services/quotaLedger';
+import { forecastQuota, useQuotaHistory } from '../services/quotaForecast';
 
 export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale, labelFor, selected = false, onSelect, provider }: {
   accounts: AuthFile[]; quotas: Record<string, QuotaState>; name: string; icon: ReactNode;
@@ -24,6 +25,13 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
   const lowestIndex = fills.reduce<number>((best, fill, index) => fill && fill.tone !== 'healthy' && (best < 0 || fill.percent < fills[best]!.percent) ? index : best, -1);
   const lowestReset = lowestIndex >= 0 && primaries[lowestIndex]?.resetAtMs && primaries[lowestIndex]!.resetAtMs! > now ? primaries[lowestIndex]!.resetAtMs : undefined;
   const runningLow = fills.filter(fill => fill !== null && fill.tone === 'critical').length;
+  // The soonest any usable account empties at its recent pace, if that's before its window resets.
+  const history = useQuotaHistory();
+  const runsOutAt = accounts.reduce<number | undefined>((soonest, file, index) => {
+    if (states[index].kind !== 'available') return soonest;
+    const forecast = forecastQuota(history[quotaKey(file)], now);
+    return forecast.kind === 'runsOut' && (soonest === undefined || forecast.emptyAt < soonest) ? forecast.emptyAt : soonest;
+  }, undefined);
   const creditOnly = states.length > 0 && states.every(state => state.kind === 'creditBacked');
   const resets = states.flatMap(state => state.kind === 'exhausted' && state.recoveryAt ? [state.recoveryAt] : []);
   const groupBased = accounts.every(file => providerForFile(file) === 'antigravity');
@@ -46,6 +54,7 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
         style={fill ? { '--quota-fill': `${fill.percent}%` } as CSSProperties : undefined} title={label} aria-label={label} />;
     })}</div>
     <div className="quota-state-counts">{!!runningLow && <span className="quota-count-runningLow">{runningLow} {t('availability.runningLow')}</span>}{(['exhausted', 'creditBacked', 'limited', 'unknown', 'resetDue', 'unavailable', 'disabled'] as const).filter(kind => count(kind)).map(kind => <span key={kind} className={`quota-count-${kind}`}>{count(kind)} {kind === 'unknown' && summaryReason ? t(`availability.${summaryReason}Short`) : kind === 'unavailable' && states.filter(state => state.kind === 'unavailable').every(state => state.reason === 'planBlocked') ? t('availability.planBlockedLabel') : t(`availability.${kind}`)}</span>)}</div>
+    {runsOutAt !== undefined && <div className="quota-summary-forecast">{t('glance.forecast.runsOut', { time: resetCountdown(runsOutAt, now) })}</div>}
     {lowestReset !== undefined && !resets.length && <div className="quota-summary-reset">{t('glance.runway.lowest', { time: resetCountdown(lowestReset, now) })}</div>}
     {!!resets.length && !groupBased && <div className="quota-summary-reset">{accounts.every(file => providerForFile(file) === 'codex') ? t('credits.renews', { time: resetCountdown(Math.min(...resets), now) }) : `${t('availability.recovery')} · ${resetCountdown(Math.min(...resets), now)}`}</div>}
     <div className="quota-summary-extra"><button type="button" aria-expanded={expanded} title={t('availability.scopeHint')} onClick={() => setExpanded(value => !value)}>{t(expanded ? 'quotaLedger.hide' : 'quotaLedger.show')}</button></div>

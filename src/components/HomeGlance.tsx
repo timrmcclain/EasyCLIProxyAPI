@@ -9,6 +9,7 @@ import { resetCountdown } from '../services/accountDashboard';
 import { navigateHelp } from '../services/uxNavigation';
 import { quotaPercent } from '../services/quotaAvailability';
 import { quotaKey, type AuthFile } from '../services/quotaService';
+import { forecastQuota, useQuotaHistory } from '../services/quotaForecast';
 import { formatTokens } from '../pages/CompressionPage';
 import { ProviderLogo } from './AuthFileProviderIcon';
 import './HomeGlance.css';
@@ -119,6 +120,12 @@ function CompressionTile() {
 function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore }: GlanceProps) {
   const { t } = useI18n();
   const shown = attention.slice(0, ATTENTION_ROWS);
+  const history = useQuotaHistory();
+  const runsOut = (item: AttentionItem) => {
+    if (item.severity !== 'low') return undefined;
+    const forecast = forecastQuota(history[quotaKey(item.file)], now);
+    return forecast.kind === 'runsOut' ? forecast.emptyAt : undefined;
+  };
   const status = (item: AttentionItem) => item.severity === 'blocked' ? t('glance.attention.blocked')
     : item.severity === 'low' ? t('glance.attention.low', { percent: quotaPercent(item.percent ?? 0) }) : t('glance.attention.unconfirmed');
   return <article className={`glance-tile glance-attention ${attention.length ? `worst-${attention[0].severity}` : 'is-clear'}`} aria-labelledby="glance-attention-title">
@@ -128,7 +135,8 @@ function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore }:
         {shown.map(item => <li key={quotaKey(item.file)} className={`attention-${item.severity}`}>
           <ProviderLogo provider={providerOf(item.file)} />
           <span className="glance-attention-name" title={labelFor(item.file)}>{labelFor(item.file)}</span>
-          <span className="glance-attention-state">{status(item)}{item.resetAt ? <small>{t('glance.attention.resets', { time: resetCountdown(item.resetAt, now) })}</small> : null}</span>
+          <span className="glance-attention-state">{status(item)}{runsOut(item) !== undefined ? <small className="glance-forecast">{t('glance.forecast.runsOut', { time: resetCountdown(runsOut(item), now) })}</small>
+            : item.resetAt ? <small>{t('glance.attention.resets', { time: resetCountdown(item.resetAt, now) })}</small> : null}</span>
           <button type="button" className="glance-open" onClick={() => onView(item.file)} aria-label={`${t('glance.attention.view')}: ${labelFor(item.file)}`}>{t('glance.attention.view')}</button>
         </li>)}
         {attention.length > shown.length && <li className="glance-attention-more"><button type="button" className="glance-open" onClick={onMore}>{t('glance.attention.more', { count: attention.length - shown.length })}</button></li>}

@@ -354,6 +354,37 @@ pub(crate) fn remove_core_api_key_value(
     Ok(())
 }
 
+/// Moves an existing key to the front. Connected apps are always given the first key, so this
+/// is how a replacement key takes over before the old one is deleted.
+pub(crate) fn promote_core_api_key_value(
+    api_keys: &mut Vec<String>,
+    api_key: &str,
+) -> Result<(), String> {
+    let index = api_keys
+        .iter()
+        .position(|existing| existing == api_key)
+        .ok_or_else(|| "The authentication key to promote does not exist. Refresh and try again".to_string())?;
+    let key = api_keys.remove(index);
+    api_keys.insert(0, key);
+    Ok(())
+}
+
+#[tauri::command]
+pub(crate) fn promote_core_api_key(
+    gui_config_state: tauri::State<'_, GuiConfigState>,
+    api_key: String,
+) -> Result<CoreConfigView, String> {
+    let api_key = api_key.trim();
+    if api_key.is_empty() {
+        return Err("The authentication key to promote cannot be empty".to_string());
+    }
+    let mut settings = current_core_config_settings(gui_config_state.inner())?;
+    promote_core_api_key_value(&mut settings.api_keys, api_key)?;
+    patch_core_api_keys(&settings.api_keys)?;
+    let config = gui_config_state.sync_core_settings(&settings)?;
+    Ok(CoreConfigView::from(&config))
+}
+
 #[tauri::command]
 pub(crate) fn update_core_api_key(
     gui_config_state: tauri::State<'_, GuiConfigState>,
