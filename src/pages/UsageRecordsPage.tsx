@@ -1,4 +1,6 @@
 import { ProjectUsageView } from './ProjectUsageView';
+import { ErrorCausesCard } from './ErrorCausesCard';
+import type { FailedRequest } from '../services/errorCauses';
 import { usagePreferences } from '../services/usagePreferences';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
@@ -162,6 +164,8 @@ type UsageQuery = {
   page_size?: number;
 };
 
+/** Newest failures the Failures by cause card groups; the proxy caps a page at 5,000. */
+const FAILURE_SAMPLE = 2000;
 const TAB_KEY = 'cpa-gui.usage-records-tab.v1';
 const RANGE_KEY = 'cpa-gui.usage-records-range.v1';
 const PAGE_SIZE_KEY = 'cpa-gui.usage-events-page-size.v1';
@@ -268,6 +272,7 @@ export function UsageRecordsPage() {
   const [status, setStatus] = useState<CollectorStatus | null>(null);
   const [overview, setOverview] = useState<UsageOverview | null>(null);
   const [overviewRange, setOverviewRange] = useState<Pick<UsageQuery, 'start' | 'end'>>({});
+  const [failures, setFailures] = useState<{ items: FailedRequest[]; truncated: boolean } | null>(null);
   const [analysis, setAnalysis] = useState<UsageAnalysis>(emptyAnalysis);
   const [optionsAnalysis, setOptionsAnalysis] = useState<UsageAnalysis>(emptyAnalysis);
   const [events, setEvents] = useState<UsageEventPage | null>(null);
@@ -342,15 +347,19 @@ export function UsageRecordsPage() {
           ? invoke<UsageAnalysis>('get_usage_analysis', { query: timeQuery })
           : Promise.resolve(null);
         if (activeTab === 'overview') {
-          const [nextStatus, nextOptions, nextOverview] = await Promise.all([
+          const [nextStatus, nextOptions, nextOverview, nextFailures] = await Promise.all([
             statusRequest,
             optionsRequest,
             invoke<UsageOverview>('get_usage_overview', { query }),
+            invoke<UsageEventPage>('get_usage_events', {
+              query: { ...query, failed: true, canceled: false, page: 1, page_size: FAILURE_SAMPLE },
+            }).catch(() => null),
           ]);
           if (requestId !== requestIdRef.current) return;
           setStatus(nextStatus);
           if (nextOptions) setOptionsAnalysis(nextOptions);
           setOverview(nextOverview);
+          setFailures(nextFailures ? { items: nextFailures.items, truncated: nextFailures.total > nextFailures.items.length } : null);
           setOverviewRange(timeQuery);
         } else if (activeTab === 'analysis') {
           const [nextStatus, nextOptions, nextOverview, nextAnalysis] = await Promise.all([
@@ -730,6 +739,7 @@ export function UsageRecordsPage() {
 
       {showUnavailable ? <UsageUnavailable failed={Boolean(error)} retrying={loading} onRetry={() => void loadData(false)} /> : null}
       {activeTab === 'overview' && overview ? <OverviewView overview={overview} range={overviewRange} /> : null}
+      {activeTab === 'overview' && overview && failures ? <ErrorCausesCard failures={failures.items} truncated={failures.truncated} /> : null}
       {activeTab === 'analysis' && overview ? <UsageAnalysisView analysis={analysis} overview={overview} range={overviewRange} /> : null}
       {activeTab === 'events' ? (
         <EventsView

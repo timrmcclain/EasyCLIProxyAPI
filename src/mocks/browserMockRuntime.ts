@@ -261,8 +261,10 @@ function createUsageEvents() {
       source_display: index % 2 === 0 ? 'Codex' : 'Claude Code',
       failed,
       canceled: index === 9,
-      failure_status: failed ? 429 : 0,
-      failure_body: failed ? 'Mock rate limit exceeded' : '',
+      failure_status: failed ? (index === 13 ? 401 : 429) : 0,
+      failure_body: !failed ? '' : index === 13
+        ? '{"type":"error","error":{"type":"authentication_error","message":"OAuth access token has been revoked."}}'
+        : 'Mock rate limit exceeded',
       provider: index % 2 === 0 ? 'openai-oauth' : 'claude-oauth',
       model: models[index % models.length],
       alias: '',

@@ -1,0 +1,15 @@
+.error-causes { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; }
+.error-causes header h3 { margin: 0; font-size: 15px; }
+.error-causes header p { margin: 2px 0 0; color: var(--text-tertiary); font-size: 12px; }
+.error-causes ul { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border-color); }
+.error-cause { border-bottom: 1px solid var(--border-color); }
+.error-cause-row { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 9px 4px; border: 0; background: none; color: var(--text-primary); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.error-cause-row:hover { background: var(--bg-secondary); }
+.error-cause-row svg { flex-shrink: 0; align-self: center; color: var(--text-tertiary); }
+.error-cause-count { padding: 0 7px; border-radius: 999px; background: var(--c-danger-soft); color: var(--c-danger); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.error-cause-transient .error-cause-count { background: var(--bg-secondary); color: var(--text-secondary); }
+.error-cause-meta { overflow: hidden; color: var(--text-secondary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.error-cause-detail { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 2px 4px 12px 26px; font-size: 13px; }
+.error-cause-detail p { margin: 0; color: var(--text-secondary); }
+.error-cause-detail blockquote { margin: 0; padding: 6px 10px; border-left: 3px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-family: var(--font-mono, monospace); font-size: 12px; overflow-wrap: anywhere; }
+.error-causes-note { margin: 0; color: var(--text-tertiary); font-size: 12px; }
