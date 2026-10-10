@@ -10,11 +10,15 @@ export function ResponseTimesCard({ requests }: { requests: TimedRequest[] }) {
 
   return (
     <section className="panel response-times" aria-labelledby="response-times-title">
-      <header>
-        <h3 id="response-times-title">{t('timings.title')}</h3>
-        <p>{timings.length ? t('timings.subtitle', { count: requests.length }) : t('timings.none')}</p>
-      </header>
+      {/* Collapsed by default: the Activity page is one screen tall, so an open table would squeeze the request list. */}
+      <details>
+        <summary>
+          <h3 id="response-times-title">{t('timings.title')}</h3>
+          <span>{timings.length ? t('timings.summary', { count: timings.length }) : t('timings.none')}</span>
+        </summary>
+        {timings.length > 0 && <p>{t('timings.subtitle', { count: requests.length })}</p>}
       {timings.length > 0 && (
+        <div className="response-times-scroll">
         <table>
           <thead>
             <tr>
@@ -42,7 +46,9 @@ export function ResponseTimesCard({ requests }: { requests: TimedRequest[] }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
+      </details>
     </section>
   );
 }

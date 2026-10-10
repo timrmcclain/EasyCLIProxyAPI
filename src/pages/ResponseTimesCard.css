@@ -1,6 +1,9 @@
-.response-times { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; }
-.response-times header h3 { margin: 0; font-size: 15px; }
-.response-times header p { margin: 2px 0 0; color: var(--text-tertiary); font-size: 12px; }
+.response-times { flex: none; padding: 12px 20px; }
+.response-times details[open] { display: flex; flex-direction: column; gap: 10px; }
+.response-times summary { display: flex; align-items: baseline; gap: 10px; cursor: pointer; }
+.response-times summary h3 { margin: 0; font-size: 15px; }
+.response-times summary span, .response-times details > p { margin: 0; color: var(--text-tertiary); font-size: 12px; }
+.response-times-scroll { overflow-x: auto; }
 .response-times table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .response-times th, .response-times td { padding: 7px 8px; border-top: 1px solid var(--border-color); text-align: right; white-space: nowrap; }
 .response-times thead th { border-top: 0; color: var(--text-tertiary); font-size: 12px; font-weight: 500; }

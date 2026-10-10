@@ -34,6 +34,7 @@ const path = require('node:path');
     // Response times: one row per mock model, from successful requests only, each with a typical and slowest time.
     const timings = page.getByRole('region', { name: 'Response times by model' });
     await timings.waitFor();
+    await timings.locator('summary').click();
     const timingRows = timings.locator('tbody tr');
     assert.equal(await timingRows.count(), 3, 'three mock models with enough successful requests');
     assert.deepEqual((await timingRows.locator('th').allInnerTexts()).sort(), ['claude-sonnet-4-6', 'gemini-3-pro', 'gpt-5.2-codex']);
