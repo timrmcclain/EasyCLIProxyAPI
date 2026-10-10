@@ -31,7 +31,20 @@ const base = process.env.ALIAS_TEST_BASE_URL || 'http://127.0.0.1:1423';
     assert.equal((await writes()).length, 0);
     assert.equal(await page.getByRole('button', { name: 'Edit', exact: true }).evaluate(el => el === document.activeElement), true);
 
+    // Regression: the dialog's delayed initial focus must not pull focus back from a field the
+    // user already moved to, or their typing lands in the model search and clears the model.
+    const focusStayed = page.evaluate(() => new Promise(resolve => {
+      const observer = new MutationObserver(() => {
+        const field = document.querySelector('#thinking-alias-name');
+        if (!field) return;
+        observer.disconnect();
+        field.focus();
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(document.activeElement === field)));
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }));
     await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    assert.equal(await focusStayed, true, 'focus moved after the user focused the alias field');
     await dialog.locator('#thinking-alias-name').fill('renamed-alias');
     await dialog.getByRole('button', { name: 'Low', exact: true }).click();
     await page.evaluate(() => { window.fixtureFailSave = true; });

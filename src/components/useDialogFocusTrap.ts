@@ -80,6 +80,9 @@ export function useDialogFocusTrap<T extends HTMLElement>({
       ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     const unlockBodyScroll = lockBodyScroll();
     const frame = window.requestAnimationFrame(() => {
+      // Autofocus or the user may already have moved focus into the dialog; taking it back here
+      // would send their typing to the default field instead.
+      if (dialog.contains(document.activeElement) && document.activeElement !== dialog) return;
       const requested = initialFocus.current?.current;
       const autoFocus = dialog.querySelector<HTMLElement>('[autofocus]');
       const first = focusableElements(dialog)[0];
