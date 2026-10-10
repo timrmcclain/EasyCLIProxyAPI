@@ -1,5 +1,7 @@
 import { ProjectUsageView } from './ProjectUsageView';
 import { ErrorCausesCard } from './ErrorCausesCard';
+import { ResponseTimesCard } from './ResponseTimesCard';
+import type { TimedRequest } from '../services/responseTimes';
 import type { FailedRequest } from '../services/errorCauses';
 import { usagePreferences } from '../services/usagePreferences';
 import { useConfirmation } from '../components/ConfirmationDialog';
@@ -166,6 +168,8 @@ type UsageQuery = {
 
 /** Newest failures the Failures by cause card groups; the proxy caps a page at 5,000. */
 const FAILURE_SAMPLE = 2000;
+/** Newest successful requests the Response times card measures. */
+const TIMING_SAMPLE = 2000;
 const TAB_KEY = 'cpa-gui.usage-records-tab.v1';
 const RANGE_KEY = 'cpa-gui.usage-records-range.v1';
 const PAGE_SIZE_KEY = 'cpa-gui.usage-events-page-size.v1';
@@ -273,6 +277,7 @@ export function UsageRecordsPage() {
   const [overview, setOverview] = useState<UsageOverview | null>(null);
   const [overviewRange, setOverviewRange] = useState<Pick<UsageQuery, 'start' | 'end'>>({});
   const [failures, setFailures] = useState<{ items: FailedRequest[]; truncated: boolean } | null>(null);
+  const [timed, setTimed] = useState<TimedRequest[] | null>(null);
   const [analysis, setAnalysis] = useState<UsageAnalysis>(emptyAnalysis);
   const [optionsAnalysis, setOptionsAnalysis] = useState<UsageAnalysis>(emptyAnalysis);
   const [events, setEvents] = useState<UsageEventPage | null>(null);
@@ -373,7 +378,7 @@ export function UsageRecordsPage() {
           setOverviewRange(timeQuery);
           setAnalysis(nextAnalysis);
         } else if (activeTab === 'events') {
-          const [nextStatus, nextOptions, nextEvents, nextFailures] = await Promise.all([
+          const [nextStatus, nextOptions, nextEvents, nextFailures, nextTimed] = await Promise.all([
             statusRequest,
             optionsRequest,
             invoke<UsageEventPage>('get_usage_events', {
@@ -382,12 +387,16 @@ export function UsageRecordsPage() {
             invoke<UsageEventPage>('get_usage_events', {
               query: { ...query, failed: true, canceled: false, page: 1, page_size: FAILURE_SAMPLE },
             }).catch(() => null),
+            invoke<UsageEventPage>('get_usage_events', {
+              query: { ...query, failed: false, canceled: false, page: 1, page_size: TIMING_SAMPLE },
+            }).catch(() => null),
           ]);
           if (requestId !== requestIdRef.current) return;
           setStatus(nextStatus);
           if (nextOptions) setOptionsAnalysis(nextOptions);
           setEvents(nextEvents);
           setFailures(nextFailures ? { items: nextFailures.items, truncated: nextFailures.total > nextFailures.items.length } : null);
+          setTimed(nextTimed ? nextTimed.items : null);
         } else if (activeTab === 'pricing') {
           const [nextStatus, nextOptions, nextPricing] = await Promise.all([
             statusRequest,
@@ -741,6 +750,7 @@ export function UsageRecordsPage() {
       {activeTab === 'overview' && overview ? <OverviewView overview={overview} range={overviewRange} /> : null}
       {activeTab === 'analysis' && overview ? <UsageAnalysisView analysis={analysis} overview={overview} range={overviewRange} /> : null}
       {activeTab === 'events' && failures ? <ErrorCausesCard failures={failures.items} truncated={failures.truncated} /> : null}
+      {activeTab === 'events' && timed ? <ResponseTimesCard requests={timed} /> : null}
       {activeTab === 'events' ? (
         <EventsView
           events={events ?? { items: [], total: 0, page, pageSize, totalPages: 1 }}

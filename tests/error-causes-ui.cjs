@@ -31,6 +31,14 @@ const path = require('node:path');
     assert.deepEqual(labels, ['Rate limited or out of quota', 'Sign-in expired or revoked']);
     assert.match(await rows.filter({ hasText: 'Rate limited' }).innerText(), /HTTP 429/);
 
+    // Response times: one row per mock model, from successful requests only, each with a typical and slowest time.
+    const timings = page.getByRole('region', { name: 'Response times by model' });
+    await timings.waitFor();
+    const timingRows = timings.locator('tbody tr');
+    assert.equal(await timingRows.count(), 3, 'three mock models with enough successful requests');
+    assert.deepEqual((await timingRows.locator('th').allInnerTexts()).sort(), ['claude-sonnet-4-6', 'gemini-3-pro', 'gpt-5.2-codex']);
+    for (const text of await timingRows.allInnerTexts()) assert.match(text, /\d(\.\d)? s|\d+ ms/, `formatted durations in: ${text}`);
+
     const signIn = rows.filter({ hasText: 'Sign-in expired' });
     assert.equal(await signIn.getAttribute('aria-expanded'), 'false');
     await signIn.click();
