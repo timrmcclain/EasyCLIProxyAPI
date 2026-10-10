@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'bun:test';
-import { driftedApps, generateProxyKey, reapplyArguments, type ConnectedAppStatus } from '../src/services/connectedApps';
+import { driftedApps, generateProxyKey, newlyInstalledApps, reapplyArguments, type ConnectedAppStatus } from '../src/services/connectedApps';
 
 const app = (id: string, overrides: Partial<ConnectedAppStatus> = {}): ConnectedAppStatus => ({
   id, name: id, installed: true, connectionState: 'configured', currentModel: 'gpt-5', oauthConfiguration: false,
   claudeCodeModelMappings: null, claudeDesktopModelMappings: null, ...overrides,
 });
 const mappings = { sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' };
+
+describe('newly installed apps', () => {
+  it('records apps on the first check and only announces unconnected apps that appear later', () => {
+    const first = newlyInstalledApps(null, [app('claude-code'), app('opencode', { connectionState: 'not-configured' })]);
+    expect(first.fresh).toEqual([]);
+    const second = newlyInstalledApps(first.seen, [
+      app('claude-code'), app('opencode', { connectionState: 'not-configured' }),
+      app('codex', { connectionState: 'not-configured' }), app('zcode', { connectionState: 'configured' }),
+      app('kilo', { installed: false, connectionState: 'not-configured' }),
+    ]);
+    expect(second.fresh.map(status => status.id)).toEqual(['codex']);
+    expect(newlyInstalledApps(second.seen, [app('codex', { connectionState: 'not-configured' })]).fresh).toEqual([]);
+  });
+});
 
 describe('connected app drift', () => {
   it('lists only installed apps whose settings stopped matching the hub', () => {

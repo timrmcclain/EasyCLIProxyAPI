@@ -7,7 +7,7 @@ import { readAccountNames } from './accountNames';
 import { dedupeAuthFiles } from './authFiles';
 import { readDashboardPreference, readDesktopAlertsPreference } from './dashboardPreferences';
 import { attentionItems } from './homeGlance';
-import { driftedApps, loadAppStatuses } from './connectedApps';
+import { driftedApps, loadAppStatuses, newlyInstalledApps } from './connectedApps';
 import { managementApi, readString, responseList } from './managementApi';
 import { providerTallies, quotaAlerts, type AlertMemory, type QuotaAlert } from './quotaAlerts';
 import { invoke } from '@tauri-apps/api/core';
@@ -81,6 +81,7 @@ export function startQuotaWatcher(): () => void {
   let stopped = false;
   let memory: AlertMemory | null = null;
   let driftBaseline: Set<string> | null = null;
+  let installedBaseline: Set<string> | null = null;
 
   const check = async (force = false) => {
     try {
@@ -103,12 +104,19 @@ export function startQuotaWatcher(): () => void {
     }
     try {
       // An app whose settings stop matching the hub (old key, address or port) fails every request.
-      const drifted = driftedApps(await loadAppStatuses());
+      const statuses = await loadAppStatuses();
       if (stopped) return;
+      const drifted = driftedApps(statuses);
       const fresh = driftBaseline ? drifted.filter(app => !driftBaseline!.has(app.id)) : [];
       driftBaseline = new Set(drifted.map(app => app.id));
+      // A supported AI tool installed while the hub runs: offer to connect it.
+      const installed = newlyInstalledApps(installedBaseline, statuses);
+      installedBaseline = installed.seen;
       const locale = getCurrentLocale();
-      await send(fresh.map(app => ({ title: translate(locale, 'notify.drift.title', { app: app.name }), body: translate(locale, 'notify.drift.body') })));
+      await send([
+        ...fresh.map(app => ({ title: translate(locale, 'notify.drift.title', { app: app.name }), body: translate(locale, 'notify.drift.body') })),
+        ...installed.fresh.map(app => ({ title: translate(locale, 'notify.newApp.title', { app: app.name }), body: translate(locale, 'notify.newApp.body') })),
+      ]);
     } catch {
       // App detection failed; check again next time.
     }

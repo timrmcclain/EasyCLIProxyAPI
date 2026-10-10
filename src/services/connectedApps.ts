@@ -25,6 +25,16 @@ export const loadAppStatuses = (refresh = false) =>
 export const driftedApps = (statuses: ConnectedAppStatus[]) =>
   statuses.filter(status => status.installed && status.connectionState === 'needs-update' && status.connectionMatches !== true);
 
+/**
+ * Apps that showed up since the last check and aren't connected yet. Null `seen` is the first check,
+ * which only records what's installed, so apps already on the computer at startup aren't announced.
+ */
+export function newlyInstalledApps(seen: Set<string> | null, statuses: ConnectedAppStatus[]) {
+  const installed = statuses.filter(status => status.installed);
+  const fresh = seen ? installed.filter(status => !seen.has(status.id) && status.connectionState === 'not-configured') : [];
+  return { fresh, seen: new Set(installed.map(status => status.id)) };
+}
+
 /** What the app was last set up with, so re-applying keeps its models. Null when that can't be read back. */
 export function reapplyArguments(status: ConnectedAppStatus) {
   // Codex needs its model catalogue chosen again, so it stays a manual repair on Connected apps.
