@@ -1,6 +1,6 @@
 export const errorCausesEn = {
   'errors.title': 'Failures by cause',
-  'errors.subtitle': 'Failed requests in this time range, grouped by why they failed. Click a cause for what the provider said and where to fix it.',
+  'errors.subtitle': 'Failed requests matching these filters, grouped by why they failed. Click a cause for what the provider said and where to fix it.',
   'errors.none': 'No failed requests in this time range.',
   'errors.lastSeen': 'last {time} ago',
   'errors.openAccounts': 'Open Accounts',

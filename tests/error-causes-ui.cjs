@@ -2,7 +2,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
-// Against the browser mock: Activity → Overview groups failed requests by cause, worst first; expanding a fixable
+// Against the browser mock: Activity → Request Details groups failed requests by cause, worst first; expanding a fixable
 // cause shows the provider's message and an Accounts button that navigates there, while a canceled request isn't counted.
 (async () => {
   const { createServer } = await import('vite');
@@ -21,7 +21,7 @@ const path = require('node:path');
     await page.addInitScript(() => { localStorage.setItem('easy-cli-proxy-api.locale', 'en'); });
     await page.goto(`${base}/?mock=running`, { timeout: 60000 });
     await page.locator('.nav-section').getByRole('button', { name: 'Activity', exact: true }).click();
-    await page.locator('#usage-tab-overview').click();
+    await page.locator('#usage-tab-events').click();
 
     const card = page.getByRole('region', { name: 'Failures by cause' });
     await card.waitFor();

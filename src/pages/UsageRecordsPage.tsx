@@ -347,19 +347,15 @@ export function UsageRecordsPage() {
           ? invoke<UsageAnalysis>('get_usage_analysis', { query: timeQuery })
           : Promise.resolve(null);
         if (activeTab === 'overview') {
-          const [nextStatus, nextOptions, nextOverview, nextFailures] = await Promise.all([
+          const [nextStatus, nextOptions, nextOverview] = await Promise.all([
             statusRequest,
             optionsRequest,
             invoke<UsageOverview>('get_usage_overview', { query }),
-            invoke<UsageEventPage>('get_usage_events', {
-              query: { ...query, failed: true, canceled: false, page: 1, page_size: FAILURE_SAMPLE },
-            }).catch(() => null),
           ]);
           if (requestId !== requestIdRef.current) return;
           setStatus(nextStatus);
           if (nextOptions) setOptionsAnalysis(nextOptions);
           setOverview(nextOverview);
-          setFailures(nextFailures ? { items: nextFailures.items, truncated: nextFailures.total > nextFailures.items.length } : null);
           setOverviewRange(timeQuery);
         } else if (activeTab === 'analysis') {
           const [nextStatus, nextOptions, nextOverview, nextAnalysis] = await Promise.all([
@@ -377,17 +373,21 @@ export function UsageRecordsPage() {
           setOverviewRange(timeQuery);
           setAnalysis(nextAnalysis);
         } else if (activeTab === 'events') {
-          const [nextStatus, nextOptions, nextEvents] = await Promise.all([
+          const [nextStatus, nextOptions, nextEvents, nextFailures] = await Promise.all([
             statusRequest,
             optionsRequest,
             invoke<UsageEventPage>('get_usage_events', {
               query: { ...query, page, page_size: pageSize },
             }),
+            invoke<UsageEventPage>('get_usage_events', {
+              query: { ...query, failed: true, canceled: false, page: 1, page_size: FAILURE_SAMPLE },
+            }).catch(() => null),
           ]);
           if (requestId !== requestIdRef.current) return;
           setStatus(nextStatus);
           if (nextOptions) setOptionsAnalysis(nextOptions);
           setEvents(nextEvents);
+          setFailures(nextFailures ? { items: nextFailures.items, truncated: nextFailures.total > nextFailures.items.length } : null);
         } else if (activeTab === 'pricing') {
           const [nextStatus, nextOptions, nextPricing] = await Promise.all([
             statusRequest,
@@ -739,8 +739,8 @@ export function UsageRecordsPage() {
 
       {showUnavailable ? <UsageUnavailable failed={Boolean(error)} retrying={loading} onRetry={() => void loadData(false)} /> : null}
       {activeTab === 'overview' && overview ? <OverviewView overview={overview} range={overviewRange} /> : null}
-      {activeTab === 'overview' && overview && failures ? <ErrorCausesCard failures={failures.items} truncated={failures.truncated} /> : null}
       {activeTab === 'analysis' && overview ? <UsageAnalysisView analysis={analysis} overview={overview} range={overviewRange} /> : null}
+      {activeTab === 'events' && failures ? <ErrorCausesCard failures={failures.items} truncated={failures.truncated} /> : null}
       {activeTab === 'events' ? (
         <EventsView
           events={events ?? { items: [], total: 0, page, pageSize, totalPages: 1 }}
