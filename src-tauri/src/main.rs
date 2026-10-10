@@ -1047,6 +1047,8 @@ struct AgentConfigStatus {
     config_valid: bool,
     configured: bool,
     configuration_synchronized: bool,
+    /// The app still reaches the proxy (right address and key), even if optional settings are missing.
+    connection_matches: bool,
     connection_state: String,
     current_model: Option<String>,
     oauth_configuration: bool,

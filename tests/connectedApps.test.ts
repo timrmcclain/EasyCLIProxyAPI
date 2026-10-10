@@ -18,6 +18,14 @@ describe('connected app drift', () => {
     expect(driftedApps(statuses).map(status => status.id)).toEqual(['claude-code']);
   });
 
+  it('does not warn when only optional settings are missing and requests still reach the proxy', () => {
+    const statuses = [
+      app('claude-code', { connectionState: 'needs-update', connectionMatches: true }),
+      app('claude-desktop', { connectionState: 'needs-update', connectionMatches: false }),
+    ];
+    expect(driftedApps(statuses).map(status => status.id)).toEqual(['claude-desktop']);
+  });
+
   it('re-applies Claude apps with their own model mappings', () => {
     expect(reapplyArguments(app('claude-code', { claudeCodeModelMappings: mappings }))).toEqual({
       client: 'claude-code', model: 'claude-sonnet-5-5', oauthConfiguration: false,

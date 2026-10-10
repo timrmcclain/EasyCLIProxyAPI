@@ -2575,3 +2575,40 @@ fn windows_batch_agent_commands_use_call_without_embedded_quotes() {
     );
     assert_eq!(native.get_args().count(), 0);
 }
+
+#[test]
+fn claude_code_missing_only_optional_settings_still_reaches_the_proxy() {
+    let directory = agent_test_home("claude-code-connection-matches");
+    let path = directory.join("settings.json");
+    let write = |key: &str, flags: bool| {
+        let extra = if flags {
+            r#", "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1", "CLAUDE_CODE_AUTO_MODE_SERVER": "0""#
+        } else {
+            ""
+        };
+        fs::write(
+            &path,
+            format!(r#"{{ "env": {{ "ANTHROPIC_BASE_URL": "http://127.0.0.1:8317", "ANTHROPIC_AUTH_TOKEN": "{key}"{extra} }} }}"#),
+        )
+        .unwrap();
+    };
+    let paths = vec![path.clone()];
+
+    // Right address and key, optional settings missing: not "configured", but requests still work.
+    write("test-key", false);
+    let (configured, _) = inspect_claude_agent_config(&path, 8317, "test-key").unwrap();
+    assert!(!configured);
+    assert!(agent_connection_matches(AgentClient::ClaudeCode, &paths, 8317, "test-key", configured));
+
+    // An old key does break requests.
+    write("old-key", true);
+    let (configured, _) = inspect_claude_agent_config(&path, 8317, "test-key").unwrap();
+    assert!(!configured);
+    assert!(!agent_connection_matches(AgentClient::ClaudeCode, &paths, 8317, "test-key", configured));
+
+    // So does a different port.
+    assert!(!agent_connection_matches(AgentClient::ClaudeCode, &paths, 9999, "test-key", false));
+
+    // Other apps keep using "configured" as-is.
+    assert!(!agent_connection_matches(AgentClient::ClaudeDesktop, &paths, 8317, "test-key", false));
+}

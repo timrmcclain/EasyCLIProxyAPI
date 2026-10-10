@@ -8,6 +8,8 @@ export type ConnectedAppStatus = {
   name: string;
   installed: boolean;
   connectionState: 'configured' | 'not-configured' | 'needs-update' | 'invalid';
+  /** Right address and key, so requests reach the proxy, even if optional settings are missing. */
+  connectionMatches?: boolean;
   currentModel: string | null;
   oauthConfiguration: boolean;
   claudeCodeModelMappings: ModelMappings | null;
@@ -19,9 +21,9 @@ export type ReapplyOutcome = { id: string; name: string; result: 'reapplied' | '
 export const loadAppStatuses = (refresh = false) =>
   invoke<ConnectedAppStatus[]>(refresh ? 'refresh_agent_config_statuses' : 'get_agent_config_statuses');
 
-/** Apps the hub set up earlier whose settings no longer match it: an old key, address or port. */
+/** Apps the hub set up earlier whose old key, address or port means their requests no longer reach it. */
 export const driftedApps = (statuses: ConnectedAppStatus[]) =>
-  statuses.filter(status => status.installed && status.connectionState === 'needs-update');
+  statuses.filter(status => status.installed && status.connectionState === 'needs-update' && status.connectionMatches !== true);
 
 /** What the app was last set up with, so re-applying keeps its models. Null when that can't be read back. */
 export function reapplyArguments(status: ConnectedAppStatus) {

@@ -440,6 +440,7 @@ pub(crate) fn inspect_pi_provider_status(
         config_valid,
         configured,
         configuration_synchronized: configured,
+        connection_matches: configured,
         connection_state: agent_connection_state(
             configured,
             config_valid,
@@ -1083,6 +1084,7 @@ pub(crate) fn inspect_agent_config(
         config_valid,
         configured,
         configuration_synchronized,
+        connection_matches: agent_connection_matches(client, &paths, port, api_key, configured),
         connection_state: agent_connection_state(
             configured,
             config_valid,
@@ -2864,16 +2866,7 @@ pub(crate) fn inspect_claude_agent_config(
     )
     .map_err(|error| format!("Failed to parse Claude Code configuration: {error}"))?;
     let env = root.get("env").and_then(serde_json::Value::as_object);
-    let expected_base = crate::headroom::agent_origin(AgentClient::ClaudeCode, port);
-    let configured = env
-        .and_then(|env| env.get("ANTHROPIC_BASE_URL"))
-        .and_then(serde_json::Value::as_str)
-        .map(str::trim)
-        == Some(expected_base.as_str())
-        && env
-            .and_then(|env| env.get("ANTHROPIC_AUTH_TOKEN"))
-            .and_then(serde_json::Value::as_str)
-            == Some(api_key)
+    let configured = claude_code_connection_matches(&root, port, api_key)
         && env
             .and_then(|env| env.get(CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY_ENV))
             .and_then(serde_json::Value::as_str)
@@ -2891,6 +2884,34 @@ pub(crate) fn inspect_claude_agent_config(
         .map(strip_claude_code_context_suffix)
         .map(str::to_string);
     Ok((configured, model))
+}
+
+/// Whether Claude Code's address and key are the hub's, so its requests reach the proxy.
+fn claude_code_connection_matches(root: &serde_json::Value, port: u16, api_key: &str) -> bool {
+    let env = root.get("env").and_then(serde_json::Value::as_object);
+    let expected_base = crate::headroom::agent_origin(AgentClient::ClaudeCode, port);
+    env.and_then(|env| env.get("ANTHROPIC_BASE_URL"))
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        == Some(expected_base.as_str())
+        && env
+            .and_then(|env| env.get("ANTHROPIC_AUTH_TOKEN"))
+            .and_then(serde_json::Value::as_str)
+            == Some(api_key)
+}
+
+/// Whether the app still reaches the proxy. Claude Code counts as "configured" only with two
+/// optional feature settings as well; when just those are missing its requests still work,
+/// so this is what decides whether the hub warns that the app no longer matches.
+pub(crate) fn agent_connection_matches(client: AgentClient, paths: &[PathBuf], port: u16, api_key: &str, configured: bool) -> bool {
+    if configured || client != AgentClient::ClaudeCode {
+        return configured;
+    }
+    paths
+        .first()
+        .and_then(|path| fs::read_to_string(path).ok())
+        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+        .is_some_and(|root| claude_code_connection_matches(&root, port, api_key))
 }
 
 pub(crate) fn inspect_claude_code_model_mappings(
