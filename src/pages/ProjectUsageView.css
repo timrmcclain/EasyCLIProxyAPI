@@ -1,0 +1,16 @@
+.project-usage { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
+.project-usage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.project-usage-head h3 { margin: 0; font-size: 15px; }
+.project-usage-head p { margin: 2px 0 0; color: var(--text-tertiary); font-size: 12px; }
+.project-usage-range { flex-shrink: 0; }
+.project-usage-note { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--text-secondary); font-size: 13px; }
+.project-usage-error { margin: 0; color: var(--c-danger); font-size: 13px; }
+.project-usage-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.project-usage-table th { padding: 6px 8px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 12px; font-weight: 600; text-align: left; white-space: nowrap; }
+.project-usage-table td { padding: 7px 8px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+.project-usage-table td:first-child { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.project-usage-table td:first-child svg { vertical-align: -2px; color: var(--text-tertiary); }
+.project-usage-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.project-usage-table td small { margin-left: 6px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.project-usage-bar { display: inline-block; width: 90px; height: 6px; overflow: hidden; border-radius: 999px; background: var(--bg-secondary); vertical-align: middle; }
+.project-usage-bar span { display: block; height: 100%; border-radius: inherit; background: var(--primary-color); }

@@ -35,6 +35,7 @@ mod claude_extensions;
 mod jev;
 mod statusline;
 mod claude_fallback;
+mod project_usage;
 mod tray;
 mod usage;
 mod model_preset;
@@ -2747,6 +2748,7 @@ fn main() {
             claude_fallback::claude_fallback_state,
             claude_fallback::switch_claude_code_model,
             claude_fallback::switch_claude_code_back,
+            project_usage::claude_project_usage,
             statusline::disable_claude_statusline,
             statusline::write_claude_quota_line,
             jev::jev_overview,

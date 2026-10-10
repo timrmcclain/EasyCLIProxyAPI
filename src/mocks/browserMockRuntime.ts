@@ -1497,6 +1497,21 @@ export function createBrowserMockRuntime(
       case 'claude_fallback_state': return { model: mockClaudeFallback };
       case 'switch_claude_code_model': mockClaudeFallback = String((payload as { model?: string } | undefined)?.model ?? ''); return { model: mockClaudeFallback };
       case 'switch_claude_code_back': mockClaudeFallback = null; return { model: null };
+      case 'claude_project_usage': {
+        const now = Math.floor(Date.now() / 1000);
+        const days = Number((payload as { days?: number } | undefined)?.days ?? 7);
+        const scale = days === 30 ? 3 : 1;
+        return {
+          days,
+          filesRead: 42,
+          found: true,
+          projects: [
+            { path: 'C:\\Users\\demo\\git\\EasyCLIProxyAPI', sessions: 9 * scale, messages: 1840 * scale, inputTokens: 52000 * scale, outputTokens: 610000 * scale, cacheReadTokens: 98000000 * scale, cacheWriteTokens: 4100000 * scale, lastActive: now - 600 },
+            { path: 'C:\\Users\\demo\\git\\crestbid', sessions: 4 * scale, messages: 720 * scale, inputTokens: 21000 * scale, outputTokens: 240000 * scale, cacheReadTokens: 31000000 * scale, cacheWriteTokens: 1500000 * scale, lastActive: now - 7200 },
+            { path: 'C:\\Users\\demo\\Documents\\notes', sessions: 1, messages: 35, inputTokens: 900, outputTokens: 8000, cacheReadTokens: 400000, cacheWriteTokens: 60000, lastActive: now - 86400 * 3 },
+          ],
+        };
+      }
       case 'jev_overview': {
         const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
         return {

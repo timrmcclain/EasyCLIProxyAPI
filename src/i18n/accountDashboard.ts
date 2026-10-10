@@ -1,11 +1,13 @@
 import { uxImprovementsEn, uxImprovementsJa, uxImprovementsZhCN } from './uxImprovements';
 import { homeGlanceEn, homeGlanceJa, homeGlanceZhCN } from './homeGlance';
 import { jevEn, jevJa, jevZhCN } from './jev';
+import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
 import { claudeExtensionsEn, claudeExtensionsJa, claudeExtensionsZhCN } from './claudeExtensions';
 export const accountDashboardEn = {
   ...uxImprovementsEn,
   ...homeGlanceEn,
   ...jevEn,
+  ...projectUsageEn,
   ...claudeExtensionsEn,
   "accountDashboard.eyebrow": "ACCOUNT OVERVIEW",
   "accountDashboard.title": "Accounts & quota",
@@ -76,6 +78,7 @@ export const accountDashboardZhCN = {
   ...uxImprovementsZhCN,
   ...homeGlanceZhCN,
   ...jevZhCN,
+  ...projectUsageZhCN,
   ...claudeExtensionsZhCN,
   "accountDashboard.eyebrow": "账户面板",
   "accountDashboard.title": "账号与额度",
@@ -146,6 +149,7 @@ export const accountDashboardJa = {
   ...uxImprovementsJa,
   ...homeGlanceJa,
   ...jevJa,
+  ...projectUsageJa,
   ...claudeExtensionsJa,
   "accountDashboard.eyebrow": "アカウントデスク",
   "accountDashboard.title": "アカウントと利用枠",

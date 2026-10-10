@@ -1,3 +1,4 @@
+import { ProjectUsageView } from './ProjectUsageView';
 import { usagePreferences } from '../services/usagePreferences';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
@@ -42,10 +43,10 @@ import { EventsView, type UsageEventPage } from './UsageEventsView';
 import { SelectMenu } from '../components/SelectMenu';
 import { UsageAnalysisView, type UsageAnalysis, type UsageCategory } from './UsageAnalysisView';
 
-type UsageTab = 'overview' | 'analysis' | 'events' | 'pricing' | 'data-management';
+type UsageTab = 'overview' | 'analysis' | 'events' | 'projects' | 'pricing' | 'data-management';
 type UsageRange = '4h' | '24h' | 'today' | '7d' | '30d' | 'all' | 'custom';
 
-const USAGE_TABS: readonly UsageTab[] = ['overview', 'analysis', 'events', 'pricing', 'data-management'];
+const USAGE_TABS: readonly UsageTab[] = ['overview', 'analysis', 'events', 'projects', 'pricing', 'data-management'];
 
 type CollectorStatus = {
   state: 'waiting-core' | 'collecting' | 'error';
@@ -179,7 +180,7 @@ const emptyAnalysis: UsageAnalysis = { models: [], providers: [], sources: [], a
 const loadTab = (): UsageTab => {
   try {
     const saved = usagePreferences.getItem(TAB_KEY);
-    return saved === 'analysis' || saved === 'events' || saved === 'pricing' || saved === 'data-management'
+    return saved === 'analysis' || saved === 'events' || saved === 'projects' || saved === 'pricing' || saved === 'data-management'
       ? saved
       : 'overview';
   } catch {
@@ -646,6 +647,19 @@ export function UsageRecordsPage() {
           </button>
           <button
             type="button"
+            id="usage-tab-projects"
+            role="tab"
+            className={activeTab === 'projects' ? 'active' : ''}
+            aria-selected={activeTab === 'projects'}
+            aria-controls="usage-tab-panel"
+            tabIndex={activeTab === 'projects' ? 0 : -1}
+            onClick={() => setActiveTab('projects')}
+            onKeyDown={(event) => handleTabKeyDown(event, 'projects')}
+          >
+            <span>{t('usage.tab.projects')}</span>
+          </button>
+          <button
+            type="button"
             id="usage-tab-pricing"
             role="tab"
             className={activeTab === 'pricing' ? 'active' : ''}
@@ -704,7 +718,8 @@ export function UsageRecordsPage() {
         role="tabpanel"
         aria-labelledby={`usage-tab-${activeTab}`}
       >
-      {activeTab !== 'data-management' ? filterPanel : null}
+      {activeTab !== 'data-management' && activeTab !== 'projects' ? filterPanel : null}
+      {activeTab === 'projects' ? <ProjectUsageView /> : null}
 
       {showInitialLoading && activeTab !== 'events' ? (
         <div className="usage-initial-loading">
