@@ -1,3 +1,4 @@
+import { RequestDetailDialog } from '../components/RequestDetailDialog';
 import { usagePreferences } from '../services/usagePreferences';
 import { useEffect, useRef, useState, type KeyboardEvent, type CSSProperties } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -54,6 +55,9 @@ export type UsageRecord = {
   api_key_hash: string;
   api_key_display: string;
   api_key_remark: string;
+  /** Recognized client family (claude-cli, claude-desktop, codex), never the raw user agent. */
+  user_agent?: string | null;
+  request_id?: string;
   tokens: {
     input_tokens: number;
     output_tokens: number;
@@ -494,6 +498,7 @@ export function EventsView({
   loading?: boolean;
 }) {
   const { t } = useI18n();
+  const [inspected, setInspected] = useState<UsageRecord | null>(null);
   const [widths, setWidths] = useState<Record<EventColumnKey, number>>(getInitialColumnWidths);
   const widthsRef = useRef(widths);
   const [visibleColumnKeys, setVisibleColumnKeys] = useState<EventColumnKey[]>(getInitialVisibleColumns);
@@ -773,7 +778,9 @@ export function EventsView({
                   || !previousRecord
                   || formatEventDate(previousRecord.timestamp) !== formatEventDate(record.timestamp);
                 return (
-                  <tr key={record.row_id}>
+                  <tr key={record.row_id} className="usage-event-row-clickable" tabIndex={0} title={t('reqdetail.open')}
+                    onClick={() => setInspected(record)}
+                    onKeyDown={event => { if (event.key === 'Enter') setInspected(record); }}>
                     {visibleColumns.map((column) => (
                       <UsageEventCell
                         key={column.key}
@@ -795,6 +802,7 @@ export function EventsView({
       )}
 
       {events.items.length > 0 ? <TableTopScrollbar tableWrapRef={tableWrapRef} /> : null}
+      <RequestDetailDialog record={inspected} onClose={() => setInspected(null)} />
 
       <div className="usage-events-footer">
         <div className="usage-events-footer-left">
