@@ -9,7 +9,8 @@ import { readDashboardPreference, readDesktopAlertsPreference } from './dashboar
 import { attentionItems } from './homeGlance';
 import { driftedApps, loadAppStatuses } from './connectedApps';
 import { managementApi, readString, responseList } from './managementApi';
-import { quotaAlerts, type AlertMemory, type QuotaAlert } from './quotaAlerts';
+import { providerTallies, quotaAlerts, type AlertMemory, type QuotaAlert } from './quotaAlerts';
+import { invoke } from '@tauri-apps/api/core';
 import { getQuotaCacheSnapshot } from './quotaCache';
 import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaForecast';
 import { fileName, providerForFile, type AuthFile } from './quotaService';
@@ -45,6 +46,20 @@ export function alertText(alert: QuotaAlert, now: number): { title: string; body
   }
 }
 
+/** "Quota: Codex all out · Claude 1 low · Grok ok" for the tray menu and tooltip. */
+async function updateTray(files: AuthFile[], attention: ReturnType<typeof attentionItems>) {
+  const locale = getCurrentLocale();
+  const parts = providerTallies(files, attention, providerOf).map(tally => {
+    const provider = providerNames[tally.provider] ?? tally.provider;
+    if (tally.blocked === tally.total) return translate(locale, 'tray.allOut', { provider });
+    if (tally.blocked) return translate(locale, 'tray.out', { provider, count: tally.blocked });
+    if (tally.low) return translate(locale, 'tray.low', { provider, count: tally.low });
+    return translate(locale, 'tray.ok', { provider });
+  });
+  const menuText = parts.length ? translate(locale, 'tray.quota', { summary: parts.join(' · ') }) : translate(locale, 'tray.none');
+  await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · ') }).catch(() => undefined);
+}
+
 async function send(messages: { title: string; body: string }[]) {
   if (!messages.length || !readDesktopAlertsPreference()) return;
   let granted = await isPermissionGranted();
@@ -74,7 +89,9 @@ export function startQuotaWatcher(): () => void {
       const now = Date.now();
       const quotas = getQuotaCacheSnapshot();
       setQuotaHistory(recordQuotaSamples(getQuotaHistory(), files, quotas, now));
-      const result = quotaAlerts(memory, files, attentionItems(files, quotas, now, false), providerOf, labelFor);
+      const attention = attentionItems(files, quotas, now, false);
+      await updateTray(files, attention);
+      const result = quotaAlerts(memory, files, attention, providerOf, labelFor);
       memory = result.memory;
       await send(result.alerts.map(alert => alertText(alert, now)));
     } catch {

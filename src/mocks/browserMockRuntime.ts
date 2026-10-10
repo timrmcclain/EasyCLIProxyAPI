@@ -1447,6 +1447,12 @@ export function createBrowserMockRuntime(
       case 'apply_codex_session_index_cleanup': return { prunedEntries: asArray(asObject(payload.request).threadIds).length, backupPath: 'C:\\Users\\Mock\\.codex\\backups\\index.json' };
 
       case 'get_lan_ipv4': return ['192.168.100.100'];
+      case 'set_tray_quota_summary': {
+        // No tray in a browser; keep the last summary where tests can read it.
+        (window as unknown as { __mockTray?: unknown }).__mockTray = { menuText: payload.menuText, tooltipText: payload.tooltipText };
+        return null;
+      }
+      case 'plugin:notification|is_permission_granted': return true;
       default:
         if (command.startsWith('plugin:window|') || command.startsWith('plugin:webview|')) return null;
         console.warn(`[Browser Mock] Command not implemented: ${command}`, rawPayload);

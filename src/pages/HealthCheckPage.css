@@ -1,0 +1,13 @@
+.health-page { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; max-width: 960px; margin: 0 auto; padding: var(--space-2) 0 var(--space-8); }
+.health-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.health-heading h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.4px; }
+.health-heading p { margin: 0; color: var(--text-tertiary); line-height: 1.6; }
+.health-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
+.health-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border-color); }
+.health-item:first-child { border-top: 0; }
+.health-item svg { flex-shrink: 0; }
+.health-text { flex: 1; min-width: 0; font-size: 13px; line-height: 1.5; color: var(--text-primary); }
+.health-item.level-ok svg { color: var(--c-success); }
+.health-item.level-warn svg { color: var(--c-warning); }
+.health-item.level-fail { background: color-mix(in srgb, var(--c-danger) 8%, var(--bg-card)); }
+.health-item.level-fail svg { color: var(--c-danger); }

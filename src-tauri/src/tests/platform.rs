@@ -220,3 +220,17 @@ fn codex_store_version_resolves_only_the_selected_family_and_application() {
     );
     fs::remove_dir_all(home).unwrap();
 }
+
+#[test]
+fn tray_tooltip_adds_the_quota_line_and_fits_the_windows_limit() {
+    assert_eq!(windows_tray_tooltip("Proxy running", ""), "Proxy running");
+    assert_eq!(
+        windows_tray_tooltip("Proxy running", "Claude 1 low · Codex ok"),
+        "Proxy running
+Claude 1 low · Codex ok"
+    );
+    let long = "x".repeat(200);
+    let tooltip = windows_tray_tooltip("Proxy running", &long);
+    assert_eq!(tooltip.chars().count(), 127);
+    assert!(tooltip.ends_with('…'));
+}

@@ -67,3 +67,23 @@ export function quotaAlerts(
     alerts: alerts.filter(a => a.kind === 'providerExhausted' || a.kind === 'recovered' || !silenced.has(a.provider)),
   };
 }
+
+export type ProviderTally = { provider: string; total: number; low: number; blocked: number };
+
+/** Per-provider counts for the tray line, worst providers first. Unconfirmed accounts are left out. */
+export function providerTallies(files: AuthFile[], attention: AttentionItem[], providerOf: (file: AuthFile) => string): ProviderTally[] {
+  const byKey = new Map(attention.map(item => [quotaKey(item.file), item.severity]));
+  const tallies = new Map<string, ProviderTally>();
+  for (const file of files) {
+    const severity = byKey.get(quotaKey(file));
+    if (severity === 'unconfirmed') continue;
+    const provider = providerOf(file);
+    const tally = tallies.get(provider) ?? { provider, total: 0, low: 0, blocked: 0 };
+    tally.total += 1;
+    if (severity === 'low') tally.low += 1;
+    if (severity === 'blocked') tally.blocked += 1;
+    tallies.set(provider, tally);
+  }
+  const rank = (tally: ProviderTally) => (tally.blocked === tally.total ? 0 : tally.blocked ? 1 : tally.low ? 2 : 3);
+  return [...tallies.values()].sort((a, b) => rank(a) - rank(b));
+}

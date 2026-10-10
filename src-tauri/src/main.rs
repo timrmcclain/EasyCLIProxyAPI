@@ -2735,6 +2735,7 @@ fn main() {
             update_core_api_key,
             delete_core_api_key,
             promote_core_api_key,
+            tray::set_tray_quota_summary,
             set_core_management_secret_key,
             clear_core_management_secret_key,
             management_api::management_request,

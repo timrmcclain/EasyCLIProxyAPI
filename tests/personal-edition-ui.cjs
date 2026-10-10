@@ -84,7 +84,7 @@ const os = require('node:os');
     await nav.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.locator('.config-page').waitFor();
     await nav.locator('.personal-advanced > summary').click();
-    assert.equal(await nav.locator('.personal-advanced').getByRole('button').count(), 6, 'Advanced tools hold Compression, Quota Lookup, Proxy, API Access, Plugins and About');
+    assert.equal(await nav.locator('.personal-advanced').getByRole('button').count(), 7, 'Advanced tools hold Health check, Compression, Quota Lookup, Proxy, API Access, Plugins and About');
     await nav.getByRole('button', { name: 'About & maintenance' }).click();
     await page.getByText(/Personal build: app updates are manual/).waitFor();
     assert.equal(await page.locator('.app-module-card button').count(), 0);

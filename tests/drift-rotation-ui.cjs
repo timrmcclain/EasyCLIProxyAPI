@@ -29,8 +29,26 @@ const path = require('node:path');
     const banner = page.locator('.app-drift-banner');
     await banner.waitFor();
     assert.match(await banner.innerText(), /Claude Code no longer matches the hub/);
+    // Health check lists the drifted app first, as a failure, and Fix opens Connected apps.
+    await page.locator('.personal-advanced summary').click();
+    await page.getByRole('button', { name: 'Health check', exact: true }).click();
+    const firstCheck = page.locator('.health-item').first();
+    await firstCheck.waitFor();
+    assert.equal(await firstCheck.getAttribute('class'), 'health-item level-fail');
+    assert.match(await firstCheck.innerText(), /Claude Code no longer matches the hub/);
+    assert.ok(await page.locator('.health-item.level-ok').filter({ hasText: 'The proxy is running.' }).count());
+    await firstCheck.getByRole('button', { name: 'Fix' }).click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('personal.lastPage')), 'agents');
+    await page.locator('.nav-section').getByRole('button', { name: /^Overview/ }).first().click();
+    await banner.waitFor();
     await banner.getByRole('button', { name: 'Re-apply', exact: true }).click();
     await banner.waitFor({ state: 'detached' });
+
+    // Tray: the background watcher sends a per-provider summary for the tray menu and tooltip.
+    await page.waitForFunction(() => window.__mockTray, null, { timeout: 20000 });
+    const tray = await page.evaluate(() => window.__mockTray);
+    assert.match(tray.menuText, /^Quota: .*(ok|low|out)/);
+    assert.ok(tray.tooltipText.length > 0 && !tray.tooltipText.startsWith('Quota:'));
 
     // Forecast: give every account a falling series ending at its current reading, then reload.
     await page.waitForFunction(() => Object.keys(JSON.parse(localStorage.getItem('personal.quotaHistory') || '{}')).length > 0, null, { timeout: 20000 });

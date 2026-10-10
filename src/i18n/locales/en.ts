@@ -112,6 +112,7 @@ export const en: Record<MessageKey, string> = {
   'app.nav.plugins': 'Plugins',
   'app.nav.connectors': 'Connectors',
   'app.nav.compression': 'Compression',
+  'app.nav.health': "Health check",
   ...homeEn,
   ...authFileListEn,
   'apiAccess.entries.addKey': 'Add API Key',

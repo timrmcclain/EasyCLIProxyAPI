@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { AttentionItem } from '../src/services/homeGlance';
-import { emptyAlertMemory, quotaAlerts, type AlertMemory } from '../src/services/quotaAlerts';
+import { emptyAlertMemory, providerTallies, quotaAlerts, type AlertMemory } from '../src/services/quotaAlerts';
 import { quotaKey, type AuthFile } from '../src/services/quotaService';
 
 const file = (name: string, provider = 'claude'): AuthFile => ({ name: `${name}.json`, auth_index: name, provider });
@@ -39,5 +39,16 @@ describe('quota alerts', () => {
     const base = run(null, []).memory;
     expect(run(base, [item(x, 'unconfirmed')]).alerts).toEqual([]);
     expect(emptyAlertMemory().accounts).toEqual({});
+  });
+});
+
+describe('provider tallies for the tray', () => {
+  it('counts low and blocked accounts per provider, worst first, ignoring unconfirmed ones', () => {
+    const c = file('c', 'codex'), g = file('g', 'xai');
+    const tallies = providerTallies([a, b, x, c, g], [item(a, 'low', 7), item(x, 'blocked', 0), item(c, 'blocked', 0), item(g, 'unconfirmed')], providerOf);
+    expect(tallies).toEqual([
+      { provider: 'codex', total: 2, low: 0, blocked: 2 },
+      { provider: 'claude', total: 2, low: 1, blocked: 0 },
+    ]);
   });
 });

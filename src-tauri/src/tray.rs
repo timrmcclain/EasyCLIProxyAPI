@@ -192,6 +192,8 @@ const WINDOWS_TRAY_OPEN_MENU_ID: &str = "windows-tray-open-main-window";
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 const WINDOWS_TRAY_STATUS_MENU_ID: &str = "windows-tray-core-status";
 #[cfg(any(target_os = "linux", target_os = "windows"))]
+const WINDOWS_TRAY_QUOTA_MENU_ID: &str = "windows-tray-quota";
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 const WINDOWS_TRAY_TOGGLE_CORE_MENU_ID: &str = "windows-tray-toggle-core";
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 const WINDOWS_TRAY_RESTART_CORE_MENU_ID: &str = "windows-tray-restart-core";
@@ -286,11 +288,16 @@ pub(crate) fn windows_tray_presentation(
 pub(crate) struct WindowsTrayState {
     open_main_window: MenuItem<tauri::Wry>,
     status_item: MenuItem<tauri::Wry>,
+    quota_item: MenuItem<tauri::Wry>,
     toggle_core_item: MenuItem<tauri::Wry>,
     restart_core_item: MenuItem<tauri::Wry>,
     quit_item: MenuItem<tauri::Wry>,
     locale: Mutex<String>,
     busy: AtomicBool,
+    /// Proxy state line, kept so a quota update can rebuild the tooltip without a CoreStatus.
+    base_tooltip: Mutex<String>,
+    /// One-line quota summary from the window's background watcher, e.g. "Claude 1 low · Codex ok".
+    quota_tooltip: Mutex<String>,
 }
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
@@ -383,7 +390,16 @@ impl WindowsTrayState {
         {
             eprintln!("Failed to update desktop tray restart state: {error}");
         }
-        presentation.tooltip
+        if let Ok(mut base) = self.base_tooltip.lock() {
+            *base = presentation.tooltip;
+        }
+        self.tooltip()
+    }
+
+    fn tooltip(&self) -> String {
+        let base = self.base_tooltip.lock().map(|text| text.clone()).unwrap_or_default();
+        let quota = self.quota_tooltip.lock().map(|text| text.clone()).unwrap_or_default();
+        windows_tray_tooltip(&base, &quota)
     }
 
     fn show_error(&self, error: &str) {
@@ -395,6 +411,49 @@ impl WindowsTrayState {
         if let Err(update_error) = self.status_item.set_text(text) {
             eprintln!("Failed to update desktop tray error state: {update_error}");
         }
+    }
+}
+
+/// Windows truncates tray tooltips at 127 characters, so the quota line is cut to fit.
+pub(crate) fn windows_tray_tooltip(base: &str, quota: &str) -> String {
+    const LIMIT: usize = 127;
+    let quota = quota.trim();
+    if quota.is_empty() {
+        return base.chars().take(LIMIT).collect();
+    }
+    let combined = format!("{base}
+{quota}");
+    if combined.chars().count() <= LIMIT {
+        return combined;
+    }
+    let mut cut: String = combined.chars().take(LIMIT - 1).collect();
+    cut.push('…');
+    cut
+}
+
+/// Called by the window's quota watcher with a localized summary for the tray menu and tooltip.
+#[tauri::command]
+pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String) {
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    {
+        let Some(tray_state) = app.try_state::<WindowsTrayState>() else {
+            return;
+        };
+        if let Ok(mut quota) = tray_state.quota_tooltip.lock() {
+            *quota = tooltip_text;
+        }
+        if let Err(error) = tray_state.quota_item.set_text(menu_text) {
+            eprintln!("Failed to update desktop tray quota line: {error}");
+        }
+        if let Some(tray) = app.tray_by_id(WINDOWS_TRAY_ID) {
+            if let Err(error) = tray.set_tooltip(Some(&tray_state.tooltip())) {
+                eprintln!("Failed to update desktop tray tooltip: {error}");
+            }
+        }
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        let _ = (app, menu_text, tooltip_text);
     }
 }
 
@@ -553,6 +612,13 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         false,
         None::<&str>,
     )?;
+    let quota_item = MenuItem::with_id(
+        app,
+        WINDOWS_TRAY_QUOTA_MENU_ID,
+        "…",
+        false,
+        None::<&str>,
+    )?;
     let toggle_core_item = MenuItem::with_id(
         app,
         WINDOWS_TRAY_TOGGLE_CORE_MENU_ID,
@@ -582,6 +648,7 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
             &open_main_window,
             &separator_one,
             &status_item,
+            &quota_item,
             &toggle_core_item,
             &restart_core_item,
             &separator_two,
@@ -629,11 +696,14 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
     let _ = app.manage(WindowsTrayState {
         open_main_window,
         status_item,
+        quota_item,
         toggle_core_item,
         restart_core_item,
         quit_item: quit,
         locale: Mutex::new(locale),
         busy: AtomicBool::new(false),
+        base_tooltip: Mutex::new(String::new()),
+        quota_tooltip: Mutex::new(String::new()),
     });
 
     Ok(())
