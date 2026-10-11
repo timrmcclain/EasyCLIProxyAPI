@@ -110,10 +110,18 @@ fn handle_configuration_file_changes(
         else {
             continue;
         };
+        // Every change to the proxy's config is kept as a version, including the hub's own writes skipped below.
+        let is_core_config = core_path.as_deref().is_some_and(|core_path| paths_refer_to_same_file(&tracked_path, core_path));
         if consume_software_write(&tracked_path) {
+            if is_core_config {
+                let _ = crate::config_history::record(&tracked_path);
+            }
             continue;
         }
         wait_for_config_file_stability(&tracked_path);
+        if is_core_config {
+            let _ = crate::config_history::record(&tracked_path);
+        }
         tracked_changes.retain(|existing| !paths_refer_to_same_file(existing, &tracked_path));
         tracked_changes.push(tracked_path);
     }
@@ -329,6 +337,10 @@ impl PendingConfigurationChanges {
 
 pub(crate) fn start_configuration_file_watcher(app: tauri::AppHandle) -> Result<(), String> {
     let tracked_paths = tracked_configuration_paths(&app)?;
+    // A starting version, so the first change after launch can be undone.
+    if let Ok(core_config) = core_install_dir().map(|dir| dir.join(CORE_CONFIG_FILE)) {
+        let _ = crate::config_history::record(&core_config);
+    }
     let callback_paths: Vec<_> = tracked_paths
         .iter()
         .map(|path| (path.clone(), configuration_watch_path(path)))

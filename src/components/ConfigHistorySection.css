@@ -1,0 +1,9 @@
+.config-history-intro, .config-history-empty { margin: 0 0 10px; color: var(--text-secondary); font-size: 13px; }
+.config-history-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border-color); }
+.config-history-list li { display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 4px 2px; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+.config-history-time { flex: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.config-history-size { color: var(--text-tertiary); font-size: 12px; }
+.config-history-current { padding: 1px 8px; border-radius: 999px; background: var(--c-accent-soft); color: var(--primary-color); font-size: 12px; font-weight: 600; }
+.config-history-message { margin: 10px 0 0; font-size: 13px; }
+.config-history-message-ok { color: var(--c-success); }
+.config-history-message-error { color: var(--c-danger); }

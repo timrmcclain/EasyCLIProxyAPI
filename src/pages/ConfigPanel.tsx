@@ -45,6 +45,7 @@ import { SensitiveWordsPage } from './SensitiveWordsPage';
 import { handleHorizontalTabKey } from '../components/tabKeyboardNavigation';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { useConfirmation } from '../components/ConfirmationDialog';
+import { ConfigHistorySection } from '../components/ConfigHistorySection';
 import { TemplateConfigSection } from '../components/TemplateConfigSection';
 import { SettingsHelp } from '../components/SettingsHelp';
 import { QuotaRoutingSetting } from '../components/QuotaRoutingSetting';
@@ -1126,6 +1127,7 @@ export function ConfigPanelPage() {
     { category: 'general', target: 'config-native-tls', title: t('config.tls.enable'), context: '', keywords: [t('config.tls.cert'), t('config.tls.key'), 'TLS HTTPS cert key certificate 证书 私钥 加密'].join(' ') },
     { category: 'routing', target: 'config-native-routing', title: st('nativeRouting'), context: '', keywords: [t('config.network.sessionAffinity'), t('config.network.sessionTtl'), t('config.routing.title'), 'session affinity ttl routing strategy round-robin 会话 粘性 加权 轮询'].join(' ') },
     { category: 'routing', target: 'config-native-retry', title: st('nativeRetry'), context: '', keywords: [t('config.network.disableCooling'), t('config.network.requestRetry'), t('config.network.maxRetryCredentials'), t('config.network.maxRetryInterval'), t('config.network.streamingBootstrapRetries'), 'retry retries cooldown 重试 冷却 流式 失败 fallback'].join(' ') },
+    { category: 'diagnostics', target: 'config-native-history', title: t('configHistory.title'), context: '', keywords: [t('configHistory.intro'), 'config history versions restore undo backup yaml 配置 历史 版本 恢复 撤销 備份 設定 履歴 復元'].join(' ') },
     { category: 'diagnostics', target: 'config-native-logging', title: t('config.diagnostics.title'), context: '', keywords: [t('config.diagnostics.debug.title'), t('config.diagnostics.commercial.title'), t('config.diagnostics.fileLogging.title'), t('config.diagnostics.usage.title'), t('config.diagnostics.maxSize.title'), t('config.diagnostics.errorFiles.title'), t('config.diagnostics.redisRetention.title'), 'debug commercial-mode logging logs usage statistics redis retention 日志 调试 商业模式 用量 统计 留存 文件 容量'].join(' ') },
     { category: 'software', target: 'config-native-software', title: t('config.software.title'), context: '', keywords: [t('config.software.autostart'), t('config.software.startCoreOnLaunch'), t('config.software.silentStart'), t('config.software.closeBehavior'), t('config.software.defaultTerminal'), t('ux.alerts'), 'startup autostart silent tray close terminal alerts notify 软件 自启动 启动 静默 托盘 关闭 终端'].join(' ') },
     { category: 'aliases', target: 'config-native-aliases', title: t('app.nav.thinkingAliases'), context: '', keywords: 'thinking reasoning speed aliases effort 思考 推理 速度 别名 模型' },
@@ -2129,6 +2131,7 @@ export function ConfigPanelPage() {
             {renderFeedback(loggingFeedback)}
           </div>
         </section>
+<ConfigHistorySection hidden={searching || activeSubpage !== 'diagnostics'} />
 <section id="config-native-software" tabIndex={-1} hidden={searching || activeSubpage !== 'software'} className="panel config-software-panel">
             <div className="config-panel-heading">
               <div className="config-heading-title">

@@ -977,6 +977,22 @@ export function createBrowserMockRuntime(
       }
       case 'get_gui_settings': return clone(state.guiSettings);
       case 'get_core_config_settings': return clone(state.coreConfig);
+      case 'list_core_config_history': {
+        // Three saved versions, newest (the current file) first; restoring one makes it current.
+        const history = (state as { configHistory?: { name: string; savedAt: string; size: number; current: boolean }[] });
+        history.configHistory ??= [0, 1, 2].map(index => ({
+          name: `config-20261010-${String(15 - index).padStart(2, '0')}0000-000.yaml`,
+          savedAt: new Date(Date.now() - index * 3_600_000).toISOString(), size: 4096 + index * 64, current: index === 0,
+        }));
+        return clone(history.configHistory);
+      }
+      case 'restore_core_config_history': {
+        const history = (state as { configHistory?: { name: string; current: boolean }[] }).configHistory ?? [];
+        const target = history.find(version => version.name === payload.name);
+        if (!target) throw new Error(`${String(payload.name)} isn't a saved config version.`);
+        history.forEach(version => { version.current = version === target; });
+        return null;
+      }
       case 'proxy_listen_status': return { host: '127.0.0.1', port: 8317, exposed: false, portInUse: true, owner: { pid: 26036, name: 'cli-proxy-api.exe' } };
       case 'get_extended_core_config': return clone(state.extendedConfig);
       case 'save_extended_core_config': {

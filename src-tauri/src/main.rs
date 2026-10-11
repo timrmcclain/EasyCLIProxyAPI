@@ -37,6 +37,7 @@ mod statusline;
 mod claude_fallback;
 mod project_usage;
 mod proxy_listen;
+mod config_history;
 mod tray;
 mod usage;
 mod model_preset;
@@ -2751,6 +2752,8 @@ fn main() {
             claude_fallback::switch_claude_code_back,
             project_usage::claude_project_usage,
             proxy_listen::proxy_listen_status,
+            config_history::list_core_config_history,
+            config_history::restore_core_config_history,
             statusline::disable_claude_statusline,
             statusline::write_claude_quota_line,
             jev::jev_overview,
