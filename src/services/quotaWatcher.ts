@@ -14,9 +14,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { getQuotaCacheSnapshot } from './quotaCache';
 import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaForecast';
 import { applyQuotaRouting } from './quotaRoutingControl';
+import { initialProxyWatch, nextProxyWatch } from './proxyWatch';
 import { fileName, providerForFile, type AuthFile } from './quotaService';
 
 const CHECK_EVERY_MS = 5 * 60_000;
+/** How often the proxy itself is checked; it counts as down after two failed checks in a row. */
+const PROXY_CHECK_EVERY_MS = 30_000;
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 const providerOf = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
 
@@ -122,10 +125,23 @@ export function startQuotaWatcher(): () => void {
     }
   };
 
+  // The proxy stopping (a crash, or closed by something else) fails every app's requests, so say so.
+  let proxyWatch = initialProxyWatch;
+  const checkProxy = async () => {
+    const status = await invoke<{ ready: boolean; starting: boolean }>('get_core_status').catch(() => null);
+    if (stopped) return;
+    const next = nextProxyWatch(proxyWatch, status);
+    proxyWatch = next.state;
+    if (!next.alert) return;
+    const locale = getCurrentLocale();
+    await send([{ title: translate(locale, `notify.proxy.${next.alert}.title`), body: translate(locale, `notify.proxy.${next.alert}.body`) }]);
+  };
+
   void check();
   const timer = window.setInterval(() => { void check(); }, CHECK_EVERY_MS);
+  const proxyTimer = window.setInterval(() => { void checkProxy(); }, PROXY_CHECK_EVERY_MS);
   // "Check all quotas now" in the command palette: a forced check that skips the rate-limit backoff.
   const checkNow = () => { void check(true); };
   window.addEventListener('app:check-quota', checkNow);
-  return () => { stopped = true; window.clearInterval(timer); window.removeEventListener('app:check-quota', checkNow); };
+  return () => { stopped = true; window.clearInterval(timer); window.clearInterval(proxyTimer); window.removeEventListener('app:check-quota', checkNow); };
 }
