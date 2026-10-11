@@ -29,6 +29,7 @@ import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
 import { useConfirmation } from './components/ConfirmationDialog';
 import { startQuotaWatcher } from './services/quotaWatcher';
+import { readGlobalHotkeyPreference } from './services/dashboardPreferences';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
 import { ApiAccessPage } from './pages/ApiAccessPage';
@@ -231,6 +232,10 @@ function AppContent() {
   const { askConfirmation, confirmationDialog } = useConfirmation();
   // Quota checks, run-out forecasts and Windows notifications keep working with the window in the tray.
   useEffect(() => (coreReady ? startQuotaWatcher() : undefined), [coreReady]);
+  useEffect(() => {
+    // Re-claim the shortcut each launch; if another app now owns it, Settings shows the error when switched on again.
+    if (readGlobalHotkeyPreference()) invoke('set_global_hotkey', { enabled: true }).catch(() => undefined);
+  }, []);
   const activePage = pages.find((page) => page.id === active) ?? pages[0];
   const ActivePage = activePage.component;
   const selectedLanguage = languageOptions.find((option) => option.value === locale)

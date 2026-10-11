@@ -122,6 +122,14 @@ const path = require('node:path');
     await notifications.click();
     assert.equal(await page.evaluate(() => localStorage.getItem('personal.desktopAlerts')), 'false');
 
+    // Ctrl+Alt+H: off by default; switching it on asks the app to claim the key and remembers it.
+    const hotkey = page.getByRole('switch', { name: 'Open the hub with Ctrl+Alt+H' });
+    assert.equal(await hotkey.isChecked(), false);
+    await hotkey.click();
+    await page.waitForFunction(() => (window.__mockCalls ?? []).includes('set_global_hotkey'));
+    await page.waitForFunction(() => localStorage.getItem('personal.globalHotkey') === 'true');
+    assert.equal(await hotkey.isChecked(), true);
+
     // Claude Code status line: off by default, switches on and back off through Undo.
     const statusLine = page.getByRole('switch', { name: "Quota in Claude Code's status line" });
     assert.equal(await statusLine.isChecked(), false);

@@ -1517,6 +1517,7 @@ export function createBrowserMockRuntime(
         return null;
       }
       case 'claude_statusline_state': return { enabled: mockClaudeStatusLine, wrapsExisting: mockClaudeStatusLine };
+      case 'set_global_hotkey': return payload.enabled === true;
       case 'enable_claude_statusline': mockClaudeStatusLine = true; return { enabled: true, wrapsExisting: true };
       case 'disable_claude_statusline': mockClaudeStatusLine = false; return { enabled: false, wrapsExisting: false };
       case 'claude_fallback_state': return { model: mockClaudeFallback };

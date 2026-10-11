@@ -27,3 +27,12 @@ export function readDesktopAlertsPreference(): boolean {
 export function saveDesktopAlertsPreference(enabled: boolean): void {
   saveDashboardPreference('desktopAlerts', String(enabled));
 }
+
+/** Ctrl+Alt+H brings the hub forward from anywhere; off unless turned on, since it claims the key system-wide. */
+export function readGlobalHotkeyPreference(): boolean {
+  return readDashboardPreference('globalHotkey', ['true', 'false'], 'false') === 'true';
+}
+
+export function saveGlobalHotkeyPreference(enabled: boolean): void {
+  saveDashboardPreference('globalHotkey', String(enabled));
+}

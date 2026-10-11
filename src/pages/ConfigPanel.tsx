@@ -1,5 +1,5 @@
 import { rotateProxyKey, type ReapplyOutcome } from '../services/connectedApps';
-import { readDesktopAlertsPreference, readOverviewAlertsPreference, saveDesktopAlertsPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
+import { readDesktopAlertsPreference, readGlobalHotkeyPreference, readOverviewAlertsPreference, saveDesktopAlertsPreference, saveGlobalHotkeyPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
 import { FormEvent, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -34,7 +34,7 @@ import {
   Power,
   Terminal,
   Trash2,
-  X, Bell, BellRing, LoaderCircle, RotateCw } from 'lucide-react';
+  X, Bell, BellRing, Keyboard, LoaderCircle, RotateCw } from 'lucide-react';
 import { useCoreRuntime, type CoreStatus } from '../coreRuntime';
 import { useI18n } from '../i18n';
 import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
@@ -218,6 +218,7 @@ export function ConfigPanelPage() {
   const [showPluginAdvanced, setShowPluginAdvanced] = useState(false);
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
   const [desktopAlerts, setDesktopAlerts] = useState(() => readDesktopAlertsPreference());
+  const [globalHotkey, setGlobalHotkey] = useState(() => readGlobalHotkeyPreference());
   const [claudeStatusLine, setClaudeStatusLine] = useState<boolean | null>(null);
   const [claudeStatusLineBusy, setClaudeStatusLineBusy] = useState(false);
 
@@ -853,6 +854,20 @@ export function ConfigPanelPage() {
     saveDesktopAlertsPreference(enabled);
     softwareFeedback.showNotice({ key: 'common.saved' }, 'success', offerUndo ? {
       action: { label: { key: 'common.undo' }, onAction: () => changeDesktopAlerts(!enabled, false) },
+    } : undefined);
+  };
+
+  const changeGlobalHotkey = async (enabled: boolean, offerUndo = true) => {
+    try {
+      await invoke('set_global_hotkey', { enabled });
+    } catch (error) {
+      softwareFeedback.showNotice({ key: 'hotkey.failed', variables: { error: String(error) } }, 'error');
+      return;
+    }
+    setGlobalHotkey(enabled);
+    saveGlobalHotkeyPreference(enabled);
+    softwareFeedback.showNotice({ key: 'common.saved' }, 'success', offerUndo ? {
+      action: { label: { key: 'common.undo' }, onAction: () => { void changeGlobalHotkey(!enabled, false); } },
     } : undefined);
   };
 
@@ -2257,6 +2272,26 @@ export function ConfigPanelPage() {
                       aria-label={t('notify.setting')}
                       checked={desktopAlerts}
                       onChange={(event) => changeDesktopAlerts(event.currentTarget.checked)}
+                    />
+                    <span className="switch-track" />
+                  </label>
+                </div>
+                <div className="config-software-setting-row">
+                  <div className="config-software-setting-copy">
+                    <span className="config-software-setting-icon" aria-hidden="true">
+                      <Keyboard size={18} />
+                    </span>
+                    <div>
+                      <span className="config-field-label"><strong>{t('hotkey.setting')}</strong><SettingsHelp label={t('hotkey.setting')}>{t('hotkey.settingHint')}</SettingsHelp></span>
+                    </div>
+                  </div>
+                  <label className="switch-control" title={t('hotkey.setting')}>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-label={t('hotkey.setting')}
+                      checked={globalHotkey}
+                      onChange={(event) => { void changeGlobalHotkey(event.currentTarget.checked); }}
                     />
                     <span className="switch-track" />
                   </label>

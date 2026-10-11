@@ -41,6 +41,7 @@ mod config_history;
 mod tray;
 mod usage;
 mod model_preset;
+mod global_hotkey;
 
 #[cfg(test)]
 use configuration_watcher::nearest_existing_watch_directory;
@@ -2444,6 +2445,7 @@ fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(global_hotkey::plugin())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -2660,6 +2662,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            global_hotkey::set_global_hotkey,
             headroom::headroom_status,
             headroom::headroom_set_enabled,
             headroom::headroom_set_routes,
