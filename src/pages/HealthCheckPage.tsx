@@ -14,6 +14,7 @@ import { readDesktopAlertsPreference } from '../services/dashboardPreferences';
 import { findDuplicateAccounts, healthChecks, type HealthCheck, type HealthLevel } from '../services/healthCheck';
 import { diagnosticReport, type DiagnosticInput } from '../services/diagnostics';
 import { managementApi, readString, responseList } from '../services/managementApi';
+import { summarizeUptime, useProxyUptime } from '../services/proxyUptime';
 import './HealthCheckPage.css';
 
 type CoreSettings = { apiKeys: unknown[]; managementSecretConfigured: boolean };
@@ -127,5 +128,29 @@ export function HealthCheckPage() {
         </li>;
       })}
     </ul>
+    <ProxyUptimeCard />
   </div>;
+}
+
+/** The proxy's last week, from the hub's 30-second checks, one cell per day. */
+function ProxyUptimeCard() {
+  const { t } = useI18n();
+  const history = useProxyUptime();
+  const summary = summarizeUptime(history, Date.now());
+  const format = (percent: number) => `${percent >= 99.95 || percent < 0.05 ? Math.round(percent) : percent.toFixed(1)}%`;
+  return <section className="health-uptime" aria-labelledby="health-uptime-title">
+    <div className="health-uptime-heading">
+      <h2 id="health-uptime-title">{t('health.uptime.title')}</h2>
+      <span>{summary.percent === null ? t('health.uptime.none') : summary.outages === 1 ? t('health.uptime.summaryOne', { percent: format(summary.percent) }) : t('health.uptime.summary', { percent: format(summary.percent), outages: summary.outages })}</span>
+    </div>
+    <ol className="health-uptime-days">
+      {summary.days.map(day => {
+        const name = new Date(day.start).toLocaleDateString(undefined, { weekday: 'short' });
+        const label = day.percent === null ? t('health.uptime.dayNone', { day: name }) : t('health.uptime.day', { day: name, percent: format(day.percent) });
+        const tone = day.percent === null ? 'none' : day.percent >= 99.5 ? 'ok' : day.percent >= 95 ? 'warn' : 'fail';
+        return <li key={day.start} className={`uptime-${tone}`} title={label} aria-label={label}><span aria-hidden="true">{name}</span></li>;
+      })}
+    </ol>
+    <p>{t('health.uptime.note')}</p>
+  </section>;
 }

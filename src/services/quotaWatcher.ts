@@ -16,6 +16,7 @@ import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaFor
 import { getQuotaTrends, recordQuotaTrends, setQuotaTrends } from './quotaTrend';
 import { applyQuotaRouting } from './quotaRoutingControl';
 import { initialProxyWatch, nextProxyWatch } from './proxyWatch';
+import { getProxyUptime, recordProxyCheck, setProxyUptime } from './proxyUptime';
 import { fileName, providerForFile, type AuthFile } from './quotaService';
 
 const CHECK_EVERY_MS = 5 * 60_000;
@@ -132,6 +133,7 @@ export function startQuotaWatcher(): () => void {
   const checkProxy = async () => {
     const status = await invoke<{ ready: boolean; starting: boolean }>('get_core_status').catch(() => null);
     if (stopped) return;
+    setProxyUptime(recordProxyCheck(getProxyUptime(), status, Date.now()));
     const next = nextProxyWatch(proxyWatch, status);
     proxyWatch = next.state;
     if (!next.alert) return;

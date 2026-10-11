@@ -13,3 +13,20 @@
 .health-item.level-fail svg { color: var(--c-danger); }
 
 .health-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.health-uptime { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
+.health-uptime-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.health-uptime-heading h2 { margin: 0; font-size: 14px; }
+.health-uptime-heading span { font-size: 13px; color: var(--text-secondary); }
+.health-uptime-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.health-uptime-days li { display: flex; align-items: flex-end; justify-content: center; height: 34px; padding-bottom: 4px; border-radius: var(--radius-md); font-size: 11px; color: var(--text-secondary); background: var(--bg-tertiary); }
+.health-uptime-days li.uptime-ok { background: color-mix(in srgb, var(--c-success) 22%, var(--bg-card)); }
+.health-uptime-days li.uptime-warn { background: color-mix(in srgb, var(--c-warning) 26%, var(--bg-card)); }
+.health-uptime-days li.uptime-fail { background: color-mix(in srgb, var(--c-danger) 22%, var(--bg-card)); }
+.health-uptime p { margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.5; }
+@media (forced-colors: active) {
+  .health-uptime-days li { border: 1px solid CanvasText; }
+  .health-uptime-days li.uptime-warn { border-style: dashed; }
+  .health-uptime-days li.uptime-fail { border-width: 3px; border-style: double; }
+  .health-uptime-days li.uptime-none { border-color: GrayText; }
+}
