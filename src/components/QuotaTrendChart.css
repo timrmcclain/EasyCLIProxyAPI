@@ -1,0 +1,6 @@
+.quota-trend { margin: 4px 0; }
+.quota-trend figcaption { margin-bottom: 4px; color: var(--text-secondary); font-size: 12px; }
+.quota-trend svg { display: block; width: 100%; max-width: 560px; height: 56px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); }
+.quota-trend polyline { fill: none; stroke: var(--primary-color); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.quota-trend-day { stroke: var(--border-color); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.quota-trend-axis { display: flex; justify-content: space-between; gap: 8px; max-width: 560px; margin-top: 3px; color: var(--text-tertiary); font-size: 11px; font-variant-numeric: tabular-nums; }

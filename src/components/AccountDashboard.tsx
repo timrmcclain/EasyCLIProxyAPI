@@ -1,3 +1,5 @@
+import { QuotaTrendChart } from './QuotaTrendChart';
+import { useQuotaTrends } from '../services/quotaTrend';
 import { AlternativeComparison, RecoveryTimeline, OverviewAlerts } from './OverviewInsights';
 import { subscribeActivity } from '../services/activitySubscription';
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
@@ -342,6 +344,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
   const [feedback, setFeedback] = useState('');
   const [pending, setPending] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const trends = useQuotaTrends();
   const [focusTarget, setFocusTarget] = useState<'name' | 'priority' | null>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const priorityInput = useRef<HTMLInputElement>(null);
@@ -431,6 +434,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
       <summary title={detailsLabel}><span className="sr-only">{detailsLabel}</span>{detailRows.length > 0 && <span aria-hidden="true">+{detailRows.length}</span>}<ChevronDown size={14} aria-hidden="true" /></summary>
       <div className="ad-details-body">
         <QuotaAvailabilityNotice state={availability} now={now} />
+        {providerForFile(file) && !summary.health.disabled && <QuotaTrendChart trend={trends[quotaKey(file)]} now={now} />}
         {detailRows.length > 0 && <div className="ad-quota-list ad-detail-quotas">{detailRows.map((row, index) => renderQuota(row, index + faceRows.length))}</div>}
         {summary.health.message && <p className="ad-card-note">{privateText(summary.health.message, hideEmails)}</p>}
         <p className="ad-card-note"><strong>{t('desk.credentialHealth')}: </strong>{stale ? t('accountDashboard.stale') : summary.health.tone === 'success' ? t('desk.active') : t(summary.health.label)} · {t('desk.healthHint')}</p>
