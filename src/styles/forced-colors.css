@@ -1,0 +1,67 @@
+/* Windows high-contrast (forced colors) mode.
+   Windows replaces background colours with its own and drops gradients, which erases bar
+   fills and the tracks behind them. Here every meter keeps an outline, and its fill uses the
+   system highlight colour, so how much is left still reads in every high-contrast theme. */
+@media (forced-colors: active) {
+  /* Provider cards: one segment per account, filled to the share left. */
+  .quota-account-state {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+  .quota-account-state.available,
+  .quota-account-state.creditBacked { background: Highlight; }
+  .quota-account-state.available[class*="tone-"] {
+    background: linear-gradient(to right, Highlight var(--quota-fill, 100%), Canvas var(--quota-fill, 100%));
+  }
+  /* Out, limited or unconfirmed: an empty track whose edge says which. */
+  .quota-account-state.exhausted,
+  .quota-account-state.unavailable { background: Canvas; }
+  .quota-account-state.limited { background: Canvas; border-style: double; border-width: 3px; }
+  .quota-account-state.unknown,
+  .quota-account-state.resetDue {
+    border-style: dashed;
+    background: repeating-linear-gradient(135deg, GrayText 0 2px, Canvas 2px 5px);
+  }
+  .quota-account-state.disabled { border-color: GrayText; }
+
+  /* Account rows and the quota pages. */
+  .ad-quota meter,
+  .credential-quota-track,
+  .real-quota-track,
+  .usage-model-bar-track,
+  .install-progress-track,
+  .quota-unknown-track {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+  .ad-quota meter::-webkit-meter-bar { background: Canvas; }
+  /* Kept in their own rules: a browser drops a whole rule if one selector is unknown to it. */
+  .ad-quota meter::-webkit-meter-optimum-value { background: Highlight; }
+  .ad-quota meter::-moz-meter-bar { background: Highlight; }
+  .credential-quota-track i,
+  .real-quota-track span,
+  .usage-model-bar-track > span,
+  .install-progress-fill { background: Highlight; }
+  .quota-unknown-track,
+  .credential-quota-row.unknown .credential-quota-track { border-style: dashed; }
+
+  /* Status dots carry meaning through colour alone; give them an outline. */
+  .ad-dot,
+  .status-dot,
+  .home-runtime-dot,
+  .usage-result-dot {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+  .ad-dot.online { background: Highlight; }
+
+  /* Charts drawn in SVG. */
+  .glance-spark .spark-ok { fill: Highlight; }
+  .glance-spark .spark-empty { fill: GrayText; }
+  .glance-spark .spark-failed { fill: Mark; }
+  .quota-trend polyline { stroke: Highlight; }
+  .quota-trend-day { stroke: GrayText; }
+}
