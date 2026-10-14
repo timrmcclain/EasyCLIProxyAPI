@@ -51,6 +51,8 @@ jobs:
         shell: pwsh
         run: |
           npm install --global playwright
+          # Most tests drive Edge, which the runner has; the model picker test also checks WebKit.
+          playwright install webkit
           "PLAYWRIGHT_MODULE=$(npm root --global)\playwright" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Browser tests
