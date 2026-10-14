@@ -104,6 +104,9 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   .personal-advanced summary { padding: 10px 6px; }
   .personal-advanced[open] { flex-basis: 100%; }
   .personal-advanced > div { display: flex; flex-wrap: wrap; }
+  .personal-advanced-group { display: flex; flex-wrap: wrap; align-items: center; flex-basis: 100%; }
+  .personal-advanced-group + .personal-advanced-group { margin-top: 4px; }
+  .personal-advanced-heading { flex-basis: 100%; padding: 2px 6px 0; }
   .sidebar-bottom { display: flex; flex-direction: row; gap: 10px; margin: 0; padding: 0; }
   /* The stacked-sidebar spacing must not push the compact footer row taller. */
   .sidebar-command-button, .sidebar-bottom > .sidebar-density-selector, .sidebar-bottom > .sidebar-glossary-link { margin: 0; }
@@ -515,3 +518,9 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .ux-request-help summary { cursor:pointer; padding:4px 0; }
 .ux-request-help p { margin:4px 0; line-height:1.5; color:var(--text-primary); }
 .ux-request-help small { white-space:pre-wrap; overflow-wrap:anywhere; max-height:180px; overflow:auto; }
+.personal-advanced-group { display: grid; gap: 4px; }
+.personal-advanced-group + .personal-advanced-group { margin-top: 8px; }
+.personal-advanced-heading { padding: 4px 12px 0; color: var(--text-tertiary); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+/* A fade on the sidebar's bottom edge says more pages are below. */
+.nav-section.nav-more-below { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); }
+@media (forced-colors: active) { .nav-section.nav-more-below { -webkit-mask-image: none; mask-image: none; border-bottom: 1px dashed CanvasText; } }

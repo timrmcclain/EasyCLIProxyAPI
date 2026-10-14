@@ -216,6 +216,8 @@ export function ConfigPanelPage() {
   const renderFeedback = (feedback: ReturnType<typeof useAppNotice>) => <FeedbackNotice feedback={feedback} />;
   const [activeSubpage, setActiveSubpage] = useState<ConfigSubpage>('general');
   const [showPluginAdvanced, setShowPluginAdvanced] = useState(false);
+  // Upstreams & credentials is expert-only; it stays folded until asked for (or a search lands in it).
+  const [showUpstreamAdvanced, setShowUpstreamAdvanced] = useState(false);
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
   const [desktopAlerts, setDesktopAlerts] = useState(() => readDesktopAlertsPreference());
   const [globalHotkey, setGlobalHotkey] = useState(() => readGlobalHotkeyPreference());
@@ -1137,6 +1139,7 @@ export function ConfigPanelPage() {
   };
   const navigateToSetting = (destination: SettingDestination) => {
     if (destination.category === 'extensions') setShowPluginAdvanced(true);
+    if (destination.category === 'oauth') setShowUpstreamAdvanced(true);
     activateConfigSubpage(destination.category);
     setPendingDestination(destination);
   };
@@ -1168,11 +1171,38 @@ export function ConfigPanelPage() {
     extensions: false,
     software: softwareSettingsDirty,
   };
+  // One Save bar per tab. The management key form and Sensitive words keep their own Save.
+  const templateSaveAll = useRef<((groupIds: readonly string[]) => Promise<void>) | null>(null);
+  const [savingTab, setSavingTab] = useState(false);
+  const tabSaves: Record<ConfigSubpage, Array<[boolean, () => Promise<void>]>> = {
+    general: [[networkSettingsDirty, saveNetworkEndpointSettings], [tlsSettingsDirty, saveTlsSettings]],
+    aliases: [],
+    routing: [[sessionRoutingDirty, saveSessionRoutingSettings], [retrySettingsDirty, saveRetrySettings]],
+    requests: [],
+    diagnostics: [[loggingSettingsDirty, saveCoreLoggingSettings]],
+    oauth: [],
+    extensions: [],
+    software: [[softwareSettingsDirty, saveSoftwareSettings]],
+  };
+  const tabTemplateDirty = (id: ConfigSubpage) => settingsTemplateGroups[id].filter(group => dirtyTemplateGroups.includes(group.id)).map(group => group.id);
+  const tabBarDirty = !searching && (tabSaves[activeSubpage].some(([dirty]) => dirty) || tabTemplateDirty(activeSubpage).length > 0);
+  const saveTab = async () => {
+    if (savingTab) return;
+    setSavingTab(true);
+    try {
+      // One at a time: each save shows its own result, and a failed one stays marked unsaved.
+      for (const [dirty, save] of tabSaves[activeSubpage]) if (dirty) await save();
+      const groups = tabTemplateDirty(activeSubpage);
+      if (groups.length) await templateSaveAll.current?.(groups);
+    } finally {
+      setSavingTab(false);
+    }
+  };
   const categoryDirty = (id: ConfigSubpage) => nativeCategoryDirty[id]
     || settingsTemplateGroups[id].some(group => dirtyTemplateGroups.includes(group.id));
   // Lets the shell ask before leaving Settings with edits that have not been saved.
   useUnsavedChangesGuard('settings', settingsCategories.some(item => categoryDirty(item.id)));
-  const templateGroups = activeSubpage === 'extensions' && !showPluginAdvanced ? [] : settingsTemplateGroups[activeSubpage];
+  const templateGroups = (activeSubpage === 'extensions' && !showPluginAdvanced) || (activeSubpage === 'oauth' && !showUpstreamAdvanced) ? [] : settingsTemplateGroups[activeSubpage];
   const searchEntries: SettingSearchEntry[] = [
     ...nativeEntries,
     ...settingsCategories.flatMap(item => settingsTemplateGroups[item.id].flatMap(group => group.fields.map((field, index) => ({
@@ -1555,7 +1585,7 @@ export function ConfigPanelPage() {
 
           <div className="config-settings-save-row"><span className="config-card-status" role="status">{networkSettingsDirty ? st('dirty') : ''}</span><button
                 type="button"
-                className="primary-button compact-button"
+                className="config-card-save primary-button compact-button"
                 disabled={controlsDisabled || !networkSettingsDirty}
                 onClick={() => void saveNetworkEndpointSettings()}
               >
@@ -1677,7 +1707,7 @@ export function ConfigPanelPage() {
 
           <div className="config-settings-save-row"><span className="config-card-status" role="status">{tlsSettingsDirty ? st('dirty') : ''}</span><button
                 type="button"
-                className="primary-button compact-button"
+                className="config-card-save primary-button compact-button"
                 disabled={tlsSettingsLoading || tlsSettings === null || busyAction !== null || tlsFileSelecting !== null || !tlsSettingsDirty}
                 onClick={() => void saveTlsSettings()}
               >
@@ -1785,7 +1815,7 @@ export function ConfigPanelPage() {
 
           <div className="config-settings-save-row"><span className="config-card-status" role="status">{sessionRoutingDirty ? st('dirty') : ''}</span><button
                 type="button"
-                className="primary-button compact-button"
+                className="config-card-save primary-button compact-button"
                 disabled={controlsDisabled || !sessionRoutingDirty}
                 onClick={() => void saveSessionRoutingSettings()}
               >
@@ -1953,7 +1983,7 @@ export function ConfigPanelPage() {
 
           <div className="config-settings-save-row"><span className="config-card-status" role="status">{retrySettingsDirty ? st('dirty') : ''}</span><button
                 type="button"
-                className="primary-button compact-button"
+                className="config-card-save primary-button compact-button"
                 disabled={controlsDisabled || !retrySettingsDirty}
                 onClick={() => void saveRetrySettings()}
               >
@@ -2145,7 +2175,7 @@ export function ConfigPanelPage() {
               </button>
               <button
                 type="button"
-                className="primary-button compact-button"
+                className="config-card-save primary-button compact-button"
                 disabled={controlsDisabled || !loggingSettingsDirty}
                 onClick={() => void saveCoreLoggingSettings()}
               >
@@ -2387,7 +2417,7 @@ export function ConfigPanelPage() {
 
           <div className="config-settings-save-row"><span className="config-card-status" role="status">{softwareSettingsDirty ? st('dirty') : ''}</span><button
                   type="button"
-                  className="primary-button compact-button"
+                  className="config-card-save primary-button compact-button"
                   disabled={softwareSettingsLoading || softwareSettings === null || busyAction !== null || !softwareSettingsDirty}
                   onClick={() => void saveSoftwareSettings()}
                 >
@@ -2404,9 +2434,22 @@ export function ConfigPanelPage() {
               <button type="button" className="secondary-button compact-button" aria-expanded={showPluginAdvanced} onClick={() => setShowPluginAdvanced(value => !value)}>{st(showPluginAdvanced ? 'pluginGuideHide' : 'pluginGuideShow')}</button>
             </div>
           </section> : null}
-          <div id="config-template-panel" hidden={searching || templateGroups.length === 0}><TemplateConfigSection groups={allSettingsTemplateGroups} visibleGroups={templateGroups.map(group => group.id)} onDirtyGroupsChange={setDirtyTemplateGroups} /></div>
+          {!searching && activeSubpage === 'oauth' ? <section className="config-extension-guide" aria-labelledby="config-upstream-guide-title">
+            <h2 id="config-upstream-guide-title">{t('config.upstreamGuide.title')}</h2>
+            <p>{t('config.upstreamGuide.body')}</p>
+            <div className="config-extension-guide-actions">
+              <button type="button" className="secondary-button compact-button" aria-expanded={showUpstreamAdvanced} onClick={() => setShowUpstreamAdvanced(value => !value)}>{t(showUpstreamAdvanced ? 'config.upstreamGuide.hide' : 'config.upstreamGuide.show')}</button>
+            </div>
+          </section> : null}
+          <div id="config-template-panel" hidden={searching || templateGroups.length === 0}><TemplateConfigSection groups={allSettingsTemplateGroups} visibleGroups={templateGroups.map(group => group.id)} onDirtyGroupsChange={setDirtyTemplateGroups} saveAllRef={templateSaveAll} hideGroupSave /></div>
           <div id="config-native-aliases" tabIndex={-1} role="region" aria-label={t('app.nav.thinkingAliases')} hidden={searching || activeSubpage !== 'aliases'}>{aliasesVisited ? <ThinkingAliasesPage embedded /> : null}</div>
           <div id="config-native-sensitive-words" tabIndex={-1} role="region" aria-label={t('config.sensitiveWords.title')} hidden={searching || activeSubpage !== 'requests'}>{sensitiveWordsVisited ? <SensitiveWordsPage onDirtyChange={setSensitiveWordsDirty} /> : null}</div>
+          {tabBarDirty ? <div className="config-save-bar" role="region" aria-label={t('config.saveBar.unsaved')}>
+            <span role="status"><span className="config-nav-dirty" aria-hidden="true" />{t('config.saveBar.unsaved')}</span>
+            <button type="button" className="primary-button compact-button" disabled={savingTab || busyAction !== null} onClick={() => void saveTab()}>
+              <Check size={16} aria-hidden="true" />{savingTab ? t('common.saving') : t('config.saveBar.saveAll')}
+            </button>
+          </div> : null}
         </div>
       </div>
 

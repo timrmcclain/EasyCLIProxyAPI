@@ -4,3 +4,25 @@ export const oauthSubpages = [
 ] as const;
 
 export type OAuthSubpage = (typeof oauthSubpages)[number]['id'];
+
+// Lets another page open Accounts on a specific tab (e.g. Quota Lookup's "Sign in again").
+// Kept until Accounts mounts and reads it, since navigation and mounting happen in that order.
+let pendingSubpage: OAuthSubpage | null = null;
+export const OAUTH_SUBPAGE_EVENT = 'app:oauth-subpage';
+
+export function requestOAuthSubpage(subpage: OAuthSubpage) {
+  pendingSubpage = subpage;
+  window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'oauth' }));
+  window.dispatchEvent(new CustomEvent(OAUTH_SUBPAGE_EVENT, { detail: subpage }));
+}
+
+export function takePendingOAuthSubpage(): OAuthSubpage | null {
+  const subpage = pendingSubpage;
+  pendingSubpage = null;
+  return subpage;
+}
+
+/** True for quota errors that mean the saved sign-in no longer works, not a transient failure. */
+export function isSignInExpiredError(message: string | undefined) {
+  return Boolean(message) && /\b401\b|unauthori[sz]ed|invalid[_ ]grant|token (has )?expired|expired token|refresh token|re-?authenticate|sign in again|login again/i.test(message!);
+}

@@ -175,7 +175,8 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           const buttons = elements.map(button => button.getBoundingClientRect());
           return {
             aboveContent: bounds.top >= header.bottom - 1 && bounds.bottom <= panel.top + 1,
-            singleRow: Math.max(...buttons.map(button => button.top)) - Math.min(...buttons.map(button => button.top)) <= 1,
+            // Tabs wrap onto further rows rather than scrolling out of sight.
+            allVisible: buttons.every(button => button.left >= bounds.left - 1 && button.right <= bounds.right + 1 && button.width > 0),
             labelsFit: elements.every((button, index) => {
               const range = document.createRange();
               range.selectNodeContents(button);
@@ -188,15 +189,10 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           };
         });
         assert.equal(navigationLayout.aboveContent, true, `${label}: category navigation belongs above settings content`);
-        assert.equal(navigationLayout.singleRow, true, `${label}: all eight categories must stay in a single horizontal row`);
+        assert.equal(navigationLayout.allVisible, true, `${label}: all eight categories are visible without scrolling`);
         assert.equal(navigationLayout.labelsFit, true, `${label}: complete category labels must fit their own buttons`);
         if (viewport.width === 640) {
-          assert.equal(navigationLayout.overflowing, true, `${label}: narrow navigation keeps readable labels through scrolling`);
-          assert.equal(navigationLayout.scrollable, true, `${label}: narrow category navigation exposes horizontal scrolling`);
-          assert.equal(await navigation.evaluate(element => {
-            element.scrollLeft = element.scrollWidth;
-            return element.scrollLeft > 0;
-          }), true, `${label}: users can scroll to categories at the right edge`);
+          assert.equal(navigationLayout.overflowing, false, `${label}: narrow navigation wraps instead of hiding categories off to the side`);
         }
         const finalCategory = page.locator('#config-subpage-tab-software');
         await reachable(finalCategory, 'rightmost horizontal category');
@@ -320,9 +316,10 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           const left = await page.locator('#config-group-codex-client').boundingBox();
           const right = await page.locator('#config-group-multimedia').boundingBox();
           assert.ok(Math.abs(left.y - right.y) <= 1 && Math.abs(left.height - right.height) <= 1, 'paired template cards align at both edges');
-          const leftSave = await page.locator('#config-group-codex-client .template-config-actions button').last().boundingBox();
-          const rightSave = await page.locator('#config-group-multimedia .template-config-actions button').last().boundingBox();
-          assert.ok(Math.abs(leftSave.y + leftSave.height - rightSave.y - rightSave.height) <= 1, 'paired save buttons share a bottom baseline');
+          // Cards save through the tab's Save bar; their action rows (status, Discard) still line up.
+          const leftActions = await page.locator('#config-group-codex-client .template-config-actions').boundingBox();
+          const rightActions = await page.locator('#config-group-multimedia .template-config-actions').boundingBox();
+          assert.ok(Math.abs(leftActions.y + leftActions.height - rightActions.y - rightActions.height) <= 1, 'paired action rows share a bottom baseline');
         }
         await noOverflow('model and request behavior');
         assert.equal(await page.locator('#config-native-aliases').isVisible(), false, 'aliases are separate from model and request settings');
@@ -371,6 +368,9 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
         await noOverflow('sensitive words');
 
         await tab('oauth');
+        // Upstreams & credentials is expert-only: folded behind 'Show advanced settings' until asked for.
+        await templateVisible('oauth-common', false);
+        await page.locator('#config-subpage-panel').getByRole('button', { name: locale === 'en' ? 'Show advanced settings' : '显示高级设置', exact: true }).click();
         for (const id of ['oauth-common', 'oauth-models', 'oauth-codex', 'oauth-media', 'oauth-claude', 'oauth-others']) await templateVisible(id);
         await noOverflow('upstream credentials');
         await tab('requests');
@@ -497,11 +497,10 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           assert.equal(await hasDirtyMarker('routing'), true, `${label}: dirty category remains marked while inactive`);
           await tab('routing');
           assert.equal(await retryInput.inputValue(), '5', `${label}: changing categories preserves core drafts`);
-          const retrySave = retrySection.getByRole('button', { name: locale === 'en' ? /Save/ : /保存/ });
-          await retrySave.click();
-          await page.waitForFunction(button => {
-            return button?.disabled && !/正在保存|保存中|saving/i.test(button.textContent);
-          }, await retrySave.elementHandle());
+          // The tab's Save bar saves only this tab; the general tab's template draft must survive it.
+          const saveBar = page.locator('.config-save-bar');
+          await saveBar.getByRole('button', { name: locale === 'en' ? 'Save all' : '全部保存', exact: true }).click();
+          await saveBar.waitFor({ state: 'detached' });
           assert.equal(await hasDirtyMarker('routing', false), false, `${label}: saving clears the category marker`);
           await tab('general');
           assert.equal(await remoteManagement.isChecked(), true, `${label}: saving another category preserves template drafts`);

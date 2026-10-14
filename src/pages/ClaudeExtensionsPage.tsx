@@ -167,7 +167,7 @@ export function ClaudeExtensionsPage() {
     {overview?.claudeFound && <section className="jev-card" aria-labelledby="ext-plugins-title">
       <header className="jev-card-heading">
         <h2 id="ext-plugins-title" className="jev-section-title">{t('ext.plugins.title')}</h2>
-        <p className="jev-counts">{t('ext.plugins.count', { on: managed.filter(plugin => plugin.enabled).length, total: managed.length })}</p>
+        <p className="jev-counts">{t('ext.plugins.count', { on: plugins.filter(plugin => plugin.enabled || isSessionPlugin(plugin)).length, total: plugins.length })}</p>
       </header>
       {!plugins.length ? <p className="glance-muted">{t('ext.plugins.none')}</p>
         : <ul className="ext-list">
@@ -184,14 +184,14 @@ export function ClaudeExtensionsPage() {
                 {details[plugin.id] !== undefined && <pre className="ext-details">{details[plugin.id]}</pre>}
               </div>
               {!session && <div className="ext-actions">
-                <button type="button" className="secondary-button compact-button" onClick={() => void toggleDetails(plugin.id)} aria-expanded={details[plugin.id] !== undefined}>
-                  {details[plugin.id] !== undefined ? t('ext.plugins.hideContents') : t('ext.plugins.contents')}
-                </button>
                 <label className="ext-switch" title={t('ext.plugins.toggle', { name })}>
                   <input type="checkbox" role="switch" checked={plugin.enabled} disabled={busy !== null} aria-label={t('ext.plugins.toggle', { name })}
                     onChange={event => void run(`toggle:${plugin.id}`, () => service.setPluginEnabled(plugin.id, plugin.scope, event.currentTarget.checked))} />
                   <span>{plugin.enabled ? t('ext.plugins.on') : t('ext.plugins.off')}</span>
                 </label>
+                <button type="button" className="secondary-button compact-button" onClick={() => void toggleDetails(plugin.id)} aria-expanded={details[plugin.id] !== undefined}>
+                  {details[plugin.id] !== undefined ? t('ext.plugins.hideContents') : t('ext.plugins.contents')}
+                </button>
                 <button type="button" className="secondary-button compact-button ext-danger" disabled={busy !== null} onClick={() => void removePlugin(plugin)}>
                   {t('ext.plugins.remove')}
                 </button>
@@ -199,8 +199,12 @@ export function ClaudeExtensionsPage() {
             </li>;
           })}
         </ul>}
+    </section>}
 
-      <h3 className="ext-subheading">{t('ext.add.title')}</h3>
+    {overview?.claudeFound && <section className="jev-card" aria-labelledby="ext-add-title">
+      <header className="jev-card-heading">
+        <h2 id="ext-add-title" className="jev-section-title">{t('ext.add.title')}</h2>
+      </header>
       <label className="ext-search">
         <Search size={14} aria-hidden="true" />
         <input type="search" value={pluginQuery} onChange={event => setPluginQuery(event.currentTarget.value)}
@@ -233,8 +237,33 @@ export function ClaudeExtensionsPage() {
     {overview && <section className="jev-card" aria-labelledby="ext-skills-title">
       <header className="jev-card-heading">
         <h2 id="ext-skills-title" className="jev-section-title">{t('ext.skills.title')}</h2>
-        <p className="jev-counts">{t('ext.skills.count', { count: overview.skills.filter(skill => !skill.notASkill).length, dir: overview.skillsDir })}</p>
+        <p className="jev-counts">{t('ext.skills.count', { count: overview.skills.filter(skill => !skill.notASkill).length, dir: overview.skillsDir })}{overview.skills.some(skill => skill.notASkill) ? ` ${t('ext.skills.otherFolders', { count: overview.skills.filter(skill => skill.notASkill).length })}` : ''}</p>
       </header>
+
+      <label className="ext-search">
+        <Search size={14} aria-hidden="true" />
+        <input type="search" value={skillQuery} onChange={event => setSkillQuery(event.currentTarget.value)} placeholder={t('ext.skills.search')} aria-label={t('ext.skills.search')} />
+      </label>
+      {!skills.length ? <p className="glance-muted">{t('ext.skills.noMatches')}</p>
+        : <ul className="ext-list ext-skills">
+          {[...skills].sort((a, b) => Number(Boolean(a.notASkill)) - Number(Boolean(b.notASkill))).map(skill => <li key={skill.folder} className="ext-row">
+            <div className="ext-main">
+              <strong>{skill.name}</strong>
+              <span className="ext-meta">
+                {skill.folder !== skill.name ? `${skill.folder} · ` : ''}{fileCount(skill.files, skill.bytes)}
+              </span>
+              {skill.description && <span className="ext-description">{skill.description}</span>}
+              {skill.scripts.length > 0 && <span className="ext-scripts">{t('ext.skills.scripts', { list: skill.scripts.slice(0, 4).join(', ') + (skill.scripts.length > 4 ? ` +${skill.scripts.length - 4}` : '') })}</span>}
+            </div>
+            <div className="ext-actions">
+              {skill.linked ? <span className="ext-badge" title={t('ext.skills.linkedHint')}><Link2 size={12} aria-hidden="true" />{t('ext.skills.linked')}</span>
+                : skill.notASkill ? <span className="ext-badge" title={t('ext.skills.notASkillHint')}>{t('ext.skills.notASkill')}</span>
+                  : <button type="button" className="secondary-button compact-button ext-danger" disabled={busy !== null} onClick={() => void removeSkill(skill.folder, skill.name)}>
+                    {t('ext.skills.remove')}
+                  </button>}
+            </div>
+          </li>)}
+        </ul>}
 
       <h3 className="ext-subheading">{t('ext.skills.add.title')}</h3>
       <form className="ext-add-skill" onSubmit={event => { event.preventDefault(); void previewSkill(); }}>
@@ -270,31 +299,6 @@ export function ClaudeExtensionsPage() {
         </ul>
         <div className="jev-actions"><button type="button" className="secondary-button compact-button" onClick={closePreview}>{t('ext.skills.add.discard')}</button></div>
       </div>}
-
-      <label className="ext-search">
-        <Search size={14} aria-hidden="true" />
-        <input type="search" value={skillQuery} onChange={event => setSkillQuery(event.currentTarget.value)} placeholder={t('ext.skills.search')} aria-label={t('ext.skills.search')} />
-      </label>
-      {!skills.length ? <p className="glance-muted">{t('ext.skills.noMatches')}</p>
-        : <ul className="ext-list ext-skills">
-          {skills.map(skill => <li key={skill.folder} className="ext-row">
-            <div className="ext-main">
-              <strong>{skill.name}</strong>
-              <span className="ext-meta">
-                {skill.folder !== skill.name ? `${skill.folder} · ` : ''}{fileCount(skill.files, skill.bytes)}
-              </span>
-              {skill.description && <span className="ext-description">{skill.description}</span>}
-              {skill.scripts.length > 0 && <span className="ext-scripts">{t('ext.skills.scripts', { list: skill.scripts.slice(0, 4).join(', ') + (skill.scripts.length > 4 ? ` +${skill.scripts.length - 4}` : '') })}</span>}
-            </div>
-            <div className="ext-actions">
-              {skill.linked ? <span className="ext-badge" title={t('ext.skills.linkedHint')}><Link2 size={12} aria-hidden="true" />{t('ext.skills.linked')}</span>
-                : skill.notASkill ? <span className="ext-badge" title={t('ext.skills.notASkillHint')}>{t('ext.skills.notASkill')}</span>
-                  : <button type="button" className="secondary-button compact-button ext-danger" disabled={busy !== null} onClick={() => void removeSkill(skill.folder, skill.name)}>
-                    {t('ext.skills.remove')}
-                  </button>}
-            </div>
-          </li>)}
-        </ul>}
     </section>}
     {confirmationDialog}
   </div>;

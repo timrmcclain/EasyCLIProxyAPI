@@ -160,7 +160,13 @@ const pages = [
 type PageId = (typeof pages)[number]['id'];
 // Everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
 const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'secret-guard', 'agents', 'connectors', 'config'];
-const advancedNav: PageId[] = ['health', 'jev', 'claude-extensions', 'compression', 'api', 'plugins', 'quota', 'proxy', 'versions'];
+// Grouped by what they manage, so the proxy's pages sit together and the two kinds of "plugins" are told apart.
+const advancedGroups: ReadonlyArray<{ labelKey: 'personal.advanced.proxy' | 'personal.advanced.claude' | 'personal.advanced.diagnostics'; ids: PageId[] }> = [
+  { labelKey: 'personal.advanced.proxy', ids: ['proxy', 'api', 'plugins', 'quota', 'versions'] },
+  { labelKey: 'personal.advanced.claude', ids: ['claude-extensions', 'compression', 'jev'] },
+  { labelKey: 'personal.advanced.diagnostics', ids: ['health'] },
+];
+const advancedNav: PageId[] = advancedGroups.flatMap((group) => group.ids);
 const LAST_PAGE_KEY = 'personal.lastPage';
 
 function initialPage(): PageId {
@@ -400,6 +406,24 @@ function AppContent() {
     return () => window.removeEventListener(UX_NAVIGATE, navigate);
   }, [coreReady, active]);
 
+  // The sidebar scrolls on short windows; fade its bottom edge while pages are hidden below.
+  const navSectionRef = useRef<HTMLElement>(null);
+  const [navMoreBelow, setNavMoreBelow] = useState(false);
+  const updateNavMoreBelow = useCallback(() => {
+    const nav = navSectionRef.current;
+    setNavMoreBelow(Boolean(nav) && nav!.scrollHeight - nav!.scrollTop - nav!.clientHeight > 4);
+  }, []);
+  useEffect(() => {
+    const nav = navSectionRef.current;
+    if (!nav) return;
+    updateNavMoreBelow();
+    const observer = new ResizeObserver(updateNavMoreBelow);
+    observer.observe(nav);
+    for (const child of Array.from(nav.children)) observer.observe(child);
+    nav.addEventListener('toggle', updateNavMoreBelow, true);
+    return () => { observer.disconnect(); nav.removeEventListener('toggle', updateNavMoreBelow, true); };
+  }, [updateNavMoreBelow]);
+
   // Advanced tools can sit below the sidebar's fold: keep the open page's entry in view.
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -554,11 +578,14 @@ function AppContent() {
           <button type="button" className="sidebar-command-button" onClick={() => setPaletteOpen(true)} aria-keyshortcuts="Control+K">
             <Search size={14} aria-hidden="true" /><span>{t('palette.open')}</span><kbd>{t('palette.shortcut')}</kbd>
           </button>
-          <nav className="nav-section" aria-label={t('app.navigation')}>
+          <nav ref={navSectionRef} className={`nav-section${navMoreBelow ? ' nav-more-below' : ''}`} aria-label={t('app.navigation')} onScroll={updateNavMoreBelow}>
             {primaryNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
             <details className="personal-advanced" open={advancedNav.includes(active) || undefined}>
               <summary>{t('personal.advanced')}</summary>
-              <div>{advancedNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
+              <div>{advancedGroups.map((group) => <div key={group.labelKey} className="personal-advanced-group" role="group" aria-label={t(group.labelKey)}>
+                <span className="personal-advanced-heading" aria-hidden="true">{t(group.labelKey)}</span>
+                {group.ids.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
+              </div>)}
               </div>
             </details>
           </nav>

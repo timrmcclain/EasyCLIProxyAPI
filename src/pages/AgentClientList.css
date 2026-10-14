@@ -12,8 +12,9 @@
   grid-template-rows: none;
   grid-auto-rows: 56px;
   min-height: 56px;
-  overflow: hidden;
-  scrollbar-gutter: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 0;
 }
 

@@ -1,3 +1,4 @@
+import { isSignInExpiredError, requestOAuthSubpage } from '../oauthNavigation';
 import { ResetCreditExpiries } from '../components/ResetCreditExpiries';
 import { MessageNotice } from '../appNotice';
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react';
@@ -239,6 +240,7 @@ export function QuotaCard({ file, quota, onRefresh, onReset, stale = false }: { 
       {quota.status === 'loading' ? <div className="quota-card-message"><LoaderCircle size={18} className="spin" />{t(quota.pendingAction === 'reset' ? 'quota.resetting' : 'quota.querying')}</div> : null}
       {quota.status === 'error' ? <>
         <div className="quota-card-error"><AlertCircle size={18} /><span>{t('authFiles.quota.failed')}{quota.error ? <small>{quota.error}</small> : null}</span></div>
+        {isSignInExpiredError(quota.error) ? <div className="quota-card-message quota-sign-in-again"><span>{t('quota.signInExpired')}</span><button type="button" className="primary-button compact-button" onClick={() => requestOAuthSubpage('login')}>{t('quota.signInAgain')}</button></div> : null}
       </> : null}
       {quota.status === 'success' && (provider === 'codex' || provider === 'claude') ? <div className="quota-reset-credit-summary">
         {(quota.creditsUnlimited || quota.creditBalance !== undefined) ? <span>{t('quota.creditBalance')} <strong>{quota.creditsUnlimited ? t('quota.creditUnlimited') : quota.creditBalance}</strong></span> : null}

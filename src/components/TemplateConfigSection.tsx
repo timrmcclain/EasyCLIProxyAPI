@@ -15,10 +15,14 @@ import '../styles/template-config.css';
 
 const restartHint = { zh: '需重启内核', en: 'Core restart required', ja: 'コアの再起動が必要' } satisfies TemplateText;
 
-export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChange }: {
+export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChange, saveAllRef, hideGroupSave }: {
   groups: readonly TemplateConfigGroup[];
   visibleGroups?: readonly string[];
   onDirtyGroupsChange?: (groupIds: readonly string[]) => void;
+  /** Set to a function that saves every changed group in the given ids, one after another. */
+  saveAllRef?: { current: ((groupIds: readonly string[]) => Promise<void>) | null };
+  /** The page shows one Save bar instead, so cards keep only Discard. */
+  hideGroupSave?: boolean;
 }) {
   const { locale } = useI18n();
   const { status, publishStatus, refreshStatus } = useCoreRuntime();
@@ -168,6 +172,12 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
   };
 
   const visible = groups.filter((group) => !visibleGroups || visibleGroups.includes(group.id));
+  if (saveAllRef) saveAllRef.current = async (groupIds) => {
+    for (const group of groups) {
+      if (groupIds.includes(group.id) && group.fields.some((field) => drafts[templateFieldKey(field.path)])) await saveGroup(group);
+    }
+  };
+
   return <div className="template-config-section" hidden={visible.length === 0}>
     {loadError ? <div className="template-config-notice template-config-error" role="alert"><span>{loadError}</span><button type="button" className="secondary-button compact-button" disabled={busy !== null} onClick={() => void reload()}>{tr('reload')}</button></div> : null}
     {!config && !loadError ? <p role="status">{tr('loading')}</p> : null}
@@ -194,7 +204,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
           </div>;
         })}</div>
         {groupErrors[group.id] ? <p className="template-config-error" role="alert">{groupErrors[group.id]}</p> : null}
-        <div className="template-config-actions"><span className={dirty ? 'template-config-action-status-dirty' : saved[group.id] ? 'template-config-action-status-saved' : undefined} role="status">{dirty ? tr('dirty') : saved[group.id] ? tr('saved') : ''}</span><div>{dirty ? <button type="button" className="secondary-button compact-button" disabled={busy !== null} onClick={() => discardGroup(group)}>{tr('discard')}</button> : null}<button type="button" className="primary-button compact-button" disabled={!dirty || busy !== null || !config} onClick={() => void saveGroup(group)}><Save size={16} aria-hidden="true" />{busy === group.id ? tr('saving') : tr('save')}</button></div></div>
+        <div className="template-config-actions"><span className={dirty ? 'template-config-action-status-dirty' : saved[group.id] ? 'template-config-action-status-saved' : undefined} role="status">{dirty ? tr('dirty') : saved[group.id] ? tr('saved') : ''}</span><div>{dirty ? <button type="button" className="secondary-button compact-button" disabled={busy !== null} onClick={() => discardGroup(group)}>{tr('discard')}</button> : null}{hideGroupSave ? null : <button type="button" className="primary-button compact-button" disabled={!dirty || busy !== null || !config} onClick={() => void saveGroup(group)}><Save size={16} aria-hidden="true" />{busy === group.id ? tr('saving') : tr('save')}</button>}</div></div>
       </section>;
     })}
   </div>;

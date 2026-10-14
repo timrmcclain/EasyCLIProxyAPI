@@ -2030,6 +2030,17 @@ export function ApiProviderDialog({
   const { askConfirmation, confirmationDialog } = useConfirmation();
   const initialDraftSnapshot = useMemo(() => JSON.stringify(initialDraft), [initialDraft]);
   const draftDirty = JSON.stringify(draft) !== initialDraftSnapshot;
+  // The same rules the save handler enforces, shown live so Save never sits disabled without a reason.
+  const baseUrlNeeded = activeSection === 'codex-api-key' || activeSection === 'openai-compatibility';
+  const keyMissing = draft.groupKeys
+    ? !draft.groupKeys.some(({ value }) => readString(value, 'api-key').trim())
+    : !draft.apiKey.trim();
+  const missingFields = [
+    definition.openAi && !draft.name.trim() ? t('apiAccess.entries.name') : '',
+    baseUrlNeeded && !draft.baseUrl.trim() ? t('apiAccess.field.baseUrl') : '',
+    keyMissing ? t('apiAccess.field.key') : '',
+  ].filter(Boolean);
+  const requiredMark = <span className="field-required" title={t('apiAccess.dialog.required')} aria-hidden="true">*</span>;
   useUnsavedChangesGuard('api-access-provider', draftDirty);
   const [modelListOpen, setModelListOpen] = useState(initialDraft.models.length <= 3);
   const requestClose = useCallback(async () => {
@@ -2337,12 +2348,12 @@ export function ApiProviderDialog({
         <section className="provider-dialog-section">
         <h3>{t('apiAccess.entries.basic')} · {providerLabel(definition)}</h3>
         <div className="provider-dialog-basic-grid">
-        {definition.openAi ? <label><span>{t('apiAccess.entries.name')}</span><input autoFocus value={draft.name} maxLength={80} onChange={(event) => updateTextField('name', event.currentTarget.value)} placeholder={t('apiAccess.entries.namePlaceholder')} /></label> : null}
+        {definition.openAi ? <label><span>{t('apiAccess.entries.name')}{requiredMark}</span><input autoFocus aria-required="true" value={draft.name} maxLength={80} onChange={(event) => updateTextField('name', event.currentTarget.value)} placeholder={t('apiAccess.entries.namePlaceholder')} /></label> : null}
         <label><span>{t('apiAccess.field.remark')}</span><input value={draft.remark} maxLength={80} onChange={(event) => updateTextField('remark', event.currentTarget.value)} placeholder={t('apiAccess.remarkPlaceholder')} /></label>
-        <label><span>{t('apiAccess.field.baseUrl')}</span><input value={draft.baseUrl} onChange={(event) => updateTextField('baseUrl', event.currentTarget.value)} placeholder={activeSection === 'codex-api-key' || activeSection === 'openai-compatibility' ? t('apiAccess.baseRequiredPlaceholder') : t('apiAccess.baseOptionalPlaceholder')} /></label>
+        <label><span>{t('apiAccess.field.baseUrl')}{baseUrlNeeded ? requiredMark : null}</span><input value={draft.baseUrl} aria-required={baseUrlNeeded} onChange={(event) => updateTextField('baseUrl', event.currentTarget.value)} placeholder={activeSection === 'codex-api-key' || activeSection === 'openai-compatibility' ? t('apiAccess.baseRequiredPlaceholder') : t('apiAccess.baseOptionalPlaceholder')} /></label>
         </div>
         {!definition.openAi ? <div className="provider-dialog-secret">
-          <label><span>{t('apiAccess.field.key')}</span><input autoFocus type={keyVisible ? 'text' : 'password'} autoComplete="off" spellCheck={false}
+          <label><span>{t('apiAccess.field.key')}{requiredMark}</span><input autoFocus aria-required="true" type={keyVisible ? 'text' : 'password'} autoComplete="off" spellCheck={false}
             value={draft.apiKey} onChange={(event) => updateTextField('apiKey', event.currentTarget.value)} placeholder="sk-..." /></label>
           <button type="button" className="secondary-button compact-button" aria-pressed={keyVisible} onClick={() => setKeyVisible((value) => !value)}>
             {t(keyVisible ? 'apiAccess.entries.hideKey' : 'apiAccess.entries.showKey')}
@@ -2489,9 +2500,9 @@ export function ApiProviderDialog({
           <MessageNotice inline message={formError} onDismiss={() => setFormError('')} />
         ) : null}
         <div className="config-dialog-actions two-actions">
-          <span className="config-card-status" role="status">{draftDirty ? t('common.unsavedChanges') : ''}</span>
+          <span className="config-card-status" role="status">{missingFields.length ? t('apiAccess.dialog.stillNeeded', { fields: missingFields.join(', ') }) : draftDirty ? t('common.unsavedChanges') : t('apiAccess.dialog.nothingChanged')}</span>
           <button type="button" className="secondary-button" onClick={() => void requestClose()} disabled={busy}>{t('common.cancel')}</button>
-          <button type="submit" className="primary-button" disabled={busy || !draftDirty}>{busy ? t('common.saving') : t('common.save')}</button>
+          <button type="submit" className="primary-button" disabled={busy || !draftDirty || missingFields.length > 0}>{busy ? t('common.saving') : t('common.save')}</button>
         </div>
       </form>
       </div>

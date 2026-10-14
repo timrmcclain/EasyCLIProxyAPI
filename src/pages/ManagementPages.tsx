@@ -17,7 +17,7 @@ import kimiIcon from '../assets/icons/kimi-light.svg';
 import metaIcon from '../assets/icons/meta.svg';
 import { useI18n } from '../i18n';
 import { FeedbackNotice, MessageNotice, useAppNotice, type NoticeMessage } from '../appNotice';
-import { oauthSubpages, type OAuthSubpage } from '../oauthNavigation';
+import { OAUTH_SUBPAGE_EVENT, oauthSubpages, takePendingOAuthSubpage, type OAuthSubpage } from '../oauthNavigation';
 import {
   changedOAuthAuthFileNames,
   snapshotAuthFiles,
@@ -123,7 +123,12 @@ const cachedOAuthProviderStates = (): Partial<Record<OAuthProviderId, OAuthProvi
 
 export function OAuthManagementPage() {
   const { t } = useI18n();
-  const [activeSubpage, setActiveSubpage] = useState<OAuthSubpage>('authFiles');
+  const [activeSubpage, setActiveSubpage] = useState<OAuthSubpage>(() => takePendingOAuthSubpage() ?? 'authFiles');
+  useEffect(() => {
+    const open = (event: Event) => { takePendingOAuthSubpage(); setActiveSubpage((event as CustomEvent<OAuthSubpage>).detail); };
+    window.addEventListener(OAUTH_SUBPAGE_EVENT, open);
+    return () => window.removeEventListener(OAUTH_SUBPAGE_EVENT, open);
+  }, []);
   const subpageIds = oauthSubpages.map((subpage) => subpage.id);
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, subpage: OAuthSubpage) => {
     handleHorizontalTabKey(

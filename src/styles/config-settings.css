@@ -9,7 +9,7 @@
 .config-settings-search button { flex: none; width: 26px; height: 26px; }
 .config-settings-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; min-width: 0; }
 .config-settings-topnav { position: sticky; top: 0; z-index: 10; min-width: 0; padding-top: 8px; background: var(--bg-secondary); }
-.config-settings-navigation.config-subpage-tabs { display: flex; flex-wrap: nowrap; gap: 4px; width: 100%; max-width: 100%; padding: 0 0 4px; margin: 0; border: 0; border-bottom: 1px solid var(--border-color); background: none; border-radius: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; scroll-padding-inline: 4px; }
+.config-settings-navigation.config-subpage-tabs { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; max-width: 100%; padding: 0 0 4px; margin: 0; border: 0; border-bottom: 1px solid var(--border-color); background: none; border-radius: 0; overflow: visible; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; scroll-padding-inline: 4px; }
 .config-settings-navigation::-webkit-scrollbar { height: 5px; }
 .config-settings-navigation::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border-color); }
 .config-page .config-settings-navigation.config-subpage-tabs button { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; min-width: 0; width: auto; height: auto; min-height: 44px; margin: 0; padding: 10px 12px; border: 1px solid transparent; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; background: transparent; color: var(--text-secondary); text-align: center; white-space: nowrap; font-size: 12px; line-height: 1.5; font-weight: 500; box-shadow: none; }
@@ -561,3 +561,8 @@
 .config-rotation-pending span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .config-rotation-pending strong { font: 600 12px ui-monospace, monospace; color: var(--c-warning); }
 .config-rotation-pending small { font-size: 12px; color: var(--text-secondary); }
+/* One Save bar per tab replaces the per-card Save buttons it covers. */
+.config-page .config-settings-content .config-card-save { display: none; }
+.config-save-bar { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); box-shadow: var(--shadow-md, 0 4px 14px rgba(0, 0, 0, 0.12)); }
+.config-save-bar > span { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.config-save-bar .config-nav-dirty { margin: 0; }

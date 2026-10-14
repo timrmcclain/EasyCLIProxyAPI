@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
+import { RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
 import { MessageNotice } from '../appNotice';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { useI18n } from '../i18n';
@@ -41,8 +41,6 @@ export function AgentClientList<Id extends string>({
   const { t } = useI18n();
   const [visibleIds, setVisibleIds] = useState(() => readVisibleClients(clients));
   const [managing, setManaging] = useState(false);
-  const [capacity, setCapacity] = useState(1);
-  const [page, setPage] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const close = () => setManaging(false);
   const [draftIds, setDraftIds] = useState<Id[] | null>(null);
@@ -53,10 +51,6 @@ export function AgentClientList<Id extends string>({
   const automaticIds = orderedClients.filter((client) => client.detected || client.id === selected)
     .map((client) => client.id);
   const visibleClients = orderedClients.filter((client) => (visibleIds ?? automaticIds).includes(client.id));
-  const pageCount = Math.max(1, Math.ceil(visibleClients.length / capacity));
-  const currentPage = Math.min(page, pageCount - 1);
-  const pageClients = visibleClients.slice(currentPage * capacity, (currentPage + 1) * capacity);
-  const selectedIndex = visibleClients.findIndex((client) => client.id === selected);
   const draftSelection = draftIds ?? automaticIds;
   const searchRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
@@ -67,21 +61,10 @@ export function AgentClientList<Id extends string>({
     initialFocusRef: searchRef,
   });
 
+  // The list scrolls; keep the selected client in view when it changes or the list resizes.
   useLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const resize = () => setCapacity(Math.max(1, Math.floor((list.clientHeight + 4) / 60)));
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(list);
-    return () => observer.disconnect();
-  }, []);
-
-  // Navigation is a contiguous page of the saved list, never a replacement of its last row.
-  // Opening a client or resizing reveals its page; browsing pages does not select a client.
-  useLayoutEffect(() => {
-    setPage(Math.floor(Math.max(0, selectedIndex) / capacity));
-  }, [capacity, selected, selectedIndex]);
+    listRef.current?.querySelector<HTMLElement>('button.active')?.scrollIntoView({ block: 'nearest' });
+  }, [selected, visibleClients.length]);
 
   useEffect(() => {
     if (!busy && visibleIds && !visibleIds.includes(selected) && visibleIds.length) {
@@ -122,7 +105,7 @@ export function AgentClientList<Id extends string>({
       </div>
       {error ? <MessageNotice inline message={error} onDismiss={onDismissError} /> : null}
       <div className="agent-list-items" ref={listRef}>
-        {pageClients.map((client) => <button type="button" key={client.id}
+        {visibleClients.map((client) => <button type="button" key={client.id}
           className={selected === client.id ? 'active' : ''} aria-pressed={selected === client.id}
           onClick={() => onSelect(client.id)} disabled={busy}>
           <span className="agent-client-icon">{client.icon}</span>
@@ -131,15 +114,6 @@ export function AgentClientList<Id extends string>({
         </button>)}
       </div>
       <div className="agent-client-list-footer">
-        <nav className="agent-client-pagination" aria-label={t('agents.clients.pages')}>
-          <button type="button" className="icon-button quiet" disabled={busy || currentPage === 0}
-            aria-label={t('agents.clients.previous')} title={t('agents.clients.previous')}
-            onClick={() => setPage(currentPage - 1)}><ChevronLeft size={16} aria-hidden="true" /></button>
-          <span aria-live="polite">{t('agents.clients.page', { page: currentPage + 1, total: pageCount })}</span>
-          <button type="button" className="icon-button quiet" disabled={busy || currentPage + 1 === pageCount}
-            aria-label={t('agents.clients.next')} title={t('agents.clients.next')}
-            onClick={() => setPage(currentPage + 1)}><ChevronRight size={16} aria-hidden="true" /></button>
-        </nav>
         <small>{t('agents.clients.listed', { count: visibleClients.length })}</small>
         <button type="button" className="secondary-button compact-button" disabled={busy || loading}
           onClick={() => { setDraftIds(visibleIds); setQuery(''); setManaging(true); }}>
