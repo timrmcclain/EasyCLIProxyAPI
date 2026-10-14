@@ -33,7 +33,9 @@ export function summarizeUptime(history: ProxyUptime, now: number): UptimeSummar
   let outages = 0;
   let wasDown = false;
   for (const bucket of recent) {
-    const isDown = bucket.down > 0 && bucket.up === 0;
+    // Two failed checks (a minute) in a bucket is an outage even if the proxy was up for the rest of it;
+    // a single failed check can be a restart.
+    const isDown = bucket.down >= 2 || (bucket.down > 0 && bucket.up === 0);
     if (isDown && !wasDown) outages += 1;
     wasDown = isDown;
   }
@@ -59,8 +61,17 @@ const listeners = new Set<() => void>();
 const noUptime: ProxyUptime = [];
 
 export function getProxyUptime(): ProxyUptime {
-  try { uptime ??= JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as ProxyUptime; } catch { uptime = []; }
-  return Array.isArray(uptime) ? uptime : [];
+  if (uptime === null) {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+      // Damaged storage would otherwise break every check after it.
+      uptime = Array.isArray(parsed)
+        ? parsed.filter((bucket): bucket is UptimeBucket => !!bucket && typeof bucket === 'object'
+          && [bucket.at, bucket.up, bucket.down].every(value => typeof value === 'number'))
+        : [];
+    } catch { uptime = []; }
+  }
+  return uptime;
 }
 
 export function setProxyUptime(next: ProxyUptime) {

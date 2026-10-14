@@ -356,7 +356,7 @@ pub(crate) async fn claude_plugin_install(app: tauri::AppHandle, id: String, acc
     if !valid_plugin_id(&id) {
         return Err("Not a plugin id".to_string());
     }
-    if accept_command.as_deref().is_some_and(|sha| !sha.chars().all(|c| c.is_ascii_hexdigit())) {
+    if accept_command.as_deref().is_some_and(|sha| sha.is_empty() || !sha.chars().all(|c| c.is_ascii_hexdigit())) {
         return Err("Not a command fingerprint".to_string());
     }
     let home = home(&app)?;
@@ -373,7 +373,9 @@ pub(crate) async fn claude_plugin_install(app: tauri::AppHandle, id: String, acc
         }
         installed?;
         // Keep it off until the user has seen what it contains.
-        claude_cli(&home, &["plugin", "disable", &id])?;
+        claude_cli(&home, &["plugin", "disable", &id]).map_err(|error| {
+            format!("Installed, but it couldn't be switched off, so it is on now. Turn it off on this page. ({error})")
+        })?;
         let details = claude_cli(&home, &["plugin", "details", &id]).unwrap_or_default();
         Ok(InstallOutcome::Installed { details })
     })
@@ -550,7 +552,11 @@ fn copy_dir(from: &Path, to: &Path) -> std::io::Result<()> {
 }
 
 fn install_from_preview(preview: &Path, skills_dir: &Path, path: &str, folder: &str) -> Result<(), String> {
-    if !valid_folder(folder) || path.split('/').any(|part| part == "..") {
+    // Check real path parts, so backslash paths on Windows can't climb out of the download either.
+    let climbs_out = Path::new(path)
+        .components()
+        .any(|part| !matches!(part, std::path::Component::Normal(_) | std::path::Component::CurDir));
+    if !valid_folder(folder) || climbs_out {
         return Err("Not a skill folder".to_string());
     }
     let from = preview.join(path);
@@ -713,6 +719,8 @@ mod tests {
         assert!(install_from_preview(&preview, &skills, "skills/demo", "demo").unwrap_err().contains("already installed"));
         assert!(install_from_preview(&preview, &skills, "../preview/skills/demo", "other").is_err());
         assert!(install_from_preview(&preview, &skills, "skills/demo", "..").is_err());
+        // Backslash paths climb out on Windows; they must be refused too.
+        assert!(install_from_preview(&preview, &skills, "skills\\..\\..\\preview\\skills\\demo", "other").is_err());
         let _ = fs::remove_dir_all(&root);
     }
 }

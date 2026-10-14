@@ -512,10 +512,15 @@ pub(crate) fn show_windows_tray_action_error(app_handle: &tauri::AppHandle, erro
     if let Some(tray_state) = app_handle.try_state::<WindowsTrayState>() {
         tray_state.show_error(error);
     }
+    // Keep the quota line under the status, as the normal tooltip does.
+    let quota = app_handle
+        .try_state::<WindowsTrayState>()
+        .and_then(|state| state.quota_tooltip.lock().ok().map(|text| text.clone()))
+        .unwrap_or_default();
     if let Some(tray) = app_handle.tray_by_id(WINDOWS_TRAY_ID) {
-        if let Err(update_error) = tray.set_tooltip(Some(native_text(
-            &locale,
-            NativeText::TooltipCoreOperationFailed,
+        if let Err(update_error) = tray.set_tooltip(Some(windows_tray_tooltip(
+            &native_text(&locale, NativeText::TooltipCoreOperationFailed),
+            &quota,
         ))) {
             eprintln!("Failed to update desktop tray error tooltip: {update_error}");
         }
@@ -534,9 +539,10 @@ pub(crate) fn run_windows_tray_core_action(
         return;
     }
     if let Some(tray) = app_handle.tray_by_id(WINDOWS_TRAY_ID) {
-        if let Err(error) = tray.set_tooltip(Some(native_text(
-            &tray_state.locale(),
-            NativeText::TooltipCoreWorking,
+        let quota = tray_state.quota_tooltip.lock().map(|text| text.clone()).unwrap_or_default();
+        if let Err(error) = tray.set_tooltip(Some(windows_tray_tooltip(
+            &native_text(&tray_state.locale(), NativeText::TooltipCoreWorking),
+            &quota,
         ))) {
             eprintln!("Failed to update desktop tray busy tooltip: {error}");
         }

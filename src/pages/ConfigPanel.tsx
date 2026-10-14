@@ -219,6 +219,8 @@ export function ConfigPanelPage() {
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
   const [desktopAlerts, setDesktopAlerts] = useState(() => readDesktopAlertsPreference());
   const [globalHotkey, setGlobalHotkey] = useState(() => readGlobalHotkeyPreference());
+  const [globalHotkeyBusy, setGlobalHotkeyBusy] = useState(false);
+  const globalHotkeyBusyRef = useRef(false);
   const [claudeStatusLine, setClaudeStatusLine] = useState<boolean | null>(null);
   const [claudeStatusLineBusy, setClaudeStatusLineBusy] = useState(false);
 
@@ -858,11 +860,19 @@ export function ConfigPanelPage() {
   };
 
   const changeGlobalHotkey = async (enabled: boolean, offerUndo = true) => {
+    // One change at a time: two in flight could finish out of order and leave the saved switch
+    // disagreeing with the shortcut that is actually registered.
+    if (globalHotkeyBusyRef.current) return;
+    globalHotkeyBusyRef.current = true;
+    setGlobalHotkeyBusy(true);
     try {
       await invoke('set_global_hotkey', { enabled });
     } catch (error) {
       softwareFeedback.showNotice({ key: 'hotkey.failed', variables: { error: String(error) } }, 'error');
       return;
+    } finally {
+      globalHotkeyBusyRef.current = false;
+      setGlobalHotkeyBusy(false);
     }
     setGlobalHotkey(enabled);
     saveGlobalHotkeyPreference(enabled);
@@ -2291,6 +2301,7 @@ export function ConfigPanelPage() {
                       role="switch"
                       aria-label={t('hotkey.setting')}
                       checked={globalHotkey}
+                      disabled={globalHotkeyBusy}
                       onChange={(event) => { void changeGlobalHotkey(event.currentTarget.checked); }}
                     />
                     <span className="switch-track" />

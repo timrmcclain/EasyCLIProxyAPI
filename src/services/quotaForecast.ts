@@ -75,7 +75,13 @@ export function forecastQuota(samples: QuotaSample[] | undefined, now: number): 
 const STORAGE_KEY = 'personal.quotaHistory';
 
 function readStoredHistory(): QuotaHistory {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as QuotaHistory; } catch { return {}; }
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    // Keep only well-formed lists: one damaged entry would otherwise make every quota check throw.
+    return Object.fromEntries(Object.entries(parsed).filter(([, samples]) => Array.isArray(samples)
+      && samples.every(sample => !!sample && typeof sample.at === 'number' && typeof sample.percent === 'number'))) as QuotaHistory;
+  } catch { return {}; }
 }
 
 let history: QuotaHistory | null = null;

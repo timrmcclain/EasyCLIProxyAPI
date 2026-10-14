@@ -28,8 +28,10 @@ pub(crate) struct ProxyListenStatus {
 }
 
 pub(crate) fn is_loopback(host: &str) -> bool {
-    matches!(host.trim().to_ascii_lowercase().as_str(), "127.0.0.1" | "localhost" | "::1" | "[::1]")
-        || host.trim().starts_with("127.")
+    let host = host.trim();
+    // Parse rather than match a "127." prefix, so a hostname such as 127.example.com isn't taken as local.
+    matches!(host.to_ascii_lowercase().as_str(), "localhost" | "[::1]")
+        || host.parse::<std::net::IpAddr>().is_ok_and(|address| address.is_loopback())
 }
 
 fn hidden(command: &mut Command) -> &mut Command {
@@ -64,7 +66,8 @@ pub(crate) fn tasklist_name(csv: &str) -> Option<String> {
 }
 
 fn port_owner(port: u16) -> Option<PortOwner> {
-    let netstat = hidden(Command::new("netstat").args(["-ano", "-p", "tcp"])).output().ok()?;
+    // No "-p tcp": that lists IPv4 only, and the owner may be listening on [::]:port.
+    let netstat = hidden(Command::new("netstat").arg("-ano")).output().ok()?;
     let pid = listening_pid(&String::from_utf8_lossy(&netstat.stdout), port)?;
     let tasklist = hidden(Command::new("tasklist").args(["/FI", &format!("PID eq {pid}"), "/FO", "CSV", "/NH"])).output().ok();
     let name = tasklist.and_then(|out| tasklist_name(&String::from_utf8_lossy(&out.stdout))).unwrap_or_else(|| "unknown".into());
@@ -73,7 +76,11 @@ fn port_owner(port: u16) -> Option<PortOwner> {
 
 fn check(host: String, port: u16) -> ProxyListenStatus {
     let bind_host = if host.trim().is_empty() { "0.0.0.0".to_string() } else { host.trim().trim_matches(['[', ']']).to_string() };
-    let port_in_use = matches!(TcpListener::bind((bind_host.as_str(), port)), Err(error) if error.kind() == std::io::ErrorKind::AddrInUse);
+    // Access denied also means the proxy can't listen here: Windows reserves some port ranges (Hyper-V, WinNAT).
+    let port_in_use = matches!(
+        TcpListener::bind((bind_host.as_str(), port)),
+        Err(error) if matches!(error.kind(), std::io::ErrorKind::AddrInUse | std::io::ErrorKind::PermissionDenied)
+    );
     ProxyListenStatus {
         exposed: !is_loopback(&host),
         owner: if port_in_use { port_owner(port) } else { None },
@@ -102,7 +109,7 @@ mod tests {
         for host in ["127.0.0.1", "localhost", "::1", "[::1]", "127.0.0.2"] {
             assert!(is_loopback(host), "{host}");
         }
-        for host in ["", "0.0.0.0", "::", "192.168.1.10"] {
+        for host in ["", "0.0.0.0", "::", "192.168.1.10", "127.example.com"] {
             assert!(!is_loopback(host), "{host}");
         }
     }
@@ -120,6 +127,8 @@ Active Connections
 ";
         assert_eq!(listening_pid(netstat, 8317), Some(26036));
         assert_eq!(listening_pid(netstat, 8318), None);
+        // An IPv6-only listener, which "netstat -p tcp" would not have listed.
+        assert_eq!(listening_pid("  TCP    [::]:8317              [::]:0                 LISTENING       4242", 8317), Some(4242));
     }
 
     #[test]

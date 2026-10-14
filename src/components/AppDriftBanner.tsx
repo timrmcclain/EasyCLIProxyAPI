@@ -36,7 +36,8 @@ export function AppDriftBanner({ coreReady }: { coreReady: boolean }) {
     }
   };
 
-  const unresolved = outcomes?.filter(outcome => outcome.result !== 'reapplied') ?? [];
+  // Only apps that still don't match: one fixed by hand since Re-apply drops off the list.
+  const unresolved = outcomes?.filter(outcome => outcome.result !== 'reapplied' && drifted.some(app => app.id === outcome.id)) ?? [];
   if (!drifted.length && !unresolved.length) return null;
   const names = drifted.map(app => app.name).join(', ');
   return <section className="app-drift-banner" role="status">

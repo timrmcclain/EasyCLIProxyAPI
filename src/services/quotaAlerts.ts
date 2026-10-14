@@ -35,7 +35,12 @@ export function quotaAlerts(
   for (const file of files) {
     const key = quotaKey(file);
     const item = byKey.get(key);
-    if (item?.severity === 'unconfirmed') continue;
+    if (item?.severity === 'unconfirmed') {
+      // One failed check mustn't erase what was last known, or the change after it (say blocked → ok) goes unnoticed.
+      const known = previous?.accounts[key];
+      if (known !== undefined) accounts[key] = known;
+      continue;
+    }
     const level: AccountLevel = item?.severity === 'blocked' ? 'blocked' : item?.severity === 'low' ? 'low' : 'ok';
     accounts[key] = level;
     const provider = providerOf(file);

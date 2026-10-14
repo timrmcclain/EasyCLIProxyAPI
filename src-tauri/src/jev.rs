@@ -55,12 +55,14 @@ fn registered_hooks(settings: &Value) -> (Vec<JevHook>, Option<String>) {
                 if python.is_none() {
                     python = interpreter(command);
                 }
-                if !script.is_empty() && seen.insert((event.clone(), script.clone())) {
-                    hooks.push(JevHook { event: event.clone(), script });
+                if !script.is_empty() {
+                    seen.insert((event.clone(), script));
                 }
             }
         }
     }
+    // Sorted by event, then script, whatever order settings.json lists them in.
+    hooks.extend(seen.into_iter().map(|(event, script)| JevHook { event, script }));
     (hooks, python)
 }
 

@@ -31,6 +31,9 @@ export function modelTimings(requests: TimedRequest[], limit = 8, minCount = 3):
 
 export function formatDuration(ms: number) {
   if (ms < 1000) return `${Math.round(ms)} ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`;
-  return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
+  if (ms < 10_000) return `${(ms / 1000).toFixed(1)} s`;
+  // Round once, then split, so 119.6 s reads "2m 0s" rather than "1m 60s".
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return `${seconds} s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }

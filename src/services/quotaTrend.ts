@@ -48,7 +48,17 @@ const listeners = new Set<() => void>();
 const noTrends: QuotaTrends = {};
 
 export function getQuotaTrends(): QuotaTrends {
-  try { trends ??= JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as QuotaTrends; } catch { trends = {}; }
+  if (trends === null) {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+      // Keep only well-formed entries: one damaged entry would otherwise make every quota check throw.
+      trends = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? Object.fromEntries(Object.entries(parsed).filter(([, trend]) => !!trend && typeof trend === 'object'
+          && Array.isArray((trend as AccountTrend).samples)
+          && (trend as AccountTrend).samples.every(sample => !!sample && typeof sample.at === 'number' && typeof sample.percent === 'number'))) as QuotaTrends
+        : {};
+    } catch { trends = {}; }
+  }
   return trends ?? {};
 }
 

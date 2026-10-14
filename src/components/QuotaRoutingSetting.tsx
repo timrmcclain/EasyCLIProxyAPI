@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './QuotaRoutingSetting.css';
 import { ListOrdered } from 'lucide-react';
 import { FeedbackNotice, useAppNotice } from '../appNotice';
@@ -21,6 +21,8 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
   const quotas = useQuotaCache();
   const [enabled, setEnabled] = useState(readQuotaRoutingPreference);
   const [busy, setBusy] = useState(false);
+  // Also read by Undo, whose click handler was made before the current change started.
+  const busyRef = useRef(false);
   const [files, setFiles] = useState<AuthFile[]>([]);
 
   useEffect(() => {
@@ -34,6 +36,8 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
   const plans = useMemo(() => routingPlan(files, quotas, Date.now()), [files, quotas]);
 
   const change = async (next: boolean, offerUndo = true) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     try {
       if (next) await enableQuotaRouting(); else await disableQuotaRouting();
@@ -44,6 +48,7 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
     } catch (error) {
       notice.showNotice(t('qrouting.error', { error: String(error) }), 'error');
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };

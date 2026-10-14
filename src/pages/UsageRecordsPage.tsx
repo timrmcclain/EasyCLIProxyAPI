@@ -170,6 +170,7 @@ type UsageQuery = {
 const FAILURE_SAMPLE = 2000;
 /** Newest successful requests the Response times card measures. */
 const TIMING_SAMPLE = 2000;
+const SUMMARY_REFRESH_MS = 30_000;
 const TAB_KEY = 'cpa-gui.usage-records-tab.v1';
 const RANGE_KEY = 'cpa-gui.usage-records-range.v1';
 const PAGE_SIZE_KEY = 'cpa-gui.usage-events-page-size.v1';
@@ -286,6 +287,9 @@ export function UsageRecordsPage() {
   const [error, setError] = useState('');
   const loadedFilterScopeKeyRef = useRef('');
   const requestIdRef = useRef(0);
+  // Failures by cause and response times read 2,000 requests each, so the once-a-second refresh reuses them
+  // and they are reloaded only when the filters change, on a manual refresh, or every 30 seconds.
+  const summariesRef = useRef<{ scope: string; at: number } | null>(null);
   const schedulerRef = useRef<ReturnType<typeof createRefreshScheduler> | null>(null);
   if (!schedulerRef.current) schedulerRef.current = createRefreshScheduler(250);
 
@@ -378,25 +382,31 @@ export function UsageRecordsPage() {
           setOverviewRange(timeQuery);
           setAnalysis(nextAnalysis);
         } else if (activeTab === 'events') {
+          const loadedSummaries = summariesRef.current;
+          const reloadSummaries = !quiet || !loadedSummaries || loadedSummaries.scope !== filterScopeKey
+            || Date.now() - loadedSummaries.at > SUMMARY_REFRESH_MS;
           const [nextStatus, nextOptions, nextEvents, nextFailures, nextTimed] = await Promise.all([
             statusRequest,
             optionsRequest,
             invoke<UsageEventPage>('get_usage_events', {
               query: { ...query, page, page_size: pageSize },
             }),
-            invoke<UsageEventPage>('get_usage_events', {
+            reloadSummaries ? invoke<UsageEventPage>('get_usage_events', {
               query: { ...query, failed: true, canceled: false, page: 1, page_size: FAILURE_SAMPLE },
-            }).catch(() => null),
-            invoke<UsageEventPage>('get_usage_events', {
+            }).catch(() => null) : undefined,
+            reloadSummaries ? invoke<UsageEventPage>('get_usage_events', {
               query: { ...query, failed: false, canceled: false, page: 1, page_size: TIMING_SAMPLE },
-            }).catch(() => null),
+            }).catch(() => null) : undefined,
           ]);
           if (requestId !== requestIdRef.current) return;
           setStatus(nextStatus);
           if (nextOptions) setOptionsAnalysis(nextOptions);
           setEvents(nextEvents);
-          setFailures(nextFailures ? { items: nextFailures.items, truncated: nextFailures.total > nextFailures.items.length } : null);
-          setTimed(nextTimed ? nextTimed.items : null);
+          if (reloadSummaries) {
+            setFailures(nextFailures ? { items: nextFailures.items, truncated: nextFailures.total > nextFailures.items.length } : null);
+            setTimed(nextTimed ? nextTimed.items : null);
+            summariesRef.current = { scope: filterScopeKey, at: Date.now() };
+          }
         } else if (activeTab === 'pricing') {
           const [nextStatus, nextOptions, nextPricing] = await Promise.all([
             statusRequest,

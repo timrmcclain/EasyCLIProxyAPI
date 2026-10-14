@@ -35,6 +35,12 @@ describe('quota alerts', () => {
     const low = run(null, [item(a, 'low', 9)]).memory;
     expect(run(low, []).alerts).toEqual([]);
   });
+  it('still notices a recovery when a failed check came in between', () => {
+    const blocked = run(null, [item(a, 'blocked', 0)]).memory;
+    const gap = run(blocked, [item(a, 'unconfirmed')]);
+    expect(gap.alerts).toEqual([]);
+    expect(run(gap.memory, []).alerts.map(alert => [alert.kind, alert.account])).toEqual([['recovered', 'a']]);
+  });
   it('never alerts about unconfirmed accounts', () => {
     const base = run(null, []).memory;
     expect(run(base, [item(x, 'unconfirmed')]).alerts).toEqual([]);

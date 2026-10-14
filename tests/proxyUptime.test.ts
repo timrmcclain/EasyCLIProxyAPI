@@ -45,6 +45,14 @@ describe('proxy uptime', () => {
     expect(summary.days[0].percent).toBeNull();
   });
 
+  it('counts a short outage inside a bucket that was otherwise up', () => {
+    const base = new Date(2026, 9, 10, 12, 0).getTime();
+    const history = [{ at: base - 10 * MIN, up: 10, down: 10 }, { at: base, up: 20, down: 0 }];
+    expect(summarizeUptime(history, base + MIN).outages).toBe(1);
+    // A single failed check is a restart, not an outage.
+    expect(summarizeUptime([{ at: base, up: 19, down: 1 }], base + MIN).outages).toBe(0);
+  });
+
   it('has no figure before any check', () => {
     expect(summarizeUptime([], Date.now()).percent).toBeNull();
   });

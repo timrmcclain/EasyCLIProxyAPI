@@ -1,5 +1,5 @@
 import { UX_NAVIGATE } from './services/uxNavigation';
-import { MessageNotice } from './appNotice';
+import { FloatingNotice, MessageNotice, useAppNotice } from './appNotice';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -28,7 +28,7 @@ import {
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
 import { useConfirmation } from './components/ConfirmationDialog';
-import { startQuotaWatcher } from './services/quotaWatcher';
+import { startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
 import { readGlobalHotkeyPreference } from './services/dashboardPreferences';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
@@ -230,8 +230,12 @@ function AppContent() {
   const { status, publishStatus } = useCoreRuntime();
   const coreReady = Boolean(status?.ready);
   const { askConfirmation, confirmationDialog } = useConfirmation();
+  const paletteFeedback = useAppNotice();
+  const restartingRef = useRef(false);
   // Quota checks, run-out forecasts and Windows notifications keep working with the window in the tray.
   useEffect(() => (coreReady ? startQuotaWatcher() : undefined), [coreReady]);
+  // Runs whether or not the proxy is up, so it can notice the proxy stopping and coming back.
+  useEffect(() => startProxyWatcher(), []);
   useEffect(() => {
     // Re-claim the shortcut each launch; if another app now owns it, Settings shows the error when switched on again.
     if (readGlobalHotkeyPreference()) invoke('set_global_hotkey', { enabled: true }).catch(() => undefined);
@@ -459,8 +463,17 @@ function AppContent() {
       run: () => window.dispatchEvent(new CustomEvent('app:check-quota')) },
     { id: 'restart-proxy', label: t('palette.action.restartProxy'), group: t('palette.actions'), disabled: !status?.installed,
       run: () => void (async () => {
+        // The palette closes at once, so a second run would otherwise start an overlapping restart.
+        if (restartingRef.current) return;
         if (!(await askConfirmation({ title: t('palette.action.restartProxy'), message: t('palette.action.restartProxyConfirm'), confirmText: t('palette.action.restartProxy') }))) return;
-        publishStatus(await invoke<CoreStatus>('restart_core_process'));
+        restartingRef.current = true;
+        try {
+          publishStatus(await invoke<CoreStatus>('restart_core_process'));
+        } catch (error) {
+          paletteFeedback.showNotice({ key: 'palette.action.restartFailed', variables: { error: String(error) } }, 'error');
+        } finally {
+          restartingRef.current = false;
+        }
       })() },
   ];
 
@@ -728,6 +741,7 @@ function AppContent() {
       <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
       {confirmationDialog}
+      <FloatingNotice key={paletteFeedback.revision} notice={paletteFeedback.notice} onDismiss={paletteFeedback.clearNotice} />
     </>
   );
 }

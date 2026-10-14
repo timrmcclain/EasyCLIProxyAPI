@@ -22,7 +22,7 @@ reqwest = { version = "0.12", default-features = false, features = ["gzip", "jso
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 semver = "1"
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["raw_value"] }
+serde_json = { version = "1", features = ["raw_value", "preserve_order"] }
 serde_norway = "0.9"
 serde_yaml = "0.9"
 sha2 = "0.10"

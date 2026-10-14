@@ -44,8 +44,12 @@ fn capture(settings: &Map<String, Value>) -> Map<String, Value> {
         saved.insert(key.into(), env.and_then(|env| env.get(key)).cloned().unwrap_or(Value::Null));
     }
     saved.insert("model".into(), settings.get("model").cloned().unwrap_or(Value::Null));
+    // Switching creates "env" when there is none; remembered so switching back removes it again.
+    saved.insert(HAD_ENV.into(), Value::Bool(settings.contains_key("env")));
     saved
 }
+
+const HAD_ENV: &str = "hadEnv";
 
 fn point_at(settings: &mut Map<String, Value>, model: &str) {
     let env = settings.entry("env").or_insert_with(|| Value::Object(Map::new()));
@@ -64,10 +68,16 @@ fn restore(settings: &mut Map<String, Value>, saved: &Map<String, Value>) {
         Some(Value::Null) | None => { map.remove(key); }
         Some(value) => { map.insert(key.into(), value.clone()); }
     };
+    let mut env_now_empty = false;
     if let Some(env) = settings.get_mut("env").and_then(Value::as_object_mut) {
         for key in ENV_KEYS {
             put(env, key, saved.get(key));
         }
+        env_now_empty = env.is_empty();
+    }
+    // Copies saved before this was recorded keep "env" as it is.
+    if env_now_empty && saved.get(HAD_ENV) == Some(&Value::Bool(false)) {
+        settings.remove("env");
     }
     put(settings, "model", saved.get("model"));
 }
@@ -176,5 +186,24 @@ mod tests {
         let mut settings = object(json!({}));
         point_at(&mut settings, "gemini-3-pro");
         assert_eq!(settings["env"]["ANTHROPIC_MODEL"], json!("gemini-3-pro"));
+    }
+
+    #[test]
+    fn switching_back_removes_the_env_block_switching_created() {
+        let original = object(json!({ "model": "opus" }));
+        let mut settings = original.clone();
+        let saved = capture(&settings);
+        point_at(&mut settings, "gpt-5.5");
+        restore(&mut settings, &saved);
+        assert_eq!(settings, original);
+    }
+
+    #[test]
+    fn an_older_saved_copy_keeps_env_as_it_is() {
+        let mut settings = object(json!({ "env": { "ANTHROPIC_MODEL": "x" } }));
+        let mut saved = capture(&object(json!({ "env": {} })));
+        saved.remove(HAD_ENV);
+        restore(&mut settings, &saved);
+        assert_eq!(settings, object(json!({ "env": {} })));
     }
 }

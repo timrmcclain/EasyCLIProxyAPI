@@ -131,7 +131,14 @@ pub(crate) fn write_settings(path: &Path, settings: &Map<String, Value>) -> Resu
     fs::create_dir_all(path.parent().unwrap_or(Path::new(".")))
         .map_err(|error| format!("Failed to create {}: {error}", path.display()))?;
     let text = serde_json::to_string_pretty(settings).map_err(|error| error.to_string())?;
-    fs::write(path, text + "\n").map_err(|error| format!("Failed to write {}: {error}", path.display()))
+    // Write a sibling file and swap it in, so a crash or a full disk can't leave settings.json cut off
+    // (Claude Code would then refuse to load it).
+    let staged = path.with_extension("json.hub-tmp");
+    fs::write(&staged, text + "\n").map_err(|error| format!("Failed to write {}: {error}", staged.display()))?;
+    fs::rename(&staged, path).map_err(|error| {
+        let _ = fs::remove_file(&staged);
+        format!("Failed to write {}: {error}", path.display())
+    })
 }
 
 fn backup_settings(paths: &Paths) -> Result<(), String> {
@@ -197,10 +204,18 @@ pub(crate) fn enable_claude_statusline(app: tauri::AppHandle) -> Result<ClaudeSt
 pub(crate) fn disable_claude_statusline(app: tauri::AppHandle) -> Result<ClaudeStatusLineState, String> {
     let paths = Paths::resolve(&app)?;
     let mut settings = read_settings(&paths.settings)?;
-    let saved = fs::read_to_string(paths.directory.join(ORIGINAL_SETTING_FILE))
-        .ok()
-        .and_then(|text| serde_json::from_str::<Value>(&text).ok())
-        .unwrap_or(Value::Null);
+    // A saved copy that can't be read must not be taken as "there was no status line before",
+    // which would delete the user's own status line.
+    let saved = match fs::read_to_string(paths.directory.join(ORIGINAL_SETTING_FILE)) {
+        Ok(text) => serde_json::from_str::<Value>(&text).map_err(|_| {
+            format!(
+                "The saved copy of your earlier status line is damaged; your settings are backed up in {}",
+                paths.backups.display()
+            )
+        })?,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Value::Null,
+        Err(error) => return Err(format!("Failed to read the saved status line: {error}")),
+    };
     if is_hub_status_line(settings.get("statusLine")) {
         backup_settings(&paths)?;
         unwrap_settings(&mut settings, &saved);
@@ -278,5 +293,22 @@ mod tests {
         let quota_at = script.find("printf '%s' \"$line\"").expect("prints the quota line");
         assert!(original_at < quota_at);
         assert!(script.contains("-mmin +15"));
+    }
+
+    #[test]
+    fn writing_settings_keeps_the_user_key_order_and_leaves_no_temp_file() {
+        let dir = std::env::temp_dir().join(format!("easycli-settings-write-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let path = dir.join("settings.json");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(&path, "{\n  \"zeta\": 1,\n  \"alpha\": 2\n}\n").unwrap();
+        let mut settings = read_settings(&path).unwrap();
+        settings.insert("statusLine".into(), Value::Bool(true));
+        write_settings(&path, &settings).unwrap();
+        let text = fs::read_to_string(&path).unwrap();
+        let (zeta, alpha, status) = (text.find("zeta").unwrap(), text.find("alpha").unwrap(), text.find("statusLine").unwrap());
+        assert!(zeta < alpha && alpha < status, "{text}");
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 1, "the staged file was swapped in, not left behind");
+        let _ = fs::remove_dir_all(&dir);
     }
 }

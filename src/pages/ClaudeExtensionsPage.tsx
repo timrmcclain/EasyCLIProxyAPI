@@ -71,11 +71,12 @@ export function ClaudeExtensionsPage() {
     }
   };
 
-  const removePlugin = async (plugin: InstalledPlugin) => {
+  const removePlugin = async (plugin: Pick<InstalledPlugin, 'id' | 'scope'>) => {
     const name = pluginName(plugin.id);
     if (!await askConfirmation({ title: t('ext.plugins.remove'), message: t('ext.plugins.removeConfirm', { name }), confirmText: t('ext.plugins.remove'), variant: 'danger' })) return;
-    await run(`remove:${plugin.id}`, () => service.uninstallPlugin(plugin.id, plugin.scope));
-    if (review?.id === plugin.id) setReview(null);
+    const removed = await run(`remove:${plugin.id}`, () => service.uninstallPlugin(plugin.id, plugin.scope));
+    // A failed removal leaves the plugin installed, so its review card (with Turn on) stays.
+    if (removed && review?.id === plugin.id) setReview(null);
   };
 
   const install = async (plugin: AvailablePlugin) => {
@@ -157,7 +158,7 @@ export function ClaudeExtensionsPage() {
           {t('ext.review.turnOn')}
         </button>
         <button type="button" className="secondary-button compact-button" disabled={busy !== null}
-          onClick={() => void run(`remove:${review.id}`, () => service.uninstallPlugin(review.id, review.scope)).then(ok => ok && setReview(null))}>
+          onClick={() => void removePlugin(review)}>
           {t('ext.review.remove')}
         </button>
       </div>

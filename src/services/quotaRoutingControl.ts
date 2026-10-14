@@ -21,12 +21,29 @@ function readBackup(): Record<string, number> {
   } catch { return {}; }
 }
 
+// Priority writes run one batch at a time: otherwise a background pass still writing could overwrite the
+// priorities that switching routing off has just put back.
+let queue: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const run = queue.then(task, task);
+  queue = run.catch(() => undefined);
+  return run;
+}
+
 /** Writes the soonest-reset-first order as account priorities, only where it changed. Returns how many changed. */
-export async function applyQuotaRouting(files?: AuthFile[]): Promise<number> {
-  if (!readQuotaRoutingPreference()) return 0;
-  const changes = priorityChanges(routingPlan(files ?? await loadFiles(), getQuotaCacheSnapshot(), Date.now()));
-  for (const change of changes) await setPriority(change.file, change.priority);
-  return changes.length;
+export function applyQuotaRouting(files?: AuthFile[]): Promise<number> {
+  return oneAtATime(async () => {
+    if (!readQuotaRoutingPreference()) return 0;
+    const changes = priorityChanges(routingPlan(files ?? await loadFiles(), getQuotaCacheSnapshot(), Date.now()));
+    let written = 0;
+    for (const change of changes) {
+      // Switched off mid-pass: stop, and leave the priorities to the restore.
+      if (!readQuotaRoutingPreference()) break;
+      await setPriority(change.file, change.priority);
+      written += 1;
+    }
+    return written;
+  });
 }
 
 export async function enableQuotaRouting(): Promise<number> {
@@ -41,16 +58,19 @@ export async function enableQuotaRouting(): Promise<number> {
 }
 
 /** Turns the switch off and restores the priorities saved when it went on. Returns how many were restored. */
-export async function disableQuotaRouting(): Promise<number> {
+export function disableQuotaRouting(): Promise<number> {
+  // Saved before waiting, so a pass already running stops at its next write.
   saveDashboardPreference('quotaRouting', 'false');
-  const backup = readBackup();
-  let restored = 0;
-  for (const file of await loadFiles()) {
-    const saved = backup[quotaKey(file)];
-    if (typeof saved !== 'number' || saved === currentPriority(file)) continue;
-    await setPriority(file, saved);
-    restored += 1;
-  }
-  localStorage.removeItem(BACKUP_KEY);
-  return restored;
+  return oneAtATime(async () => {
+    const backup = readBackup();
+    let restored = 0;
+    for (const file of await loadFiles()) {
+      const saved = backup[quotaKey(file)];
+      if (typeof saved !== 'number' || saved === currentPriority(file)) continue;
+      await setPriority(file, saved);
+      restored += 1;
+    }
+    localStorage.removeItem(BACKUP_KEY);
+    return restored;
+  });
 }

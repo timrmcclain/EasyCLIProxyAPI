@@ -128,11 +128,35 @@ export function startQuotaWatcher(): () => void {
     }
   };
 
-  // The proxy stopping (a crash, or closed by something else) fails every app's requests, so say so.
+  void check();
+  const timer = window.setInterval(() => { void check(); }, CHECK_EVERY_MS);
+  // "Check all quotas now" in the command palette: a forced check that skips the rate-limit backoff.
+  const checkNow = () => { void check(true); };
+  window.addEventListener('app:check-quota', checkNow);
+  return () => { stopped = true; window.clearInterval(timer); window.removeEventListener('app:check-quota', checkNow); };
+}
+
+/**
+ * Watches the proxy itself every 30 seconds for as long as the hub runs. It must outlive the quota watcher,
+ * which stops when the proxy does: the proxy stopping (a crash, or closed by something else) fails every
+ * app's requests, so say so, and say when it's back. Returns a stop function.
+ */
+export function startProxyWatcher(): () => void {
+  let stopped = false;
   let proxyWatch = initialProxyWatch;
   const checkProxy = async () => {
     const status = await invoke<{ ready: boolean; starting: boolean }>('get_core_status').catch(() => null);
     if (stopped) return;
+    if (!status?.ready && !status?.starting) {
+      // Stop proxy also switches off starting it on launch: a proxy stopped on purpose is neither an outage
+      // nor worth an alert.
+      const settings = await invoke<{ runOnStartup?: boolean }>('get_gui_settings').catch(() => null);
+      if (stopped) return;
+      if (settings?.runOnStartup === false) {
+        proxyWatch = initialProxyWatch;
+        return;
+      }
+    }
     setProxyUptime(recordProxyCheck(getProxyUptime(), status, Date.now()));
     const next = nextProxyWatch(proxyWatch, status);
     proxyWatch = next.state;
@@ -140,12 +164,6 @@ export function startQuotaWatcher(): () => void {
     const locale = getCurrentLocale();
     await send([{ title: translate(locale, `notify.proxy.${next.alert}.title`), body: translate(locale, `notify.proxy.${next.alert}.body`) }]);
   };
-
-  void check();
-  const timer = window.setInterval(() => { void check(); }, CHECK_EVERY_MS);
-  const proxyTimer = window.setInterval(() => { void checkProxy(); }, PROXY_CHECK_EVERY_MS);
-  // "Check all quotas now" in the command palette: a forced check that skips the rate-limit backoff.
-  const checkNow = () => { void check(true); };
-  window.addEventListener('app:check-quota', checkNow);
-  return () => { stopped = true; window.clearInterval(timer); window.clearInterval(proxyTimer); window.removeEventListener('app:check-quota', checkNow); };
+  const timer = window.setInterval(() => { void checkProxy(); }, PROXY_CHECK_EVERY_MS);
+  return () => { stopped = true; window.clearInterval(timer); };
 }

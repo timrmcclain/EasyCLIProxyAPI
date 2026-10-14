@@ -21,5 +21,7 @@ describe('response times by model', () => {
 
   it('formats durations for reading', () => {
     expect([formatDuration(820), formatDuration(4300), formatDuration(42_000), formatDuration(125_000)]).toEqual(['820 ms', '4.3 s', '42 s', '2m 5s']);
+    // Rounding near a whole minute never shows "60s".
+    expect([formatDuration(59_999), formatDuration(119_600)]).toEqual(['1m 0s', '2m 0s']);
   });
 });
