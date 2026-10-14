@@ -82,8 +82,9 @@ describe('i18n', () => {
   });
 
   it('preserves interpolation variables and nonempty messages in every locale', () => {
+    // {s} / {es} are English plural suffixes, not variables, so other locales needn't carry them.
     const variables = (message: string) => [...new Set(
-      [...message.matchAll(/\{(\w+)\}/g)].map((match) => match[1]),
+      [...message.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).filter((name) => name !== 's' && name !== 'es'),
     )].sort();
     for (const [locale, messages] of Object.entries({ en, ja, zhTW })) {
       const mismatches = (Object.keys(zhCN) as MessageKey[]).filter((key) =>

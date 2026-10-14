@@ -441,8 +441,8 @@ function UsageEventCell({
             : `${record.tokens.total_tokens.toLocaleString()} tokens`}
         >
           <strong>{compactNumber(record.tokens.total_tokens)}</strong>
-          <div className="usage-event-metrics"><span className="tone-input" title={`${t('usage.column.input')}: ${record.tokens.input_tokens.toLocaleString()}`} aria-label={`${t('usage.column.input')}: ${record.tokens.input_tokens}`}><ArrowUp size={12} aria-hidden="true" />{compactNumber(record.tokens.input_tokens)}</span></div>
           <div className="usage-event-metrics">
+            <span className="tone-input" title={`${t('usage.column.input')}: ${record.tokens.input_tokens.toLocaleString()}`} aria-label={`${t('usage.column.input')}: ${record.tokens.input_tokens}`}><ArrowUp size={12} aria-hidden="true" />{compactNumber(record.tokens.input_tokens)}</span>
             <span className="tone-output" title={`${t('usage.column.output')}: ${record.tokens.output_tokens.toLocaleString()}`} aria-label={`${t('usage.column.output')}: ${record.tokens.output_tokens}`}><ArrowDown size={12} aria-hidden="true" />{compactNumber(record.tokens.output_tokens)}</span>
             <span className="tone-reasoning" title={`${t('usage.column.reasoning')}: ${record.tokens.reasoning_tokens.toLocaleString()}`} aria-label={`${t('usage.column.reasoning')}: ${record.tokens.reasoning_tokens}`}><Brain size={12} aria-hidden="true" />{compactNumber(record.tokens.reasoning_tokens)}</span>
           </div>

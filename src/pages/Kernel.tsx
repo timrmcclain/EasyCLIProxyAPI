@@ -1,3 +1,4 @@
+import { formatAgo } from "../services/relativeTime";
 import { AppDriftBanner } from '../components/AppDriftBanner';
 import { SecretGuardBanner } from '../components/SecretGuardBanner';
 import { ClaudeFallbackBanner } from '../components/ClaudeFallbackBanner';
@@ -38,18 +39,6 @@ type CoreTlsSettings = {
   cert: string;
   key: string;
 };
-
-/** "3 min ago" style label for the status line; exact time stays in Activity. */
-function formatAgo(timestamp: string, locale: string) {
-  const seconds = Math.round((Date.parse(timestamp) - Date.now()) / 1000);
-  if (Number.isNaN(seconds)) return '';
-  const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  const abs = Math.abs(seconds);
-  if (abs < 60) return format.format(seconds, 'second');
-  if (abs < 3600) return format.format(Math.round(seconds / 60), 'minute');
-  if (abs < 86400) return format.format(Math.round(seconds / 3600), 'hour');
-  return format.format(Math.round(seconds / 86400), 'day');
-}
 
 export type KernelView = 'home' | 'proxy' | 'versions';
 

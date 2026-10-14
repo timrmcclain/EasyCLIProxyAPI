@@ -32,7 +32,7 @@ export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.list.credential': 'Credential',
   'authFiles.list.plan': 'Plan',
   'authFiles.list.status': 'Availability',
-  'authFiles.list.available': 'Available',
+  'authFiles.list.available': 'Signed in',
   'authFiles.list.recent': 'Recent requests',
   'authFiles.list.quota': 'Quota',
   'authFiles.list.actions': 'Actions',

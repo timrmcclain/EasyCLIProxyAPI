@@ -57,6 +57,7 @@
 .ad-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
 .ad-list-heading h3 { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
 .ad-list-heading h3 span { color: var(--text-tertiary); font-weight: 500; }
+.ad-list-heading h3 .ad-list-unchecked { color: var(--text-tertiary); font-size: 13px; font-weight: 400; }
 .account-dashboard .ad-footnote { margin: 16px 0 0; color: var(--text-tertiary); font-size: 11px; }
 
 /* Status-line verdict. */
@@ -89,3 +90,9 @@
 .glance-runway-resets .glance-attention-name small { display: block; color: var(--text-tertiary); font-size: 11px; }
 .glance-runway-list li.glance-runway-more { display: block; min-height: 0; color: var(--text-tertiary); font-size: 12px; }
 .glance-runway-resets time { color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* Narrow windows: the account verdict gets its own row and may wrap, instead of overlapping its neighbours. */
+@media (max-width: 1100px) {
+  .home-page .home-status-accounts { flex: 1 1 100%; order: 1; flex-wrap: wrap; padding-left: 0; border-left: 0; }
+  .home-status-verdict { flex-wrap: wrap; }
+}

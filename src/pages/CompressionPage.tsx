@@ -176,7 +176,7 @@ export default function CompressionPage() {
               </button>
             </div>
           ) : null}
-          <fieldset className="compression-apps" disabled={busy || !status}>
+          <fieldset className={`compression-apps${status && !status.enabled ? ' inactive' : ''}`} disabled={busy || !status}>
             <legend>{t('appsTitle')}</legend>
             <label>
               <input
@@ -194,9 +194,9 @@ export default function CompressionPage() {
               />
               {t('appClaudeDesktop')}
             </label>
-            <p>{t('appsRestart')}</p>
+            <p>{status && !status.enabled ? t('appsInactive') : t('appsRestart')}</p>
           </fieldset>
-          <label className="compression-memory">
+          <label className={`compression-memory${status && !status.enabled ? ' inactive' : ''}`}>
             <input
               type="checkbox"
               role="switch"

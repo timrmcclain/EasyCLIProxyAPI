@@ -65,7 +65,7 @@
 .panel { background: var(--bg-primary); border-color: var(--border-color); border-radius: 12px; box-shadow: var(--shadow-sm); }
 .panel-heading h2 { color: var(--text-primary); font-size: 14px; letter-spacing: -.015em; }
 button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--personal-accent-text); outline-offset: 3px; }
-.primary-button { background: var(--primary-color); border-color: var(--primary-color); color: var(--p-neutral-0); border-radius: 8px; }
+.primary-button { background: var(--primary-color); border-color: var(--primary-color); color: var(--primary-contrast); border-radius: 8px; }
 .secondary-button { background: var(--bg-primary); color: var(--text-primary); border-color: var(--border-primary); border-radius: 8px; }
 .account-dashboard { --ad-accent: var(--p-amber-600); gap: 18px; margin-bottom: 8px; }
 .ad-heading h2 { font-size: var(--font-size-panel-title); }

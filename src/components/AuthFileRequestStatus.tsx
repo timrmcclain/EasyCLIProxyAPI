@@ -2,13 +2,14 @@ import { useId, useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { authFileRequestStats, requestRateColor } from '../services/authFileRequests';
 import './AuthFileRequestStatus.css';
+import { formatAgo, formatExact } from '../services/relativeTime';
 
 export function AuthFileRequestStatus({ file, compact = false, summary = false }: {
   file: Record<string, unknown>;
   compact?: boolean;
   summary?: boolean;
 }) {
-  const { t, formatNumber } = useI18n();
+  const { t, formatNumber, locale } = useI18n();
   const stats = useMemo(() => authFileRequestStats(file), [file]);
   const [active, setActive] = useState<number | null>(null);
   const tooltipId = useId();
@@ -25,7 +26,7 @@ export function AuthFileRequestStatus({ file, compact = false, summary = false }
   const latestRequest = [...stats.buckets].reverse().find((bucket) => bucket.rate !== null);
   const bucketLabel = (index: number) => {
     const bucket = stats.buckets[index];
-    const time = bucket.time || t('authFiles.requests.interval', { index: index + 1 });
+    const time = bucket.time ? formatExact(bucket.time, locale) : t('authFiles.requests.interval', { index: index + 1 });
     return bucket.rate === null
       ? `${time} · ${t('authFiles.requests.empty')}`
       : `${time} · ${t('authFiles.requests.success', { count: formatNumber(bucket.success) })} · ${t('authFiles.requests.failure', { count: formatNumber(bucket.failure) })} · ${t('authFiles.requests.rate', { rate: rateText(bucket.rate) })}`;
@@ -33,7 +34,7 @@ export function AuthFileRequestStatus({ file, compact = false, summary = false }
 
   return (
     <div className={`auth-file-requests${compactLayout ? ' auth-file-requests-compact' : ''}${summary ? ' auth-file-requests-summary' : ''}`} role="group" aria-label={t('authFiles.requests.title')}>
-      {compactLayout ? <div className="auth-file-requests-latest" title={t('authFiles.requests.window')}>{latestRequest?.time || '—'}</div> : <div className="auth-file-requests-heading">
+      {compactLayout ? <div className="auth-file-requests-latest" title={latestRequest?.time ? `${t('authFiles.requests.window')} · ${formatExact(latestRequest.time, locale)}` : t('authFiles.requests.window')}>{latestRequest?.time ? formatAgo(latestRequest.time, locale) || latestRequest.time : '—'}</div> : <div className="auth-file-requests-heading">
         <span>{t('authFiles.requests.title')}</span>
         <span className="auth-file-requests-counts" title={t('authFiles.requests.totalsHint')}>
           <span className={stats.success ? 'success' : ''} title={summary ? successLabel : undefined}>{successLabel}</span>

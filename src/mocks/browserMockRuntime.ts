@@ -608,7 +608,7 @@ function createState(scenario: BrowserMockScenario) {
       successCount: 301,
       failureCount: 7,
       canceledCount: 4,
-      successRate: 96.47,
+      successRate: 97.73, // success / (success + failure), as usage.rs computes it
       inputTokens: 1_264_000,
       outputTokens: 486_500,
       reasoningTokens: 286_800,

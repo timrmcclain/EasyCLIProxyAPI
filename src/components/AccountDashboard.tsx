@@ -149,6 +149,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const attention = attentionItems(files, quotas, now, stale);
   const urgent = attention.filter((item) => item.severity !== 'unconfirmed');
   const attentionKeys = new Set(attention.map((item) => quotaKey(item.file)));
+  const urgentKeys = new Set(urgent.map((item) => quotaKey(item.file)));
   const summaryCounts: AccountStatusSummary = {
     total: files.length,
     available: kinds.filter((kind) => kind === 'available' || kind === 'creditBacked').length,
@@ -202,6 +203,9 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const healthy = (file: AuthFile) => !attentionKeys.has(quotaKey(file));
   const healthyCount = visible.filter((file) => healthy(file) && kindOf(file) !== 'disabled').length;
   const cardFiles = collapseHealthy ? visible.filter((file) => !healthy(file)) : visible;
+  // Same count as the status bar: urgent problems only; quota not yet confirmed is listed separately.
+  const urgentInView = cardFiles.filter((file) => urgentKeys.has(quotaKey(file))).length;
+  const uncheckedInView = collapseHealthy ? cardFiles.length - urgentInView : 0;
   const toggleHealthy = (value: boolean) => { setShowHealthy(value); saveDashboardPreference('showHealthy', String(value)); };
   const clearFilters = () => {
     setAlternatives(false);
@@ -244,7 +248,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       onView={viewAccount} onMore={() => listHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
     {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
     {files.length > 0 && <div ref={listHeading} className="ad-list-heading">
-      <h3 role="status">{!collapseHealthy ? t('glance.list.all') : cardFiles.length ? t('glance.list.problems') : t('glance.list.healthy', { count: healthyCount })}{collapseHealthy && cardFiles.length > 0 && <span>{cardFiles.length}</span>}</h3>
+      <h3 role="status">{!collapseHealthy ? t('glance.list.all') : cardFiles.length ? t('glance.list.problems') : t('glance.list.healthy', { count: healthyCount })}{collapseHealthy && urgentInView > 0 && <span>{urgentInView}</span>}{collapseHealthy && uncheckedInView > 0 && <small className="ad-list-unchecked">{t('glance.list.unchecked', { count: uncheckedInView })}</small>}</h3>
       {filtered
         ? <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>
         : <button type="button" className="secondary-button compact-button" aria-expanded={!collapseHealthy} onClick={() => toggleHealthy(collapseHealthy)}>{collapseHealthy ? t('glance.list.showAll', { count: files.length }) : t('glance.list.showProblems')}</button>}

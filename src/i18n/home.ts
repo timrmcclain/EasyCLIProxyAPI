@@ -179,7 +179,7 @@ export const homeEn: Record<keyof typeof homeZhCN, string> = {
   'home.accounts.hideHealthy': 'Show only problems',
   'home.runtime.ready': 'Local proxy is ready',
   'home.runtime.stopped': 'Start the proxy to connect your clients',
-  'home.runtime.notInstalled': 'Install a core in Version Management',
+  'home.runtime.notInstalled': 'Install the proxy in Advanced tools → About & maintenance',
   'home.runtime.port': 'Listening port',
   'home.access.title': 'Connect to the proxy',
   'home.access.baseUrl': 'API base URL',

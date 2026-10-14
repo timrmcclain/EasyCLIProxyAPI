@@ -47,11 +47,14 @@ function detectInitialLocale(): AppLocale {
   return normalizeLocale(window.navigator.languages?.[0] ?? window.navigator.language);
 }
 
-function interpolate(template: string, variables?: MessageVariables): string {
+// `{s}` / `{es}` are English plural suffixes, dropped when {count} is exactly 1 ("1 model", "2 models").
+export function interpolate(template: string, variables?: MessageVariables): string {
   if (!variables) return template;
-  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
-    Object.prototype.hasOwnProperty.call(variables, name) ? String(variables[name]) : match,
-  );
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
+    if (Object.prototype.hasOwnProperty.call(variables, name)) return String(variables[name]);
+    if ((name === 's' || name === 'es') && Object.prototype.hasOwnProperty.call(variables, 'count')) return Number(variables.count) === 1 ? '' : name;
+    return match;
+  });
 }
 
 export function translate(locale: AppLocale, key: MessageKey, variables?: MessageVariables): string {

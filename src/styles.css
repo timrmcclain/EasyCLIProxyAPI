@@ -2045,6 +2045,7 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 42px;
   min-width: 0;
   overflow: hidden;
@@ -2065,7 +2066,7 @@ textarea:focus-visible {
 .primary-button {
   border: 1px solid var(--ui-accent);
   background: var(--ui-accent);
-  color: var(--p-neutral-0);
+  color: var(--primary-contrast);
   box-shadow: 0 4px 12px var(--ui-accent-shadow);
 }
 
@@ -2132,7 +2133,7 @@ textarea:focus-visible {
   display: block;
   width: 100%;
   height: 100%;
-  border: 1px solid var(--line-9);
+  border: 1px solid var(--text-quaternary);
   border-radius: 999px;
   background: var(--surface-31);
   transition:
@@ -2153,8 +2154,8 @@ textarea:focus-visible {
 }
 
 .switch-control input:checked + .switch-track {
-  border-color: var(--ink-1);
-  background: var(--ink-1);
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
 }
 
 .switch-control input:checked + .switch-track::after {

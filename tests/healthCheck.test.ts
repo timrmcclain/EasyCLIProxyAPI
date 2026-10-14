@@ -51,7 +51,8 @@ describe('health check', () => {
   it('covers no accounts, no keys, disabled accounts, a stray compression service and notifications', () => {
     expect(levels({ totalAccounts: 0 }).accounts).toBe('fail');
     expect(levels({ keyCount: 0 }).keys).toBe('fail');
-    expect(levels({ keyCount: 2 }).keys).toBe('warn');
+    expect(levels({ keyCount: 2 }).keys).toBe('ok'); // mid-rotation
+    expect(levels({ keyCount: 3 }).keys).toBe('warn');
     expect(levels({ disabledAccounts: 1 }).disabled).toBe('warn');
     expect(levels({ compression: { enabled: false, running: true } }).compression).toBe('warn');
     expect(levels({ compression: { enabled: true, running: true } }).compression).toBeUndefined();

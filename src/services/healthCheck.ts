@@ -81,7 +81,8 @@ export function healthChecks(input: HealthInput): HealthCheck[] {
 
   // A second key is normal mid-rotation; more than that is usually a forgotten old key.
   if (input.keyCount === 0) checks.push({ id: 'keys', level: 'fail', key: 'health.keys.none', target: 'config' });
-  else if (input.keyCount > 1) checks.push({ id: 'keys', level: 'warn', key: 'health.keys.extra', variables: { count: input.keyCount }, target: 'config' });
+  else if (input.keyCount === 2) checks.push({ id: 'keys', level: 'ok', key: 'health.keys.rotating' });
+  else if (input.keyCount > 2) checks.push({ id: 'keys', level: 'warn', key: 'health.keys.extra', variables: { count: input.keyCount }, target: 'config' });
   else checks.push({ id: 'keys', level: 'ok', key: 'health.keys.ok' });
 
   if (exposed && !input.managementSecretConfigured) checks.push({ id: 'management', level: 'fail', key: 'health.management.open', target: 'config' });

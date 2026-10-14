@@ -400,6 +400,14 @@ function AppContent() {
     return () => window.removeEventListener(UX_NAVIGATE, navigate);
   }, [coreReady, active]);
 
+  // Advanced tools can sit below the sidebar's fold: keep the open page's entry in view.
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('.nav-section [aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active]);
+
   const select = useCallback((pageId: PageId) => {
     if (!canOpenAppPage(pageId, coreReady)) {
       return;

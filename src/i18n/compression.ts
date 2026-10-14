@@ -36,6 +36,7 @@ const messages = {
   appsTitle: ['经过压缩的应用', 'Apps that use compression', '圧縮を使うアプリ'],
   appClaudeCode: ['Claude Code', 'Claude Code', 'Claude Code'],
   appClaudeDesktop: ['Claude Desktop', 'Claude Desktop', 'Claude Desktop'],
+  appsInactive: ['压缩开启后生效。', 'These apply once compression is on.', '圧縮をオンにすると適用されます。'],
   appsRestart: [
     '新的 Claude Code 会话会立即使用新设置；Claude Desktop 需要重新启动。',
     'New Claude Code sessions pick this up right away; Claude Desktop needs a restart.',
