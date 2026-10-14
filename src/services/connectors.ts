@@ -6,6 +6,8 @@ export type ConnectorTarget = 'claudeCode' | 'claudeDesktop';
 export type ConnectorTargetState = {
   enabled: boolean;
   access: string | null;
+  /** The parts of the service this entry loads, for connectors that can load them one by one. */
+  services?: string[] | null;
   builtIn: boolean;
   signedIn: boolean | null;
 };
@@ -13,6 +15,8 @@ export type ConnectorTargetState = {
 export type ConnectorOverviewItem = {
   id: ConnectorId;
   accessLevels: string[];
+  /** Parts that can be loaded one by one (Google: gmail, calendar...); each adds tools to every request. */
+  serviceOptions: string[];
   secretNames: string[];
   secretsConfigured: boolean;
   /** The secrets are only needed for the Claude Desktop entry. */
@@ -39,6 +43,7 @@ export type ConnectorDraft = {
   claudeCode: boolean;
   claudeDesktop: boolean;
   access: string | null;
+  services: string[] | null;
   secrets: Record<string, string>;
 };
 
@@ -49,6 +54,9 @@ export function draftFromItem(item: ConnectorOverviewItem): ConnectorDraft {
     claudeCode: item.claudeCode.enabled,
     claudeDesktop: item.claudeDesktop.enabled,
     access: item.claudeCode.access ?? item.claudeDesktop.access ?? item.accessLevels[0] ?? null,
+    services: item.serviceOptions.length > 0
+      ? item.claudeCode.services ?? item.claudeDesktop.services ?? [...item.serviceOptions]
+      : null,
     secrets: {},
   };
 }
@@ -58,7 +66,12 @@ export function draftChanged(item: ConnectorOverviewItem, draft: ConnectorDraft)
   return saved.claudeCode !== draft.claudeCode
     || saved.claudeDesktop !== draft.claudeDesktop
     || (item.accessLevels.length > 0 && (draft.claudeCode || draft.claudeDesktop) && saved.access !== draft.access)
+    || (item.serviceOptions.length > 0 && (draft.claudeCode || draft.claudeDesktop) && !sameServices(saved.services, draft.services))
     || Object.values(draft.secrets).some(value => value.trim() !== '');
+}
+
+function sameServices(left: string[] | null, right: string[] | null) {
+  return [...(left ?? [])].sort().join(',') === [...(right ?? [])].sort().join(',');
 }
 
 /** Whether the targets this draft turns on need the connector's secrets. */
@@ -97,6 +110,7 @@ export const connectorsApi = {
       claudeCode: draft.claudeCode,
       claudeDesktop: draft.claudeDesktop,
       access: draft.access,
+      services: draft.services,
       secrets: Object.fromEntries(Object.entries(draft.secrets).filter(([, value]) => value.trim() !== '')),
     },
   }),

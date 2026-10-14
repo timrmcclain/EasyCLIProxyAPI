@@ -1345,14 +1345,14 @@ export function createBrowserMockRuntime(
           canUndo: false,
           lastChange: null,
           connectors: [
-            { id: 'google', accessLevels: ['readonly', 'drafts', 'full'], secretNames: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: false }, claudeDesktop: { enabled: true, access: 'full', builtIn: false, signedIn: false } },
-            { id: 'microsoft365', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
-            { id: 'github', accessLevels: ['readonly', 'full'], secretNames: ['GITHUB_TOKEN'], secretsConfigured: false, unavailableReason: null, claudeCode: off, claudeDesktop: off },
-            { id: 'playwright', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
-            { id: 'windows', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
-            { id: 'firecrawl', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: null, builtIn: false, signedIn: null }, claudeDesktop: off },
-            { id: 'codegraph', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
-            { id: 'markitdown', accessLevels: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'google', accessLevels: ['readonly', 'drafts', 'full'], serviceOptions: ['gmail', 'calendar', 'drive', 'docs', 'sheets'], secretNames: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: false }, claudeDesktop: { enabled: true, access: 'full', builtIn: false, signedIn: false } },
+            { id: 'microsoft365', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'github', accessLevels: ['readonly', 'full'], serviceOptions: [], secretNames: ['GITHUB_TOKEN'], secretsConfigured: false, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'playwright', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
+            { id: 'windows', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
+            { id: 'firecrawl', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: null, builtIn: false, signedIn: null }, claudeDesktop: off },
+            { id: 'codegraph', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'markitdown', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
           ],
         };
       }

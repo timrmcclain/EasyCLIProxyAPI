@@ -425,6 +425,34 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           </select>
         </label>
       ) : null}
+      {item.serviceOptions.length > 0 ? (
+        <fieldset className="connector-field connector-services">
+          <legend>{ct('services')}</legend>
+          <small>{ct('servicesHint')}</small>
+          {item.serviceOptions.map(service => {
+            const chosen = draft.services ?? item.serviceOptions;
+            const checked = chosen.includes(service);
+            return (
+              <label key={service} className="connector-service">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  // At least one service has to stay on; turning the connector off is the switch above.
+                  disabled={saving || (checked && chosen.length === 1)}
+                  onChange={event => setDraft(current => {
+                    const base = current.services ?? item.serviceOptions;
+                    const services = event.target.checked
+                      ? item.serviceOptions.filter(option => option === service || base.includes(option))
+                      : base.filter(option => option !== service);
+                    return { ...current, services };
+                  })}
+                />
+                {dt(service)}
+              </label>
+            );
+          })}
+        </fieldset>
+      ) : null}
 
       {item.secretNames.length > 0 ? (
         <div className="connector-secrets">

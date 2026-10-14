@@ -111,6 +111,14 @@ impl ConnectorId {
         }
     }
 
+    /// Parts of the service a connector can load one by one; empty when it is all or nothing.
+    fn service_options(self) -> &'static [&'static str] {
+        match self {
+            ConnectorId::Google => &GOOGLE_SERVICES,
+            _ => &[],
+        }
+    }
+
     fn secret_names(self) -> &'static [&'static str] {
         match self {
             ConnectorId::Google => &["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"],
@@ -254,29 +262,37 @@ fn find_on_path(program: &str) -> Vec<PathBuf> {
         .unwrap_or_default()
 }
 
-fn google_access_args(access: &str) -> Vec<String> {
+/// `services` picks which Google services load: each one adds its tools to every
+/// Claude request, so leaving out unused ones saves context. They are written in
+/// GOOGLE_SERVICES order and unknown names are dropped.
+fn google_access_args(access: &str, services: &[String]) -> Vec<String> {
+    let chosen = GOOGLE_SERVICES.iter().copied().filter(|service| services.iter().any(|s| s == service));
     let mut args = vec![GOOGLE_WORKSPACE_PACKAGE.to_string(), "--single-user".to_string()];
     match access {
         "readonly" => {
             args.push("--read-only".to_string());
             args.push("--tools".to_string());
-            args.extend(GOOGLE_SERVICES.iter().map(|s| s.to_string()));
+            args.extend(chosen.map(str::to_string));
         }
         "drafts" => {
             args.push("--permissions".to_string());
-            args.push("gmail:drafts".to_string());
-            args.extend(
-                GOOGLE_SERVICES[1..]
-                    .iter()
-                    .map(|service| format!("{service}:readonly")),
-            );
+            args.extend(chosen.map(|service| {
+                if service == "gmail" { "gmail:drafts".to_string() } else { format!("{service}:readonly") }
+            }));
         }
         _ => {
             args.push("--tools".to_string());
-            args.extend(GOOGLE_SERVICES.iter().map(|s| s.to_string()));
+            args.extend(chosen.map(str::to_string));
         }
     }
     args
+}
+
+/// The Google services an entry loads; an entry that names none loads them all.
+fn google_services_from_args(args: &[String]) -> Vec<String> {
+    let named: Vec<&str> = args.iter().map(|arg| arg.split(':').next().unwrap_or(arg)).collect();
+    let found: Vec<String> = GOOGLE_SERVICES.iter().filter(|service| named.contains(service)).map(|s| s.to_string()).collect();
+    if found.is_empty() { GOOGLE_SERVICES.iter().map(|s| s.to_string()).collect() } else { found }
 }
 
 fn google_access_from_args(args: &[String]) -> String {
@@ -318,6 +334,7 @@ fn build_entry(
     id: ConnectorId,
     target: Target,
     access: &str,
+    services: &[String],
     secrets: &BTreeMap<String, String>,
     runtimes: &Runtimes,
 ) -> Result<Value, String> {
@@ -338,7 +355,7 @@ fn build_entry(
                 // workspace-mcp receives Google's sign-in callback on localhost.
                 "OAUTHLIB_INSECURE_TRANSPORT": "1",
             });
-            stdio_entry(target, name, uvx, google_access_args(access), Some(env))
+            stdio_entry(target, name, uvx, google_access_args(access, services), Some(env))
         }
         ConnectorId::Microsoft365 => match target {
             Target::Code => http_entry(target, name, MICROSOFT_365_URL, None),
@@ -378,22 +395,26 @@ fn build_entry(
     })
 }
 
+fn entry_args(entry: &Value) -> Option<Vec<String>> {
+    Some(entry.get("args").and_then(Value::as_array)?.iter().filter_map(|arg| arg.as_str().map(str::to_string)).collect())
+}
+
 /// Reads the access level an existing entry was written with.
 fn access_from_entry(id: ConnectorId, entry: &Value) -> Option<String> {
     match id {
-        ConnectorId::Google => {
-            let args: Vec<String> = entry
-                .get("args")
-                .and_then(Value::as_array)?
-                .iter()
-                .filter_map(|arg| arg.as_str().map(str::to_string))
-                .collect();
-            Some(google_access_from_args(&args))
-        }
+        ConnectorId::Google => Some(google_access_from_args(&entry_args(entry)?)),
         ConnectorId::GitHub => {
             let url = entry.get("url").and_then(Value::as_str).unwrap_or_default();
             Some(if url.trim_end_matches('/').ends_with("/readonly") { "readonly" } else { "full" }.to_string())
         }
+        _ => None,
+    }
+}
+
+/// Reads which of a connector's services an existing entry loads.
+fn services_from_entry(id: ConnectorId, entry: &Value) -> Option<Vec<String>> {
+    match id {
+        ConnectorId::Google => Some(google_services_from_args(&entry_args(entry)?)),
         _ => None,
     }
 }
@@ -845,6 +866,7 @@ fn apply_history_change(change: &HistoryChange) -> Result<(), String> {
 pub(crate) struct ConnectorTargetState {
     enabled: bool,
     access: Option<String>,
+    services: Option<Vec<String>>,
     /// Built into Claude Desktop rather than a program or address we run.
     built_in: bool,
     signed_in: Option<bool>,
@@ -855,6 +877,7 @@ pub(crate) struct ConnectorTargetState {
 pub(crate) struct ConnectorOverviewItem {
     id: &'static str,
     access_levels: Vec<&'static str>,
+    service_options: Vec<&'static str>,
     secret_names: Vec<&'static str>,
     secrets_configured: bool,
     secrets_desktop_only: bool,
@@ -906,6 +929,7 @@ fn target_state(id: ConnectorId, target: Target, entry: Option<&Value>, home: &P
     ConnectorTargetState {
         enabled: entry.is_some(),
         access: entry.and_then(|entry| access_from_entry(id, entry)),
+        services: entry.and_then(|entry| services_from_entry(id, entry)),
         built_in,
         signed_in,
     }
@@ -935,6 +959,7 @@ fn overview(locations: &Locations, runtimes: &Runtimes) -> Result<ConnectorOverv
         connectors.push(ConnectorOverviewItem {
             id: id.key(),
             access_levels: id.access_levels().to_vec(),
+            service_options: id.service_options().to_vec(),
             secret_names: id.secret_names().to_vec(),
             secrets_configured: id.secret_names().iter().all(|name| secrets.contains_key(*name)),
             secrets_desktop_only: id.secrets_desktop_only(),
@@ -962,6 +987,9 @@ pub(crate) struct ConnectorChangeRequest {
     claude_code: bool,
     claude_desktop: bool,
     access: Option<String>,
+    /// Services to load; kept as they are when left out.
+    #[serde(default)]
+    services: Option<Vec<String>>,
     #[serde(default)]
     secrets: BTreeMap<String, String>,
 }
@@ -977,6 +1005,21 @@ fn apply_change(locations: &Locations, runtimes: &Runtimes, request: ConnectorCh
         .unwrap_or_else(|| id.access_levels().first().copied().unwrap_or_default().to_string());
     if !id.access_levels().is_empty() && !id.access_levels().contains(&access.as_str()) {
         return Err(format!("Unknown access level: {access}"));
+    }
+    let current_services = [Target::Code, Target::Desktop]
+        .into_iter()
+        .find_map(|target| current_entry(locations, id, target).ok().flatten().and_then(|entry| services_from_entry(id, &entry)));
+    let services = request
+        .services
+        .or(current_services)
+        .unwrap_or_else(|| id.service_options().iter().map(|s| s.to_string()).collect());
+    if !id.service_options().is_empty() {
+        if services.is_empty() {
+            return Err("Choose at least one service".to_string());
+        }
+        if let Some(unknown) = services.iter().find(|service| !id.service_options().contains(&service.as_str())) {
+            return Err(format!("Unknown service: {unknown}"));
+        }
     }
     let mut secrets = existing_secrets(locations, id)?;
     secrets.extend(request.secrets.into_iter().filter(|(key, value)| {
@@ -1000,7 +1043,7 @@ fn apply_change(locations: &Locations, runtimes: &Runtimes, request: ConnectorCh
                     return Err(format!("missing_secret:{name}"));
                 }
             }
-            Some(build_entry(id, target, &access, &secrets, runtimes)?)
+            Some(build_entry(id, target, &access, &services, &secrets, runtimes)?)
         } else {
             None
         };
@@ -1472,9 +1515,10 @@ fn run_ai_test(claude: &Path, home: &Path, args: &[String]) -> ConnectorTestResu
 fn temporary_code_entry(locations: &Locations, id: ConnectorId) -> Result<Option<Value>, String> {
     let Some(desktop) = current_entry(locations, id, Target::Desktop)? else { return Ok(None) };
     let access = access_from_entry(id, &desktop).unwrap_or_else(|| "read".to_string());
+    let services = services_from_entry(id, &desktop).unwrap_or_default();
     let secrets = existing_secrets(locations, id)?;
     let runtimes = Runtimes::detect(&locations.home, &locations.local_app_data);
-    build_entry(id, Target::Code, &access, &secrets, &runtimes).map(Some)
+    build_entry(id, Target::Code, &access, &services, &secrets, &runtimes).map(Some)
 }
 
 /// Deletes the one-off connector file when the test ends; it may hold the

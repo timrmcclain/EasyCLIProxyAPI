@@ -5,11 +5,12 @@ function item(overrides: Partial<ConnectorOverviewItem> = {}): ConnectorOverview
   return {
     id: 'google',
     accessLevels: ['readonly', 'drafts', 'full'],
+    serviceOptions: ['gmail', 'calendar', 'drive', 'docs', 'sheets'],
     secretNames: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'],
     secretsConfigured: true,
     secretsDesktopOnly: false,
     unavailableReason: null,
-    claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: true },
+    claudeCode: { enabled: true, access: 'full', services: ['gmail', 'calendar'], builtIn: false, signedIn: true },
     claudeDesktop: { enabled: false, access: null, builtIn: false, signedIn: null },
     ...overrides,
   };
@@ -19,7 +20,7 @@ describe('connector drafts', () => {
   test('starts from the saved state and is unchanged', () => {
     const saved = item();
     const draft = draftFromItem(saved);
-    expect(draft).toEqual({ claudeCode: true, claudeDesktop: false, access: 'full', secrets: {} });
+    expect(draft).toEqual({ claudeCode: true, claudeDesktop: false, access: 'full', services: ['gmail', 'calendar'], secrets: {} });
     expect(draftChanged(saved, draft)).toBe(false);
   });
 
@@ -30,6 +31,16 @@ describe('connector drafts', () => {
     expect(draftChanged(saved, { ...draft, access: 'readonly' })).toBe(true);
     expect(draftChanged(saved, { ...draft, secrets: { GOOGLE_OAUTH_CLIENT_ID: '  ' } })).toBe(false);
     expect(draftChanged(saved, { ...draft, secrets: { GOOGLE_OAUTH_CLIENT_ID: 'id' } })).toBe(true);
+  });
+
+  test('services start from the saved ones, or all of them, and count as changes in any order', () => {
+    const saved = item();
+    const draft = draftFromItem(saved);
+    expect(draftChanged(saved, { ...draft, services: ['calendar', 'gmail'] })).toBe(false);
+    expect(draftChanged(saved, { ...draft, services: ['gmail'] })).toBe(true);
+    const noneSaved = item({ claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: true } });
+    expect(draftFromItem(noneSaved).services).toEqual(['gmail', 'calendar', 'drive', 'docs', 'sheets']);
+    expect(draftFromItem(item({ id: 'github', serviceOptions: [] })).services).toBeNull();
   });
 
   test('access is ignored when the connector is off everywhere', () => {

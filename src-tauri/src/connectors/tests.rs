@@ -86,11 +86,11 @@ fn code_graph_and_markitdown_run_their_installed_programs() {
     let none = BTreeMap::new();
     for (id, program) in [(ConnectorId::CodeGraph, "codebase-memory-mcp.exe"), (ConnectorId::MarkItDown, "markitdown-mcp.exe")] {
         for target in [Target::Code, Target::Desktop] {
-            let entry = build_entry(id, target, "", &none, &runtimes).unwrap();
+            let entry = build_entry(id, target, "", &[], &none, &runtimes).unwrap();
             assert_eq!(entry["command"].as_str().unwrap(), root.join(program).to_string_lossy());
         }
         let missing = Runtimes { code_graph: None, markitdown: None, ..runtimes.clone() };
-        assert!(build_entry(id, Target::Code, "", &none, &missing).is_err());
+        assert!(build_entry(id, Target::Code, "", &[], &none, &missing).is_err());
         assert!(missing.unavailable_reason(id).is_some());
         assert_eq!(ConnectorId::parse(id.key()).unwrap(), id);
     }
@@ -114,6 +114,7 @@ fn request(id: &str, code: bool, desktop: bool, access: Option<&str>, secrets: &
         claude_code: code,
         claude_desktop: desktop,
         access: access.map(str::to_string),
+        services: None,
         secrets: secrets.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
     }
 }
@@ -156,17 +157,85 @@ fn files_that_are_not_json_objects_are_refused() {
 
 #[test]
 fn google_access_levels_map_to_workspace_mcp_options() {
-    let readonly = google_access_args("readonly");
+    let all = all_google_services();
+    let readonly = google_access_args("readonly", &all);
     assert!(readonly.contains(&"--read-only".to_string()) && readonly.contains(&"--tools".to_string()));
-    let drafts = google_access_args("drafts");
+    let drafts = google_access_args("drafts", &all);
     assert!(drafts.contains(&"gmail:drafts".to_string()) && drafts.contains(&"sheets:readonly".to_string()));
     // --permissions cannot be combined with --tools or --read-only.
     assert!(!drafts.contains(&"--tools".to_string()) && !drafts.contains(&"--read-only".to_string()));
-    let full = google_access_args("full");
+    let full = google_access_args("full", &all);
     assert!(!full.contains(&"--read-only".to_string()) && !full.contains(&"--permissions".to_string()));
     for access in ["readonly", "drafts", "full"] {
-        assert_eq!(google_access_from_args(&google_access_args(access)), access);
+        assert_eq!(google_access_from_args(&google_access_args(access, &all)), access);
     }
+}
+
+fn all_google_services() -> Vec<String> {
+    GOOGLE_SERVICES.iter().map(|s| s.to_string()).collect()
+}
+
+fn strings(items: &[&str]) -> Vec<String> {
+    items.iter().map(|s| s.to_string()).collect()
+}
+
+#[test]
+fn google_services_limit_the_tools_workspace_mcp_loads() {
+    let mail_and_calendar = strings(&["calendar", "gmail"]);
+    let full = google_access_args("full", &mail_and_calendar);
+    // Services are written in workspace-mcp's own order, whatever order they arrive in.
+    assert_eq!(full[full.iter().position(|a| a == "--tools").unwrap() + 1..], strings(&["gmail", "calendar"]));
+    let readonly = google_access_args("readonly", &mail_and_calendar);
+    assert!(readonly.contains(&"--read-only".to_string()) && !readonly.contains(&"drive".to_string()));
+    let drafts = google_access_args("drafts", &mail_and_calendar);
+    assert!(drafts.contains(&"gmail:drafts".to_string()) && drafts.contains(&"calendar:readonly".to_string()));
+    assert!(!drafts.iter().any(|a| a.starts_with("drive") || a.starts_with("sheets")));
+    // Drafts without Gmail just leaves the other services read-only.
+    let no_mail = google_access_args("drafts", &strings(&["docs"]));
+    assert!(no_mail.contains(&"docs:readonly".to_string()) && !no_mail.iter().any(|a| a.starts_with("gmail")));
+    for access in ["readonly", "drafts", "full"] {
+        assert_eq!(google_services_from_args(&google_access_args(access, &mail_and_calendar)), strings(&["gmail", "calendar"]));
+        assert_eq!(google_services_from_args(&google_access_args(access, &all_google_services())), all_google_services());
+    }
+    // A hand-written entry without a version pin, and one naming no services at all.
+    assert_eq!(google_services_from_args(&strings(&["workspace-mcp", "--single-user", "--tools", "gmail", "calendar"])), strings(&["gmail", "calendar"]));
+    assert_eq!(google_services_from_args(&strings(&["workspace-mcp", "--single-user"])), all_google_services());
+}
+
+#[test]
+fn changing_google_access_keeps_the_services_already_chosen() {
+    let temp = TempDir::new("google-services-kept");
+    let locations = locations(&temp.0);
+    // The fixture's Claude Code entry loads only Gmail and Calendar.
+    apply_change(&locations, &runtimes(&temp.0), request("google", true, true, Some("readonly"), &[])).unwrap();
+    for target in [Target::Code, Target::Desktop] {
+        let entry = current_entry(&locations, ConnectorId::Google, target).unwrap().unwrap();
+        assert_eq!(services_from_entry(ConnectorId::Google, &entry), Some(strings(&["gmail", "calendar"])));
+    }
+    let overview = overview(&locations, &runtimes(&temp.0)).unwrap();
+    let google = overview.connectors.iter().find(|item| item.id == "google").unwrap();
+    assert_eq!(google.service_options, GOOGLE_SERVICES.to_vec());
+    assert_eq!(google.claude_desktop.services, Some(strings(&["gmail", "calendar"])));
+    assert!(overview.connectors.iter().find(|item| item.id == "github").unwrap().service_options.is_empty());
+}
+
+#[test]
+fn google_services_can_be_changed_and_must_be_known_and_not_empty() {
+    let temp = TempDir::new("google-services-set");
+    let locations = locations(&temp.0);
+    let mut change = request("google", true, false, None, &[]);
+    change.services = Some(strings(&["drive", "gmail"]));
+    apply_change(&locations, &runtimes(&temp.0), change).unwrap();
+    let entry = current_entry(&locations, ConnectorId::Google, Target::Code).unwrap().unwrap();
+    assert_eq!(services_from_entry(ConnectorId::Google, &entry), Some(strings(&["gmail", "drive"])));
+
+    let before = fs::read_to_string(locations.code_config()).unwrap();
+    for bad in [strings(&[]), strings(&["gmail", "photos"])] {
+        let mut change = request("google", true, false, None, &[]);
+        change.services = Some(bad);
+        assert!(apply_change(&locations, &runtimes(&temp.0), change).is_err());
+    }
+    assert_eq!(fs::read_to_string(locations.code_config()).unwrap(), before);
 }
 
 #[test]
