@@ -1719,7 +1719,8 @@ class GuiHelper {
     }
 
     fn wait_for_harness_launches(fixture: &HarnessRestartFixture, expected: usize) {
-        for _ in 0..100 {
+        // Up to 30s: spawning the helper can be slow on shared CI runners under parallel tests.
+        for _ in 0..600 {
             if fs::read_to_string(fixture.directory.join("launches.txt"))
                 .unwrap_or_default()
                 .lines()
