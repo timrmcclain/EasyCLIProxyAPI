@@ -84,7 +84,7 @@ const locales = ['zh-CN', 'en'];
         assert.equal(await row.count(), 1, `${label}: each API key has its own row`);
         assert.equal(await meta.isVisible(), true, `${label} ${group.name}: metadata stays visible`);
         const metaText = await meta.innerText();
-        const expectedModels = locale === 'en' ? `${effective.models.length} models` : `模型 ${effective.models.length} 个`;
+        const expectedModels = locale === 'en' ? `${effective.models.length} model${effective.models.length === 1 ? "" : "s"}` : `模型 ${effective.models.length} 个`;
         if (effective.models.length) assert.ok(metaText.includes(expectedModels), `${label} ${group.name}: effective model count is preserved`);
         const priorityLabel = locale === 'en' ? 'Priority' : '优先级';
         if (effective.priority === null) assert.ok(!metaText.includes(priorityLabel), `${label}: inherited priority is not displayed as zero`);

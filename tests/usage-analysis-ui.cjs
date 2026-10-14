@@ -114,7 +114,7 @@ fs.mkdirSync(screenshots, { recursive: true });
     await page.keyboard.press('End');
     assert.match(await tooltip.locator('strong').textContent(), /^10\/2 11:00 AM-11:30 AM$/);
     const accessibleDetail = await svg.evaluate(element => document.getElementById(element.getAttribute('aria-describedby')).textContent);
-    assert.match(accessibleDetail, /1 requests/);
+    assert.match(accessibleDetail, /\b1 request\b/);
     assert.match(accessibleDetail, /Success 1/);
     await page.keyboard.press('Escape');
     assert.equal(await tooltip.count(), 0);
