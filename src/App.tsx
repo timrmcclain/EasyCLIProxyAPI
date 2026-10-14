@@ -23,12 +23,13 @@ import {
   X,
   Search,
   Shrink,
-  Blocks, ShieldCheck, Stethoscope,
+  Blocks, KeyRound, ShieldCheck, Stethoscope,
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
 import { useConfirmation } from './components/ConfirmationDialog';
 import { startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
+import { startSecretGuardWatcher } from './services/secretGuardWatcher';
 import { readGlobalHotkeyPreference } from './services/dashboardPreferences';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
@@ -45,6 +46,7 @@ import { ConnectorsPage } from './pages/ConnectorsPage';
 import CompressionPage from './pages/CompressionPage';
 import { HealthCheckPage } from './pages/HealthCheckPage';
 import { JevPage } from './pages/JevPage';
+import { SecretGuardPage } from './pages/SecretGuardPage';
 import { ClaudeExtensionsPage } from './pages/ClaudeExtensionsPage';
 import { languageOptions, useI18n } from './i18n';
 import { AppUpdateDialog, AppUpdateProvider, useAppUpdate } from './appUpdate';
@@ -100,6 +102,12 @@ const pages = [
     component: UsageRecordsPage,
   },
   {
+    id: 'secret-guard',
+    labelKey: 'app.nav.secretGuard',
+    icon: KeyRound,
+    component: SecretGuardPage,
+  },
+  {
     id: 'plugins',
     labelKey: 'app.nav.plugins',
     icon: Puzzle,
@@ -150,8 +158,8 @@ const pages = [
 ] as const;
 
 type PageId = (typeof pages)[number]['id'];
-// Six everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
-const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'agents', 'connectors', 'config'];
+// Everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
+const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'secret-guard', 'agents', 'connectors', 'config'];
 const advancedNav: PageId[] = ['health', 'jev', 'claude-extensions', 'compression', 'api', 'plugins', 'quota', 'proxy', 'versions'];
 const LAST_PAGE_KEY = 'personal.lastPage';
 
@@ -236,6 +244,7 @@ function AppContent() {
   useEffect(() => (coreReady ? startQuotaWatcher() : undefined), [coreReady]);
   // Runs whether or not the proxy is up, so it can notice the proxy stopping and coming back.
   useEffect(() => startProxyWatcher(), []);
+  useEffect(() => startSecretGuardWatcher(), []);
   useEffect(() => {
     // Re-claim the shortcut each launch; if another app now owns it, Settings shows the error when switched on again.
     if (readGlobalHotkeyPreference()) invoke('set_global_hotkey', { enabled: true }).catch(() => undefined);
@@ -385,7 +394,7 @@ function AppContent() {
   useEffect(() => {
     const navigate = (event: Event) => {
       const target = (event as CustomEvent<unknown>).detail;
-      if ((target === 'home' || target === 'oauth' || target === 'agents' || target === 'compression') && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
+      if ((target === 'home' || target === 'oauth' || target === 'agents' || target === 'compression' || target === 'secret-guard') && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
     };
     window.addEventListener(UX_NAVIGATE, navigate);
     return () => window.removeEventListener(UX_NAVIGATE, navigate);

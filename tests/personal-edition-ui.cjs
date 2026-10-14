@@ -18,7 +18,7 @@ const os = require('node:os');
     await page.goto('http://127.0.0.1:1423/?mock=running');
     const nav = page.getByRole('navigation', { name: 'Main navigation' });
     await page.getByRole('heading', { name: 'Accounts & quota' }).waitFor();
-    assert.equal(await nav.getByRole('button').count(), 6, 'Six everyday pages are visible; the rest sit under Advanced tools');
+    assert.equal(await nav.getByRole('button').count(), 7, 'Seven everyday pages (with Secret Guard) are visible; the rest sit under Advanced tools');
     assert.equal(await nav.locator('.personal-advanced').evaluate(node => node.open), false, 'Advanced tools start collapsed');
     await page.locator('.glance-latest').filter({ hasText: 'codex-personal.json' }).waitFor();
     // The mock serves the provider fixtures: Claude, Antigravity, Codex, Grok, Kimi, Devin and Gemini accounts.

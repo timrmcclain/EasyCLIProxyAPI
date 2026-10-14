@@ -42,6 +42,7 @@ mod tray;
 mod usage;
 mod model_preset;
 mod global_hotkey;
+mod secret_guard;
 
 #[cfg(test)]
 use configuration_watcher::nearest_existing_watch_directory;
@@ -2665,7 +2666,7 @@ fn main() {
             global_hotkey::set_global_hotkey,
             headroom::headroom_status,
             headroom::headroom_set_enabled,
-            headroom::headroom_set_routes,
+            headroom::headroom_set_routes,
             headroom::headroom_set_memory,
             headroom::headroom_stop_service,
             headroom::headroom_stats,
@@ -2762,6 +2763,10 @@ fn main() {
             jev::jev_overview,
             jev::refresh_jev_report,
             jev::open_jev_report,
+            secret_guard::secret_guard_info,
+            secret_guard::secret_guard_install,
+            secret_guard::secret_guard_findings,
+            secret_guard::secret_guard_dismiss,
             claude_extensions::claude_extensions_overview,
             claude_extensions::claude_plugin_details,
             claude_extensions::claude_plugin_install,

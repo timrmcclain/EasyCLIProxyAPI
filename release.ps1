@@ -40,6 +40,13 @@ Step 'Typecheck' { bun run check }
 Step 'Unit tests' { bun test }
 if (-not $SkipUiTests) { Step 'Browser tests' { node scripts/run-ui-tests.mjs } }
 
+# Secret Guard is a proxy plugin the hub embeds (src-tauri/build.rs picks up the built DLL).
+Step 'Secret Guard tests' { cargo test --quiet --manifest-path secret-guard/Cargo.toml }
+Step 'Build Secret Guard' { cargo build --release --quiet --lib --manifest-path secret-guard/Cargo.toml }
+# Loads the new DLL into a throwaway copy of the installed proxy; the running proxy isn't touched.
+$installedProxy = Join-Path $env:LOCALAPPDATA 'Programs\EasyCLIProxyAPI\cpa-core\cli-proxy-api.exe'
+if (Test-Path -LiteralPath $installedProxy) { Step 'Secret Guard in the proxy' { node secret-guard/e2e.cjs $installedProxy } }
+
 # Bump 0.3.12+personal-desk.N -> N+1 in Cargo.toml and Cargo.lock.
 $toml = Get-Content -Raw src-tauri/Cargo.toml
 if ($toml -notmatch 'personal-desk\.(\d+)') { throw 'No personal-desk.N version found in src-tauri/Cargo.toml.' }

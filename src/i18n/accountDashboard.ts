@@ -1,6 +1,7 @@
 import { uxImprovementsEn, uxImprovementsJa, uxImprovementsZhCN } from './uxImprovements';
 import { homeGlanceEn, homeGlanceJa, homeGlanceZhCN } from './homeGlance';
 import { jevEn, jevJa, jevZhCN } from './jev';
+import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
 import { errorCausesEn, errorCausesJa, errorCausesZhCN } from './errorCauses';
 import { claudeExtensionsEn, claudeExtensionsJa, claudeExtensionsZhCN } from './claudeExtensions';
@@ -8,6 +9,7 @@ export const accountDashboardEn = {
   ...uxImprovementsEn,
   ...homeGlanceEn,
   ...jevEn,
+  ...secretGuardEn,
   ...projectUsageEn,
   ...errorCausesEn,
   ...claudeExtensionsEn,
@@ -80,6 +82,7 @@ export const accountDashboardZhCN = {
   ...uxImprovementsZhCN,
   ...homeGlanceZhCN,
   ...jevZhCN,
+  ...secretGuardZhCN,
   ...projectUsageZhCN,
   ...errorCausesZhCN,
   ...claudeExtensionsZhCN,
@@ -152,6 +155,7 @@ export const accountDashboardJa = {
   ...uxImprovementsJa,
   ...homeGlanceJa,
   ...jevJa,
+  ...secretGuardJa,
   ...projectUsageJa,
   ...errorCausesJa,
   ...claudeExtensionsJa,

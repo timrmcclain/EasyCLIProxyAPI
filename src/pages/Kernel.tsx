@@ -1,4 +1,5 @@
 import { AppDriftBanner } from '../components/AppDriftBanner';
+import { SecretGuardBanner } from '../components/SecretGuardBanner';
 import { ClaudeFallbackBanner } from '../components/ClaudeFallbackBanner';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
@@ -375,6 +376,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
         </section>
         {processNotice}
         <AppDriftBanner coreReady={coreReady} />
+        <SecretGuardBanner coreReady={coreReady} />
         <ClaudeFallbackBanner coreReady={coreReady} />
         {showChecklist && <section className="home-checklist" aria-labelledby="home-checklist-title">
           <header>

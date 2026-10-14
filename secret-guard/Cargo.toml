@@ -1,0 +1,23 @@
+[package]
+name = "secret-guard"
+version = "0.1.0"
+edition = "2021"
+description = "CLIProxyAPI request interceptor that finds credentials in outgoing prompts"
+publish = false
+
+[lib]
+name = "secret_guard"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+base64 = "0.22"
+regex = "1.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+sha2 = "0.10"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

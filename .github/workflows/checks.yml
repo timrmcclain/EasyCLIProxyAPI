@@ -32,7 +32,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri
+            secret-guard
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -42,6 +44,15 @@ jobs:
 
       - name: Unit tests
         run: bun test
+
+      - name: Secret Guard plugin tests
+        working-directory: secret-guard
+        run: cargo test --quiet
+
+      # Built before the hub so src-tauri/build.rs embeds it, as release.ps1 does.
+      - name: Build Secret Guard plugin
+        working-directory: secret-guard
+        run: cargo build --release --quiet --lib
 
       - name: Rust tests
         working-directory: src-tauri

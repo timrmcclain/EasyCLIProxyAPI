@@ -187,5 +187,8 @@ export function createPluginMock(host: PluginMockHost) {
     throw new Error(NOT_FOUND);
   }
 
-  return { handle };
+  /** For bundled plugins the hub copies in itself (Secret Guard), with no store entry. */
+  const markInstalled = (id: string, version: string) => { initialize(); installed.set(id, { version, sourceId: 'bundled' }); };
+
+  return { handle, markInstalled };
 }

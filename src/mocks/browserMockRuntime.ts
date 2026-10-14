@@ -5,6 +5,8 @@ import { createQuotaMock, createQuotaMockFiles } from './quotaMock';
 let mockClaudeStatusLine = false;
 let mockClaudeFallback: string | null = null;
 let mockJevRefreshed = false;
+let mockSecretGuardInstalled = false;
+const mockSecretGuardDismissed = new Map<string, number>();
 // Skills & plugins page: installs, switches and removals change what the next overview returns.
 const mockSkill = (folder: string, description: string, scripts: string[] = [], extra: Record<string, boolean> = {}) => ({
   folder, name: folder, description, files: scripts.length + 1, bytes: 4096 + scripts.length * 2048, scripts, linked: false, notASkill: false, ...extra,
@@ -1537,6 +1539,32 @@ export function createBrowserMockRuntime(
             { path: 'C:\\Users\\demo\\Documents\\notes', sessions: 1, messages: 35, inputTokens: 900, outputTokens: 8000, cacheReadTokens: 400000, cacheWriteTokens: 60000, lastActive: now - 86400 * 3 },
           ],
         };
+      }
+      case 'secret_guard_info':
+        return { bundled: true, bundledVersion: '0.1.0', installed: mockSecretGuardInstalled, findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl' };
+      case 'secret_guard_install':
+        mockSecretGuardInstalled = true;
+        pluginMock.markInstalled('secret-guard', '0.1.0');
+        return { findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl', replacedLoadedCopy: false };
+      case 'secret_guard_findings': {
+        // Nothing is found until Secret Guard is switched on, so other pages' tests never see its banner.
+        if (scenario === 'empty' || !mockSecretGuardInstalled) return [];
+        const minutes = (count: number) => Date.now() - count * 60_000;
+        const findings = [
+          { fingerprint: '3f9a2b1c', kind: 'github_token', firstSeen: minutes(42), lastSeen: minutes(3), sightings: 4, providers: ['anthropic'], models: ['claude-opus-5-5'], clients: ['claude-cli/2.1.280 (external, cli)'], actions: ['reported'] },
+          { fingerprint: '7c41d0e8', kind: 'connection_string_password', firstSeen: minutes(60 * 26), lastSeen: minutes(60 * 20), sightings: 2, providers: ['anthropic', 'openai'], models: ['sonnet', 'gpt-6-astra'], clients: ['claude-cli/2.1 (claude-desktop-3p)', 'codex/1.0'], actions: ['redacted', 'reported'] },
+          { fingerprint: 'a09b33f2', kind: 'aws_access_key', firstSeen: minutes(60 * 50), lastSeen: minutes(60 * 49), sightings: 1, providers: ['xai'], models: ['grok-5'], clients: ['opencode/0.9'], actions: ['blocked'] },
+        ];
+        return findings.map(item => {
+          const at = mockSecretGuardDismissed.get(item.fingerprint);
+          return { ...item, dismissedAt: at !== undefined && at >= item.lastSeen ? at : null };
+        });
+      }
+      case 'secret_guard_dismiss': {
+        const fingerprint = String(payload.fingerprint ?? '');
+        if (payload.dismissed) mockSecretGuardDismissed.set(fingerprint, Date.now());
+        else mockSecretGuardDismissed.delete(fingerprint);
+        return null;
       }
       case 'jev_overview': {
         const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
