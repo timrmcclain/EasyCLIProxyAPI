@@ -1945,7 +1945,7 @@ export const en: Record<MessageKey, string> = {
   'kernel.control.installStatus': 'Installation Status',
   'kernel.control.installed': 'Installed',
   'kernel.control.runStatus': 'Runtime Status',
-  'kernel.control.pid': 'Process PID',
+  'kernel.control.pid': 'Process ID',
   'kernel.control.notRunning': 'Not Running',
   'kernel.control.noPid': 'None',
   'kernel.control.allowLan': 'Allow LAN',

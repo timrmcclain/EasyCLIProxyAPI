@@ -1,7 +1,7 @@
 export const jevEn = {
   'jev.title': 'Jev',
   'jev.subtitle': "The checks Jev runs inside every Claude Code session, and whether they're paying off. Read-only: Jev's settings live in its own folder.",
-  'jev.notInstalled': "Jev isn't installed on this computer.",
+  'jev.notInstalled': "Jev isn't installed on this computer. Once it is, click Retry to load its status here.",
   'jev.loadError': "Couldn't read Jev's files: {error}",
   'jev.status.title': 'Status',
   'jev.status.hooks.ok': '{count} Jev checks are switched on in Claude Code',

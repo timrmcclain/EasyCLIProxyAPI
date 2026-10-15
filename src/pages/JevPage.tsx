@@ -66,8 +66,17 @@ export function JevPage() {
     return item.detail;
   };
 
-  if (error) return <div className="health-page jev-page"><p role="alert" className="ad-notice ad-error">{t('jev.loadError', { error })}</p></div>;
-  if (overview && !overview.installed) return <div className="health-page jev-page"><header className="health-heading"><div><h1>{t('jev.title')}</h1><p>{t('jev.notInstalled')}</p></div></header></div>;
+  // Both dead ends keep the page title and offer a way to try again, rather than a bare line.
+  const retryButton = <button type="button" className="secondary-button compact-button" onClick={() => void load()}>
+    <RefreshCw size={14} aria-hidden="true" />{t('common.retry')}
+  </button>;
+  if (error) return <div className="health-page jev-page">
+    <header className="health-heading"><div><h1>{t('jev.title')}</h1><p>{t('jev.subtitle')}</p></div>{retryButton}</header>
+    <p role="alert" className="ad-notice ad-error">{t('jev.loadError', { error })}</p>
+  </div>;
+  if (overview && !overview.installed) return <div className="health-page jev-page">
+    <header className="health-heading"><div><h1>{t('jev.title')}</h1><p>{t('jev.notInstalled')}</p></div>{retryButton}</header>
+  </div>;
 
   const report = overview?.report;
   const counts = interventionCounts(overview?.interventions ?? []);

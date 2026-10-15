@@ -1,10 +1,10 @@
 .quota-page .quota-category-filter {
   display: flex;
-  flex-wrap: nowrap;
+  /* Wrap rather than scroll sideways: a hidden scroll gave no cue that more providers existed. */
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   min-width: 0;
-  overflow-x: auto;
   padding: 2px 2px 4px;
   scrollbar-width: thin;
 }

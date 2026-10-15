@@ -82,6 +82,12 @@
   box-shadow: none;
 }
 
+/* Segmented groups read as one control, as in dark mode: only the selected segment is outlined. */
+:root:not([data-theme='dark']) .workspace :is(.routing-segmented, .plugin-tabs) button:not(.active) {
+  background: transparent;
+  border-color: transparent;
+}
+
 /* Client selection is a list state, so keep it visually lighter than a form control. */
 :root:not([data-theme='dark']) .workspace .agent-list-items button.active {
   border: 1px solid transparent;
