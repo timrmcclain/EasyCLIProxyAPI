@@ -1793,6 +1793,8 @@ export const en: Record<MessageKey, string> = {
   'common.undo': 'Undo',
   'common.unsavedChanges': 'Unsaved changes',
   'config.saveBar.unsaved': 'Unsaved changes on this tab',
+  'config.saveBar.label': "Settings save bar",
+  'config.saveBar.incomplete': "Some changes on this tab weren't saved. Each card above shows why.",
   'config.saveBar.saveAll': 'Save all',
   'config.upstreamGuide.title': 'Upstreams & credentials (advanced)',
   'config.upstreamGuide.body': 'These settings tune how the proxy talks to each provider: custom endpoints, headers and where credentials are stored. Most people never change them; manage the accounts themselves on the Accounts page.',

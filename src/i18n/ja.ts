@@ -1793,6 +1793,8 @@ export const jaOverrides = {
   'common.undo': '元に戻す',
   'common.unsavedChanges': '未保存の変更があります',
   'config.saveBar.unsaved': 'このタブに未保存の変更があります',
+  'config.saveBar.label': "設定の保存バー",
+  'config.saveBar.incomplete': "このタブの変更の一部が保存されませんでした。理由は上の各カードに表示されています。",
   'config.saveBar.saveAll': 'すべて保存',
   'config.upstreamGuide.title': 'アップストリームと認証情報（詳細）',
   'config.upstreamGuide.body': 'プロキシと各プロバイダーとの通信方法（カスタムエンドポイント、ヘッダー、認証情報の保存先など）を調整する設定です。通常は既定のままで問題ありません。アカウント自体は「アカウント」ページで管理します。',

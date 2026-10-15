@@ -93,8 +93,12 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
     setSaved((previous) => ({ ...previous, [group.id]: false }));
   };
 
-  const saveGroup = async (group: TemplateConfigGroup) => {
-    if (!config || busy) return;
+  const saveGroup = async (group: TemplateConfigGroup, fromSaveAll = false) => {
+    if (!config || busy) {
+      // The card's own Save is disabled here, but Save all isn't, so say why rather than doing nothing.
+      if (fromSaveAll) setGroupErrors((previous) => ({ ...previous, [group.id]: tr('notReady') }));
+      return;
+    }
     const changes: TemplateConfigChange[] = [];
     for (const field of group.fields) {
       const draft = drafts[templateFieldKey(field.path)];
@@ -174,7 +178,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
   const visible = groups.filter((group) => !visibleGroups || visibleGroups.includes(group.id));
   if (saveAllRef) saveAllRef.current = async (groupIds) => {
     for (const group of groups) {
-      if (groupIds.includes(group.id) && group.fields.some((field) => drafts[templateFieldKey(field.path)])) await saveGroup(group);
+      if (groupIds.includes(group.id) && group.fields.some((field) => drafts[templateFieldKey(field.path)])) await saveGroup(group, true);
     }
   };
 

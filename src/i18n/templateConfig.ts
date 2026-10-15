@@ -19,6 +19,7 @@ export const templateMessages = {
   saving: { zh: '正在保存…', en: 'Saving…', ja: '保存中…' },
   saved: { zh: '设置已保存', en: 'Settings saved', ja: '設定を保存しました' },
   restart: { zh: '设置已保存，下次启动内核时生效', en: 'Saved. These changes take effect the next time the core starts.', ja: '保存しました。次回コア起動時に適用されます。' },
+  notReady: { zh: '暂时无法保存：请等待当前操作完成，或重新加载设置', en: "Couldn't save yet: wait for the current action to finish, or reload the settings", ja: 'まだ保存できません：現在の操作が終わるのを待つか、設定を再読み込みしてください' },
   restartNow: { zh: '重启内核以应用', en: 'Restart core to apply', ja: 'コアを再起動して適用' },
   default: { zh: '使用内核默认值', en: 'Use core default', ja: 'コアの既定値を使用' },
   inherited: { zh: '内核默认', en: 'Core default', ja: 'コアの既定値' },

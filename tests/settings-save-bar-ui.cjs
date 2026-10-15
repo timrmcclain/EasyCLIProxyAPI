@@ -46,6 +46,19 @@ const path = require('node:path');
     await bar.waitFor({ state: 'detached' });
     assert.equal(await retry.inputValue(), changed, 'the saved value stays');
 
+    // A card that can't save keeps the bar up and says so, instead of quietly staying as it was.
+    await page.locator('#config-subpage-tab-general').click();
+    const port = page.locator('#config-input-config-network-port');
+    await port.waitFor();
+    const originalPort = await port.inputValue();
+    await port.fill('70000');
+    await bar.waitFor();
+    await bar.getByRole('button', { name: 'Save all' }).click();
+    await bar.getByRole('alert').waitFor();
+    assert.match(await bar.innerText(), /weren't saved/, 'a failed save is reported in the bar');
+    await port.fill(originalPort);
+    await bar.waitFor({ state: 'detached' });
+
     // Template-driven cards save through the same bar.
     await page.locator('#config-subpage-tab-oauth').click();
     await page.getByRole('button', { name: 'Show advanced settings' }).click();

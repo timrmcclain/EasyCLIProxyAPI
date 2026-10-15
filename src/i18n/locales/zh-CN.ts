@@ -1792,6 +1792,8 @@ export const zhCN = {
   'common.undo': '撤销',
   'common.unsavedChanges': '有未保存的修改',
   'config.saveBar.unsaved': '此页有未保存的修改',
+  'config.saveBar.label': "设置保存栏",
+  'config.saveBar.incomplete': "此页有部分修改未保存。上方各卡片会显示原因。",
   'config.saveBar.saveAll': '全部保存',
   'config.upstreamGuide.title': '上游与凭据（高级）',
   'config.upstreamGuide.body': '这些设置调整代理与各服务商通信的方式，例如自定义地址、请求头和凭据存储。大多数情况下保持默认即可，账号本身请在“账号”页面管理。',
