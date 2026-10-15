@@ -96,6 +96,15 @@ const path = require('node:path');
     await banner.getByRole('button', { name: 'Review' }).click();
     await page.getByRole('heading', { name: 'Secret Guard', level: 1 }).waitFor();
 
+    // Codex response steering lets follow-up WebSocket messages skip the check, so the page warns while it's on.
+    const steering = page.getByText(/Codex response steering is on/);
+    assert.equal(await steering.count(), 0, 'no warning while steering is off');
+    await page.evaluate(() => localStorage.setItem('mock.codexSteering', 'on'));
+    await page.locator('nav').getByRole('button', { name: /Overview/ }).first().click();
+    await page.locator('nav').getByRole('button', { name: /Secret Guard/ }).first().click();
+    await steering.waitFor();
+    await page.evaluate(() => localStorage.removeItem('mock.codexSteering'));
+
     // Switching off keeps the policy and findings.
     await toggle.uncheck();
     await page.getByText('Off. Prompts go out without being checked.').waitFor();

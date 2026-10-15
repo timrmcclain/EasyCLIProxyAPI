@@ -169,6 +169,9 @@ export function SecretGuardPage() {
             <LineIcon size={16} aria-hidden="true" />{line.text}
             {'retry' in line && line.retry && <button type="button" className="secondary-button compact-button" onClick={() => void toggle(true)}>{t('sg.retry')}</button>}
           </p>}
+        {status?.on && status.info.codexSteeringBypass && <p className="sg-state level-warn" role="note">
+          <AlertTriangle size={16} aria-hidden="true" />{t('sg.codexSteering')}
+        </p>}
       </>}
       {actionError && <p role="alert" className="jev-error">{actionError}</p>}
     </section>

@@ -32,6 +32,8 @@ pub(crate) struct SecretGuardInfo {
     bundled_version: String,
     installed: bool,
     findings_file: String,
+    /// Codex response steering streams later WebSocket frames straight upstream, past the request check.
+    codex_steering_bypass: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -109,6 +111,16 @@ fn resolve_plugins_dir(configured: &str, core_dir: &Path, home: Option<PathBuf>)
     }
 }
 
+/// True when the proxy config turns on Codex response steering, under `upstream.codex` or a top-level `codex`.
+fn codex_steering_on(config_text: &str) -> bool {
+    let Ok(config) = serde_yaml::from_str::<serde_yaml::Value>(config_text) else { return false };
+    let on = [config.get("upstream").and_then(|upstream| upstream.get("codex")), config.get("codex")]
+        .into_iter()
+        .flatten()
+        .any(|codex| codex.get("response-steering").and_then(serde_yaml::Value::as_bool) == Some(true));
+    on
+}
+
 fn configured_plugins_dir(core_dir: &Path) -> String {
     let text = fs::read_to_string(core_dir.join(CORE_CONFIG_FILE)).unwrap_or_default();
     serde_yaml::from_str::<serde_yaml::Value>(&text)
@@ -149,6 +161,7 @@ pub(crate) fn secret_guard_info() -> Result<SecretGuardInfo, String> {
         bundled_version: BUNDLED_VERSION.to_string(),
         installed: installed_plugin_file()?.is_file(),
         findings_file: display(&findings_path()?),
+        codex_steering_bypass: core_install_dir().map(|dir| codex_steering_on(&fs::read_to_string(dir.join(CORE_CONFIG_FILE)).unwrap_or_default())).unwrap_or(false),
     })
 }
 
@@ -360,5 +373,14 @@ mod tests {
         trim_findings(&path);
         assert_eq!(fs::read_to_string(&path).unwrap().lines().count(), KEEP_LINES);
         let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn codex_steering_is_read_from_either_place() {
+        assert!(codex_steering_on("upstream:\n  codex:\n    response-steering: true\n"));
+        assert!(codex_steering_on("codex:\n  response-steering: true\n"));
+        assert!(!codex_steering_on("upstream:\n  codex:\n    response-steering: false\n"));
+        assert!(!codex_steering_on("not: [valid"));
+        assert!(!codex_steering_on(""));
     }
 }

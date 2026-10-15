@@ -1,4 +1,5 @@
 export const secretGuardEn = {
+  'sg.codexSteering': "Codex response steering is on in the proxy settings. With it on, follow-up messages in an open Codex session go straight to OpenAI without this check. Turn it off under the proxy's upstream Codex settings for full coverage.",
   'app.nav.secretGuard': 'Secret Guard',
   'sg.title': 'Secret Guard',
   'sg.subtitle': 'Checks every prompt your apps send through the proxy for passwords, API keys and other credentials, before any provider sees it.',
@@ -86,6 +87,7 @@ export const secretGuardEn = {
 } as const;
 
 export const secretGuardZhCN: Record<keyof typeof secretGuardEn, string> = {
+  'sg.codexSteering': "代理设置中开启了 Codex 响应引导。开启后，已打开的 Codex 会话中的后续消息会直接发往 OpenAI，不经过此检查。如需完整覆盖，请在代理的上游 Codex 设置中关闭它。",
   'app.nav.secretGuard': '密钥守卫',
   'sg.title': '密钥守卫',
   'sg.subtitle': '在任何服务商看到之前，检查各应用经代理发出的每条提示中是否含有密码、API 密钥或其他凭据。',
@@ -173,6 +175,7 @@ export const secretGuardZhCN: Record<keyof typeof secretGuardEn, string> = {
 };
 
 export const secretGuardJa: Record<keyof typeof secretGuardEn, string> = {
+  'sg.codexSteering': "プロキシ設定で Codex のレスポンスステアリングがオンになっています。オンの間、開いている Codex セッションの後続メッセージはこのチェックを通らずに OpenAI へ直接送られます。完全に確認するには、プロキシのアップストリーム Codex 設定でオフにしてください。",
   'app.nav.secretGuard': 'シークレットガード',
   'sg.title': 'シークレットガード',
   'sg.subtitle': 'アプリがプロキシ経由で送るすべてのプロンプトを、プロバイダーに届く前に検査し、パスワードや API キーなどの認証情報が含まれていないか確認します。',

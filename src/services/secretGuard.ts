@@ -10,7 +10,11 @@ export const SECRET_GUARD_MODES: SecretGuardMode[] = ['off', 'report', 'redact',
 export const SECRET_GUARD_PROVIDERS = ['anthropic', 'openai', 'google', 'xai', 'meta', 'other'] as const;
 export type SecretGuardProvider = typeof SECRET_GUARD_PROVIDERS[number];
 
-export type SecretGuardInfo = { bundled: boolean; bundledVersion: string; installed: boolean; findingsFile: string };
+export type SecretGuardInfo = {
+  bundled: boolean; bundledVersion: string; installed: boolean; findingsFile: string;
+  /** Codex response steering is on in the proxy config, so follow-up WebSocket messages skip the check. */
+  codexSteeringBypass: boolean;
+};
 export type SecretGuardInstall = { findingsFile: string; replacedLoadedCopy: boolean };
 export type SecretGuardFinding = {
   fingerprint: string; kind: string; firstSeen: number; lastSeen: number; sightings: number;

@@ -1541,7 +1541,7 @@ export function createBrowserMockRuntime(
         };
       }
       case 'secret_guard_info':
-        return { bundled: true, bundledVersion: '0.1.0', installed: mockSecretGuardInstalled, findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl' };
+        return { bundled: true, bundledVersion: '0.1.0', installed: mockSecretGuardInstalled, findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl', codexSteeringBypass: localStorage.getItem('mock.codexSteering') === 'on' };
       case 'secret_guard_install':
         mockSecretGuardInstalled = true;
         pluginMock.markInstalled('secret-guard', '0.1.0');
