@@ -1,10 +1,12 @@
-//! Read-only view of Jev, the Claude Code hooks in `~/.claude/jev`.
+//! View of Jev, the Claude Code hooks in `~/.claude/jev`.
 //!
 //! Reads what Jev already writes: its nightly self-test and replay results, the
 //! "did it pay off" report (`state/jev-report.json`) and its decision log. The
-//! only action is refreshing that report, which runs Jev's own report script.
+//! actions are refreshing that report, which runs Jev's own report script, and
+//! the guard switches, three keys in Jev's `config.json` that its hooks read on
+//! every call.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeSet;
 use std::fs;
@@ -190,10 +192,82 @@ fn report_summary(report: &Value) -> Value {
     Value::Object(summary)
 }
 
+/// Longest time Jev may remember an approval; matches the cap in Jev's approvals.py.
+const MAX_APPROVAL_HOURS: u32 = 168;
+const DEFAULT_APPROVAL_HOURS: u32 = 24;
+
+/// The guard switches in Jev's config.json. A guard is on unless its key is "off"; the hard denies
+/// (deleting the home folder, wiping a disk) are not switchable.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JevGuards {
+    /// Asks before browser clicks that publish, delete, submit, send or pay.
+    browser_guard: bool,
+    /// Asks before `git add -A`, discarding changes, deleting tests or a project folder.
+    command_guard: bool,
+    /// How long an approval is remembered in a session, so the same action isn't asked about again. 0 = never.
+    approval_hours: u32,
+}
+
+fn read_guards(config: Option<&Value>) -> JevGuards {
+    let on = |key: &str| {
+        config.and_then(|c| c.get(key)).and_then(Value::as_str).map_or(true, |value| !value.eq_ignore_ascii_case("off"))
+    };
+    let hours = config
+        .and_then(|c| c.get("approval_hours"))
+        .and_then(Value::as_f64)
+        .map_or(DEFAULT_APPROVAL_HOURS, |hours| hours.clamp(0.0, f64::from(MAX_APPROVAL_HOURS)) as u32);
+    JevGuards { browser_guard: on("browser_guard"), command_guard: on("command_guard"), approval_hours: hours }
+}
+
+/// Sets the three guard keys, keeping every other key, their order and the file's line endings.
+/// A config.json that isn't valid JSON is left alone rather than overwritten.
+fn write_guards(path: &Path, guards: &JevGuards) -> Result<(), String> {
+    if guards.approval_hours > MAX_APPROVAL_HOURS {
+        return Err(format!("Approval memory can be at most {MAX_APPROVAL_HOURS} hours"));
+    }
+    let original = match fs::read_to_string(path) {
+        Ok(text) => Some(text),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(format!("Couldn't read Jev's settings: {error}")),
+    };
+    let mut root = match &original {
+        Some(text) => match serde_json::from_str::<Value>(text) {
+            Ok(Value::Object(map)) => map,
+            _ => return Err("Jev's config.json isn't valid JSON, so it was left unchanged".to_string()),
+        },
+        None => serde_json::Map::new(),
+    };
+    let switch = |on: bool| Value::from(if on { "on" } else { "off" });
+    root.insert("browser_guard".into(), switch(guards.browser_guard));
+    root.insert("command_guard".into(), switch(guards.command_guard));
+    root.insert("approval_hours".into(), Value::from(guards.approval_hours));
+    let mut text = serde_json::to_string_pretty(&Value::Object(root)).map_err(|error| error.to_string())? + "\n";
+    if original.as_deref().is_some_and(|text| text.contains("\r\n")) {
+        text = text.replace('\n', "\r\n");
+    }
+    let temp = path.with_extension("json.tmp");
+    fs::write(&temp, text).map_err(|error| format!("Couldn't save Jev's settings: {error}"))?;
+    fs::rename(&temp, path).map_err(|error| format!("Couldn't save Jev's settings: {error}"))
+}
+
+/// Saves the guard switches. Jev's hooks read config.json on every call, so the change applies at once.
+#[tauri::command]
+pub(crate) fn set_jev_guards(app: tauri::AppHandle, guards: JevGuards) -> Result<JevGuards, String> {
+    let (dir, _) = jev_dir(&app)?;
+    if !dir.join("jev.py").is_file() {
+        return Err("Jev isn't installed".to_string());
+    }
+    let path = dir.join("config.json");
+    write_guards(&path, &guards)?;
+    Ok(read_guards(read_json(&path).as_ref()))
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct JevOverview {
     installed: bool,
+    guards: JevGuards,
     hooks: Vec<JevHook>,
     selftest: Option<Value>,
     replay: Option<Value>,
@@ -220,6 +294,7 @@ fn read_overview(dir: &Path, settings_path: &Path) -> JevOverview {
         .to_string();
     JevOverview {
         installed,
+        guards: read_guards(read_json(&dir.join("config.json")).as_ref()),
         hooks,
         selftest: read_json(&dir.join("state/selftest.json")),
         replay: read_json(&dir.join("state/replay.json")),
@@ -344,5 +419,54 @@ mod tests {
     fn summary_keeps_the_page_fields_only() {
         let report = json!({ "generated": "g", "days": 7, "charts": { "big": true }, "compactions": [1, 2], "alerts": ["a"] });
         assert_eq!(report_summary(&report), json!({ "generated": "g", "days": 7, "alerts": ["a"] }));
+    }
+
+    fn temp_config(label: &str, text: Option<&str>) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("jev-guards-{label}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.json");
+        if let Some(text) = text {
+            fs::write(&path, text).unwrap();
+        }
+        path
+    }
+
+    #[test]
+    fn guards_default_on_with_a_day_of_memory() {
+        let on = JevGuards { browser_guard: true, command_guard: true, approval_hours: 24 };
+        assert_eq!(read_guards(None), on);
+        assert_eq!(read_guards(Some(&json!({ "completion_check": "block" }))), on);
+        let off = json!({ "browser_guard": "OFF", "command_guard": "off", "approval_hours": 2.5 });
+        assert_eq!(read_guards(Some(&off)), JevGuards { browser_guard: false, command_guard: false, approval_hours: 2 });
+        // Jev treats an unreadable number as its default and caps the memory at a week; so does the page.
+        assert_eq!(read_guards(Some(&json!({ "approval_hours": "x" }))).approval_hours, 24);
+        assert_eq!(read_guards(Some(&json!({ "approval_hours": 9999 }))).approval_hours, 168);
+    }
+
+    #[test]
+    fn writing_guards_keeps_jevs_other_settings_order_and_line_endings() {
+        let original = "{\r\n  \"completion_check\": \"block\",\r\n  \"pricing\": {\r\n    \"input\": 1\r\n  },\r\n  \"command_risk\": \"shadow\"\r\n}\r\n";
+        let path = temp_config("keep", Some(original));
+        write_guards(&path, &JevGuards { browser_guard: false, command_guard: true, approval_hours: 8 }).unwrap();
+        let text = fs::read_to_string(&path).unwrap();
+        assert!(!text.replace("\r\n", "").contains('\n'), "line endings stay CRLF: {text:?}");
+        let value: Value = serde_json::from_str(&text).unwrap();
+        let keys: Vec<&str> = value.as_object().unwrap().keys().map(String::as_str).collect();
+        assert_eq!(keys, ["completion_check", "pricing", "command_risk", "browser_guard", "command_guard", "approval_hours"]);
+        assert_eq!(value["pricing"], json!({ "input": 1 }));
+        assert_eq!(read_guards(Some(&value)), JevGuards { browser_guard: false, command_guard: true, approval_hours: 8 });
+    }
+
+    #[test]
+    fn writing_guards_creates_a_missing_file_and_refuses_bad_input() {
+        let path = temp_config("new", None);
+        write_guards(&path, &JevGuards { browser_guard: true, command_guard: false, approval_hours: 0 }).unwrap();
+        assert_eq!(read_guards(read_json(&path).as_ref()).command_guard, false);
+
+        let broken = temp_config("broken", Some("{ not json"));
+        assert!(write_guards(&broken, &JevGuards { browser_guard: true, command_guard: true, approval_hours: 24 }).is_err());
+        assert_eq!(fs::read_to_string(&broken).unwrap(), "{ not json", "a file Jev can't read is left alone");
+        assert!(write_guards(&path, &JevGuards { browser_guard: true, command_guard: true, approval_hours: 169 }).is_err());
     }
 }

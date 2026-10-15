@@ -2763,6 +2763,7 @@ fn main() {
             jev::jev_overview,
             jev::refresh_jev_report,
             jev::open_jev_report,
+            jev::set_jev_guards,
             secret_guard::secret_guard_info,
             secret_guard::secret_guard_install,
             secret_guard::secret_guard_findings,

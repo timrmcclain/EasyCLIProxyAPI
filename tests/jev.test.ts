@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { interventionCounts, jevStatusRows, type JevOverview } from '../src/services/jev';
+import { approvalHourOptions, interventionCounts, jevStatusRows, type JevOverview } from '../src/services/jev';
 
 const now = Date.parse('2026-10-10T08:00:00');
 const base: JevOverview = {
   installed: true,
+  guards: { browserGuard: true, commandGuard: true, approvalHours: 24 },
   hooks: [{ event: 'Stop', script: 'stop_verifier.py' }, { event: 'PreToolUse', script: 'rule_enforcer.py' }, { event: 'PostToolUse', script: 'rule_enforcer.py' }],
   selftest: { ts: '2026-10-10T06:01:12', passed: 73, total: 73 },
   replay: { ts: '2026-10-10T06:00:41', problems: 0 },
@@ -40,5 +41,14 @@ describe('intervention counts', () => {
   it('counts each kind', () => {
     const item = (kind: 'sentBack' | 'guarded') => ({ ts: '', kind, detail: '', project: null });
     expect(interventionCounts([item('sentBack'), item('guarded'), item('sentBack')])).toEqual({ sentBack: 2, guarded: 1 });
+  });
+});
+
+describe('approval memory options', () => {
+  it('offers the usual windows, from never to a week', () => {
+    expect(approvalHourOptions(24)).toEqual([0, 2, 8, 24, 72, 168]);
+  });
+  it('keeps a hand-set value from config.json in the list, in order', () => {
+    expect(approvalHourOptions(12)).toEqual([0, 2, 8, 12, 24, 72, 168]);
   });
 });

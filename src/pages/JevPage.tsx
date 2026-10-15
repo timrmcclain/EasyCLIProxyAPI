@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CircleCheck, CircleX, ExternalLink, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { resetCountdown } from '../services/accountDashboard';
-import { interventionCounts, jevService, jevStatusRows, jevTime, type JevIntervention, type JevInterventionKind, type JevOverview, type JevStatusLevel, type JevStatusRow } from '../services/jev';
+import { approvalHourOptions, interventionCounts, jevService, jevStatusRows, jevTime, type JevGuards, type JevIntervention, type JevInterventionKind, type JevOverview, type JevStatusLevel, type JevStatusRow } from '../services/jev';
 import './HealthCheckPage.css';
 import './JevPage.css';
 
@@ -12,7 +12,7 @@ const kinds: JevInterventionKind[] = ['sentBack', 'blocked', 'guarded', 'asked',
 /** "3h 5m" for how long ago a Jev timestamp was. */
 const ago = (at: number, now: number) => resetCountdown(now + Math.max(60_000, now - at), now);
 
-/** What Jev runs in every Claude Code session, whether it pays off, and when it stepped in. Read-only. */
+/** What Jev runs in every Claude Code session, whether it pays off, when it stepped in, and its guard switches. */
 export function JevPage() {
   const { t } = useI18n();
   const [overview, setOverview] = useState<JevOverview | null>(null);
@@ -20,6 +20,8 @@ export function JevPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [savingGuards, setSavingGuards] = useState(false);
+  const [guardError, setGuardError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -45,6 +47,25 @@ export function JevPage() {
       setRefreshing(false);
     }
   };
+
+  // Saves on each change; the hooks read config.json on every call, so there's nothing to apply.
+  const saveGuards = async (change: Partial<JevGuards>) => {
+    if (!overview) return;
+    setSavingGuards(true);
+    setGuardError(null);
+    try {
+      const guards = await jevService.setGuards({ ...overview.guards, ...change });
+      setOverview(current => (current ? { ...current, guards } : current));
+    } catch (cause) {
+      setGuardError(String(cause));
+    } finally {
+      setSavingGuards(false);
+    }
+  };
+
+  const hoursLabel = (hours: number) => hours === 0 ? t('jev.guards.never')
+    : hours === 24 ? t('jev.guards.day')
+    : hours % 24 === 0 ? t('jev.guards.days', { count: hours / 24 }) : t('jev.guards.hours', { count: hours });
 
   const statusText = (row: JevStatusRow) => {
     const time = Number.isFinite(row.values.at as number) ? ago(row.values.at as number, now) : '';
@@ -100,6 +121,39 @@ export function JevPage() {
         })}
       </ul>
     </section>
+
+    {overview && <section aria-labelledby="jev-guards-title" className="jev-card">
+      <header className="jev-card-heading">
+        <div>
+          <h2 id="jev-guards-title" className="jev-section-title">{t('jev.guards.title')}</h2>
+          <p className="jev-subtitle">{t('jev.guards.subtitle')}</p>
+        </div>
+      </header>
+      <ul className="jev-guards">
+        {([['browserGuard', 'browser'], ['commandGuard', 'command']] as const).map(([key, label]) => <li key={key}>
+          <span className="jev-guard-text">
+            <strong id={`jev-guard-${label}`}>{t(`jev.guards.${label}`)}</strong>
+            <span>{t(`jev.guards.${label}Hint`)}</span>
+          </span>
+          <label className="switch-control">
+            <input type="checkbox" role="switch" aria-labelledby={`jev-guard-${label}`} checked={overview.guards[key]}
+              disabled={savingGuards} onChange={event => void saveGuards({ [key]: event.currentTarget.checked })} />
+            <span className="switch-track" />
+          </label>
+        </li>)}
+        <li>
+          <span className="jev-guard-text">
+            <label htmlFor="jev-guard-memory"><strong>{t('jev.guards.memory')}</strong></label>
+            <span>{t('jev.guards.memoryHint')}</span>
+          </span>
+          <select id="jev-guard-memory" value={overview.guards.approvalHours} disabled={savingGuards}
+            onChange={event => void saveGuards({ approvalHours: Number(event.currentTarget.value) })}>
+            {approvalHourOptions(overview.guards.approvalHours).map(hours => <option key={hours} value={hours}>{hoursLabel(hours)}</option>)}
+          </select>
+        </li>
+      </ul>
+      {guardError && <p role="alert" className="jev-error">{t('jev.guards.saveFailed', { error: guardError })}</p>}
+    </section>}
 
     <section aria-labelledby="jev-payoff-title" className="jev-card">
       <header className="jev-card-heading">

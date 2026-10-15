@@ -4,6 +4,7 @@ import { createQuotaMock, createQuotaMockFiles } from './quotaMock';
 
 let mockClaudeStatusLine = false;
 let mockClaudeFallback: string | null = null;
+let mockJevGuards = { browserGuard: true, commandGuard: true, approvalHours: 24 };
 let mockJevRefreshed = false;
 let mockSecretGuardInstalled = false;
 const mockSecretGuardDismissed = new Map<string, number>();
@@ -1570,6 +1571,7 @@ export function createBrowserMockRuntime(
         const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
         return {
           installed: true,
+          guards: mockJevGuards,
           hooks: [
             { event: 'PreToolUse', script: 'rule_enforcer.py' }, { event: 'PreToolUse', script: 'global_guard.py' },
             { event: 'Stop', script: 'stop_verifier.py' }, { event: 'UserPromptSubmit', script: 'skill_picker.py' },
@@ -1620,6 +1622,7 @@ export function createBrowserMockRuntime(
       case 'claude_skill_preview_discard': return null;
       case 'claude_skill_remove': mockExtSkills = mockExtSkills.filter(skill => skill.folder !== payload.folder); return null;
       case 'open_jev_report': return null;
+      case 'set_jev_guards': mockJevGuards = { ...(payload.guards as typeof mockJevGuards) }; return mockJevGuards;
       case 'plugin:notification|is_permission_granted': return true;
       default:
         if (command.startsWith('plugin:window|') || command.startsWith('plugin:webview|')) return null;

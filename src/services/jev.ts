@@ -11,8 +11,10 @@ export type JevReport = {
   generated?: string; days?: number; verdicts?: JevVerdict[]; answers?: JevAnswer[];
   cost?: string; spend_usd?: number; ms_per_check?: number; alerts?: string[];
 };
+/** Jev's guard switches; the hard blocks (home folder, disk wipe) can't be switched off. */
+export type JevGuards = { browserGuard: boolean; commandGuard: boolean; approvalHours: number };
 export type JevOverview = {
-  installed: boolean; hooks: JevHook[]; selftest: JevSelftest | null; replay: JevReplay | null;
+  installed: boolean; guards: JevGuards; hooks: JevHook[]; selftest: JevSelftest | null; replay: JevReplay | null;
   report: JevReport | null; reportPath: string | null; interventions: JevIntervention[];
 };
 
@@ -20,7 +22,15 @@ export const jevService = {
   overview: () => invoke<JevOverview>('jev_overview'),
   refreshReport: () => invoke<void>('refresh_jev_report'),
   openReport: () => invoke<void>('open_jev_report'),
+  setGuards: (guards: JevGuards) => invoke<JevGuards>('set_jev_guards', { guards }),
 };
+
+const APPROVAL_HOURS = [0, 2, 8, 24, 72, 168];
+
+/** The approval-memory choices, keeping a value set by hand in config.json so the picker can show it. */
+export function approvalHourOptions(current: number): number[] {
+  return APPROVAL_HOURS.includes(current) ? APPROVAL_HOURS : [...APPROVAL_HOURS, current].sort((a, b) => a - b);
+}
 
 export type JevStatusLevel = 'ok' | 'warn' | 'fail';
 export type JevStatusRow = { id: 'hooks' | 'selftest' | 'replay' | 'report'; level: JevStatusLevel; values: Record<string, string | number> };

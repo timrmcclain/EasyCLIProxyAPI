@@ -36,6 +36,14 @@
 .jev-interventions .jev-kind-blocked strong { color: var(--c-danger); }
 .jev-interventions .jev-kind-sentBack strong, .jev-interventions .jev-kind-guarded strong, .jev-interventions .jev-kind-asked strong { color: var(--c-warning); }
 
+.jev-guards { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.jev-guards li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--border-color); font-size: 13px; }
+.jev-guards li:first-child { border-top: 0; padding-top: 0; }
+.jev-guard-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.jev-guard-text strong { font-weight: 600; color: var(--text-primary); }
+.jev-guard-text > span { color: var(--text-tertiary); font-size: 12px; line-height: 1.5; }
+.jev-guards select { flex-shrink: 0; }
+
 @media (max-width: 640px) {
   .jev-card-heading { flex-direction: column; }
   .jev-answers li { grid-template-columns: minmax(0, 1fr); }
