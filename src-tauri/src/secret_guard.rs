@@ -111,14 +111,13 @@ fn resolve_plugins_dir(configured: &str, core_dir: &Path, home: Option<PathBuf>)
     }
 }
 
-/// True when the proxy config turns on Codex response steering, under `upstream.codex` or a top-level `codex`.
+/// True when the proxy config turns on Codex response steering. Like the proxy (v8 config_v8.go), the first
+/// place the key is present wins: `upstream.codex`, then the older `oauth.providers.codex`, then a top-level `codex`.
 fn codex_steering_on(config_text: &str) -> bool {
     let Ok(config) = serde_yaml::from_str::<serde_yaml::Value>(config_text) else { return false };
-    let on = [config.get("upstream").and_then(|upstream| upstream.get("codex")), config.get("codex")]
-        .into_iter()
-        .flatten()
-        .any(|codex| codex.get("response-steering").and_then(serde_yaml::Value::as_bool) == Some(true));
-    on
+    let at = |path: &[&str]| path.iter().try_fold(&config, |node, key| node.get(*key)).and_then(|codex| codex.get("response-steering"));
+    let value = [&["upstream", "codex"][..], &["oauth", "providers", "codex"], &["codex"]].into_iter().find_map(at).cloned();
+    value.and_then(|value| value.as_bool()) == Some(true)
 }
 
 fn configured_plugins_dir(core_dir: &Path) -> String {
@@ -193,7 +192,7 @@ fn install_library(target: &Path, library: &[u8]) -> Result<bool, String> {
     let replaced = match fs::read(target) {
         Ok(existing) if existing == library => return Ok(false),
         Ok(_) => {
-            let aside = dir.join(format!("{PLUGIN_ID}.old-{}", chrono::Local::now().format("%Y%m%d%H%M%S")));
+            let aside = dir.join(format!("{PLUGIN_ID}.old-{}", chrono::Local::now().format("%Y%m%d%H%M%S%3f")));
             fs::rename(target, &aside).map_err(|err| format!("Couldn't move the old Secret Guard aside: {err}"))?;
             true
         }
@@ -216,9 +215,21 @@ fn trim_findings(path: &Path) {
     if meta.len() <= MAX_FINDINGS_BYTES {
         return;
     }
-    let Ok(text) = fs::read_to_string(path) else { return };
-    let lines: Vec<&str> = text.lines().collect();
-    let keep = lines[lines.len().saturating_sub(KEEP_LINES)..].join("\n") + "\n";
+    let Ok(bytes) = fs::read(path) else { return };
+    let text = String::from_utf8_lossy(&bytes);
+    // Keep the newest lines up to half the limit, so a trim always lands well under it however long lines are;
+    // a line count alone could leave the file over the limit and rewrite it on every read.
+    let mut kept = Vec::new();
+    let mut size = 0;
+    for line in text.lines().rev().take(KEEP_LINES) {
+        size += line.len() as u64 + 1;
+        if size > MAX_FINDINGS_BYTES / 2 {
+            break;
+        }
+        kept.push(line);
+    }
+    kept.reverse();
+    let keep = kept.join("\n") + "\n";
     let temp = path.with_extension("jsonl.tmp");
     if fs::write(&temp, keep).is_ok() {
         let _ = fs::rename(&temp, path);
@@ -279,7 +290,8 @@ fn group_findings(text: &str, dismissed: &BTreeMap<String, u64>) -> Vec<SecretGu
 pub(crate) fn secret_guard_findings() -> Result<Vec<SecretGuardFinding>, String> {
     let path = findings_path()?;
     trim_findings(&path);
-    let text = fs::read_to_string(&path).unwrap_or_default();
+    // Lossy, so one torn or corrupt line can't hide every finding.
+    let text = fs::read(&path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned()).unwrap_or_default();
     Ok(group_findings(&text, &read_dismissed(&dismissed_path()?)))
 }
 
@@ -368,11 +380,24 @@ mod tests {
     fn oversized_findings_files_keep_their_newest_lines() {
         let dir = temp_dir();
         let path = dir.join("findings.jsonl");
-        let line = format!("{{\"ts\":1,\"fingerprint\":\"cccc0003\",\"pad\":\"{}\"}}\n", "x".repeat(300));
-        fs::write(&path, line.repeat(KEEP_LINES + 500)).unwrap();
+        let line = |n: usize| format!("{{\"ts\":{n},\"fingerprint\":\"cccc0003\",\"pad\":\"{}\"}}\n", "x".repeat(300));
+        // Long lines: 20,000 of them would still be over the limit, which used to mean a rewrite on every read.
+        let body: String = (0..KEEP_LINES + 500).map(line).collect();
+        fs::write(&path, body).unwrap();
         trim_findings(&path);
-        assert_eq!(fs::read_to_string(&path).unwrap().lines().count(), KEEP_LINES);
+        let trimmed = fs::read_to_string(&path).unwrap();
+        assert!((trimmed.len() as u64) <= MAX_FINDINGS_BYTES / 2, "lands well under the limit");
+        assert!(trimmed.lines().last().unwrap().contains(&format!("\"ts\":{}", KEEP_LINES + 499)), "newest kept");
         let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_corrupt_line_does_not_hide_the_other_findings() {
+        let mut text = b"{\"ts\":1,\"fingerprint\":\"aaaa0001\",\"kind\":\"github_token\"}\n".to_vec();
+        text.extend_from_slice(b"\xff\xfe torn\n");
+        text.extend_from_slice(b"{\"ts\":2,\"fingerprint\":\"bbbb0002\",\"kind\":\"aws_key\"}\n");
+        let groups = group_findings(&String::from_utf8_lossy(&text), &BTreeMap::new());
+        assert_eq!(groups.len(), 2);
     }
 
     #[test]
@@ -380,6 +405,10 @@ mod tests {
         assert!(codex_steering_on("upstream:\n  codex:\n    response-steering: true\n"));
         assert!(codex_steering_on("codex:\n  response-steering: true\n"));
         assert!(!codex_steering_on("upstream:\n  codex:\n    response-steering: false\n"));
+        assert!(codex_steering_on("oauth:\n  providers:\n    codex:\n      response-steering: true\n"));
+        // The first place present wins, even when it says false.
+        assert!(!codex_steering_on("upstream:\n  codex:\n    response-steering: false\ncodex:\n  response-steering: true\n"));
+        assert!(!codex_steering_on("oauth:\n  providers:\n    codex:\n      response-steering: false\ncodex:\n  response-steering: true\n"));
         assert!(!codex_steering_on("not: [valid"));
         assert!(!codex_steering_on(""));
     }

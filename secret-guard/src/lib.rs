@@ -176,14 +176,47 @@ pub enum Verdict {
     Refuse(String),
 }
 
+/// Text inside signed reasoning blocks: Anthropic `thinking` / `redacted_thinking`, and any object carrying a
+/// `signature` or `thoughtSignature` (Gemini). Empty when the body isn't JSON.
+fn signed_texts(body: &[u8]) -> Vec<String> {
+    fn strings(value: &Value, out: &mut Vec<String>) {
+        match value {
+            Value::String(text) => out.push(text.clone()),
+            Value::Array(items) => items.iter().for_each(|item| strings(item, out)),
+            Value::Object(map) => map.values().for_each(|item| strings(item, out)),
+            _ => {}
+        }
+    }
+    fn walk(value: &Value, out: &mut Vec<String>) {
+        match value {
+            Value::Array(items) => items.iter().for_each(|item| walk(item, out)),
+            Value::Object(map) => {
+                let kind = map.get("type").and_then(Value::as_str);
+                if matches!(kind, Some("thinking" | "redacted_thinking")) || map.contains_key("signature") || map.contains_key("thoughtSignature") {
+                    strings(value, out);
+                } else {
+                    map.values().for_each(|item| walk(item, out));
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut out = Vec::new();
+    if let Ok(value) = serde_json::from_slice::<Value>(body) {
+        walk(&value, &mut out);
+    }
+    out
+}
+
 pub fn inspect(request: &Value) -> Verdict {
     let body_b64 = request.get("Body").and_then(Value::as_str).unwrap_or("");
     if body_b64.is_empty() {
         return Verdict::Pass;
     }
     let Ok(body) = B64.decode(body_b64) else { return Verdict::Pass };
-    let model = request.get("RequestedModel").and_then(Value::as_str).filter(|m| !m.is_empty())
-        .or_else(|| request.get("Model").and_then(Value::as_str)).unwrap_or("");
+    // `Model` is after alias and model-pool resolution, so `fast` → a Gemini model counts as Google.
+    let model = request.get("Model").and_then(Value::as_str).filter(|m| !m.is_empty())
+        .or_else(|| request.get("RequestedModel").and_then(Value::as_str)).unwrap_or("");
     let provider = provider_for(model);
 
     let (mode, salt, findings_file) = {
@@ -202,6 +235,11 @@ pub fn inspect(request: &Value) -> Verdict {
     if raw.is_empty() {
         return Verdict::Pass;
     }
+    // Redacting re-emits the whole body; a lossy copy of invalid UTF-8 would change bytes outside the secret.
+    let can_rewrite = std::str::from_utf8(&body).is_ok();
+    // Signed reasoning (Anthropic thinking, Gemini thought signatures) must go back unchanged, or every later
+    // turn of that conversation fails. A secret that appears there is reported instead of redacted.
+    let signed = if mode == Mode::Redact { signed_texts(&body) } else { Vec::new() };
 
     let mut kept: Vec<(detect::Finding, String)> = Vec::new();
     let mut log = Vec::new();
@@ -209,11 +247,17 @@ pub fn inspect(request: &Value) -> Verdict {
         let mut st = state().lock().unwrap_or_else(|p| p.into_inner());
         let now = SystemTime::now();
         for finding in raw {
-            let fp = fingerprint(&salt, &text[finding.start..finding.end]);
+            let secret = &text[finding.start..finding.end];
+            let fp = fingerprint(&salt, secret);
             if st.allow.contains(&fp) {
                 continue;
             }
-            let action = match mode { Mode::Redact => "redacted", Mode::Block => "blocked", _ => "reported" };
+            let redactable = can_rewrite && !signed.iter().any(|signed| signed.contains(secret));
+            let action = match mode {
+                Mode::Redact if redactable => "redacted",
+                Mode::Block => "blocked",
+                _ => "reported",
+            };
             // Throttle per secret, provider and action: the same token going to a
             // second provider, or now being redacted, is news.
             let key = format!("{fp}|{provider}|{action}");
@@ -235,7 +279,9 @@ pub fn inspect(request: &Value) -> Verdict {
                     "action": action,
                 }));
             }
-            kept.push((finding, fp));
+            if mode != Mode::Redact || redactable {
+                kept.push((finding, fp));
+            }
         }
     }
     // One entry per secret per request, even when the history repeats it.
@@ -422,6 +468,41 @@ mod tests {
         let message = String::from_utf8(B64.decode(blocked["result"]["ResponseBody"].as_str().unwrap()).unwrap()).unwrap();
         assert!(message.contains("a GitHub token"));
         assert!(!message.contains(&token()));
+    }
+
+    #[test]
+    fn signed_thinking_is_never_rewritten() {
+        let _guard = TEST_LOCK.lock().unwrap();
+        set_config("default_mode: redact\nsalt: s\n");
+        let in_thinking = format!(
+            r#"{{"messages":[{{"role":"assistant","content":[{{"type":"thinking","thinking":"saw {} earlier","signature":"sig"}}]}},{{"role":"user","content":"and {} again"}}]}}"#,
+            token(),
+            token()
+        );
+        assert_eq!(intercept("claude-sonnet-5-5", &in_thinking)["result"], json!({}), "left as is, reported instead");
+        let elsewhere = format!(r#"{{"messages":[{{"role":"user","content":"use {}"}}]}}"#, token());
+        assert!(intercept("claude-sonnet-5-5", &elsewhere)["result"]["Body"].is_string(), "redacted outside signed blocks");
+    }
+
+    #[test]
+    fn invalid_utf8_bodies_are_not_rewritten() {
+        let _guard = TEST_LOCK.lock().unwrap();
+        set_config("default_mode: redact\nsalt: s\n");
+        let mut body = format!(r#"{{"messages":[{{"content":"use {} "#, token()).into_bytes();
+        body.extend_from_slice(b"\xff\"}]}");
+        let request = json!({"RequestID": "r1", "SourceFormat": "claude", "RequestedModel": "claude-sonnet-5-5", "Body": B64.encode(&body)});
+        let reply: Value = serde_json::from_str(&handle("request.intercept_before", request.to_string().as_bytes())).unwrap();
+        assert_eq!(reply["result"], json!({}));
+    }
+
+    #[test]
+    fn the_resolved_model_decides_the_provider() {
+        let _guard = TEST_LOCK.lock().unwrap();
+        set_config("default_mode: report\nmodes:\n  google: block\nsalt: s\n");
+        let body = format!(r#"{{"messages":[{{"content":"use {}"}}]}}"#, token());
+        let request = json!({"RequestID": "r1", "SourceFormat": "openai", "RequestedModel": "fast", "Model": "gemini-3-pro", "Body": B64.encode(&body)});
+        let reply: Value = serde_json::from_str(&handle("request.intercept_before", request.to_string().as_bytes())).unwrap();
+        assert_eq!(reply["result"]["Terminate"], true, "the alias `fast` resolves to Gemini, so Google's block applies");
     }
 
     #[test]

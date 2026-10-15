@@ -4,16 +4,14 @@ import { useI18n } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
 import { resetCountdown } from '../services/accountDashboard';
 import {
-  SECRET_GUARD_MODES, SECRET_GUARD_PROVIDERS, modeFor, openFindings, secretGuardApp, secretGuardService,
+  SECRET_GUARD_MODES, SECRET_GUARD_PROVIDERS, modeFor, openFindings, secretGuardApp, secretGuardKind, secretGuardService,
   type SecretGuardFinding, type SecretGuardMode, type SecretGuardProvider, type SecretGuardStatus,
 } from '../services/secretGuard';
 import './HealthCheckPage.css';
 import './JevPage.css';
 import './SecretGuardPage.css';
 
-const KINDS = new Set(['github_token', 'anthropic_key', 'openai_key', 'google_api_key', 'aws_access_key', 'slack_token', 'stripe_key',
-  'azure_storage_key', 'azure_client_secret', 'private_key', 'jwt', 'connection_string_password', 'password_assignment']);
-const kindKey = (kind: string) => (KINDS.has(kind) ? kind : 'other');
+const kindKey = secretGuardKind;
 const ago = (at: number, now: number) => resetCountdown(now + Math.max(60_000, now - at), now);
 const POLL_MS = 15_000;
 
@@ -93,9 +91,13 @@ export function SecretGuardPage() {
   const stateLine = () => {
     if (proxyDown) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.proxyDown') };
     if (!status) return null;
-    if (restartNeeded && status.on) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.restart') };
+    // An older copy still loaded, whether updated just now or before the page was last opened.
+    const staleCopy = status.running && status.loadedVersion !== '' && status.loadedVersion !== status.info.bundledVersion;
+    if ((restartNeeded || staleCopy) && status.on) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.restart') };
     if (!status.on) return { icon: CircleSlash, level: 'warn', text: t('sg.state.off') };
+    if (status.pluginsOff) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.pluginsOff'), retry: true };
     if (!status.running) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.starting'), retry: true };
+    if (SECRET_GUARD_PROVIDERS.every(provider => modeFor(policy, provider) === 'off')) return { icon: CircleSlash, level: 'warn', text: t('sg.state.allOff') };
     return { icon: CircleCheck, level: 'ok', text: `${t('sg.state.running')}${reportOnly ? ` ${t('sg.reportOnly')}` : ''}` };
   };
   const line = stateLine();
@@ -169,6 +171,7 @@ export function SecretGuardPage() {
             <LineIcon size={16} aria-hidden="true" />{line.text}
             {'retry' in line && line.retry && <button type="button" className="secondary-button compact-button" onClick={() => void toggle(true)}>{t('sg.retry')}</button>}
           </p>}
+        {status && !status.on && status.pluginsOff && <p className="sg-state" role="note">{t('sg.pluginsNote')}</p>}
         {status?.on && status.info.codexSteeringBypass && <p className="sg-state level-warn" role="note">
           <AlertTriangle size={16} aria-hidden="true" />{t('sg.codexSteering')}
         </p>}
@@ -179,7 +182,7 @@ export function SecretGuardPage() {
     <section aria-labelledby="sg-findings-title" className="jev-card">
       <header className="jev-card-heading">
         <div>
-          <h2 id="sg-findings-title" className="jev-section-title">{t('sg.findings.title')}{open.length > 0 && <span className="sg-count">{open.length}</span>}</h2>
+          <h2 id="sg-findings-title" className="jev-section-title">{t('sg.findings.title')}{open.length > 0 && <span className="sg-count" aria-label={t('sg.findings.openCount', { count: open.length })}>{open.length}</span>}</h2>
           <p className="jev-subtitle">{t('sg.findings.subtitle')}</p>
         </div>
         {handled.length > 0 && <button type="button" className="secondary-button compact-button" aria-expanded={showHandled} onClick={() => setShowHandled(value => !value)}>

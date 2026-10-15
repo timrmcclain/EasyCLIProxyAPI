@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { freshFindings, modeFor, openFindings, readPolicy, secretGuardApp, type SecretGuardFinding } from '../src/services/secretGuard';
+import { freshFindings, modeFor, openFindings, readPolicy, secretGuardApp, secretGuardService, type SecretGuardFinding } from '../src/services/secretGuard';
+import { pluginsApi } from '../src/services/plugins';
 
 const finding = (fingerprint: string, extra: Partial<SecretGuardFinding> = {}): SecretGuardFinding => ({
   fingerprint, kind: 'github_token', firstSeen: 1, lastSeen: 2, sightings: 1,
@@ -37,5 +38,31 @@ describe('Secret Guard', () => {
     expect(third.fresh).toEqual([]);
     const allowed = freshFindings(third.seen, [finding('dddd0004')], policy(['dddd0004']));
     expect(allowed.fresh).toEqual([]);
+  });
+  it('keeps the newest fingerprints at the end, where trimming keeps them', () => {
+    const newestFirst = [finding('cccc0003'), finding('bbbb0002'), finding('aaaa0001')];
+    expect([...freshFindings(null, newestFirst, policy()).seen]).toEqual(['aaaa0001', 'bbbb0002', 'cccc0003']);
+  });
+
+  it('never writes the policy back when its current config could not be read', async () => {
+    const original = { getConfig: pluginsApi.getConfig, patchConfig: pluginsApi.patchConfig };
+    const writes: unknown[] = [];
+    pluginsApi.getConfig = async () => { throw new Error('Management API error (500): busy'); };
+    pluginsApi.patchConfig = async (_id, changes) => { writes.push(changes); };
+    try {
+      await expect(secretGuardService.setMode('xai', 'block')).rejects.toThrow('busy');
+      await expect(secretGuardService.setAllowed('aaaa0001', true)).rejects.toThrow('busy');
+      expect(writes).toEqual([]);
+
+      // Not configured yet ({}): the first write also gets a salt.
+      pluginsApi.getConfig = async () => ({});
+      await secretGuardService.setAllowed('aaaa0001', true);
+      expect(writes[0]).toMatchObject({ allow: ['aaaa0001'], salt: expect.any(String) });
+      pluginsApi.getConfig = async () => ({ salt: 'kept', allow: ['aaaa0001'] });
+      await secretGuardService.setMode('xai', 'block');
+      expect(writes[1]).toEqual({ modes: { xai: 'block' } });
+    } finally {
+      Object.assign(pluginsApi, original);
+    }
   });
 });

@@ -2,7 +2,7 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { getCurrentLocale, translate } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
 import { readDesktopAlertsPreference } from './dashboardPreferences';
-import { freshFindings, readPolicy, secretGuardApp, secretGuardService, SECRET_GUARD_PROVIDERS, type SecretGuardPolicy } from './secretGuard';
+import { freshFindings, readPolicy, secretGuardApp, secretGuardKind, secretGuardService, SECRET_GUARD_PROVIDERS, type SecretGuardPolicy } from './secretGuard';
 import { pluginsApi } from './plugins';
 
 const CHECK_EVERY_MS = 30_000;
@@ -20,8 +20,6 @@ function writeSeen(seen: Set<string>) {
   try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-MAX_SEEN))); } catch { /* storage full or blocked */ }
 }
 
-const KINDS = new Set(['github_token', 'anthropic_key', 'openai_key', 'google_api_key', 'aws_access_key', 'slack_token', 'stripe_key',
-  'azure_storage_key', 'azure_client_secret', 'private_key', 'jwt', 'connection_string_password', 'password_assignment']);
 
 /**
  * Raises a Windows notification the first time Secret Guard finds each secret, even with the window hidden
@@ -30,13 +28,19 @@ const KINDS = new Set(['github_token', 'anthropic_key', 'openai_key', 'google_ap
 export function startSecretGuardWatcher(): () => void {
   let stopped = false;
   let seen = readSeen();
+  // A check waiting on the notification-permission prompt mustn't overlap the next one, or both would announce
+  // the same findings from the same `seen`.
+  let checking = false;
   const check = async () => {
+    if (checking) return;
+    checking = true;
     try {
       const findings = await secretGuardService.findings();
       if (stopped) return;
-      // The allowlist lives in the proxy's config; without the proxy, treat nothing as allowed.
-      let policy: SecretGuardPolicy = { defaultMode: 'report', modes: {}, allow: [] };
-      try { policy = readPolicy(await pluginsApi.getConfig('secret-guard')); } catch { /* proxy down */ }
+      // The allowlist lives in the proxy's config. Without it, findings marked safe would look new, so wait
+      // for the next check rather than announce them (and without marking anything seen).
+      let policy: SecretGuardPolicy;
+      try { policy = readPolicy(await pluginsApi.getConfig('secret-guard')); } catch { return; }
       const result = freshFindings(seen, findings, policy);
       seen = result.seen;
       writeSeen(seen);
@@ -51,7 +55,7 @@ export function startSecretGuardWatcher(): () => void {
         const providerKey = (SECRET_GUARD_PROVIDERS as readonly string[]).includes(provider) ? provider : 'other';
         const values = {
           app: secretGuardApp(item.clients[0] ?? '') || 'An app',
-          kind: translate(locale, `sg.kind.${KINDS.has(item.kind) ? item.kind : 'other'}` as MessageKey),
+          kind: translate(locale, `sg.kind.${secretGuardKind(item.kind)}` as MessageKey),
           provider: translate(locale, `sg.provider.${providerKey}` as MessageKey),
         };
         sendNotification({
@@ -61,6 +65,8 @@ export function startSecretGuardWatcher(): () => void {
       }
     } catch {
       // The findings file isn't there until Secret Guard has run; try again next time.
+    } finally {
+      checking = false;
     }
   };
   void check();

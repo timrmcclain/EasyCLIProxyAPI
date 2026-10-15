@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { openFindings, readPolicy, secretGuardService } from '../services/secretGuard';
@@ -11,15 +11,20 @@ export function SecretGuardBanner({ coreReady }: { coreReady: boolean }) {
   const { t } = useI18n();
   const [count, setCount] = useState(0);
 
+  // The allowlist lives in the proxy's config. While it can't be read, use the last one seen, so findings marked
+  // safe don't come back as needing attention whenever the proxy restarts.
+  const lastAllow = useRef<string[] | null>(null);
+
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
         const findings = await secretGuardService.findings();
-        let allow: string[] = [];
         if (coreReady) {
-          try { allow = readPolicy(await pluginsApi.getConfig('secret-guard')).allow; } catch { /* not configured yet */ }
+          try { lastAllow.current = readPolicy(await pluginsApi.getConfig('secret-guard')).allow; } catch { /* keep the last one */ }
         }
+        const allow = lastAllow.current;
+        if (allow === null) return;
         if (alive) setCount(openFindings(findings, { defaultMode: 'report', modes: {}, allow }).length);
       } catch {
         if (alive) setCount(0);

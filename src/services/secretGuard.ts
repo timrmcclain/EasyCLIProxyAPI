@@ -61,6 +61,12 @@ export function secretGuardApp(agent: string): string {
   return agent.split(/[\s/]/)[0] || agent;
 }
 
+/** Credential kinds the plugin reports that have their own label and rotate advice; anything else shows as `other`. */
+const KINDS = new Set(['github_token', 'anthropic_key', 'openai_key', 'openrouter_key', 'xai_key', 'groq_key', 'google_api_key',
+  'google_oauth', 'aws_access_key', 'slack_token', 'slack_webhook', 'stripe_key', 'gitlab_token', 'huggingface_token', 'npm_token',
+  'azure_storage_key', 'azure_client_secret', 'private_key', 'jwt', 'connection_string_password', 'password_assignment']);
+export const secretGuardKind = (kind: string) => (KINDS.has(kind) ? kind : 'other');
+
 /** Findings the user still needs to act on: not rotated since last seen, not marked safe. */
 export const openFindings = (findings: SecretGuardFinding[], policy: SecretGuardPolicy) =>
   findings.filter(item => item.dismissedAt === null && !policy.allow.includes(item.fingerprint));
@@ -72,10 +78,13 @@ export const openFindings = (findings: SecretGuardFinding[], policy: SecretGuard
 export function freshFindings(seen: Set<string> | null, findings: SecretGuardFinding[], policy: SecretGuardPolicy) {
   const open = openFindings(findings, policy);
   const fresh = seen ? open.filter(item => !seen.has(item.fingerprint)) : [];
-  const next = new Set([...(seen ?? []), ...findings.map(item => item.fingerprint)]);
+  // Findings arrive newest first; add them oldest first so the newest sit at the end, which is what the
+  // watcher keeps when it trims the set to its size limit.
+  const next = new Set([...(seen ?? []), ...[...findings].reverse().map(item => item.fingerprint)]);
   return { fresh, seen: next };
 }
 
+/** For display only: a failed read shows as "not set up" rather than an error. Never write back what this returns. */
 async function optionalConfig(): Promise<PluginConfigObject> {
   try {
     return await pluginsApi.getConfig(SECRET_GUARD_ID);
@@ -84,8 +93,15 @@ async function optionalConfig(): Promise<PluginConfigObject> {
   }
 }
 
-async function patch(changes: PluginConfigObject) {
-  await pluginsApi.patchConfig(SECRET_GUARD_ID, changes);
+/** Before any write. getConfig already maps "not configured yet" to {}; any other failure must stop the write,
+ *  or the policy, allowlist and salt would be replaced by an empty config. */
+const currentConfig = () => pluginsApi.getConfig(SECRET_GUARD_ID);
+
+async function patch(current: PluginConfigObject, changes: PluginConfigObject) {
+  // Fingerprints are salted per install so a weak password can't be guessed from its fingerprint. Add one if a
+  // policy change creates the config before Secret Guard was ever switched on.
+  const salt = typeof current.salt === 'string' && current.salt ? {} : { salt: randomSalt() };
+  await pluginsApi.patchConfig(SECRET_GUARD_ID, { ...salt, ...changes });
 }
 
 export const secretGuardService = {
@@ -111,7 +127,7 @@ export const secretGuardService = {
     const install = await invoke<SecretGuardInstall>('secret_guard_install');
     const settings = await pluginsApi.getSettings();
     if (!settings.enabled) await pluginsApi.updateSettings({ enabled: true });
-    const current = await optionalConfig();
+    const current = await currentConfig();
     await pluginsApi.putConfig(SECRET_GUARD_ID, {
       ...current,
       enabled: true,
@@ -127,14 +143,15 @@ export const secretGuardService = {
   disable: () => pluginsApi.updateEnabled(SECRET_GUARD_ID, false),
 
   async setMode(provider: SecretGuardProvider | 'default', mode: SecretGuardMode) {
-    if (provider === 'default') return patch({ default_mode: mode });
-    const policy = readPolicy(await optionalConfig());
-    return patch({ modes: { ...policy.modes, [provider]: mode } });
+    const current = await currentConfig();
+    if (provider === 'default') return patch(current, { default_mode: mode });
+    return patch(current, { modes: { ...readPolicy(current).modes, [provider]: mode } });
   },
 
   async setAllowed(fingerprint: string, allowed: boolean) {
-    const policy = readPolicy(await optionalConfig());
+    const current = await currentConfig();
+    const policy = readPolicy(current);
     const allow = allowed ? [...new Set([...policy.allow, fingerprint])] : policy.allow.filter(item => item !== fingerprint);
-    return patch({ allow });
+    return patch(current, { allow });
   },
 };
