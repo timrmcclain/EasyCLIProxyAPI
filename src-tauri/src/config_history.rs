@@ -4,6 +4,7 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use serde::Serialize;
@@ -48,6 +49,10 @@ fn version_names(config: &Path) -> Vec<String> {
 
 /// Saves the config's current content as a new version unless the newest version already has it. Returns whether it saved.
 pub(crate) fn record_at(config: &Path, now: DateTime<Local>) -> Result<bool, String> {
+    // The file watcher and Restore both record; without this, two at once could each miss the other's
+    // new version and save a duplicate, pushing an older version out of the newest 20.
+    static RECORDING: Mutex<()> = Mutex::new(());
+    let _recording = RECORDING.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let Ok(content) = fs::read(config) else { return Ok(false) };
     let names = version_names(config);
     let dir = history_dir(config);
@@ -155,6 +160,17 @@ mod tests {
         let versions = list_at(&config);
         assert_eq!(versions.len(), 2);
         assert!(versions[0].current && !versions[1].current, "newest first, and the newest matches the file");
+    }
+
+    #[test]
+    fn saves_at_the_same_moment_make_one_version() {
+        let (_dir, config) = temp_config("port: 8317\n");
+        let saved: usize = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..8).map(|i| scope.spawn({ let config = &config; move || record_at(config, at(i)).unwrap() })).collect();
+            handles.into_iter().map(|handle| usize::from(handle.join().unwrap())).sum()
+        });
+        assert_eq!(saved, 1);
+        assert_eq!(version_names(&config).len(), 1);
     }
 
     #[test]

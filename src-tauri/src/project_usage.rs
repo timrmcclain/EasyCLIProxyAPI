@@ -190,25 +190,43 @@ pub(crate) struct ProjectUsageReport {
 
 /// Totals per project since `since` (unix seconds), counting each message once, biggest first.
 fn summarize(cache: &Cache, since: i64) -> Vec<ProjectUsage> {
-    let mut seen = HashSet::new();
-    let mut totals: HashMap<String, (HashSet<String>, ProjectUsage)> = HashMap::new();
+    // Claude Code logs a reply once per content block as it streams, and the token counts grow between copies
+    // (the first often has only a few output tokens). Keep the largest of each count, not the first copy.
+    struct Message { path: String, session: String, seconds: i64, counts: [u64; 4] }
+    let mut messages: HashMap<u64, Message> = HashMap::new();
     for file in cache.files.values() {
         for &(key, project, session, seconds, input, output, read, write) in &file.messages {
-            if seconds < since || !seen.insert(key) {
-                continue;
+            let counts = [input, output, read, write];
+            match messages.get_mut(&key) {
+                Some(message) => {
+                    for (kept, count) in message.counts.iter_mut().zip(counts) {
+                        *kept = (*kept).max(count);
+                    }
+                    message.seconds = message.seconds.min(seconds);
+                }
+                None => {
+                    let path = file.projects.get(project as usize).cloned().unwrap_or_default();
+                    let session = file.sessions.get(session as usize).cloned().unwrap_or_default();
+                    messages.insert(key, Message { path, session, seconds, counts });
+                }
             }
-            let path = file.projects.get(project as usize).cloned().unwrap_or_default();
-            let (sessions, usage) = totals.entry(path.clone()).or_insert_with(|| {
-                (HashSet::new(), ProjectUsage { path, sessions: 0, messages: 0, input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, last_active: 0 })
-            });
-            sessions.insert(file.sessions.get(session as usize).cloned().unwrap_or_default());
-            usage.messages += 1;
-            usage.input_tokens += input;
-            usage.output_tokens += output;
-            usage.cache_read_tokens += read;
-            usage.cache_write_tokens += write;
-            usage.last_active = usage.last_active.max(seconds);
         }
+    }
+    let mut totals: HashMap<String, (HashSet<String>, ProjectUsage)> = HashMap::new();
+    for Message { path, session, seconds, counts: [input, output, read, write] } in messages.into_values() {
+        if seconds < since {
+            continue;
+        }
+        let (sessions, usage) = totals.entry(path.clone()).or_insert_with(|| {
+            (HashSet::new(), ProjectUsage { path, sessions: 0, messages: 0, input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, last_active: 0 })
+        });
+        sessions.insert(session);
+        usage.messages += 1;
+        usage.input_tokens += input;
+        usage.output_tokens += output;
+        usage.cache_read_tokens += read;
+        usage.cache_write_tokens += write;
+        usage.last_active = usage.last_active.max(seconds);
     }
     let mut projects: Vec<ProjectUsage> = totals
         .into_values()
@@ -315,6 +333,26 @@ mod tests {
         // The 10-day-old message shows up in a 30-day window.
         let month = summarize(&cache, (now - chrono::Duration::days(30)).timestamp());
         assert_eq!(month[0].messages, 2);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn a_streamed_reply_counts_once_with_its_final_token_counts() {
+        let root = temp_root("streamed");
+        let recent = (chrono::Utc::now() - chrono::Duration::hours(1)).to_rfc3339();
+        // Claude Code writes one line per content block; output grows from 2 to 480 across the copies.
+        let copies = [
+            line("m1", "r1", "C:/work/app", "s1", &recent, 10, 2),
+            line("m1", "r1", "C:/work/app", "s1", &recent, 10, 120),
+            line("m1", "r1", "C:/work/app", "s1", &recent, 10, 480),
+        ]
+        .join("\n") + "\n";
+        fs::write(root.join("proj-a/one.jsonl"), copies).unwrap();
+
+        let mut cache = Cache { version: CACHE_VERSION, files: HashMap::new() };
+        refresh(&root, &mut cache, SystemTime::now());
+        let projects = summarize(&cache, 0);
+        assert_eq!((projects[0].messages, projects[0].input_tokens, projects[0].output_tokens), (1, 10, 480));
         let _ = fs::remove_dir_all(root);
     }
 

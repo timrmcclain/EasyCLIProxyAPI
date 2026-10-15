@@ -15,8 +15,6 @@ use tauri::Manager;
 
 const REPORT_DAYS: u32 = 7;
 const INTERVENTION_LIMIT: usize = 30;
-/// Log lines read from the end of the newest files; plenty for a week of interventions.
-const LOG_TAIL_LINES: usize = 40_000;
 
 fn jev_dir(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf), String> {
     let home = app.path().home_dir().map_err(|error| format!("Failed to get user directory: {error}"))?;
@@ -155,7 +153,13 @@ fn recent_interventions(lines: &[String], cutoff: &str, limit: usize) -> Vec<Jev
     found
 }
 
-fn tail_log_lines(logs: &Path) -> Vec<String> {
+fn record_ts(line: &str) -> Option<String> {
+    serde_json::from_str::<Value>(line).ok()?.get("ts")?.as_str().map(str::to_string)
+}
+
+/// Log lines from `cutoff` on, read backwards from the newest files. Jev appends in time order, so the
+/// first older line ends the scan: the whole window is covered however busy it was.
+fn tail_log_lines(logs: &Path, cutoff: &str) -> Vec<String> {
     let mut files: Vec<PathBuf> = fs::read_dir(logs)
         .map(|entries| {
             entries
@@ -171,13 +175,18 @@ fn tail_log_lines(logs: &Path) -> Vec<String> {
         .unwrap_or_default();
     files.sort();
     let mut lines = Vec::new();
-    for file in files.iter().rev().take(2).rev() {
-        if let Ok(text) = fs::read_to_string(file) {
-            lines.extend(text.lines().map(str::to_string));
+    'files: for file in files.iter().rev() {
+        let Ok(text) = fs::read_to_string(file) else { continue };
+        for line in text.lines().rev() {
+            match record_ts(line) {
+                Some(ts) if ts.as_str() < cutoff => break 'files,
+                Some(_) => lines.push(line.to_string()),
+                None => {}
+            }
         }
     }
-    let start = lines.len().saturating_sub(LOG_TAIL_LINES);
-    lines.split_off(start)
+    lines.reverse();
+    lines
 }
 
 /// The parts of Jev's report the page shows; the rest (charts, per-compaction detail) stays in the full report.
@@ -300,7 +309,7 @@ fn read_overview(dir: &Path, settings_path: &Path) -> JevOverview {
         replay: read_json(&dir.join("state/replay.json")),
         report: read_json(&dir.join("state/jev-report.json")).map(|report| report_summary(&report)),
         report_path: report_file.is_file().then(|| report_file.to_string_lossy().to_string()),
-        interventions: if installed { recent_interventions(&tail_log_lines(&dir.join("logs")), &cutoff, INTERVENTION_LIMIT) } else { Vec::new() },
+        interventions: if installed { recent_interventions(&tail_log_lines(&dir.join("logs"), &cutoff), &cutoff, INTERVENTION_LIMIT) } else { Vec::new() },
     }
 }
 
@@ -406,6 +415,26 @@ mod tests {
         let found = recent_interventions(&lines, "2026-10-01T00:00:00", 1);
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].detail, "5");
+    }
+
+    #[test]
+    fn tail_covers_the_whole_window_across_files_however_busy() {
+        let dir = std::env::temp_dir().join(format!("jev-tail-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let line = |ts: &str| json!({ "ts": ts, "hook": "rule_enforcer", "event": "verdict" }).to_string() + "\n";
+        // Last month's file ends inside the window; this month's has far more than the old 40,000-line cap.
+        let september = [line("2026-09-20T00:00:00"), line("2026-09-30T12:00:00")].concat();
+        fs::write(dir.join("decisions-2026-09.jsonl"), september).unwrap();
+        let busy = line("2026-10-02T00:00:00").repeat(45_000) + "not json\n" + &line("2026-10-03T00:00:00");
+        fs::write(dir.join("decisions-2026-10.jsonl"), busy).unwrap();
+        fs::write(dir.join("other.log"), line("2026-10-03T00:00:00")).unwrap();
+
+        let lines = tail_log_lines(&dir, "2026-09-29T00:00:00");
+        assert_eq!(lines.len(), 45_002, "every in-window line from both files, nothing older");
+        assert!(lines.first().unwrap().contains("2026-09-30T12"), "oldest first");
+        assert!(lines.last().unwrap().contains("2026-10-03"));
+        let _ = fs::remove_dir_all(dir);
     }
 
     #[test]
