@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { Search } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useDialogFocusTrap } from './useDialogFocusTrap';
+import { rankPalette } from './paletteSearch';
 import './CommandPalette.css';
 
-export type PaletteCommand = { id: string; label: string; group: string; hint?: string; disabled?: boolean; run: () => void };
+export type PaletteCommand = { id: string; label: string; group: string; hint?: string; keywords?: readonly string[]; disabled?: boolean; run: () => void };
 
 /** Ctrl+K launcher: jump to any page or run a global action without hunting through menus. */
 export function CommandPalette({ open, commands, onClose }: { open: boolean; commands: PaletteCommand[]; onClose: () => void }) {
@@ -22,9 +23,7 @@ export function CommandPalette({ open, commands, onClose }: { open: boolean; com
   }, [open]);
 
   const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return commands.filter((command) => !command.disabled
-      && (!needle || `${command.label} ${command.group}`.toLowerCase().includes(needle)));
+    return rankPalette(commands.filter((command) => !command.disabled), query);
   }, [commands, query]);
 
   useEffect(() => { setIndex(0); }, [query]);

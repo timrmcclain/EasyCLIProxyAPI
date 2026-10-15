@@ -170,6 +170,7 @@ export function QuotaPage() {
 
   return (
     <section className="page management-page quota-page" aria-label={t('quota.title')}>
+      <h1 className="page-title">{t('app.nav.quota')}</h1>
       {confirmationDialog}
       {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
       <OAuthPageToolbar

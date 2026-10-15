@@ -165,7 +165,7 @@ export function PluginsPage() {
             </article>;
 
   return <div className="plugins-page">
-    <header className="plugins-heading"><div><h1>{pt('title')}</h1><p>{pt('description')}</p></div><button className="secondary-button" disabled={locked} onClick={() => void load()}><RefreshCw size={16} aria-hidden="true" />{t('common.refresh')}</button></header>
+    <header className="plugins-heading"><div><h1>{t('app.nav.plugins')}</h1><p>{pt('description')}</p></div><button className="secondary-button" disabled={locked} onClick={() => void load()}><RefreshCw size={16} aria-hidden="true" />{t('common.refresh')}</button></header>
     {error && <div className="plugin-error plugin-banner" role="alert"><span>{error}</span><button className="secondary-button" disabled={busy || loading} onClick={() => void load()}>{pt('retry')}</button></div>}
     {supported === false ? <section className="plugin-empty"><Puzzle size={36} /><p>{pt('unsupported')}</p></section> : supported === null ? (
       <section className="plugin-empty" role="status" aria-live="polite">

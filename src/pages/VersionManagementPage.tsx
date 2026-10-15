@@ -486,6 +486,7 @@ export function VersionManagementPage() {
 
   return (
     <section className="page management-page version-management-page">
+      <h1 className="page-title">{t('app.nav.versions')}</h1>
       {!customMirrorDialogOpen ? <MessageNotice inline message={versionSourceError} onDismiss={() => setVersionSourceError('')} /> : null}
       <section className="panel version-list">
         <FeedbackNotice feedback={feedback} />

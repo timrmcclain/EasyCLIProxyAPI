@@ -159,6 +159,21 @@ const pages = [
 
 type PageId = (typeof pages)[number]['id'];
 // Everyday pages; the rest live under Advanced tools. Quota Lookup and Proxy are part of Home.
+// Extra words people search for that are not in the page name.
+const paletteKeywords: Partial<Record<PageId, readonly string[]>> = {
+  home: ['dashboard', 'status', 'quota'],
+  oauth: ['sign in', 'login', 'accounts'],
+  'usage-records': ['requests', 'logs', 'usage', 'history', 'export'],
+  'secret-guard': ['credentials', 'leak', 'redact', 'security'],
+  agents: ['claude code', 'codex', 'clients'],
+  config: ['settings', 'preferences', 'routing'],
+  proxy: ['start', 'stop', 'port', 'core'],
+  api: ['keys', 'api key', 'gemini', 'openai', 'provider'],
+  versions: ['update', 'upgrade', 'version', 'about'],
+  health: ['diagnostics', 'doctor', 'uptime', 'report'],
+  quota: ['limits', 'usage'],
+};
+
 const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'secret-guard', 'agents', 'connectors', 'config'];
 // Grouped by what they manage, so the proxy's pages sit together and the two kinds of "plugins" are told apart.
 const advancedGroups: ReadonlyArray<{ labelKey: 'personal.advanced.proxy' | 'personal.advanced.claude' | 'personal.advanced.diagnostics'; ids: PageId[] }> = [
@@ -491,7 +506,7 @@ function AppContent() {
       return {
         id: `page-${id}`, label: t(page.labelKey), group: t('palette.pages'),
         hint: position < primaryNav.length ? t('palette.pageShortcut', { key: position + 1 }) : undefined,
-        disabled: !canOpenAppPage(id, coreReady), run: () => select(id),
+        keywords: paletteKeywords[id], disabled: !canOpenAppPage(id, coreReady), run: () => select(id),
       };
     }),
     { id: 'theme-light', label: t('app.theme.switchToLight'), group: t('palette.appearance'), run: () => setTheme('light') },

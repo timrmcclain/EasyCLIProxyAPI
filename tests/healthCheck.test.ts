@@ -60,3 +60,16 @@ describe('health check', () => {
     expect(levels({ notificationsAllowed: false }).notifications).toBe('warn');
   });
 });
+
+describe('probes that failed', () => {
+  it('say "couldn\'t check" instead of reporting a guessed result', () => {
+    const checks = healthChecks({ ...healthy, exposed: null, keyCount: null, managementSecretConfigured: null, accountsUnknown: true, driftedApps: null });
+    const byId = Object.fromEntries(checks.map(check => [check.id, check]));
+    expect(byId.network.key).toBe('health.unknown.network');
+    expect(byId.keys.key).toBe('health.unknown.config');
+    expect(byId.accounts.key).toBe('health.unknown.accounts');
+    expect(byId.apps.key).toBe('health.unknown.apps');
+    for (const id of ['network', 'keys', 'accounts', 'apps']) expect(byId[id].level).toBe('warn');
+    expect(byId.management).toBeUndefined();
+  });
+});

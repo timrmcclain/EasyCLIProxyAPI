@@ -17,20 +17,24 @@ export type HealthInput = {
   proxyRunning: boolean;
   /** Address the proxy listens on, for the message. */
   host: string;
-  /** From the proxy's config: an empty or wildcard host listens on every interface. */
-  exposed: boolean;
+  /** From the proxy's config: an empty or wildcard host listens on every interface. Null when it couldn't be read. */
+  exposed: boolean | null;
   /** Another program holds the proxy's port, so the proxy can't start. Only checked while the proxy is stopped. */
   portBlockedBy: { port: number; name: string; pid: number } | null;
-  keyCount: number;
-  managementSecretConfigured: boolean;
+  /** Null when the proxy config couldn't be read; the checks then say so instead of guessing. */
+  keyCount: number | null;
+  managementSecretConfigured: boolean | null;
   /** Labels of accounts whose sign-in expired or was revoked. */
   signInNeeded: string[];
   disabledAccounts: number;
   /** One entry per account signed in more than once, e.g. "claude: someone@example.com (2)". */
   duplicateAccounts: string[];
   totalAccounts: number;
+  /** The account list couldn't be read, so account checks are unknown rather than "none". */
+  accountsUnknown?: boolean;
   /** Names of connected apps whose settings stopped matching the hub. */
-  driftedApps: string[];
+  /** Null when the connected apps couldn't be checked. */
+  driftedApps: string[] | null;
   compression: { enabled: boolean; running: boolean } | null;
   /** Null when the hub can't tell (e.g. permission never asked). */
   notificationsAllowed: boolean | null;
@@ -65,27 +69,33 @@ export function healthChecks(input: HealthInput): HealthCheck[] {
       : { id: 'proxy', level: 'fail', key: 'health.proxy.stopped', target: 'home' });
 
   const exposed = input.exposed;
-  checks.push(exposed
-    ? { id: 'network', level: 'warn', key: 'health.network.exposed', variables: { host: input.host || '0.0.0.0' }, target: 'config' }
-    : { id: 'network', level: 'ok', key: 'health.network.local' });
+  checks.push(exposed === null
+    ? { id: 'network', level: 'warn', key: 'health.unknown.network' }
+    : exposed
+      ? { id: 'network', level: 'warn', key: 'health.network.exposed', variables: { host: input.host || '0.0.0.0' }, target: 'config' }
+      : { id: 'network', level: 'ok', key: 'health.network.local' });
 
-  if (!input.totalAccounts) checks.push({ id: 'accounts', level: 'fail', key: 'health.accounts.none', target: 'oauth' });
+  if (input.accountsUnknown) checks.push({ id: 'accounts', level: 'warn', key: 'health.unknown.accounts', target: 'oauth' });
+  else if (!input.totalAccounts) checks.push({ id: 'accounts', level: 'fail', key: 'health.accounts.none', target: 'oauth' });
   else if (input.signInNeeded.length) checks.push({ id: 'accounts', level: 'fail', key: input.signInNeeded.length === 1 ? 'health.accounts.signInOne' : 'health.accounts.signIn', variables: { count: input.signInNeeded.length, accounts: input.signInNeeded.join(', ') }, target: 'oauth' });
   else checks.push({ id: 'accounts', level: 'ok', key: input.totalAccounts === 1 ? 'health.accounts.okOne' : 'health.accounts.ok', variables: { count: input.totalAccounts } });
   if (input.duplicateAccounts.length) checks.push({ id: 'duplicates', level: 'warn', key: input.duplicateAccounts.length === 1 ? 'health.accounts.duplicateOne' : 'health.accounts.duplicate', variables: { count: input.duplicateAccounts.length, accounts: input.duplicateAccounts.join(', ') }, target: 'oauth' });
   if (input.disabledAccounts) checks.push({ id: 'disabled', level: 'warn', key: input.disabledAccounts === 1 ? 'health.accounts.disabledOne' : 'health.accounts.disabled', variables: { count: input.disabledAccounts }, target: 'oauth' });
 
-  checks.push(input.driftedApps.length
+  checks.push(input.driftedApps === null
+    ? { id: 'apps', level: 'warn', key: 'health.unknown.apps', target: 'agents' }
+    : input.driftedApps.length
     ? { id: 'apps', level: 'fail', key: input.driftedApps.length === 1 ? 'health.apps.driftedOne' : 'health.apps.drifted', variables: { apps: input.driftedApps.join(', ') }, target: 'agents' }
     : { id: 'apps', level: 'ok', key: 'health.apps.ok' });
 
   // A second key is normal mid-rotation; more than that is usually a forgotten old key.
-  if (input.keyCount === 0) checks.push({ id: 'keys', level: 'fail', key: 'health.keys.none', target: 'config' });
+  if (input.keyCount === null) checks.push({ id: 'keys', level: 'warn', key: 'health.unknown.config', target: 'config' });
+  else if (input.keyCount === 0) checks.push({ id: 'keys', level: 'fail', key: 'health.keys.none', target: 'config' });
   else if (input.keyCount === 2) checks.push({ id: 'keys', level: 'ok', key: 'health.keys.rotating' });
   else if (input.keyCount > 2) checks.push({ id: 'keys', level: 'warn', key: 'health.keys.extra', variables: { count: input.keyCount }, target: 'config' });
   else checks.push({ id: 'keys', level: 'ok', key: 'health.keys.ok' });
 
-  if (exposed && !input.managementSecretConfigured) checks.push({ id: 'management', level: 'fail', key: 'health.management.open', target: 'config' });
+  if (exposed && input.managementSecretConfigured === false) checks.push({ id: 'management', level: 'fail', key: 'health.management.open', target: 'config' });
 
   if (input.compression?.running && !input.compression.enabled) checks.push({ id: 'compression', level: 'warn', key: 'health.compression.stray', target: 'compression' });
 

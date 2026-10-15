@@ -35,14 +35,17 @@ export function HealthCheckPage() {
   const run = useCallback(async () => {
     setChecking(true);
     try {
-      const [settings, listen, files, apps, compression, allowed] = await Promise.all([
+      const [settings, listen, filesResult, appsResult, compression, allowed] = await Promise.all([
         invoke<CoreSettings>('get_core_config_settings').catch(() => null),
         invoke<ListenStatus>('proxy_listen_status').catch(() => null),
-        proxyRunning ? managementApi.get('/credentials').then(payload => dedupeAuthFiles(responseList(payload, 'files'))).catch(() => []) : Promise.resolve([]),
-        loadAppStatuses(true).catch(() => []),
+        // Null (not []) when a probe fails, so the checks say "couldn't check" instead of reporting a guess.
+        proxyRunning ? managementApi.get('/credentials').then(payload => dedupeAuthFiles(responseList(payload, 'files'))).catch(() => null) : Promise.resolve([]),
+        loadAppStatuses(true).catch(() => null),
         compressionService.status().catch(() => null),
         isPermissionGranted().catch(() => null),
       ]);
+      const files = filesResult ?? [];
+      const apps = appsResult ?? [];
       setSnapshot({
         platform: navigator.userAgent.includes('Windows') ? 'windows' : navigator.platform,
         proxy: { running: Boolean(status?.running), ready: proxyRunning, version: status?.currentVersion ?? null, managed: Boolean(status?.managed) },
@@ -59,17 +62,18 @@ export function HealthCheckPage() {
       setChecks(healthChecks({
         proxyRunning,
         host: listen?.host || '0.0.0.0',
-        exposed: listen?.exposed ?? false,
+        exposed: listen ? listen.exposed : null,
         // Our own proxy holding the port isn't a conflict, just a proxy the hub hasn't connected to yet.
         portBlockedBy: !proxyRunning && listen?.portInUse && listen.owner && !/cli-proxy-api/i.test(listen.owner.name)
           ? { port: listen.port, name: listen.owner.name, pid: listen.owner.pid } : null,
-        keyCount: settings?.apiKeys.length ?? 1,
-        managementSecretConfigured: settings?.managementSecretConfigured ?? true,
+        keyCount: settings ? settings.apiKeys.length : null,
+        managementSecretConfigured: settings ? settings.managementSecretConfigured : null,
         signInNeeded: files.filter(needsSignIn).map(file => readString(file, 'label', 'email', 'name') || accountSummary(file).label),
         duplicateAccounts: findDuplicateAccounts(files.map(file => ({ provider: readString(file, 'provider', 'type'), email: readString(file, 'email') }))),
         disabledAccounts: files.filter(file => accountSummary(file).health.disabled).length,
         totalAccounts: files.length,
-        driftedApps: driftedApps(apps).map(app => app.name),
+        accountsUnknown: filesResult === null,
+        driftedApps: appsResult === null ? null : driftedApps(apps).map(app => app.name),
         compression: compression ? { enabled: compression.enabled, running: compression.running } : null,
         notificationsAllowed: allowed,
         notificationsEnabled: readDesktopAlertsPreference(),
