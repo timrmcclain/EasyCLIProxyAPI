@@ -1,4 +1,6 @@
 export const secretGuardEn = {
+  'sg.state.update': "Version {version} is ready, but the proxy is still using an older copy.",
+  'sg.updateNow': "Update",
   'sg.state.pluginsOff': "On, but the proxy's plugin system is switched off, so nothing is checked. Retry turns it back on.",
   'sg.state.allOff': "On, but every provider is set to Off, so nothing is checked.",
   'sg.pluginsNote': "Switching this on also turns on the proxy's plugin system, which loads any other proxy plugins you've set up.",
@@ -107,6 +109,8 @@ export const secretGuardEn = {
 } as const;
 
 export const secretGuardZhCN: Record<keyof typeof secretGuardEn, string> = {
+  'sg.state.update': "版本 {version} 已就绪，但代理仍在使用旧版本。",
+  'sg.updateNow': "更新",
   'sg.state.pluginsOff': "已开启，但代理的插件系统已关闭，因此不会检查任何内容。点击重试会重新开启它。",
   'sg.state.allOff': "已开启，但所有提供商都设为关闭，因此不会检查任何内容。",
   'sg.pluginsNote': "开启此项也会开启代理的插件系统，并加载你已设置的其他代理插件。",
@@ -215,6 +219,8 @@ export const secretGuardZhCN: Record<keyof typeof secretGuardEn, string> = {
 };
 
 export const secretGuardJa: Record<keyof typeof secretGuardEn, string> = {
+  'sg.state.update': "バージョン {version} の準備ができていますが、プロキシはまだ古いコピーを使っています。",
+  'sg.updateNow': "更新",
   'sg.state.pluginsOff': "オンですが、プロキシのプラグイン機能がオフのため何も確認されていません。再試行でオンに戻します。",
   'sg.state.allOff': "オンですが、すべてのプロバイダーがオフに設定されているため何も確認されていません。",
   'sg.pluginsNote': "これをオンにすると、プロキシのプラグイン機能もオンになり、設定済みのほかのプロキシプラグインも読み込まれます。",

@@ -88,9 +88,12 @@ export function createPluginMock(host: PluginMockHost) {
       enabled: config.enabled === true, effective_enabled: active,
       supports_oauth: false, oauth_provider: '', supports_quota: false, quota_provider: '', logo: '',
       config_fields: entry?.config_fields ?? [], menus: active ? entry?.menus ?? [] : [],
+      // Bundled plugins (Secret Guard) aren't in the store catalogue, but the proxy still reports their metadata.
       metadata: local && entry ? {
         name: entry.name, version: local.version, author: entry.author,
         github_repository: entry.repository, logo: '', config_fields: entry.config_fields,
+      } : local && local.sourceId === 'bundled' ? {
+        name: id, version: local.version, author: '', github_repository: '', logo: '', config_fields: [],
       } : null,
     };
   };

@@ -105,6 +105,22 @@ const path = require('node:path');
     await steering.waitFor();
     await page.evaluate(() => localStorage.removeItem('mock.codexSteering'));
 
+    // A newer bundled build than the one loaded: offer Update first (a restart alone would reload the old
+    // file), then ask for a restart; coming back to the page still asks for the restart.
+    const reopen = async () => {
+      await page.locator('nav').getByRole('button', { name: /Overview/ }).first().click();
+      await page.locator('nav').getByRole('button', { name: /Secret Guard/ }).first().click();
+    };
+    await page.evaluate(() => localStorage.setItem('mock.sgStale', 'stale'));
+    await reopen();
+    await page.getByText('Version 0.2.0 is ready, but the proxy is still using an older copy.').waitFor();
+    await page.getByRole('button', { name: 'Update', exact: true }).click();
+    await page.getByText('Updated. Restart the proxy to use the new version.').waitFor();
+    await reopen();
+    await page.getByText('Updated. Restart the proxy to use the new version.').waitFor();
+    await page.evaluate(() => localStorage.removeItem('mock.sgStale'));
+    await reopen();
+
     // Switching off keeps the policy and findings.
     await toggle.uncheck();
     await page.getByText('Off. Prompts go out without being checked.').waitFor();

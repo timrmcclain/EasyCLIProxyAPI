@@ -93,6 +93,8 @@ export function SecretGuardPage() {
     if (!status) return null;
     // An older copy still loaded, whether updated just now or before the page was last opened.
     const staleCopy = status.running && status.loadedVersion !== '' && status.loadedVersion !== status.info.bundledVersion;
+    // Copy the new build in first (the hub only does that when switching on), then the proxy needs a restart.
+    if (staleCopy && !restartNeeded && !status.info.installedCurrent && status.on) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.update', { version: status.info.bundledVersion }), retry: true, retryLabel: t('sg.updateNow') };
     if ((restartNeeded || staleCopy) && status.on) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.restart') };
     if (!status.on) return { icon: CircleSlash, level: 'warn', text: t('sg.state.off') };
     if (status.pluginsOff) return { icon: AlertTriangle, level: 'warn', text: t('sg.state.pluginsOff'), retry: true };
@@ -169,7 +171,7 @@ export function SecretGuardPage() {
         {busy === 'switch' ? <p className="sg-state level-ok"><RefreshCw size={16} className="spin" aria-hidden="true" />{t('sg.working')}</p>
           : line && LineIcon && <p className={`sg-state level-${line.level}`} role="status">
             <LineIcon size={16} aria-hidden="true" />{line.text}
-            {'retry' in line && line.retry && <button type="button" className="secondary-button compact-button" onClick={() => void toggle(true)}>{t('sg.retry')}</button>}
+            {'retry' in line && line.retry && <button type="button" className="secondary-button compact-button" onClick={() => void toggle(true)}>{('retryLabel' in line && line.retryLabel) || t('sg.retry')}</button>}
           </p>}
         {status && !status.on && status.pluginsOff && <p className="sg-state" role="note">{t('sg.pluginsNote')}</p>}
         {status?.on && status.info.codexSteeringBypass && <p className="sg-state level-warn" role="note">

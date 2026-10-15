@@ -31,6 +31,8 @@ pub(crate) struct SecretGuardInfo {
     bundled: bool,
     bundled_version: String,
     installed: bool,
+    /// The plugin file in the proxy's folder is this hub's bundled build, so a restart is all an update needs.
+    installed_current: bool,
     findings_file: String,
     /// Codex response steering streams later WebSocket frames straight upstream, past the request check.
     codex_steering_bypass: bool,
@@ -155,10 +157,12 @@ fn display(path: &Path) -> String {
 
 #[tauri::command]
 pub(crate) fn secret_guard_info() -> Result<SecretGuardInfo, String> {
+    let file = installed_plugin_file()?;
     Ok(SecretGuardInfo {
         bundled: !PLUGIN_LIBRARY.is_empty(),
         bundled_version: BUNDLED_VERSION.to_string(),
-        installed: installed_plugin_file()?.is_file(),
+        installed: file.is_file(),
+        installed_current: !PLUGIN_LIBRARY.is_empty() && fs::read(&file).is_ok_and(|bytes| bytes == PLUGIN_LIBRARY),
         findings_file: display(&findings_path()?),
         codex_steering_bypass: core_install_dir().map(|dir| codex_steering_on(&fs::read_to_string(dir.join(CORE_CONFIG_FILE)).unwrap_or_default())).unwrap_or(false),
     })

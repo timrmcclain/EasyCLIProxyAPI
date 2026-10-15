@@ -12,6 +12,8 @@ export type SecretGuardProvider = typeof SECRET_GUARD_PROVIDERS[number];
 
 export type SecretGuardInfo = {
   bundled: boolean; bundledVersion: string; installed: boolean; findingsFile: string;
+  /** The plugin file in the proxy's folder is this hub's bundled build. */
+  installedCurrent: boolean;
   /** Codex response steering is on in the proxy config, so follow-up WebSocket messages skip the check. */
   codexSteeringBypass: boolean;
 };

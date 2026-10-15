@@ -1542,11 +1542,17 @@ export function createBrowserMockRuntime(
         };
       }
       case 'secret_guard_info':
-        return { bundled: true, bundledVersion: '0.1.0', installed: mockSecretGuardInstalled, findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl', codexSteeringBypass: localStorage.getItem('mock.codexSteering') === 'on' };
-      case 'secret_guard_install':
+        // mock.sgStale: the proxy still runs 0.1.0 and this hub bundles 0.2.0 that hasn't been copied in yet.
+        return { bundled: true, bundledVersion: localStorage.getItem('mock.sgStale') ? '0.2.0' : '0.1.0', installed: mockSecretGuardInstalled,
+          installedCurrent: localStorage.getItem('mock.sgStale') !== 'stale', findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl', codexSteeringBypass: localStorage.getItem('mock.codexSteering') === 'on' };
+      case 'secret_guard_install': {
         mockSecretGuardInstalled = true;
-        pluginMock.markInstalled('secret-guard', '0.1.0');
-        return { findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl', replacedLoadedCopy: false };
+        // Updating over a loaded 0.1.0: the file is copied in, but the proxy keeps the old copy until it restarts.
+        const replacing = localStorage.getItem('mock.sgStale') === 'stale';
+        if (replacing) localStorage.setItem('mock.sgStale', 'copied');
+        else pluginMock.markInstalled('secret-guard', '0.1.0');
+        return { findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl', replacedLoadedCopy: replacing };
+      }
       case 'secret_guard_findings': {
         // Nothing is found until Secret Guard is switched on, so other pages' tests never see its banner.
         if (scenario === 'empty' || !mockSecretGuardInstalled) return [];
