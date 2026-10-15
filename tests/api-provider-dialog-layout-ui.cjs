@@ -75,7 +75,7 @@ const path = require('node:path');
       await page.setViewportSize(viewport);
       await assertViewportOverlay('.config-dialog-backdrop');
       await assertDialogControls(form);
-      await form.getByLabel('Remark', { exact: true }).fill('Small-window edit');
+      await form.getByLabel('Label', { exact: true }).fill('Small-window edit');
       await form.locator('.provider-advanced-settings > summary').click();
       const headers = form.getByRole('textbox', { name: /Custom Headers/ });
       await headers.fill('X-Layout-Test: reachable');

@@ -30,15 +30,10 @@ const assert = require('node:assert/strict');
     }));
     const client = name => ({ click: async () => {
       const row = page.locator('.agent-list-items button').filter({ has: page.getByText(name, { exact: true }) });
-      const previous = button('上一页客户端');
+      // The list scrolls rather than pages: every saved client is in it once.
       await settleClientList();
-      while (await previous.isEnabled()) { await previous.click(); await settleClientList(); }
-      for (let index = 0; index < 13 && !(await row.count()); index++) {
-        const next = button('下一页客户端');
-        assert.ok(await next.isEnabled(), `${name} must be reachable in the saved client list`);
-        await next.click();
-        await settleClientList();
-      }
+      assert.equal(await row.count(), 1, `${name} must be reachable in the saved client list`);
+      await row.scrollIntoViewIfNeeded();
       await row.click();
     } });
     const active = async name => {

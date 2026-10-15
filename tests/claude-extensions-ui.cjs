@@ -41,7 +41,9 @@ const path = require('node:path');
     // Installed plugins: counts leave out the session-only plugin, which gets no buttons.
     const plugins = page.locator('section[aria-labelledby="ext-plugins-title"]');
     await plugins.locator('.ext-row').first().waitFor();
-    assert.match(await plugins.locator('.jev-counts').innerText(), /1 on · 3 installed/);
+    assert.match(await plugins.locator('.jev-counts').innerText(), /2 on · 4 installed/);
+    // The count covers every listed row, including the session-loaded plugin (which is on).
+    assert.equal(await plugins.locator(".ext-row").count(), 4);
     const sessionRow = plugins.locator('.ext-row', { hasText: 'jev-panel' });
     assert.match(await sessionRow.innerText(), /This session only/);
     assert.equal(await sessionRow.getByRole('button').count(), 0);
@@ -54,17 +56,19 @@ const path = require('node:path');
 
     // Switching a plugin on.
     await page.getByRole('switch', { name: 'Switch github on or off' }).check();
-    await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('2 on'));
+    await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('3 on'));
 
     // Searching the marketplace leaves installed plugins out.
+    // The marketplace has its own card, below the installed plugins.
+    const market = page.locator('section[aria-labelledby="ext-add-title"]');
     const search = page.getByRole('searchbox', { name: /Search 3 plugins/ });
     await search.fill('docs');
-    assert.equal(await plugins.locator('.ext-row', { hasText: 'context7' }).count(), 1);
-    assert.equal(await plugins.locator('.ext-row', { hasText: 'code-review' }).count(), 0);
+    assert.equal(await market.locator('.ext-row', { hasText: 'context7' }).count(), 1);
+    assert.equal(await market.locator('.ext-row', { hasText: 'code-review' }).count(), 0);
     await search.fill('');
 
     // Install: confirm, it installs switched off, and the review offers Turn on or Remove.
-    await plugins.locator('.ext-row', { hasText: 'code-review' }).getByRole('button', { name: 'Install' }).click();
+    await market.locator('.ext-row', { hasText: 'code-review' }).getByRole('button', { name: 'Install' }).click();
     await confirm(/installs switched off/, 'Install');
     const review = page.locator('.ext-review');
     await review.waitFor();
@@ -72,10 +76,10 @@ const path = require('node:path');
     assert.match(await plugins.locator('.ext-row', { hasText: 'code-review' }).first().innerText(), /Off/);
     await review.getByRole('button', { name: 'Turn on' }).click();
     await review.waitFor({ state: 'detached' });
-    await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('3 on'));
+    await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('4 on'));
 
     // A marketplace that installs by running a command shows the command; declining installs nothing.
-    await plugins.locator('.ext-row', { hasText: 'npx-tool' }).getByRole('button', { name: 'Install' }).click();
+    await market.locator('.ext-row', { hasText: 'npx-tool' }).getByRole('button', { name: 'Install' }).click();
     await dialog().waitFor();
     await dialog().getByRole('button', { name: 'Install', exact: true }).click();
     // The command warning replaces the first dialog straight away.
@@ -84,12 +88,12 @@ const path = require('node:path');
     await dialog().getByRole('button', { name: 'Cancel' }).click();
     await dialog().waitFor({ state: 'detached' });
     assert.equal(await page.locator('.ext-review').count(), 0);
-    assert.match(await plugins.locator('.jev-counts').innerText(), /4 installed/);
+    assert.match(await plugins.locator('.jev-counts').innerText(), /5 installed/);
 
     // Removing a plugin asks first.
     await plugins.locator('.ext-row', { hasText: 'code-review' }).first().getByRole('button', { name: 'Remove' }).click();
     await confirm(/Remove the plugin code-review/, 'Remove');
-    await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('3 installed'));
+    await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('4 installed'));
 
     // Skills: scripts are called out; linked folders and non-skills can't be removed.
     const skills = page.locator('section[aria-labelledby="ext-skills-title"]');

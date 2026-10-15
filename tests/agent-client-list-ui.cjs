@@ -40,7 +40,8 @@ const screenshots = path.join(os.tmpdir(), 'easycliproxy-agent-clients');
         const actual = Array.from(list.querySelectorAll('button strong'), node => node.textContent);
         const selected = list.querySelector('button.active strong')?.textContent;
         return actual.length > 0 && actual.length <= expected.length && actual.every(name => expected.includes(name))
-          && expected.includes(selected) && list.scrollHeight <= list.clientHeight + 1;
+          // Taller lists scroll rather than page.
+          && expected.includes(selected) && (list.scrollHeight <= list.clientHeight + 1 || ['auto', 'scroll'].includes(getComputedStyle(list).overflowY));
       }, names);
       await manage().click();
       assert.deepEqual(await dialog().locator('label:has(input:checked) strong').allTextContents(), names);
@@ -198,32 +199,24 @@ const screenshots = path.join(os.tmpdir(), 'easycliproxy-agent-clients');
     await page.evaluate(({ key, ids }) => localStorage.setItem(key, JSON.stringify(ids)), { key: storageKey, ids: twelve });
     await page.goto(`${base}/tests/fixtures/agent-backups.html?shell&client=claude-code`, { waitUntil: 'domcontentloaded' });
     await ready();
-    const previous = () => page.getByRole('button', { name: '上一页客户端', exact: true });
-    const next = () => page.getByRole('button', { name: '下一页客户端', exact: true });
+    // The list scrolls instead of paging: every client is in it once, and rows that don't fit are reached by scrolling.
+    assert.equal(await page.getByRole('button', { name: '上一页客户端', exact: true }).count(), 0, 'no pager');
     const namesOnPage = () => page.locator('.agent-list-items strong').allTextContents();
     const assertFits = async () => {
-      const metrics = await page.locator('.agent-list-items').evaluate(list => {
-        const rect = list.getBoundingClientRect();
-        return { height: list.clientHeight, scrollHeight: list.scrollHeight, scrollWidth: list.scrollWidth,
-          width: list.clientWidth, clipped: Array.from(list.children).some(child => {
-            const r = child.getBoundingClientRect();
-            return r.top < rect.top - 1 || r.bottom > rect.bottom + 1;
-          }) };
-      });
-      assert.ok(metrics.scrollHeight <= metrics.height + 1 && metrics.scrollWidth <= metrics.width + 1);
-      assert.equal(metrics.clipped, false, 'all rows are fully visible on each page');
+      const metrics = await page.locator('.agent-list-items').evaluate(list => ({
+        height: list.clientHeight, scrollHeight: list.scrollHeight, scrollWidth: list.scrollWidth, width: list.clientWidth,
+        scrollsY: ['auto', 'scroll'].includes(getComputedStyle(list).overflowY),
+        scrollsX: ['auto', 'scroll'].includes(getComputedStyle(list).overflowX),
+      }));
+      // Narrow windows show one sideways row; wider ones a vertical list. Either way, overflow scrolls.
+      assert.ok(metrics.scrollWidth <= metrics.width + 1 || metrics.scrollsX, 'rows that do not fit sideways are reachable by scrolling');
+      assert.ok(metrics.scrollHeight <= metrics.height + 1 || metrics.scrollsY, 'rows that do not fit are reachable by scrolling');
+      // The list reveals the selected client a frame after it changes or resizes.
+      await page.waitForFunction(() => { const list = document.querySelector('.agent-list-items'); const active = list?.querySelector('button.active');
+        if (!active) return true; const r = active.getBoundingClientRect(), l = list.getBoundingClientRect();
+        return r.top >= l.top - 1 && r.bottom <= l.bottom + 1 && r.left >= l.left - 1 && r.right <= l.right + 1; });
     };
-    const collectPages = async () => {
-      while (await previous().isEnabled()) await previous().click();
-      const names = [];
-      for (let index = 0; index < 13; index++) {
-        await assertFits();
-        names.push(...await namesOnPage());
-        if (await next().isDisabled()) break;
-        await next().click();
-      }
-      return names;
-    };
+    const collectPages = async () => { await assertFits(); return namesOnPage(); };
     assert.equal(await page.getByRole('button', { name: '切换客户端', exact: true }).count(), 0);
     assert.deepEqual(await collectPages(), twelveNames, 'no saved client is omitted, duplicated or reordered');
     assert.deepEqual(JSON.parse(await stored()), twelve, 'browsing leaves the management list unchanged');
@@ -235,8 +228,7 @@ const screenshots = path.join(os.tmpdir(), 'easycliproxy-agent-clients');
     assert.equal(await activeClient(), 'OpenClaw');
     assert.deepEqual(JSON.parse(await stored()), twelve, 'selecting leaves the management list unchanged');
     await page.setViewportSize({ width: 360, height: 600 });
-    await page.waitForFunction(() => document.querySelector('.agent-list-items button.active strong')?.textContent === 'OpenClaw'
-      && document.querySelectorAll('.agent-list-items button').length <= 2);
+    await page.waitForFunction(() => document.querySelector('.agent-list-items button.active strong')?.textContent === 'OpenClaw');
     await assertFits();
     assert.deepEqual(await collectPages(), twelveNames, 'all managed clients remain reachable after resizing');
     assert.deepEqual(JSON.parse(await stored()), twelve);

@@ -33,7 +33,7 @@ const path = require('node:path');
     await form.getByLabel('Base URL', { exact: true }).fill('https://claude.example.test');
     await form.locator('.provider-advanced-settings > summary').click();
     await form.getByLabel('Priority', { exact: true }).fill('1');
-    await form.getByLabel('Remark', { exact: true }).fill('Second route');
+    await form.getByLabel('Label', { exact: true }).fill('Second route');
     await form.getByRole('button', { name: 'Add Custom Model', exact: true }).click();
     await form.locator('.model-config-entry input').nth(0).fill('upstream-b');
     await form.locator('.model-config-entry input').nth(1).fill('claude-b');

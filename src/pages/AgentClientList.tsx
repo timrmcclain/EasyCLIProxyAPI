@@ -62,8 +62,25 @@ export function AgentClientList<Id extends string>({
   });
 
   // The list scrolls; keep the selected client in view when it changes or the list resizes.
+  // Scrolls only the list itself, never the page around it.
   useLayoutEffect(() => {
-    listRef.current?.querySelector<HTMLElement>('button.active')?.scrollIntoView({ block: 'nearest' });
+    const list = listRef.current;
+    if (!list) return;
+    const reveal = () => {
+      const active = list.querySelector<HTMLElement>('button.active');
+      if (!active) return;
+      const row = active.getBoundingClientRect();
+      const frame = list.getBoundingClientRect();
+      // Narrow windows lay the list out as one sideways row, so reveal along both axes.
+      if (row.top < frame.top) list.scrollTop -= frame.top - row.top;
+      else if (row.bottom > frame.bottom) list.scrollTop += row.bottom - frame.bottom;
+      if (row.left < frame.left) list.scrollLeft -= frame.left - row.left;
+      else if (row.right > frame.right) list.scrollLeft += row.right - frame.right;
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(list);
+    return () => observer.disconnect();
   }, [selected, visibleClients.length]);
 
   useEffect(() => {

@@ -135,15 +135,19 @@ const desktopViewports = [
         const rect = list.getBoundingClientRect();
         const buttons = Array.from(list.querySelectorAll('button'));
         return { count: buttons.length,
-          overflow: list.scrollHeight > list.clientHeight + 1 || list.scrollWidth > list.clientWidth + 1,
+          // The list scrolls vertically; nothing may spill sideways, and the selected row must be in view.
+          overflow: list.scrollWidth > list.clientWidth + 1
+            || (list.scrollHeight > list.clientHeight + 1 && !['auto', 'scroll'].includes(getComputedStyle(list).overflowY)),
           clipped: buttons.filter(button => {
             const r = button.getBoundingClientRect();
-            return r.top < rect.top - 1 || r.bottom > rect.bottom + 1 || r.left < rect.left - 1 || r.right > rect.right + 1;
+            const sideways = r.left < rect.left - 1 || r.right > rect.right + 1;
+            const activeHidden = button.classList.contains('active') && (r.top < rect.top - 1 || r.bottom > rect.bottom + 1);
+            return sideways || activeHidden;
           }).map(button => button.textContent) };
       });
       assert.ok(metrics.count >= 1 && metrics.count <= 13, `${label}: render a nonempty client page`);
-      assert.equal(metrics.overflow, false, `${label}: each client page must fit without scrolling`);
-      assert.deepEqual(metrics.clipped, [], `${label}: no client row may be clipped`);
+      assert.equal(metrics.overflow, false, `${label}: the client list never overflows sideways and scrolls when it is taller than its box`);
+      assert.deepEqual(metrics.clipped, [], `${label}: no client row is clipped sideways and the selected client is in view`);
     };
 
     const assertDesktopLayout = async label => {

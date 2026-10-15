@@ -136,7 +136,7 @@ const fs = require('node:fs/promises');
     const rowRemark = (index) => rows.nth(index).locator('.provider-row-title > span:not(.state-pill)');
     await rowRemark(1).getByText('Existing group note', { exact: true }).waitFor();
     await rows.nth(0).getByRole('button', { name: 'Edit', exact: true }).click();
-    assert.equal(await dialog.getByLabel('Remark', { exact: true }).inputValue(), 'Existing group note');
+    assert.equal(await dialog.getByLabel('Label', { exact: true }).inputValue(), 'Existing group note');
     await dialog.locator('.provider-advanced-settings > summary').click();
     await dialog.getByLabel('Priority', { exact: true }).fill('8');
     await dialog.getByRole('button', { name: 'Save', exact: true }).click();
@@ -145,7 +145,7 @@ const fs = require('node:fs/promises');
     assert.equal(await rowRemark(1).textContent(), 'Existing group note', 'Editing one key preserves the legacy group remark on its sibling');
 
     await rows.nth(0).getByRole('button', { name: 'Edit', exact: true }).click();
-    await dialog.getByLabel('Remark', { exact: true }).fill('');
+    await dialog.getByLabel('Label', { exact: true }).fill('');
     await dialog.getByRole('button', { name: 'Save', exact: true }).click();
     await dialog.waitFor({ state: 'detached' });
     await page.reload();
@@ -154,7 +154,7 @@ const fs = require('node:fs/promises');
 
     await rows.nth(1).getByRole('button', { name: 'Edit', exact: true }).click();
     await dialog.getByLabel('Base URL', { exact: true }).fill('https://moved.example.test/v1');
-    await dialog.getByLabel('Remark', { exact: true }).fill('Moved key note');
+    await dialog.getByLabel('Label', { exact: true }).fill('Moved key note');
     await dialog.getByRole('button', { name: 'Save', exact: true }).click();
     await dialog.waitFor({ state: 'detached' });
     const detached = await groups();

@@ -1800,7 +1800,6 @@ export const en: Record<MessageKey, string> = {
   'config.upstreamGuide.hide': 'Hide advanced settings',
   'apiAccess.dialog.stillNeeded': 'Still needed: {fields}',
   'apiAccess.dialog.nothingChanged': 'Nothing changed yet',
-  'apiAccess.dialog.required': 'Required',
   'common.discardTitle': 'Discard unsaved changes?',
   'notice.unsavedLeave': 'You have unsaved changes. Leave this page and discard them?',
   'apiAccess.deleteTitle': 'Delete connection?',

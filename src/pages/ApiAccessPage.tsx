@@ -2040,7 +2040,8 @@ export function ApiProviderDialog({
     baseUrlNeeded && !draft.baseUrl.trim() ? t('apiAccess.field.baseUrl') : '',
     keyMissing ? t('apiAccess.field.key') : '',
   ].filter(Boolean);
-  const requiredMark = <span className="field-required" title={t('apiAccess.dialog.required')} aria-hidden="true">*</span>;
+  // Drawn by CSS (with empty alt text), so the label's text and accessible name stay exactly the field name.
+  const requiredMark = <span className="field-required" aria-hidden="true" />;
   useUnsavedChangesGuard('api-access-provider', draftDirty);
   const [modelListOpen, setModelListOpen] = useState(initialDraft.models.length <= 3);
   const requestClose = useCallback(async () => {

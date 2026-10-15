@@ -1800,7 +1800,6 @@ export const jaOverrides = {
   'config.upstreamGuide.hide': '詳細設定を隠す',
   'apiAccess.dialog.stillNeeded': '未入力：{fields}',
   'apiAccess.dialog.nothingChanged': 'まだ変更はありません',
-  'apiAccess.dialog.required': '必須',
   'common.discardTitle': '未保存の変更を破棄しますか？',
   'notice.unsavedLeave': '未保存の変更があります。このページを離れて変更を破棄しますか？',
   'apiAccess.deleteTitle': '接続を削除しますか？',

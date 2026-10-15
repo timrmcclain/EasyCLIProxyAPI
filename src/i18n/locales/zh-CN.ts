@@ -1799,7 +1799,6 @@ export const zhCN = {
   'config.upstreamGuide.hide': '隐藏高级设置',
   'apiAccess.dialog.stillNeeded': '还需填写：{fields}',
   'apiAccess.dialog.nothingChanged': '尚未修改',
-  'apiAccess.dialog.required': '必填',
   'common.discardTitle': '放弃未保存的修改？',
   'notice.unsavedLeave': '有未保存的修改。确定离开此页面并放弃这些修改吗？',
   'apiAccess.deleteTitle': '删除接入？',

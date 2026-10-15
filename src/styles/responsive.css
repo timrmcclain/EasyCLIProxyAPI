@@ -1256,4 +1256,4 @@
    rules made every action full-width even when two controls easily fit. */
 
 /* Required fields in the API provider dialog. */
-.api-provider-dialog .field-required { margin-left: 3px; color: var(--c-danger); font-weight: 600; }
+.api-provider-dialog .field-required::after { content: "*" / ""; margin-left: 3px; color: var(--c-danger); font-weight: 600; }
