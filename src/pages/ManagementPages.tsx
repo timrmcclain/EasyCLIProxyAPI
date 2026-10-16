@@ -31,6 +31,8 @@ import {
   shouldShowOAuthLoginStatus,
 } from '../services/oauthLoginState';
 import { AuthFileManagementPage } from './AuthFileManagementPage';
+import { OfflineAccounts } from '../components/OfflineAccounts';
+import { useOptionalCoreRuntime } from '../coreRuntime';
 import { validateDevinCallback } from '../services/devinOAuth';
 import { handleHorizontalTabKey } from '../components/tabKeyboardNavigation';
 import { PluginOAuthProviders } from './PluginOAuthProviders';
@@ -125,6 +127,13 @@ const cachedOAuthProviderStates = (): Partial<Record<OAuthProviderId, OAuthProvi
 );
 
 export function OAuthManagementPage() {
+  // With the proxy stopped, sign-in and changes can't work; show what's in the accounts folder instead.
+  const runtime = useOptionalCoreRuntime();
+  if (runtime && !runtime.status?.ready) return <OfflineAccounts />;
+  return <OAuthManagementTabs />;
+}
+
+function OAuthManagementTabs() {
   const { t } = useI18n();
   const [activeSubpage, setActiveSubpage] = useState<OAuthSubpage>(() => takePendingOAuthSubpage() ?? 'authFiles');
   useEffect(() => {

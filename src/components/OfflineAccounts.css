@@ -1,0 +1,9 @@
+.offline-accounts { display: grid; gap: 12px; }
+.offline-accounts-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-muted, var(--border-color)); }
+.offline-accounts-banner span { flex: 1 1 260px; }
+.offline-accounts-error { color: var(--danger-color, #b42318); margin: 0; }
+.offline-accounts-empty { margin: 0; }
+.offline-accounts-table { width: 100%; border-collapse: collapse; }
+.offline-accounts-table th, .offline-accounts-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-color); overflow-wrap: anywhere; }
+.offline-accounts-table th { font-weight: 600; }
+.offline-accounts-table tr.off td { opacity: .6; }

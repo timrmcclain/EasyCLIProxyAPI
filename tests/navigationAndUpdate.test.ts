@@ -17,6 +17,8 @@ describe('简易模式、首页、配置与版本管理导航', () => {
     expect(canOpenAppPage('agents', false)).toBe(true);
     expect(isAlwaysAvailablePage('agents')).toBe(true);
     expect(canOpenAppPage('quota', false)).toBe(false);
+    // Accounts opens read-only while the proxy is stopped.
+    expect(canOpenAppPage('oauth', false)).toBe(true);
   });
 
   test('内核运行后解锁其他功能页', () => {

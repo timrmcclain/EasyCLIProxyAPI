@@ -39,6 +39,8 @@ mod project_usage;
 mod proxy_listen;
 mod config_history;
 mod core_log;
+mod deleted_accounts;
+mod offline_accounts;
 mod tray;
 mod usage;
 mod model_preset;
@@ -2759,6 +2761,9 @@ fn main() {
             proxy_listen::proxy_listen_status,
             config_history::list_core_config_history,
             core_log::read_core_log,
+            deleted_accounts::keep_deleted_account,
+            deleted_accounts::restore_deleted_account,
+            offline_accounts::list_offline_accounts,
             config_history::restore_core_config_history,
             statusline::disable_claude_statusline,
             statusline::write_claude_quota_line,

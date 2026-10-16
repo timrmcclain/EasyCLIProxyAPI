@@ -136,18 +136,27 @@ pub(crate) async fn upload_auth_file(
     name: String,
     data: Vec<u8>,
 ) -> Result<serde_json::Value, String> {
+    let config = gui_config_state.snapshot()?;
+    upload_credential(&config, &name, data).await
+}
+
+/// Sends an account file to the proxy, which saves it in the accounts folder and starts using it.
+pub(crate) async fn upload_credential(
+    config: &GuiConfigFile,
+    name: &str,
+    data: Vec<u8>,
+) -> Result<serde_json::Value, String> {
     let name = name.trim().to_string();
     if name.is_empty() || !name.to_ascii_lowercase().ends_with(".json") {
         return Err("Credential filename must end with .json".to_string());
     }
 
-    let config = gui_config_state.snapshot()?;
     let client = management_http_client()?;
     let mut query = HashMap::new();
     query.insert("name".to_string(), name);
     let response = client
-        .post(management_endpoint(&config, "credentials")?)
-        .header("Authorization", management_authorization(&config)?)
+        .post(management_endpoint(config, "credentials")?)
+        .header("Authorization", management_authorization(config)?)
         .query(&query)
         .header("Content-Type", "application/json")
         .body(data)

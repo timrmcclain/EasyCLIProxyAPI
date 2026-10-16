@@ -220,6 +220,10 @@ const fs = require('node:fs/promises');
     await card(12).waitFor({ state: 'detached' });
     assert.equal(await cards().count(), 11);
     assert.deepEqual(await page.evaluate(() => window.authFileListFixture.requests.find(request => request.method === 'DELETE')?.query), { name: '12-account.json' });
+    // The file was kept first, and Undo puts the account back.
+    await page.getByRole('button', { name: '撤销', exact: true }).click();
+    await card(12).waitFor();
+    assert.equal(await cards().count(), 12, 'Undo restores the deleted account');
     assert.deepEqual(await page.evaluate(() => window.authFileListFixture.unhandled), []);
 
     // Issue #345: long Antigravity labels/details must not size implicit grid

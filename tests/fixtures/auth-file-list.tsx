@@ -62,10 +62,24 @@ updateQuotaCache(Object.fromEntries(files.map((file, index) => {
   return [quotaKey(file), quota];
 })));
 
-const state = { files, requests: [] as Request[], unhandled: [] as string[], reads: 0 };
+const state = { files, requests: [] as Request[], unhandled: [] as string[], reads: 0, kept: {} as Record<string, Record<string, unknown>> };
 (window as typeof window & { authFileListFixture: typeof state }).authFileListFixture = state;
 mockIPC(async (cmd, args) => {
   if (cmd === 'set_app_locale') return null;
+  if (cmd === 'keep_deleted_account') {
+    const name = String(args?.name);
+    const kept = state.files.find(file => file.name === name);
+    if (!kept) throw new Error('No such account');
+    state.kept[`1-${name}`] = structuredClone(kept);
+    return `1-${name}`;
+  }
+  if (cmd === 'restore_deleted_account') {
+    const kept = state.kept[String(args?.id)];
+    if (!kept) throw new Error('No kept copy');
+    state.files.push(kept);
+    delete state.kept[String(args?.id)];
+    return kept.name;
+  }
   if (cmd !== 'management_request') {
     state.unhandled.push(cmd);
     throw new Error(`Unhandled fixture command: ${cmd}`);

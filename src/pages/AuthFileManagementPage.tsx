@@ -7,6 +7,7 @@ import { AuthFileQuotaPanel } from '../components/AuthFileQuotaPanel';
 import { AuthFileSettingsDialog } from '../components/AuthFileSettingsDialog';
 import { useQuotaReset } from '../components/useQuotaReset';
 import './AuthFileManagementPage.css';
+import { invoke } from '@tauri-apps/api/core';
 import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
 import { accountSorts, sortAccounts, type AccountSort } from '../services/accountSort';
@@ -451,12 +452,30 @@ export function AuthFileManagementPage() {
       setError(t('authFiles.runtimeDeleteError'));
       return;
     }
-    if (!await askConfirmation({ title: t('common.delete'), message: t('authFiles.deleteConfirm', { name }), confirmText: t('common.delete'), variant: 'danger' })) return;
+    if (!await askConfirmation({ title: t('common.delete'), message: t('authFiles.deleteConfirmKept', { name }), confirmText: t('common.delete'), variant: 'danger' })) return;
     setBusy(true);
     setError('');
     try {
+      // Keep a copy first; if that fails, nothing is deleted.
+      const keptId = await invoke<string>('keep_deleted_account', { name });
       await managementApi.delete('/credentials', { query: { name } });
-      showNotice({ key: 'authFiles.deleted' });
+      showNotice({ key: 'authFiles.deletedKept', variables: { name } }, 'success', {
+        action: { label: { key: 'common.undo' }, onAction: () => void restoreDeleted(keptId) },
+      });
+      await loadFiles();
+    } catch (requestError) {
+      setError(readableError(requestError));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restoreDeleted = async (keptId: string) => {
+    setBusy(true);
+    setError('');
+    try {
+      const name = await invoke<string>('restore_deleted_account', { id: keptId });
+      showNotice({ key: 'authFiles.restored', variables: { name } }, 'success');
       await loadFiles();
     } catch (requestError) {
       setError(readableError(requestError));

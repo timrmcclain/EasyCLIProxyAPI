@@ -43,6 +43,18 @@ const path = require('node:path');
     await page.getByRole('alertdialog').getByRole('button', { name: 'Clear cooldown', exact: true }).click();
     await cooling.locator('.auth-file-health-compact').waitFor({ state: 'hidden' });
     await page.screenshot({ path: 'bin-work/browser-mock-credentials.png', fullPage: true });
+
+    // With the proxy stopped, Accounts still opens: a read-only list from the accounts folder.
+    await page.goto(`${base}/?mock=stopped&mockDelay=5`);
+    await page.locator('.nav-section').getByRole('button', { name: 'Accounts', exact: true }).click();
+    const offline = page.getByRole('region', { name: 'Accounts (read-only)' });
+    await offline.locator('tbody tr').first().waitFor();
+    assert.ok(await offline.locator('tbody tr').count() > 1, 'Stopped proxy still lists the account files');
+    assert.match(await offline.getByRole('status').innerText(), /read-only/);
+    assert.equal(await offline.getByRole('switch').count(), 0, 'Nothing can be changed while the proxy is stopped');
+    await page.screenshot({ path: 'bin-work/browser-mock-offline-accounts.png', fullPage: true });
+    await offline.getByRole('button', { name: 'Go to Overview', exact: true }).click();
+    await offline.waitFor({ state: 'detached' });
     assert.deepEqual(errors, []);
     assert.deepEqual(externalRequests, []);
     console.log('PASS: real app browser mock, six provider quotas, pagination, credential toggle and cooldown reset without external requests.');

@@ -7,6 +7,7 @@ let mockClaudeFallback: string | null = null;
 let mockJevGuards = { browserGuard: true, commandGuard: true, approvalHours: 24 };
 let mockJevRefreshed = false;
 let mockSecretGuardInstalled = false;
+const mockKeptAccounts = new Map<string, JsonObject>();
 const mockSecretGuardDismissed = new Map<string, number>();
 // Skills & plugins page: installs, switches and removals change what the next overview returns.
 const mockSkill = (folder: string, description: string, scripts: string[] = [], extra: Record<string, boolean> = {}) => ({
@@ -980,6 +981,25 @@ export function createBrowserMockRuntime(
       }
       case 'get_gui_settings': return clone(state.guiSettings);
       case 'get_core_config_settings': return clone(state.coreConfig);
+      case 'keep_deleted_account': {
+        const name = readString(payload.name);
+        const kept = state.authFiles.find((file) => file.name === name);
+        if (!kept) throw new Error(`Browser Mock credential not found: ${name}`);
+        mockKeptAccounts.set(`1-${name}`, clone(kept));
+        return `1-${name}`;
+      }
+      case 'restore_deleted_account': {
+        const id = readString(payload.id);
+        const kept = mockKeptAccounts.get(id);
+        if (!kept) throw new Error('Browser Mock: no kept copy');
+        state.authFiles.push(kept);
+        mockKeptAccounts.delete(id);
+        return readString(kept.name);
+      }
+      case 'list_offline_accounts': return state.authFiles.map((file) => ({
+        name: readString(file.name), provider: readString(file.type ?? file.provider).toLowerCase(), email: readString(file.email),
+        disabled: file.disabled === true, priority: Number(file.priority ?? 0) || 0, modifiedMs: Date.parse(readString(file.updated_at)) || 0,
+      }));
       case 'read_core_log': return {
         path: 'C:\mock\logs\core-start-output.log', truncated: true, exists: true,
         lines: [
