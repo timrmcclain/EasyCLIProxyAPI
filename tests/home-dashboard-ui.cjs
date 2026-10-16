@@ -60,7 +60,9 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     fs.mkdirSync('misc', { recursive: true });
     await page.screenshot({ path: 'misc/home-dashboard-initial.png', fullPage: true, animations: 'disabled' });
     console.log('Initial homepage rendered: misc/home-dashboard-initial.png');
-    assert.equal(await page.locator('.glance-tile').count(), 4, 'activity, compression, attention and runway tiles');
+    // Compression is off in the mock, so its tile is hidden: activity, attention and runway remain.
+    assert.equal(await page.locator('.glance-tile').count(), 3, 'activity, attention and runway tiles');
+    assert.equal(await page.locator('.glance-compression').count(), 0, 'no compression tile while compression is off');
     assert.equal(await page.locator('.glance-runway').count(), 1, 'runway & resets tile');
     assert.equal(await page.locator('.home-stat-card').count(), 0, 'the static count tiles are gone');
     assert.equal(await page.locator('.home-proxy-details').evaluate(node => node.open), false, 'proxy and connection details start collapsed');
@@ -326,7 +328,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
       await page.locator('.glance-activity[aria-busy="false"]').waitFor();
       const toolbar = page.locator('#browser-mock-toolbar');
       if (await toolbar.count()) await toolbar.evaluate(node => { node.style.display = 'none'; });
-      assert.equal(await page.locator('.glance-tile').count(), 4);
+      assert.equal(await page.locator('.glance-tile').count(), 3);
       assert.equal(await page.locator('.home-status .core-health-open').count(), 1);
       assert.equal(await page.locator('.home-page > .core-health-entry').count(), 0);
       assert.equal(await page.locator('.core-health-table').count(), 0);
@@ -373,13 +375,16 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
             });
             const accounts = document.querySelector('#account-dashboard-title')?.getBoundingClientRect();
             const glance = document.querySelector('.home-glance')?.getBoundingClientRect();
-            return { scrollHeight: root.scrollHeight, clientHeight: root.clientHeight, viewportHeight: innerHeight, cards, accountsTop: accounts ? accounts.top : Infinity, glanceTop: glance ? glance.top : Infinity };
+            const firstRow = document.querySelector('.ad-card')?.getBoundingClientRect();
+            return { scrollHeight: root.scrollHeight, clientHeight: root.clientHeight, viewportHeight: innerHeight, cards, accountsTop: accounts ? accounts.top : Infinity, glanceTop: glance ? glance.top : Infinity, firstRowTop: firstRow ? firstRow.top : Infinity };
           });
           const context = `${locale}/${theme}/${viewport.width}x${viewport.height}`;
           assert.equal(layout.cards.length, 2, `${context} must show the status bar and the provider runway`);
-          // The page may scroll, but the verdict and the runway must be fully visible and the glance tiles must start on the first screen.
+          // The page may scroll, but the verdict and the runway must be fully visible and the account ledger must start on the first screen.
           assert.ok(layout.accountsTop < layout.viewportHeight, `${context} accounts section must start within the first screen: ${layout.accountsTop}px`);
-          assert.ok(layout.glanceTop < layout.viewportHeight, `${context} glance tiles must start within the first screen: ${layout.glanceTop}px`);
+          assert.ok(layout.firstRowTop < layout.viewportHeight, `${context} first account row must start within the first screen: ${layout.firstRowTop}px`);
+          // The summary tiles sit below the ledger, which is Overview's main content.
+          assert.ok(layout.glanceTop > layout.accountsTop, `${context} glance tiles come after the accounts`);
           for (const card of layout.cards) {
             assert.ok(card.height > 0 && card.top >= -1 && card.bottom <= layout.viewportHeight + 1,
               `${context} ${card.name} must be fully visible without scrolling: ${JSON.stringify(card)}`);

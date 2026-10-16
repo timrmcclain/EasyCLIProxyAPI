@@ -17,7 +17,7 @@ const assert = require('node:assert/strict');
       await open(query);
       await page.getByRole('button', { name: '应用配置修改', exact: true }).click();
       await page.getByText('配置已更新。', { exact: true }).waitFor();
-      await page.getByRole('button', { name: '关闭配置修改', exact: true }).waitFor();
+      await page.getByRole('button', { name: '断开与中心的连接', exact: true }).waitFor();
       assert.equal((await calls('close_codex_config_modification')).length, 0);
       // Applying takes one automatic pre-apply snapshot (the Undo point); manual backup adds the second.
       assert.equal((await calls('create_agent_config_backup')).length, 1);

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Activity, ArrowRight, CircleAlert, CircleCheck, Hourglass, Shrink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { compressionService, lifetimeSavingsPercent, type CompressionStats, type CompressionStatus } from '../services/compression';
-import { busiestClient, hourlyActivity, type AttentionItem } from '../services/homeGlance';
+import { busiestClient, canRecheck, hourlyActivity, type AttentionItem, type UnknownReason } from '../services/homeGlance';
 import type { HomeUsageSummary } from '../services/homeOverview';
 import { requestClient, type DashboardActivity } from '../services/dashboardActivity';
 import { resetCountdown } from '../services/accountDashboard';
@@ -31,10 +31,22 @@ type GlanceProps = {
   files: AuthFile[]; quotas: Record<string, QuotaState>; stale: boolean; nameFor: (provider: string) => string;
   /** False while the proxy is stopped: then nothing can take requests, whatever the accounts say. */
   proxyReady?: boolean;
+  /** Whether the account list has arrived yet; an empty list only means "no accounts" once it has. */
+  accountsState?: 'loading' | 'failed' | 'loaded';
   /** Re-checks the accounts whose availability is unconfirmed. */
   onCheckUnconfirmed?: () => void;
   checkingUnconfirmed?: boolean;
 };
+
+/**
+ * What Needs attention says when it has no rows to list. An empty list only means "no accounts" once the list
+ * has actually arrived; before that it's loading, and if the fetch failed it says so.
+ */
+export function attentionEmptyState(proxyReady: boolean, accountCount: number, accountsState: 'loading' | 'failed' | 'loaded'): 'proxyDown' | 'loading' | 'failed' | 'noAccounts' | null {
+  if (!proxyReady) return 'proxyDown';
+  if (accountCount) return null;
+  return accountsState === 'loaded' ? 'noAccounts' : accountsState;
+}
 
 /** The at-a-glance row under the provider runway: what the proxy is doing, what compression saves, and what needs you. */
 export function HomeGlance(props: GlanceProps) {
@@ -112,6 +124,8 @@ function CompressionTile() {
   const percent = lifetimeSavingsPercent(lifetime);
   const usd = new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(lifetime?.compression_savings_usd ?? 0);
   const on = Boolean(status?.enabled);
+  // Off means there's nothing to report; the Compression page still has the switch.
+  if (status && !on) return null;
   return <article className={`glance-tile glance-compression ${on ? '' : 'is-off'}`} aria-labelledby="glance-compression-title">
     <header><h3 id="glance-compression-title"><Shrink size={14} aria-hidden="true" />{t('glance.compression.title')}</h3>
       <button type="button" className="glance-open" onClick={() => navigateHelp('compression')}>{t('glance.open')}<ArrowRight size={12} aria-hidden="true" /></button></header>
@@ -129,29 +143,39 @@ function CompressionTile() {
   </article>;
 }
 
-function AttentionTile({ attention: all, now, labelFor, providerOf, onView, onMore, proxyReady = true, files, onCheckUnconfirmed, checkingUnconfirmed }: GlanceProps) {
+function AttentionTile({ attention: all, now, labelFor, providerOf, onView, onMore, proxyReady = true, accountsState = 'loaded', files, onCheckUnconfirmed, checkingUnconfirmed }: GlanceProps) {
   const { t } = useI18n();
   // Unconfirmed accounts aren't problems yet, so they get one line with a way to check them instead of a row each.
   const attention = all.filter(item => item.severity !== 'unconfirmed');
-  const unconfirmed = all.length - attention.length;
+  const unconfirmedItems = all.filter(item => item.severity === 'unconfirmed');
+  const unconfirmed = unconfirmedItems.length;
+  const count = (reason: UnknownReason) => unconfirmedItems.filter(item => item.unknownReason === reason).length;
   const shown = attention.slice(0, ATTENTION_ROWS);
-  const uncheckedLine = unconfirmed > 0 && <p className="glance-unconfirmed">
-    <span>{t('glance.attention.uncheckedLine', { count: unconfirmed })}</span>
-    {onCheckUnconfirmed && <button type="button" className="glance-open" disabled={checkingUnconfirmed} onClick={onCheckUnconfirmed}>{t(checkingUnconfirmed ? 'glance.attention.checking' : 'glance.attention.checkNow')}</button>}
-  </p>;
+  // Each reason gets its own line; only the ones another check could change offer Check now.
+  const reasonLines = ([['notChecked', 'glance.attention.uncheckedLine'], ['checkFailed', 'glance.attention.checkFailedLine'],
+    ['notReported', 'glance.attention.notReportedLine'], ['partial', 'glance.attention.partialLine']] as const)
+    .filter(([reason]) => count(reason) > 0);
+  const recheckable = unconfirmedItems.some(item => canRecheck(item.unknownReason));
+  const uncheckedLine = unconfirmed > 0 && <div className="glance-unconfirmed">
+    <span className="glance-unconfirmed-reasons">{reasonLines.map(([reason, key]) => <span key={reason}>{t(key, { count: count(reason) })}</span>)}</span>
+    {onCheckUnconfirmed && recheckable && <button type="button" className="glance-open" disabled={checkingUnconfirmed} onClick={onCheckUnconfirmed}>{t(checkingUnconfirmed ? 'glance.attention.checking' : 'glance.attention.checkNow')}</button>}
+  </div>;
   const history = useQuotaHistory();
   const runsOut = (item: AttentionItem) => {
     if (item.severity !== 'low') return undefined;
     const forecast = forecastQuota(history[quotaKey(item.file)], now);
     return forecast.kind === 'runsOut' ? forecast.emptyAt : undefined;
   };
-  const status = (item: AttentionItem) => item.severity === 'blocked' ? t(item.unavailable ? 'glance.attention.unavailable' : 'glance.attention.blocked')
+  const status = (item: AttentionItem) => item.severity === 'blocked' ? t(item.termsRequired ? 'availability.termsRequiredLabel' : item.unavailable ? 'glance.attention.unavailable' : 'glance.attention.blocked')
     : item.severity === 'low' ? t('glance.attention.low', { percent: quotaPercent(item.percent ?? 0) }) : t('glance.attention.unconfirmed');
+  const emptyState = attentionEmptyState(proxyReady, files.length, accountsState);
   return <article className={`glance-tile glance-attention ${attention.length ? `worst-${attention[0].severity}` : 'is-clear'}`} aria-labelledby="glance-attention-title">
     <header><h3 id="glance-attention-title">{t('glance.attention.title')}{attention.length > 0 && <span className="glance-count">{attention.length}</span>}</h3></header>
     {/* "Nothing needs you" is only true when the proxy is up and there are accounts to route to. */}
     {!proxyReady ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.proxyDown')}</strong><small>{t('glance.attention.proxyDownDetail')}</small></span></div>
-      : !files.length ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.noAccounts')}</strong><small>{t('glance.attention.noAccountsDetail')}</small></span></div>
+      : emptyState === 'loading' ? <p className="glance-muted" role="status">{t('glance.attention.loadingAccounts')}</p>
+      : emptyState === 'failed' ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.loadFailed')}</strong><small>{t('glance.attention.loadFailedDetail')}</small></span></div>
+      : emptyState === 'noAccounts' ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.noAccounts')}</strong><small>{t('glance.attention.noAccountsDetail')}</small></span></div>
       : !attention.length ? <>{unconfirmed ? uncheckedLine : <div className="glance-clear"><CircleCheck size={18} aria-hidden="true" /><span><strong>{t('glance.attention.none')}</strong><small>{t('glance.attention.noneDetail')}</small></span></div>}</>
       : <><ul className="glance-attention-list">
         {shown.map(item => <li key={quotaKey(item.file)} className={`attention-${item.severity}`}>

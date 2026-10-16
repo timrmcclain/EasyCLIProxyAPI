@@ -1257,3 +1257,6 @@
 
 /* Required fields in the API provider dialog. */
 .api-provider-dialog .field-required::after { content: "*" / ""; margin-left: 3px; color: var(--c-danger); font-weight: 600; }
+
+/* The notifications switch is on, but Windows blocks delivery. */
+.config-setting-warning { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; font-size: 12px; color: var(--amber-text); }

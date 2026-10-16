@@ -2,7 +2,7 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { getCurrentLocale, translate } from '../i18n';
 import { resetCountdown } from './accountDashboard';
 import { refreshDashboardQuotas } from './accountDashboardRefresh';
-import { privateAccountLabel } from './accountPrivacy';
+import { accountDisplayName } from './accountPrivacy';
 import { readAccountNames } from './accountNames';
 import { dedupeAuthFiles } from './authFiles';
 import { readDashboardPreference, readDesktopAlertsPreference } from './dashboardPreferences';
@@ -17,7 +17,7 @@ import { getQuotaTrends, recordQuotaTrends, setQuotaTrends } from './quotaTrend'
 import { applyQuotaRouting } from './quotaRoutingControl';
 import { initialProxyWatch, nextProxyWatch } from './proxyWatch';
 import { getProxyUptime, recordProxyCheck, setProxyUptime } from './proxyUptime';
-import { fileName, providerForFile, type AuthFile } from './quotaService';
+import { providerForFile, type AuthFile } from './quotaService';
 
 const CHECK_EVERY_MS = 5 * 60_000;
 /** How often the proxy itself is checked; it counts as down after two failed checks in a row. */
@@ -26,9 +26,7 @@ const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex'
 const providerOf = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
 
 export function labelFor(file: AuthFile): string {
-  const privateLabel = privateAccountLabel(file, providerOf(file));
-  if (readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true') return privateLabel;
-  return readAccountNames()[privateLabel] || fileName(file) || readString(file, 'email', 'label') || privateLabel;
+  return accountDisplayName(file, providerOf(file), readAccountNames(), readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true');
 }
 
 export function alertText(alert: QuotaAlert, now: number): { title: string; body: string } {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { needsPlanCheck, planBlockFromFailure, withPlanBlocks } from '../src/services/planBlock';
+import { blockFromFailure, needsPlanCheck, planBlockFromFailure, withPlanBlocks } from '../src/services/planBlock';
 import { quotaAvailability } from '../src/services/quotaAvailability';
 
 const now = 1800000000000;
@@ -59,5 +59,27 @@ describe('saved accounts status badge', () => {
   it('names a plan block ahead of everything but disabled', () => {
     expect(authFileListStatus({ ...active, plan_block_message: 'No subscription' }, undefined)).toEqual({ label: 'availability.planBlockedLabel', tone: 'error' });
     expect(authFileListStatus({ status: 'disabled', plan_block_message: 'x' }, undefined).label).toBe('authFiles.status.disabled');
+  });
+});
+
+describe('terms to accept', () => {
+  const claudeTerms = JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: "We've updated our Consumer Terms and Privacy Policy. You'll need to accept them in claude.ai with the email in /status to continue." } });
+  it('recognises the Claude terms refusal as its own kind of block', () => {
+    expect(blockFromFailure({ failure_status: 400, failure_body: claudeTerms })?.kind).toBe('terms');
+    expect(blockFromFailure({ failure_status: 403, failure_body: '{"error":{"message":"Your subscription does not have access"}}' })?.kind).toBe('plan');
+    expect(blockFromFailure({ failure_status: 400, failure_body: '{"error":{"message":"max_tokens: must be at most 64000"}}' })).toBeNull();
+    expect(blockFromFailure({ failure_status: 500, failure_body: claudeTerms })).toBeNull();
+  });
+  it('checks accounts that worked before but whose latest requests all failed', () => {
+    expect(needsPlanCheck({ success: 40, failed: 3, recent_requests: [{ success: 5, failed: 0 }, { success: 0, failed: 3 }, { success: 0, failed: 0 }] })).toBe(true);
+    expect(needsPlanCheck({ success: 40, failed: 3, recent_requests: [{ success: 0, failed: 3 }, { success: 2, failed: 0 }] })).toBe(false);
+  });
+  it('marks the account so availability says terms, ahead of any quota left', async () => {
+    const [marked] = withPlanBlocks([{ auth_index: 'a', provider: 'claude', status: 'active' }], { a: { kind: 'terms', message: 'accept them' } });
+    expect(marked).toMatchObject({ plan_block_kind: 'terms', plan_block_message: 'accept them' });
+    const { quotaAvailability } = await import('../src/services/quotaAvailability');
+    const now = Date.now();
+    const quota = { status: 'success' as const, fetchedAt: now, rows: [{ label: '5h', scope: 'account' as const, remainingPercent: 80, resetAtMs: now + 3_600_000 }] };
+    expect(quotaAvailability(marked, quota, now)).toMatchObject({ kind: 'unavailable', reason: 'termsRequired' });
   });
 });

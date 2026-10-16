@@ -191,6 +191,21 @@ pub(crate) fn open_core_logs_directory(
     open_directory_in_file_manager(&logs_dir)
 }
 
+/// Opens Windows Settings at Notifications, for when Windows blocks the hub's alerts.
+#[tauri::command]
+pub(crate) fn open_notification_settings() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let mut command = Command::new(windows_explorer_executable());
+        command.arg("ms-settings:notifications");
+        command.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+        configure_background_command(&mut command);
+        return command.spawn().map(|_| ()).map_err(|error| format!("Failed to open notification settings: {error}"));
+    }
+    #[cfg(not(target_os = "windows"))]
+    Err("Notification settings can only be opened this way on Windows".to_string())
+}
+
 fn open_directory_in_file_manager(path: &Path) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let mut command = Command::new(windows_explorer_executable());

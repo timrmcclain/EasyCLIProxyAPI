@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from '../i18n';
 import { resetCountdown } from '../services/accountDashboard';
 import type { Availability } from '../services/quotaAvailability';
@@ -7,7 +8,7 @@ const stateMark = (kind: Availability['kind']) => kind === 'exhausted' || kind =
 /** `onAccounts`: shown on the Accounts page, so the text names the control beside it instead of sending you to Accounts. */
 export function QuotaAvailabilityNotice({ state, now, compact = false, onAccounts = false }: { state: Availability; now: number; compact?: boolean; onAccounts?: boolean }) {
   const { t } = useI18n();
-  const label = state.reason === 'modelNotFound' ? t('availability.modelPaused') : state.reason === 'planBlocked' ? t('availability.planBlockedLabel') : t(`availability.${state.kind}`);
+  const label = state.reason === 'modelNotFound' ? t('availability.modelPaused') : state.reason === 'planBlocked' ? t('availability.planBlockedLabel') : state.reason === 'termsRequired' ? t('availability.termsRequiredLabel') : t(`availability.${state.kind}`);
   const reasonKey = state.reason === 'modelNotFound' && onAccounts ? 'availability.modelNotFoundHere' as const : state.reason ? `availability.${state.reason}` as const : null;
   const reasonText = reasonKey ? t(reasonKey, { model: state.pausedModel ?? '', message: state.planMessage ?? '' }) : '';
   if (compact) {
@@ -32,6 +33,8 @@ export function QuotaAvailabilityNotice({ state, now, compact = false, onAccount
     {state.recoveryAt && !state.groups && <time dateTime={new Date(state.recoveryAt).toISOString()}>{new Date(state.recoveryAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time>}
     {state.uncertainty && <small>{t(`ux.${state.uncertainty}`)}</small>}
     {reasonText && <small>{reasonText}</small>}
+    {/* A fixed address, never a link taken from the provider's message. */}
+    {state.reason === 'termsRequired' && <button type="button" className="secondary-button compact-button quota-availability-action" onClick={() => void invoke('open_external_url', { url: 'https://claude.ai/' }).catch(() => undefined)}>{t('availability.openClaude')}</button>}
     {state.updating && <small>{t('accountDashboard.refreshing')}</small>}
     {state.groups?.map(group => <small key={group.id} className={`quota-group-state quota-availability-${group.kind}`}>
       {group.label}: {t(`availability.${group.kind}`)}

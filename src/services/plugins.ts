@@ -143,6 +143,19 @@ export interface PluginStoreInstallOptions {
 }
 
 const text = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
+
+const NAMED_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+/**
+ * Catalogue text sometimes arrives HTML-escaped ("Tim&#39;s"). Decode character references into plain text; the page
+ * still renders it as text, never as HTML.
+ */
+export function plainText(value: unknown): string {
+  return text(value).replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, code: string) => {
+    if (code[0] !== '#') return NAMED_ENTITIES[code.toLowerCase()] ?? match;
+    const point = code[1] === 'x' || code[1] === 'X' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+    return Number.isInteger(point) && point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : match;
+  });
+}
 const records = (value: unknown): Record<string, unknown>[] =>
   Array.isArray(value) ? value.filter(isRecord) : [];
 const strings = (value: unknown): string[] => Array.isArray(value) ? value.map(text).filter(Boolean) : [];
@@ -159,7 +172,7 @@ function configFields(value: unknown): PluginConfigField[] {
 function metadata(value: unknown): PluginMetadata | null {
   if (!isRecord(value)) return null;
   return {
-    name: text(value.name), version: text(value.version), author: text(value.author),
+    name: plainText(value.name), version: text(value.version), author: plainText(value.author),
     githubRepository: text(value.github_repository), logo: text(value.logo),
     configFields: configFields(value.config_fields),
   };
@@ -215,8 +228,8 @@ export function normalizePluginStore(value: unknown): PluginStoreResponse {
     plugins: records(source.plugins).filter((entry) => text(entry.id)).map((entry) => ({
       storeId: text(entry.store_id) || [text(entry.source_id), text(entry.id)].filter(Boolean).join('/'),
       sourceId: text(entry.source_id), sourceName: text(entry.source_name), sourceUrl: text(entry.source_url),
-      id: text(entry.id), name: text(entry.name), description: text(entry.description),
-      author: text(entry.author), version: text(entry.version), repository: text(entry.repository),
+      id: text(entry.id), name: plainText(entry.name), description: plainText(entry.description),
+      author: plainText(entry.author), version: text(entry.version), repository: text(entry.repository),
       installType: text(entry.install_type), authRequired: entry.auth_required === true,
       authConfigured: entry.auth_configured === true,
       platforms: records(entry.platforms).map((platform) => ({

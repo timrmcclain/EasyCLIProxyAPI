@@ -76,7 +76,7 @@ export const accountDashboardEn = {
   "accountDashboard.setPriority": "Set priority…",
   "accountDashboard.viewRequests": "Requests from this account",
   "accountDashboard.refreshQuota": "Refresh quota",
-  "accountDashboard.moreLimits": "{count} more limits",
+  "accountDashboard.moreLimits": "{count} more limit{s}",
   "accountDashboard.showDetails": "Show details",
   "accountDashboard.hideDetails": "Hide details"
 } as const;

@@ -1,5 +1,8 @@
 /* At-a-glance row under the provider runway. Same surface and border as the runway cards; colour only for status. */
 .home-glance { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr); gap: 16px; margin: 0 0 32px; }
+/* Compression off hides its tile; the other three share the row. Wide windows only, so the narrow layouts below still apply. */
+@media (min-width: 1401px) { .home-glance:not(:has(.glance-compression)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.account-dashboard .ad-accounts + .home-glance { margin-top: 24px; }
 .account-dashboard.quota-ledger .quota-provider-summary:has(+ .home-glance) { margin-bottom: 16px; }
 .glance-tile { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 18px 20px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-primary); }
 :root[data-theme='light'] .glance-tile { background: var(--bg-card); border-color: var(--border-color); }
@@ -103,6 +106,7 @@
 /* "7 failed" opens Activity filtered to those requests. */
 .glance-link { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 
+.glance-unconfirmed-reasons { display: grid; gap: 2px; }
 .glance-unconfirmed {
   display: flex;
   align-items: center;

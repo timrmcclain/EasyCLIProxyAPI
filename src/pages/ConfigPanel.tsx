@@ -252,6 +252,14 @@ export function ConfigPanelPage() {
   const [showUpstreamAdvanced, setShowUpstreamAdvanced] = useState(false);
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
   const [desktopAlerts, setDesktopAlerts] = useState(() => readDesktopAlertsPreference());
+  // Whether Windows lets the hub's notifications through; null until known (or outside the desktop app).
+  const [windowsAllowsAlerts, setWindowsAllowsAlerts] = useState<boolean | null>(null);
+  useEffect(() => {
+    let active = true;
+    void import('@tauri-apps/plugin-notification').then(({ isPermissionGranted }) => isPermissionGranted())
+      .then((allowed) => { if (active) setWindowsAllowsAlerts(allowed); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
   const [globalHotkey, setGlobalHotkey] = useState(() => readGlobalHotkeyPreference());
   const [globalHotkeyBusy, setGlobalHotkeyBusy] = useState(false);
   const globalHotkeyBusyRef = useRef(false);
@@ -2375,6 +2383,11 @@ export function ConfigPanelPage() {
                     </span>
                     <div>
                       <span className="config-field-label"><strong>{t('notify.setting')}</strong><SettingsHelp label={t('notify.setting')}>{t('notify.settingHint')}</SettingsHelp></span>
+                      {/* The switch only covers the hub; say so when Windows is the one stopping delivery. */}
+                      {desktopAlerts && windowsAllowsAlerts === false && <small className="config-setting-warning" role="status">
+                        {t('notify.blockedByWindows')}{' '}
+                        <button type="button" className="secondary-button compact-button" onClick={() => void invoke('open_notification_settings').catch(() => undefined)}>{t('notify.openWindowsSettings')}</button>
+                      </small>}
                     </div>
                   </div>
                   <label className="switch-control" title={t('notify.setting')}>

@@ -78,7 +78,7 @@ import {
   sortAuthFilesByPriority,
 } from '../services/authFiles';
 import { authFileHealth, authFileListStatus, normalizeAuthFileCooldowns } from '../services/authFileHealth';
-import { loadPlanBlocks, withPlanBlocks } from '../services/planBlock';
+import { loadPlanBlocks, withPlanBlocks, type PlanBlock } from '../services/planBlock';
 import { codexMetadataFor } from '../services/quotaMetadata';
 import { quotaResetInstant, useQuotaClock } from '../services/quotaTime';
 import {
@@ -118,7 +118,7 @@ const fileName = authFileName;
 const isRuntimeOnly = isRuntimeOnlyAuthFile;
 
 export function AuthFileManagementPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const now = useQuotaClock();
   const { askConfirmation, confirmationDialog } = useConfirmation();
   const [fileSnapshot, setFileSnapshot] = useState<{
@@ -170,7 +170,7 @@ export function AuthFileManagementPage() {
     .map((provider) => ({ provider, label: providerName({ provider }) }))
     .sort((a, b) => a.label.localeCompare(b.label)), [files]);
 
-  const planBlocksRef = useRef<Record<string, string>>({});
+  const planBlocksRef = useRef<Record<string, PlanBlock>>({});
   const loadFiles = useCallback(async (showLoading = true) => {
     const requestId = ++fileRequestRef.current;
     if (showLoading) setLoading(true);
@@ -614,7 +614,7 @@ export function AuthFileManagementPage() {
                   </header>
                   <div className="auth-list-cell auth-list-plan" data-label={t('authFiles.list.plan')}>
                     <span title={plan || undefined}>{plan || '—'}</span>
-                    {expiryMs !== undefined ? <small title={t('authFiles.list.expiry', { time: formatDate(new Date(expiryMs).toISOString()) })}>{expiryMs <= now ? t('authFiles.list.expired') : t('authFiles.list.daysRemaining', { count: Math.ceil((expiryMs - now) / 86_400_000) })}</small> : null}
+                    {expiryMs !== undefined ? <small title={`${t('authFiles.list.expiry', { time: formatDate(new Date(expiryMs).toISOString()) })}\n${t('authFiles.list.expiryHint')}`}>{expiryMs <= now ? t('authFiles.list.expired', { time: new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(expiryMs) }) : t('authFiles.list.daysRemaining', { count: Math.ceil((expiryMs - now) / 86_400_000) })}</small> : null}
                   </div>
                   <div className="auth-list-cell auth-list-status" data-label={t('authFiles.list.status')}>
                     <span className={`auth-status-badge ${badgeTone}`} title={statusLabel}><BadgeIcon size={14} aria-hidden="true" /><span>{statusLabel}</span></span>

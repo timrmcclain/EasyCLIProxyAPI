@@ -167,7 +167,7 @@ export function authFileHealth(file: Record<string, unknown>): AuthFileHealth {
 export function authFileListStatus(file: Record<string, unknown>, snapshot: AuthFileCooldownSnapshot | undefined): { label: MessageKey; tone: AuthFileHealth['tone'] } {
   const health = authFileHealth(file);
   if (health.disabled) return { label: health.label, tone: health.tone };
-  if (typeof file.plan_block_message === 'string' && file.plan_block_message) return { label: 'availability.planBlockedLabel', tone: 'error' };
+  if (typeof file.plan_block_message === 'string' && file.plan_block_message) return { label: file.plan_block_kind === 'terms' ? 'availability.termsRequiredLabel' : 'availability.planBlockedLabel', tone: 'error' };
   if ((snapshot?.records ?? []).some((record) => record.scope !== 'model')) return { label: 'authFiles.list.cooling', tone: 'warning' };
   return { label: health.label === 'authFiles.health.active' ? 'authFiles.list.available' : health.label, tone: health.tone };
 }

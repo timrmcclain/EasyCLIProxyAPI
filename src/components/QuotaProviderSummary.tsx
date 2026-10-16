@@ -1,11 +1,21 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { useI18n } from '../i18n';
-import { quotaAvailability, quotaPercent } from '../services/quotaAvailability';
+import { quotaAvailability, quotaPercent, type Availability } from '../services/quotaAvailability';
 import { providerForFile, quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { resetCountdown } from '../services/accountDashboard';
 import { orderedQuotaRows, primaryQuotaRow, quotaPercentLeft } from '../services/quotaLedger';
 import { forecastQuota, useQuotaHistory } from '../services/quotaForecast';
+
+const blockingKinds: Availability['kind'][] = ['exhausted', 'limited', 'resetDue', 'unavailable'];
+
+/** One label for the accounts that can't take requests: the shared cause when they all have one, else a plain count. */
+export function blockingLabel(blocking: Availability[], t: (key: 'availability.termsRequiredLabel' | 'availability.planBlockedLabel' | 'availability.exhausted' | 'availability.cantTakeRequests') => string): string {
+  if (blocking.every(state => state.reason === 'termsRequired')) return t('availability.termsRequiredLabel');
+  if (blocking.every(state => state.reason === 'planBlocked')) return t('availability.planBlockedLabel');
+  if (blocking.every(state => state.kind === 'exhausted')) return t('availability.exhausted');
+  return t('availability.cantTakeRequests');
+}
 
 export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale, labelFor, selected = false, onSelect, provider }: {
   accounts: AuthFile[]; quotas: Record<string, QuotaState>; name: string; icon: ReactNode;
@@ -33,6 +43,7 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
     return forecast.kind === 'runsOut' && (soonest === undefined || forecast.emptyAt < soonest) ? forecast.emptyAt : soonest;
   }, undefined);
   const creditOnly = states.length > 0 && states.every(state => state.kind === 'creditBacked');
+  const blocking = states.filter(state => blockingKinds.includes(state.kind));
   const resets = states.flatMap(state => state.kind === 'exhausted' && state.recoveryAt ? [state.recoveryAt] : []);
   const groupBased = accounts.every(file => providerForFile(file) === 'antigravity');
   const groups = states.flatMap((state, index) => (state.groups ?? []).map(group => ({ ...group, account: accounts[index] })));
@@ -53,7 +64,10 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
       return <span key={quotaKey(accounts[index])} className={`quota-account-state ${state.kind}${fill ? ` tone-${fill.tone}` : ''}`}
         style={fill ? { '--quota-fill': `${fill.percent}%` } as CSSProperties : undefined} title={label} aria-label={label} />;
     })}</div>
-    <div className="quota-state-counts">{!!runningLow && <span className="quota-count-runningLow">{runningLow} {t('availability.runningLow')}</span>}{(['exhausted', 'creditBacked', 'limited', 'unknown', 'resetDue', 'unavailable', 'disabled'] as const).filter(kind => count(kind)).map(kind => <span key={kind} className={`quota-count-${kind}`}>{count(kind)} {kind === 'unknown' && summaryReason ? t(`availability.${summaryReason}Short`) : kind === 'unavailable' && states.filter(state => state.kind === 'unavailable').every(state => state.reason === 'planBlocked') ? t('availability.planBlockedLabel') : t(`availability.${kind}`)}</span>)}</div>
+    <div className="quota-state-counts">{!!runningLow && <span className="quota-count-runningLow">{runningLow} {t('availability.runningLow')}</span>}
+      {/* Everything that stops an account counts once here; each ledger row gives its own cause. */}
+      {!!blocking.length && <span className="quota-count-blocked">{blocking.length} {blockingLabel(blocking, t)}</span>}
+      {(['creditBacked', 'unknown', 'disabled'] as const).filter(kind => count(kind)).map(kind => <span key={kind} className={`quota-count-${kind}`}>{count(kind)} {kind === 'unknown' && summaryReason ? t(`availability.${summaryReason}Short`) : t(`availability.${kind}`)}</span>)}</div>
     {runsOutAt !== undefined && <div className="quota-summary-forecast">{t('glance.forecast.runsOut', { time: resetCountdown(runsOutAt, now) })}</div>}
     {lowestReset !== undefined && !resets.length && <div className="quota-summary-reset">{t('glance.runway.lowest', { time: resetCountdown(lowestReset, now) })}</div>}
     {!!resets.length && !groupBased && <div className="quota-summary-reset">{accounts.every(file => providerForFile(file) === 'codex') ? t('credits.renews', { time: resetCountdown(Math.min(...resets), now) }) : `${t('availability.recovery')} · ${resetCountdown(Math.min(...resets), now)}`}</div>}

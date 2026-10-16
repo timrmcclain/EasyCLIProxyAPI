@@ -179,7 +179,7 @@ const path = require('node:path');
 
       for (const client of ['claude-code', 'claude-desktop', 'opencode', 'openclaw', 'hermes', 'deepseek-harness', 'zcode', 'workbuddy', 'antigravity-cli', 'kimi-code', 'grok-build']) {
         await open(mode + 'client=' + client);
-        assert.ok(await button('关闭配置修改').isEnabled());
+        assert.ok(await button('断开与中心的连接').isEnabled());
         await tab('配置管理').click();
         assert.ok(await button('清除接入').isEnabled());
         await button('清除接入').click();
@@ -196,17 +196,19 @@ const path = require('node:path');
         }]);
         assert.equal((await calls('clear_codex_config')).length, 0);
         await tab('基础配置').click();
-        assert.equal(await button('关闭配置修改').count(), 0);
+        assert.equal(await button('断开与中心的连接').count(), 0);
         assert.ok(await button('一键接入').isVisible());
       }
       await open(mode + 'client=claude-code&state=needs-update');
-      assert.ok(await button('关闭配置修改').isEnabled());
+      assert.ok(await button('断开与中心的连接').isEnabled());
       await open(mode + 'client=claude-code&no-core&defer-clear');
-      await button('关闭配置修改').click();
+      await button('断开与中心的连接').click();
+      // Disconnecting asks first.
+      await page.getByRole('alertdialog').getByRole('button', { name: '断开连接', exact: true }).click();
       await page.waitForFunction(() => !!window.fixtureFinishClear);
       assert.ok(await tab('配置管理').isDisabled());
       await page.evaluate(() => window.fixtureFinishClear());
-      await button('关闭配置修改').waitFor({ state: 'detached' });
+      await button('断开与中心的连接').waitFor({ state: 'detached' });
       await page.getByText('已清除 CPA 接入，请重启 Claude Code。', { exact: true }).waitFor();
       await open(mode + 'client=claude-code&fail-clear');
       await tab('配置管理').click();

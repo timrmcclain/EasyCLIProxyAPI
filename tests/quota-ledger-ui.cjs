@@ -85,8 +85,9 @@ const path = require('node:path');
     assert.ok(attentionRows[0].includes('5% left') && attentionRows[2].includes('7% left'), `worst first: ${JSON.stringify(attentionRows)}`);
     assert.ok(attentionRows.every(row => !row.includes('Unconfirmed')), 'unconfirmed accounts are not rows');
     const unchecked = attention.locator('.glance-unconfirmed');
-    assert.match(await unchecked.innerText(), /^1 account not checked yet\./);
-    await unchecked.getByRole('button', { name: 'Check now' }).waitFor();
+    // Grok doesn't report quota, so it says so, and offers no Check now that could never resolve it.
+    assert.match(await unchecked.innerText(), /^1 account on providers that don't report quota\./);
+    assert.equal(await unchecked.getByRole('button', { name: 'Check now' }).count(), 0);
     assert.match(attentionRows[0], /resets in 2d/);
     // "View" scrolls to that account's row in the list and focuses it.
     await attention.getByRole('button', { name: 'View: codex-account-07.json' }).click();
@@ -99,8 +100,8 @@ const path = require('node:path');
     assert.ok(await page.locator('.quota-provider-summary-cell.is-selected').count() === 1);
     await codexFilter.click();
     assert.equal(await codexFilter.getAttribute('aria-pressed'), 'false');
-    // Tiles: compression mock is off; activity reads the mock usage.
-    assert.equal(await page.locator('.glance-tile').count(), 4);
+    // Tiles: compression mock is off, so its tile is hidden; activity reads the mock usage.
+    assert.equal(await page.locator('.glance-tile').count(), 3);
     assert.doesNotMatch(await page.locator('.quota-provider-summary-cell').first().innerText(), /running low/);
     const claude = page.locator('.quota-account-group').first();
     assert.equal(await claude.locator('.ad-card').count(), 5);
@@ -151,7 +152,7 @@ const path = require('node:path');
       updateQuotaCache(cache => ({ ...cache, 'claude-account-01.json::ledger-0': { ...cache['claude-account-01.json::ledger-0'], rows: [...cache['claude-account-01.json::ledger-0'].rows, { label:'Extra usage', remainingPercent:80 }] } }));
     });
     const moreLimits = claude.locator('.ad-card').first().locator('.ad-account-details > summary');
-    await page.waitForFunction(() => document.querySelector('.quota-account-group .ad-card .ad-account-details > summary')?.title === '1 more limits');
+    await page.waitForFunction(() => document.querySelector('.quota-account-group .ad-card .ad-account-details > summary')?.title === '1 more limit');
     assert.equal(await moreLimits.locator('span[aria-hidden="true"]').innerText(), '+1', 'Extra limits collapse into a +N chevron');
     await moreLimits.click();
     await claude.locator('.ad-card').first().getByText('Extra usage', {exact:true}).waitFor();

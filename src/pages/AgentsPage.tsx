@@ -1199,6 +1199,14 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
   };
 
   const closeConfigurationChanges = async () => {
+    // This removes the app's hub settings, so say what it does and ask first.
+    const confirmed = await askConfirmation({
+      title: t('agents.modify.disconnectTitle', { name: activeDefinition.name }),
+      message: t(selected === 'codex' ? 'agents.modify.closeHint' : 'agents.clearIntegration.description'),
+      confirmText: t('agents.modify.disconnectConfirm'),
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     setBusyAction('close-config');
     setConfigurationError('');
     setConfigurationNotice('');

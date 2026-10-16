@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { attentionItems, busiestClient, hourlyActivity, parseHourKey } from '../src/services/homeGlance';
+import { attentionItems, busiestClient, canRecheck, hourlyActivity, parseHourKey } from '../src/services/homeGlance';
 import { quotaKey, type QuotaState } from '../src/services/quotaService';
 
 const now = Date.parse('2026-10-09T12:30:00Z');
@@ -68,5 +68,24 @@ describe('busiest client', () => {
     expect(busiestClient([request('claude-cli/2'), request('claude-cli/2'), request('codex_cli'), request('claude-desktop')])).toEqual({ client: 'Claude Code CLI', count: 2 });
     expect(busiestClient([request('curl')])).toBeNull();
     expect(busiestClient([])).toBeNull();
+  });
+});
+
+describe('why an account is unconfirmed', () => {
+  const reasonOf = (f: ReturnType<typeof file>, q?: QuotaState) =>
+    attentionItems([f], q ? { [quotaKey(f)]: q } : {}, now, false)[0]?.unknownReason;
+  it('tells never-checked and failed checks apart; both can be checked again', () => {
+    expect(reasonOf(file('new'))).toBe('notChecked');
+    expect(reasonOf(file('err'), { status: 'error', rows: [], error: 'boom' })).toBe('checkFailed');
+    expect(canRecheck('notChecked') && canRecheck('checkFailed')).toBe(true);
+  });
+  it('treats an unsupported provider as not reporting quota, which another check cannot change', () => {
+    expect(reasonOf(file('meta', { provider: 'meta' }))).toBe('notReported');
+    expect(canRecheck('notReported')).toBe(false);
+    expect(canRecheck('partial')).toBe(false);
+  });
+  it('treats a paid xAI key with no limits as not reporting quota', () => {
+    const paid = file('grok', { provider: 'xai' });
+    expect(reasonOf(paid, { status: 'success', fetchedAt: now, rows: [{ label: 'Paid', scope: 'paid', remainingPercent: null }] })).toBe('notReported');
   });
 });

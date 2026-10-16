@@ -18,14 +18,14 @@ import { quotaAvailability, quotaPercent } from '../services/quotaAvailability';
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { QuotaProviderSummary } from './QuotaProviderSummary';
 import { HomeGlance } from './HomeGlance';
-import { attentionItems, type AttentionSeverity } from '../services/homeGlance';
+import { attentionItems, canRecheck, type AttentionSeverity } from '../services/homeGlance';
 import type { HomeUsageSummary } from '../services/homeOverview';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
 import { readAccountNames, saveAccountNames } from '../services/accountNames';
-import { privateAccountLabel } from '../services/accountPrivacy';
+import { accountDisplayName, privateAccountLabel } from '../services/accountPrivacy';
 import { ProviderLogo, SignInAgainButton, needsSignIn, openSignIn } from './AuthFileProviderIcon';
 import { requestAccountRequests } from '../usageNavigation';
-import { loadPlanBlocks, withPlanBlocks } from '../services/planBlock';
+import { loadPlanBlocks, withPlanBlocks, type PlanBlock } from '../services/planBlock';
 import { accountRequests, loadDashboardActivity, requestClient, successfulRequest, privateText, type DashboardActivity, type DashboardRequest } from '../services/dashboardActivity';
 import './AccountDashboard.css';
 
@@ -48,6 +48,8 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const [names, setNames] = useState(readAccountNames);
   const [alternatives, setAlternatives] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Until the first list arrives, an empty list means "not loaded yet", never "no accounts".
+  const [listLoaded, setListLoaded] = useState(false);
   const [error, setError] = useState('');
   const [updatedAt, setUpdatedAt] = useState<number>();
   const [sort, setSort] = useState(() => readDashboardPreference('quotaSort', ['priority', 'reset', 'recovery'] as const, 'priority'));
@@ -65,7 +67,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const mounted = useRef(true);
   const readyRef = useRef(ready);
   readyRef.current = ready;
-  const planBlocks = useRef<Record<string, string>>({});
+  const planBlocks = useRef<Record<string, PlanBlock>>({});
   const quotas = useQuotaCache();
   const now = useQuotaClock();
 
@@ -79,6 +81,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       const next = dedupeAuthFiles(responseList(payload, 'files'));
       if (!mounted.current || !readyRef.current) return;
       setFiles(withPlanBlocks(next, planBlocks.current));
+      setListLoaded(true);
       setUpdatedAt(Date.now());
       await Promise.all([
         refreshDashboardQuotas(next.filter((file) => providerForFile(file)), force, () => mounted.current && readyRef.current),
@@ -132,7 +135,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const [checkingUnconfirmed, setCheckingUnconfirmed] = useState(false);
   const checkUnconfirmed = async () => {
     if (!readyRef.current || busy.current) return;
-    const targets = attentionItems(files, quotas, Date.now(), false).filter(item => item.severity === 'unconfirmed').map(item => item.file).filter(file => providerForFile(file));
+    const targets = attentionItems(files, quotas, Date.now(), false).filter(item => item.severity === 'unconfirmed' && canRecheck(item.unknownReason)).map(item => item.file);
     if (!targets.length) return;
     busy.current = true;
     setCheckingUnconfirmed(true);
@@ -159,7 +162,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const stale = !ready || Boolean(error);
   const latest = activity?.latest;
   const latestFile = latest ? files.find((file) => accountRequests(file, [latest]).length) : undefined;
-  const labelFor = (file: AuthFile) => hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : names[privateAccountLabel(file, dashboardProvider(file))] || fileName(file) || accountSummary(file).label;
+  const labelFor = (file: AuthFile) => accountDisplayName(file, dashboardProvider(file), names, hideEmails);
   const kindOf = (file: AuthFile) => quotaAvailability(file, quotas[quotaKey(file)], now, stale).kind;
   const kinds = files.map(kindOf);
   const attention = attentionItems(files, quotas, now, stale);
@@ -252,7 +255,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     </div>
     {!ready ? <p className="ad-notice">{t('accountDashboard.start')}</p> : null}
     {error ? <p role="alert" className="ad-notice ad-error">{error} {t('accountDashboard.staleWarning')}</p> : null}
-    {ready && !loading && !error && !files.length ? <p className="ad-notice">{t('accountDashboard.empty')}</p> : null}
+    {ready && listLoaded && !error && !files.length ? <p className="ad-notice">{t('accountDashboard.empty')}</p> : null}
     <div className="quota-provider-summary">
       {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
         const accounts = files.filter((file) => dashboardProvider(file) === provider);
@@ -260,9 +263,6 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
           selected={filter === provider} onSelect={() => selectProvider(provider)} provider={provider} />;
       })}
     </div>
-    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} proxyReady={ready} nameFor={(provider) => providerNames[provider] ?? provider}
-      onCheckUnconfirmed={() => void checkUnconfirmed()} checkingUnconfirmed={checkingUnconfirmed}
-      onView={viewAccount} onMore={() => listHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
     {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
     {files.length > 0 && <div ref={listHeading} className="ad-list-heading">
       <h3 role="status">{!collapseHealthy ? t('glance.list.all') : cardFiles.length ? t('glance.list.problems') : t('glance.list.healthy', { count: healthyCount })}{collapseHealthy && urgentInView > 0 && <span>{urgentInView}</span>}{collapseHealthy && uncheckedInView > 0 && <small className="ad-list-unchecked">{t('glance.list.unchecked', { count: uncheckedInView })}</small>}</h3>
@@ -294,6 +294,10 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       </section> : null; })}
       {!visible.length && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
     </div>
+    {/* The ledger comes first so accounts are visible without scrolling; trends and the attention summary follow it. */}
+    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} proxyReady={ready} accountsState={listLoaded ? 'loaded' : error ? 'failed' : 'loading'} nameFor={(provider) => providerNames[provider] ?? provider}
+      onCheckUnconfirmed={() => void checkUnconfirmed()} checkingUnconfirmed={checkingUnconfirmed}
+      onView={viewAccount} onMore={() => listHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
     <RecoveryTimeline files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} />
     <OverviewAlerts key={String(hideEmails)} files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} items={activity?.items} activityStale={activityError || stale} />
     <p className="ad-footnote">{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t(ready ? 'accountDashboard.loading' : 'accountDashboard.waitingForProxy')} · {t('accountDashboard.cadence')}</p>

@@ -11,3 +11,13 @@ export function privateAccountLabel(file: AuthFile, provider: string): string {
   }
   return `${provider}-account-${hash.toString(36).padStart(13, '0')}.json`;
 }
+
+/**
+ * The one name an account goes by everywhere: your name for it, else its email, else its file name. With
+ * Hide emails on, the private pseudonym instead, so nothing identifying shows.
+ */
+export function accountDisplayName(file: AuthFile, provider: string, names: Record<string, string>, hideEmails: boolean): string {
+  const privateLabel = privateAccountLabel(file, provider);
+  if (hideEmails) return privateLabel;
+  return names[privateLabel] || readString(file, 'email', 'account', 'label') || readString(file, 'name') || privateLabel;
+}

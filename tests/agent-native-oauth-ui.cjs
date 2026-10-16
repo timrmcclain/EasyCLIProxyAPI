@@ -122,7 +122,14 @@ const base = 'http://127.0.0.1:1421';
     await update().click();
     await waitMode(false);
 
-    const close = () => page.getByRole('button', { name: '关闭配置修改', exact: true });
+    const close = () => page.getByRole('button', { name: '断开与中心的连接', exact: true });
+    // Disconnecting asks first; nothing is removed until it's confirmed.
+    const confirmDisconnect = async () => {
+      const dialog = page.getByRole('alertdialog');
+      await dialog.waitFor();
+      await dialog.getByRole('button', { name: '断开连接', exact: true }).click();
+      await dialog.waitFor({ state: 'detached' });
+    };
     const apply = () => page.getByRole('button', { name: '应用配置修改', exact: true });
     for (const embedded of [false, true]) {
       await open(embedded ? 'embedded' : '');
@@ -135,6 +142,7 @@ const base = 'http://127.0.0.1:1421';
       await page.getByRole('option', { name: 'gpt-two' }).click();
       assert.equal(await close().isEnabled(), true, 'A model draft does not hide or disable Close');
       await close().click();
+      await confirmDisconnect();
       await apply().waitFor();
       assert.equal(await close().count(), 0, 'Close is hidden after disconnect');
       assert.equal((await page.evaluate(() => window.fixtureCalls)).filter(call => call.cmd === 'close_codex_config_modification').length, 1);
@@ -168,6 +176,7 @@ const base = 'http://127.0.0.1:1421';
       await page.evaluate(() => window.fixtureRemount());
       await close().waitFor();
       await close().click();
+      await confirmDisconnect();
       await apply().waitFor();
       assert.equal(await close().count(), 0, 'Closing hides the action again');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -176,12 +185,15 @@ const base = 'http://127.0.0.1:1421';
     await close().waitFor();
     assert.equal(await close().isDisabled(), false, 'Closing is available while CPA is offline');
     await close().click();
+    await confirmDisconnect();
     await apply().waitFor();
     await open('fail-close');
     await close().click();
+    await confirmDisconnect();
     await configurationFailure(/模拟关闭失败/).waitFor();
     await close().waitFor();
     await close().click();
+    await confirmDisconnect();
     await apply().waitFor();
     for (const width of [1280, 360]) {
       await page.setViewportSize({ width, height: 900 });

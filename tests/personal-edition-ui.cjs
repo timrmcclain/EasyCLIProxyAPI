@@ -20,7 +20,7 @@ const os = require('node:os');
     await page.getByRole('heading', { name: 'Accounts & quota' }).waitFor();
     assert.equal(await nav.getByRole('button').count(), 7, 'Seven everyday pages (with Secret Guard) are visible; the rest sit under Advanced tools');
     assert.equal(await nav.locator('.personal-advanced').evaluate(node => node.open), false, 'Advanced tools start collapsed');
-    await page.locator('.glance-latest').filter({ hasText: 'codex-personal.json' }).waitFor();
+    await page.locator('.glance-latest').filter({ hasText: 'codex.mock@example.com' }).waitFor();
     // The mock serves the provider fixtures: Claude, Antigravity, Codex, Grok, Kimi, Devin and Gemini accounts.
     assert.equal(await page.locator('.quota-provider-summary-cell').count(), 7);
     assert.equal(await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Gemini' }).locator('.quota-summary-value').innerText(), '—', 'Unknown availability must not look like zero allowance');
