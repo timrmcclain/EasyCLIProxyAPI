@@ -980,6 +980,15 @@ export function createBrowserMockRuntime(
       }
       case 'get_gui_settings': return clone(state.guiSettings);
       case 'get_core_config_settings': return clone(state.coreConfig);
+      case 'read_core_log': return {
+        path: 'C:\mock\logs\core-start-output.log', truncated: true, exists: true,
+        lines: [
+          '[2026-10-16 07:52:52] [a1b2c3d4] [info ] [server.go:88] API server started on 127.0.0.1:8317',
+          '[2026-10-16 07:53:10] [a1b2c3d5] [info ] [gin_logger.go:120] 200 |      1.204s | POST /v1/messages | claude-opus-5-5 | someone@example.com',
+          '[2026-10-16 07:53:42] [a1b2c3d6] [warn ] [conductor.go:401] quota cooldown for codex-account-07.json until 09:10',
+          '[2026-10-16 07:54:03] [a1b2c3d7] [error] [gin_logger.go:120] 401 |      0.311s | POST /v1/messages | sign-in expired',
+        ],
+      };
       case 'list_core_config_history': {
         // Three saved versions, newest (the current file) first; restoring one makes it current.
         const history = (state as { configHistory?: Record<string, unknown>[] });

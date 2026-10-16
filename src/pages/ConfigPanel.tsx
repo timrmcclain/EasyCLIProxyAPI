@@ -46,6 +46,7 @@ import { handleHorizontalTabKey } from '../components/tabKeyboardNavigation';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { ConfigHistorySection } from '../components/ConfigHistorySection';
+import { ProxyLogSection } from '../components/ProxyLogSection';
 import { TemplateConfigSection } from '../components/TemplateConfigSection';
 import { SettingsHelp } from '../components/SettingsHelp';
 import { QuotaRoutingSetting } from '../components/QuotaRoutingSetting';
@@ -2256,6 +2257,7 @@ export function ConfigPanelPage() {
           </div>
         </section>
 <ConfigHistorySection hidden={searching || activeSubpage !== 'diagnostics'} />
+<ProxyLogSection hidden={searching || activeSubpage !== 'diagnostics'} />
 <section id="config-native-software" tabIndex={-1} hidden={searching || activeSubpage !== 'software'} className="panel config-software-panel">
             <div className="config-panel-heading">
               <div className="config-heading-title">
