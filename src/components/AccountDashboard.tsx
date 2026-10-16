@@ -244,7 +244,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
           selected={filter === provider} onSelect={() => selectProvider(provider)} provider={provider} />;
       })}
     </div>
-    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} nameFor={(provider) => providerNames[provider] ?? provider}
+    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} proxyReady={ready} nameFor={(provider) => providerNames[provider] ?? provider}
       onView={viewAccount} onMore={() => listHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
     {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
     {files.length > 0 && <div ref={listHeading} className="ad-list-heading">
@@ -279,7 +279,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     </div>
     <RecoveryTimeline files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} />
     <OverviewAlerts key={String(hideEmails)} files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} items={activity?.items} activityStale={activityError || stale} />
-    <p className="ad-footnote">{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.loading')} · {t('accountDashboard.cadence')}</p>
+    <p className="ad-footnote">{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t(ready ? 'accountDashboard.loading' : 'accountDashboard.waitingForProxy')} · {t('accountDashboard.cadence')}</p>
   </section>;
 }
 
@@ -429,7 +429,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
         {faceRows.map(renderQuota)}
       </div>
       <div className="ad-row-actions">
-        {signIn && <SignInAgainButton account={displayLabel} />}
+        {signIn && <SignInAgainButton account={displayLabel} provider={String(file.provider ?? file.type ?? '')} />}
         {refreshing && <RefreshCw size={14} aria-hidden="true" className="quota-refreshing ad-row-busy" />}
         <AccountMenu label={t('accountDashboard.menu', { account: displayLabel })} items={menuItems} />
       </div>

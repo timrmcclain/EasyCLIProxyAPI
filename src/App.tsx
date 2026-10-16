@@ -30,7 +30,7 @@ import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRunt
 import { useConfirmation } from './components/ConfirmationDialog';
 import { startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
 import { startSecretGuardWatcher } from './services/secretGuardWatcher';
-import { readGlobalHotkeyPreference } from './services/dashboardPreferences';
+import { readGlobalHotkeyPreference, saveGlobalHotkeyPreference } from './services/dashboardPreferences';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
 import { ApiAccessPage } from './pages/ApiAccessPage';
@@ -267,8 +267,12 @@ function AppContent() {
   useEffect(() => startProxyWatcher(), []);
   useEffect(() => startSecretGuardWatcher(), []);
   useEffect(() => {
-    // Re-claim the shortcut each launch; if another app now owns it, Settings shows the error when switched on again.
-    if (readGlobalHotkeyPreference()) invoke('set_global_hotkey', { enabled: true }).catch(() => undefined);
+    // Re-claim the shortcut each launch. If another app now owns it, say so and switch the setting off,
+    // rather than leaving Settings showing a shortcut that does nothing.
+    if (readGlobalHotkeyPreference()) invoke('set_global_hotkey', { enabled: true }).catch((error) => {
+      saveGlobalHotkeyPreference(false);
+      paletteFeedback.showNotice({ key: 'hotkey.failed', variables: { error: String(error) } }, 'error');
+    });
   }, []);
   const activePage = pages.find((page) => page.id === active) ?? pages[0];
   const ActivePage = activePage.component;
@@ -282,11 +286,14 @@ function AppContent() {
       ? `${t('kernel.versions.coreCardTitle')}: ${t('kernel.update.available')} ${coreLatest?.version ?? ''}`.trim()
       : '',
   ].filter(Boolean).join(' · ');
+  // Until the proxy has reported in (or while it's starting) the last page can't be judged yet; falling back
+  // to Overview then would throw away the page you left the hub on every time it launches.
+  const coreSettling = status === null || (status.starting && !status.ready);
   useEffect(() => {
-    if (!canOpenAppPage(active, coreReady)) {
+    if (!coreSettling && !canOpenAppPage(active, coreReady)) {
       setActive('home');
     }
-  }, [active, coreReady]);
+  }, [active, coreReady, coreSettling]);
 
   useEffect(() => {
     try { localStorage.setItem(LAST_PAGE_KEY, active); } catch { /* Remembering the page is optional. */ }
@@ -317,7 +324,7 @@ function AppContent() {
         setPaletteOpen((open) => !open);
         return;
       }
-      if (mod && /^[1-6]$/.test(event.key)) {
+      if (mod && /^[1-7]$/.test(event.key)) {
         event.preventDefault();
         const target = primaryNav[Number(event.key) - 1];
         if (target && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
@@ -716,7 +723,7 @@ function AppContent() {
             {isAlwaysAvailablePage(activePage.id) || coreReady ? (
               <ActivePage />
             ) : (
-              <CoreLockedPage />
+              <CoreLockedPage waiting={coreSettling} />
             )}
           </main>
         </div>
@@ -805,8 +812,9 @@ function AppContent() {
   );
 }
 
-function CoreLockedPage() {
+function CoreLockedPage({ waiting = false }: { waiting?: boolean }) {
   const { t } = useI18n();
+  if (waiting) return <section className="page core-locked-page"><div className="empty-state core-locked-panel" role="status"><ServerCog size={26} aria-hidden="true" /><strong>{t('app.coreWaiting')}</strong></div></section>;
   return (
     <section className="page core-locked-page">
       <div className="empty-state core-locked-panel">

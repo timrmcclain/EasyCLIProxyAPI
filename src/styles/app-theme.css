@@ -524,3 +524,11 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 /* A fade on the sidebar's bottom edge says more pages are below. */
 .nav-section.nav-more-below { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); }
 @media (forced-colors: active) { .nav-section.nav-more-below { -webkit-mask-image: none; mask-image: none; border-bottom: 1px dashed CanvasText; } }
+
+/* Logos drawn in black (or currentColor, which is black inside an <img>) vanish on dark backgrounds.
+   Give them the same light tile Grok and Kimi already get, wherever they appear. */
+:root[data-theme='dark'] img[data-dark-logo] {
+  background: var(--p-neutral-75);
+  border-radius: 4px;
+  padding: 2px;
+}

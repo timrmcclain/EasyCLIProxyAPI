@@ -5,7 +5,7 @@ import { isPermissionGranted } from '@tauri-apps/plugin-notification';
 import { AlertTriangle, ArrowRight, Check, CircleCheck, CircleX, ClipboardCopy, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useCoreRuntime } from '../coreRuntime';
-import { needsSignIn } from '../components/AuthFileProviderIcon';
+import { cantTakeRequests, needsSignIn } from '../components/AuthFileProviderIcon';
 import { accountSummary } from '../services/accountDashboard';
 import { dedupeAuthFiles } from '../services/authFiles';
 import { compressionService } from '../services/compression';
@@ -69,6 +69,7 @@ export function HealthCheckPage() {
         keyCount: settings ? settings.apiKeys.length : null,
         managementSecretConfigured: settings ? settings.managementSecretConfigured : null,
         signInNeeded: files.filter(needsSignIn).map(file => readString(file, 'label', 'email', 'name') || accountSummary(file).label),
+        unavailable: files.filter(cantTakeRequests).map(file => readString(file, 'label', 'email', 'name') || accountSummary(file).label),
         duplicateAccounts: findDuplicateAccounts(files.map(file => ({ provider: readString(file, 'provider', 'type'), email: readString(file, 'email') }))),
         disabledAccounts: files.filter(file => accountSummary(file).health.disabled).length,
         totalAccounts: files.length,

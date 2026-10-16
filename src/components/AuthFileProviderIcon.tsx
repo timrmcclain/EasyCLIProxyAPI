@@ -1,6 +1,7 @@
 import { LogIn } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { authFileHealth } from '../services/authFileHealth';
+import { requestSignIn } from '../oauthNavigation';
 import type { MessageKey } from '../i18n/resources';
 import antigravityIcon from '../assets/icons/antigravity.svg';
 import claudeIcon from '../assets/icons/claude.svg';
@@ -37,6 +38,9 @@ export const normalizeProviderIconKey = (provider: string | null | undefined) =>
   return providerAliases[value] ?? value;
 };
 
+// Black (or currentColor) logos that need a light tile in dark mode; see app-theme.css.
+export const darkLogoSources = new Set([devinIcon, grokIcon]);
+
 export const providerIconSrc = (provider: string | null | undefined): string | undefined =>
   providerIconSources[normalizeProviderIconKey(provider)];
 
@@ -44,7 +48,7 @@ export const providerIconSrc = (provider: string | null | undefined): string | u
 export function ProviderLogo({ provider, className = '' }: { provider: string | null | undefined; className?: string }) {
   const key = normalizeProviderIconKey(provider);
   const src = providerIconSources[key];
-  if (src) return <img className={`quota-provider-icon quota-icon-${key} ${className}`.trim()} src={src} alt="" data-provider={key} />;
+  if (src) return <img className={`quota-provider-icon quota-icon-${key} ${className}`.trim()} src={src} alt="" data-provider={key} data-dark-logo={darkLogoSources.has(src) ? '' : undefined} />;
   return <span aria-hidden="true" className={`ledger-provider-icon ${className}`.trim()}>{key === 'all' ? '⌘' : (key.slice(0, 1) || '?').toUpperCase()}</span>;
 }
 
@@ -60,11 +64,20 @@ export function needsSignIn(file: Record<string, unknown>) {
   return !health.disabled && signInLabels.has(health.label);
 }
 
-export const openSignIn = () => { window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'oauth' })); };
+const quotaLabels = new Set<MessageKey>(['authFiles.health.reason.quota', 'authFiles.health.reason.credentialQuota']);
 
-export function SignInAgainButton({ className = 'secondary-button compact-button', account }: { className?: string; account?: string }) {
+/** Refused for a reason other than quota or sign-in (rejected, plan doesn't cover it, paused): the same accounts Overview lists as "can't take requests". */
+export function cantTakeRequests(file: Record<string, unknown>) {
+  const health = authFileHealth(file);
+  if (health.disabled || signInLabels.has(health.label)) return false;
+  return Boolean(file.plan_block_message) || (health.tone === 'error' && !quotaLabels.has(health.label));
+}
+
+export const openSignIn = (provider?: string) => requestSignIn(provider);
+
+export function SignInAgainButton({ className = 'secondary-button compact-button', account, provider }: { className?: string; account?: string; provider?: string }) {
   const { t } = useI18n();
-  return <button type="button" className={`auth-sign-in-again ${className}`} onClick={openSignIn}
+  return <button type="button" className={`auth-sign-in-again ${className}`} onClick={() => openSignIn(provider)}
     title={t('authFiles.signInAgainHint')} aria-label={account ? `${t('authFiles.signInAgain')} · ${account}` : undefined}>
     <LogIn size={14} aria-hidden="true" />{t('authFiles.signInAgain')}
   </button>;

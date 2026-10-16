@@ -29,13 +29,13 @@ const path = require('node:path');
     const banner = page.locator('.app-drift-banner');
     await banner.waitFor();
     assert.match(await banner.innerText(), /Claude Code no longer matches the hub/);
-    // Health check lists the drifted app first, as a failure, and Fix opens Connected apps.
+    // Health check lists the drifted app among the failures (sorted ahead of warnings and passes), and Fix opens Connected apps.
     await page.locator('.personal-advanced summary').click();
     await page.getByRole('button', { name: 'Health check', exact: true }).click();
-    const firstCheck = page.locator('.health-item').first();
+    const firstCheck = page.locator('.health-item').filter({ hasText: 'Claude Code no longer matches the hub' });
     await firstCheck.waitFor();
     assert.equal(await firstCheck.getAttribute('class'), 'health-item level-fail');
-    assert.match(await firstCheck.innerText(), /Claude Code no longer matches the hub/);
+    assert.equal(await page.locator('.health-item').first().getAttribute('class'), 'health-item level-fail', 'failures come first');
     assert.ok(await page.locator('.health-item.level-ok').filter({ hasText: 'The proxy is running.' }).count());
     // Copy diagnostic report: plain text with the hub version, the checks and accounts by provider, and no emails.
     await page.evaluate(() => {

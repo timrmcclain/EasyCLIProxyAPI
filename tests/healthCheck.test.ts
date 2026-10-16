@@ -48,6 +48,12 @@ describe('health check', () => {
     expect(checks.find(check => check.id === 'apps')).toMatchObject({ level: 'fail', variables: { apps: 'Claude Code' }, target: 'agents' });
   });
 
+  it('reports accounts that can\'t take requests even when every sign-in is fine', () => {
+    const checks = healthChecks({ ...healthy, unavailable: ['claude-team'] });
+    expect(checks.find(check => check.id === 'unavailable')).toMatchObject({ level: 'fail', key: 'health.accounts.unavailableOne', variables: { accounts: 'claude-team' }, target: 'oauth' });
+    expect(healthChecks(healthy).some(check => check.id === 'unavailable')).toBe(false);
+  });
+
   it('covers no accounts, no keys, disabled accounts, a stray compression service and notifications', () => {
     expect(levels({ totalAccounts: 0 }).accounts).toBe('fail');
     expect(levels({ keyCount: 0 }).keys).toBe('fail');

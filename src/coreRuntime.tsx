@@ -96,6 +96,11 @@ export function CoreRuntimeProvider({ children }: { children: ReactNode }) {
   return <CoreRuntimeContext.Provider value={value}>{children}</CoreRuntimeContext.Provider>;
 }
 
+/** For components that can also be shown outside the app shell (e.g. embedded, or in tests): null there. */
+export function useOptionalCoreRuntime() {
+  return useContext(CoreRuntimeContext);
+}
+
 export function useCoreRuntime() {
   const context = useContext(CoreRuntimeContext);
   if (!context) {

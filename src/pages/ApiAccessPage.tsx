@@ -1602,7 +1602,7 @@ export function ApiAccessPage() {
               }}
               disabled={busy}
             >
-              <img src={definition.icon} alt="" className="provider-logo" />
+              <img src={definition.icon} alt="" className="provider-logo" data-dark-logo={definition.icon === openaiIcon || definition.icon === grokIcon ? '' : undefined} />
               <span title={providerLabel(definition)}>{providerLabel(definition)}</span>
               <strong>{countForDefinition(definition)}</strong>
             </button>

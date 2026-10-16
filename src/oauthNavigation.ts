@@ -16,6 +16,21 @@ export function requestOAuthSubpage(subpage: OAuthSubpage) {
   window.dispatchEvent(new CustomEvent(OAUTH_SUBPAGE_EVENT, { detail: subpage }));
 }
 
+// The provider "Sign in again" was clicked for, so the sign-in tab can bring that provider's button into view.
+let pendingProvider: string | null = null;
+
+/** Opens the sign-in tab with this provider's sign-in ready to start. */
+export function requestSignIn(provider?: string) {
+  pendingProvider = provider?.toLowerCase() || null;
+  requestOAuthSubpage('login');
+}
+
+export function takePendingSignInProvider(): string | null {
+  const provider = pendingProvider;
+  pendingProvider = null;
+  return provider;
+}
+
 export function takePendingOAuthSubpage(): OAuthSubpage | null {
   const subpage = pendingSubpage;
   pendingSubpage = null;

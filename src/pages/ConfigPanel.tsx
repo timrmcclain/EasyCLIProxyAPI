@@ -162,6 +162,21 @@ const ROUTING_OPTIONS = [
   { value: 'fill-first', labelKey: 'config.routing.fillFirst' },
 ] as const;
 
+const PENDING_ROTATION_KEY = 'personal.pendingKeyRotation';
+
+async function keyFingerprint(key: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function readPendingRotation(): string | null {
+  try { return localStorage.getItem(PENDING_ROTATION_KEY); } catch { return null; }
+}
+
+function savePendingRotation(fingerprint: string | null) {
+  try { if (fingerprint) localStorage.setItem(PENDING_ROTATION_KEY, fingerprint); else localStorage.removeItem(PENDING_ROTATION_KEY); } catch { /* Only the reminder is lost. */ }
+}
+
 export function ConfigPanelPage() {
   const { t, locale } = useI18n();
   const { askConfirmation, confirmationDialog } = useConfirmation();
@@ -205,6 +220,21 @@ export function ConfigPanelPage() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const keyFeedback = useAppNotice();
   const [rotation, setRotation] = useState<{ previousKey: string; outcomes: ReapplyOutcome[] } | null>(null);
+  // The "Remove old key" step must survive leaving Settings, or the old key is forgotten and stays forever.
+  // Only a one-way fingerprint is remembered, never the key; it's matched against the keys in the config.
+  useEffect(() => {
+    if (rotation || !settings) return;
+    const stored = readPendingRotation();
+    if (!stored) return;
+    let cancelled = false;
+    void (async () => {
+      for (const entry of settings.apiKeys) {
+        if (await keyFingerprint(entry.apiKey) === stored) { if (!cancelled) setRotation({ previousKey: entry.apiKey, outcomes: [] }); return; }
+      }
+      if (!cancelled) savePendingRotation(null); // The old key is already gone.
+    })();
+    return () => { cancelled = true; };
+  }, [settings, rotation]);
   const managementFeedback = useAppNotice();
   const loggingFeedback = useAppNotice();
   const networkFeedback = useAppNotice();
@@ -684,6 +714,7 @@ export function ConfigPanelPage() {
         manual.length ? t('rotate.manual', { apps: manual.join(', ') }) : ''].filter(Boolean).join(' ');
       keyFeedback.showNotice(message, manual.length ? 'error' : 'success');
       setRotation(result.previousKey ? { previousKey: result.previousKey, outcomes: result.outcomes } : null);
+      savePendingRotation(result.previousKey ? await keyFingerprint(result.previousKey) : null);
     } catch (error) {
       keyFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
       void loadSettings('preserve');
@@ -698,7 +729,10 @@ export function ConfigPanelPage() {
       title: t('rotate.removeTitle'), message: t('rotate.removeMessage'), confirmText: t('common.delete'), variant: 'danger',
     });
     if (!confirmed) return;
-    if (await runMutation('delete-key', 'delete_core_api_key', { apiKey: rotation.previousKey }, t('config.notice.keyDeleted'))) setRotation(null);
+    if (await runMutation('delete-key', 'delete_core_api_key', { apiKey: rotation.previousKey }, t('config.notice.keyDeleted'))) {
+      setRotation(null);
+      savePendingRotation(null);
+    }
   };
 
   const requestDeleteKey = async (index: number) => {

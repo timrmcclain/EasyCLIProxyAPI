@@ -4,7 +4,8 @@ import { quotaKey, type AuthFile, type QuotaState } from './quotaService';
 import { requestClient, type DashboardRequest } from './dashboardActivity';
 
 export type AttentionSeverity = 'blocked' | 'low' | 'unconfirmed';
-export type AttentionItem = { file: AuthFile; severity: AttentionSeverity; percent: number | null; resetAt?: number };
+// `unavailable`: blocked for a reason other than quota (signed out, rejected, plan doesn't cover it), with no reset to wait for.
+export type AttentionItem = { file: AuthFile; severity: AttentionSeverity; percent: number | null; resetAt?: number; unavailable?: boolean };
 
 const blockedKinds = ['exhausted', 'unavailable', 'limited', 'resetDue'];
 const severityRank: Record<AttentionSeverity, number> = { blocked: 0, low: 1, unconfirmed: 2 };
@@ -17,7 +18,7 @@ export function attentionItems(files: AuthFile[], quotas: Record<string, QuotaSt
     const primary = primaryQuotaRow(orderedQuotaRows(quota?.rows ?? []), state.blockers);
     const left = quotaPercentLeft(primary);
     const resetAt = state.recoveryAt ?? (primary?.resetAtMs && primary.resetAtMs > now ? primary.resetAtMs : undefined);
-    if (blockedKinds.includes(state.kind)) return [{ file, severity: 'blocked', percent: left?.percent ?? null, resetAt }];
+    if (blockedKinds.includes(state.kind)) return [{ file, severity: 'blocked', percent: left?.percent ?? null, resetAt, unavailable: state.kind === 'unavailable' && state.recoveryAt === undefined }];
     if (state.kind === 'available' && left?.tone === 'critical') return [{ file, severity: 'low', percent: left.percent, resetAt }];
     if (state.kind === 'unknown') return [{ file, severity: 'unconfirmed', percent: null }];
     return [];

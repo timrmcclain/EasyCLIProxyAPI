@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, ArrowRight, CircleCheck, Hourglass, Shrink } from 'lucide-react';
+import { Activity, ArrowRight, CircleAlert, CircleCheck, Hourglass, Shrink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { compressionService, lifetimeSavingsPercent, type CompressionStats, type CompressionStatus } from '../services/compression';
 import { busiestClient, hourlyActivity, type AttentionItem } from '../services/homeGlance';
@@ -28,6 +28,8 @@ type GlanceProps = {
   latestAccount?: string;
   onView: (file: AuthFile) => void; onMore: () => void;
   files: AuthFile[]; quotas: Record<string, QuotaState>; stale: boolean; nameFor: (provider: string) => string;
+  /** False while the proxy is stopped: then nothing can take requests, whatever the accounts say. */
+  proxyReady?: boolean;
 };
 
 /** The at-a-glance row under the provider runway: what the proxy is doing, what compression saves, and what needs you. */
@@ -123,7 +125,7 @@ function CompressionTile() {
   </article>;
 }
 
-function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore }: GlanceProps) {
+function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore, proxyReady = true, files }: GlanceProps) {
   const { t } = useI18n();
   const shown = attention.slice(0, ATTENTION_ROWS);
   const history = useQuotaHistory();
@@ -132,11 +134,14 @@ function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore }:
     const forecast = forecastQuota(history[quotaKey(item.file)], now);
     return forecast.kind === 'runsOut' ? forecast.emptyAt : undefined;
   };
-  const status = (item: AttentionItem) => item.severity === 'blocked' ? t('glance.attention.blocked')
+  const status = (item: AttentionItem) => item.severity === 'blocked' ? t(item.unavailable ? 'glance.attention.unavailable' : 'glance.attention.blocked')
     : item.severity === 'low' ? t('glance.attention.low', { percent: quotaPercent(item.percent ?? 0) }) : t('glance.attention.unconfirmed');
   return <article className={`glance-tile glance-attention ${attention.length ? `worst-${attention[0].severity}` : 'is-clear'}`} aria-labelledby="glance-attention-title">
     <header><h3 id="glance-attention-title">{t('glance.attention.title')}{attention.length > 0 && <span className="glance-count">{attention.length}</span>}</h3></header>
-    {!attention.length ? <div className="glance-clear"><CircleCheck size={18} aria-hidden="true" /><span><strong>{t('glance.attention.none')}</strong><small>{t('glance.attention.noneDetail')}</small></span></div>
+    {/* "Nothing needs you" is only true when the proxy is up and there are accounts to route to. */}
+    {!proxyReady ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.proxyDown')}</strong><small>{t('glance.attention.proxyDownDetail')}</small></span></div>
+      : !files.length ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.noAccounts')}</strong><small>{t('glance.attention.noAccountsDetail')}</small></span></div>
+      : !attention.length ? <div className="glance-clear"><CircleCheck size={18} aria-hidden="true" /><span><strong>{t('glance.attention.none')}</strong><small>{t('glance.attention.noneDetail')}</small></span></div>
       : <ul className="glance-attention-list">
         {shown.map(item => <li key={quotaKey(item.file)} className={`attention-${item.severity}`}>
           <ProviderLogo provider={providerOf(item.file)} />

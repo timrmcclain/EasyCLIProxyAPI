@@ -1,10 +1,10 @@
 import type { AttentionItem } from './homeGlance';
 import { quotaKey, type AuthFile } from './quotaService';
 
-export type AccountLevel = 'ok' | 'low' | 'blocked';
+export type AccountLevel = 'ok' | 'low' | 'blocked' | 'unavailable';
 export type AlertMemory = { accounts: Record<string, AccountLevel>; exhaustedProviders: string[] };
 export type QuotaAlert = {
-  kind: 'low' | 'blocked' | 'providerExhausted' | 'recovered';
+  kind: 'low' | 'blocked' | 'unavailable' | 'providerExhausted' | 'recovered' | 'working';
   key: string;
   account?: string;
   provider: string;
@@ -41,18 +41,20 @@ export function quotaAlerts(
       if (known !== undefined) accounts[key] = known;
       continue;
     }
-    const level: AccountLevel = item?.severity === 'blocked' ? 'blocked' : item?.severity === 'low' ? 'low' : 'ok';
+    const level: AccountLevel = item?.severity === 'blocked' ? (item.unavailable ? 'unavailable' : 'blocked') : item?.severity === 'low' ? 'low' : 'ok';
     accounts[key] = level;
     const provider = providerOf(file);
     const counts = providers.get(provider) ?? { total: 0, blocked: 0 };
-    providers.set(provider, { total: counts.total + 1, blocked: counts.blocked + (level === 'blocked' ? 1 : 0) });
+    providers.set(provider, { total: counts.total + 1, blocked: counts.blocked + (level === 'blocked' || level === 'unavailable' ? 1 : 0) });
 
     const before = previous?.accounts[key];
     if (!previous || before === undefined || before === level) continue;
     const base = { key, account: labelFor(file), provider, percent: item?.percent, resetAt: item?.resetAt };
-    if (level === 'blocked') alerts.push({ kind: 'blocked', ...base });
+    if (level === 'blocked' || level === 'unavailable') alerts.push({ kind: level, ...base });
     else if (level === 'low' && before === 'ok') alerts.push({ kind: 'low', ...base });
+    // Coming back from a sign-in problem isn't a quota reset, so it gets its own wording.
     else if (level === 'ok' && before === 'blocked') alerts.push({ kind: 'recovered', ...base });
+    else if (level === 'ok' && before === 'unavailable') alerts.push({ kind: 'working', ...base });
   }
 
   const exhaustedProviders = [...providers].filter(([, c]) => c.total > 0 && c.blocked === c.total).map(([name]) => name);
@@ -69,7 +71,7 @@ export function quotaAlerts(
   const silenced = new Set(alerts.filter(a => a.kind === 'providerExhausted').map(a => a.provider));
   return {
     memory: { accounts, exhaustedProviders },
-    alerts: alerts.filter(a => a.kind === 'providerExhausted' || a.kind === 'recovered' || !silenced.has(a.provider)),
+    alerts: alerts.filter(a => a.kind === 'providerExhausted' || a.kind === 'recovered' || a.kind === 'working' || !silenced.has(a.provider)),
   };
 }
 

@@ -49,6 +49,10 @@ export function alertText(alert: QuotaAlert, now: number): { title: string; body
       };
     case 'recovered':
       return { title: t('notify.recovered.title', { account: alert.account ?? provider }), body: t('notify.recovered.body') };
+    case 'unavailable':
+      return { title: t('notify.unavailable.title', { account: alert.account ?? provider }), body: t('notify.unavailable.body') };
+    case 'working':
+      return { title: t('notify.working.title', { account: alert.account ?? provider }), body: t('notify.working.body') };
   }
 }
 

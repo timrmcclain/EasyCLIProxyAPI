@@ -26,6 +26,8 @@ export type HealthInput = {
   managementSecretConfigured: boolean | null;
   /** Labels of accounts whose sign-in expired or was revoked. */
   signInNeeded: string[];
+  /** Refused for other reasons (rejected, plan blocked); kept apart so the advice fits. */
+  unavailable?: string[];
   disabledAccounts: number;
   /** One entry per account signed in more than once, e.g. "claude: someone@example.com (2)". */
   duplicateAccounts: string[];
@@ -79,6 +81,7 @@ export function healthChecks(input: HealthInput): HealthCheck[] {
   else if (!input.totalAccounts) checks.push({ id: 'accounts', level: 'fail', key: 'health.accounts.none', target: 'oauth' });
   else if (input.signInNeeded.length) checks.push({ id: 'accounts', level: 'fail', key: input.signInNeeded.length === 1 ? 'health.accounts.signInOne' : 'health.accounts.signIn', variables: { count: input.signInNeeded.length, accounts: input.signInNeeded.join(', ') }, target: 'oauth' });
   else checks.push({ id: 'accounts', level: 'ok', key: input.totalAccounts === 1 ? 'health.accounts.okOne' : 'health.accounts.ok', variables: { count: input.totalAccounts } });
+  if (!input.accountsUnknown && input.unavailable?.length) checks.push({ id: 'unavailable', level: 'fail', key: input.unavailable.length === 1 ? 'health.accounts.unavailableOne' : 'health.accounts.unavailable', variables: { count: input.unavailable.length, accounts: input.unavailable.join(', ') }, target: 'oauth' });
   if (input.duplicateAccounts.length) checks.push({ id: 'duplicates', level: 'warn', key: input.duplicateAccounts.length === 1 ? 'health.accounts.duplicateOne' : 'health.accounts.duplicate', variables: { count: input.duplicateAccounts.length, accounts: input.duplicateAccounts.join(', ') }, target: 'oauth' });
   if (input.disabledAccounts) checks.push({ id: 'disabled', level: 'warn', key: input.disabledAccounts === 1 ? 'health.accounts.disabledOne' : 'health.accounts.disabled', variables: { count: input.disabledAccounts }, target: 'oauth' });
 

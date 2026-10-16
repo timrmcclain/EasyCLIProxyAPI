@@ -15,6 +15,7 @@ import {
   type ComponentType,
 } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useOptionalCoreRuntime } from '../coreRuntime';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
@@ -522,6 +523,9 @@ type AgentsPageProps = {
 };
 
 export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsPageProps = {}) {
+  // These apps send everything through the proxy, so "Configured" means nothing while it's stopped.
+  const coreStatus = useOptionalCoreRuntime()?.status ?? null;
+  const proxyDown = coreStatus !== null && !coreStatus.ready && !coreStatus.starting;
   const { t } = useI18n();
   const [selected, setSelected] = useState<AgentClientId>(readSelectedAgentClient);
   const [viewStateByClient, setViewStateByClient] = useState(() => agentViewStateCache);
@@ -1791,6 +1795,8 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
           <p>{t('personal.connectionHelp')}</p>
         </details>
       ) : null}
+
+      {proxyDown ? <p className="agent-inline-message warning agent-proxy-down" role="status">{t('agents.proxyDown')}</p> : null}
 
       <div className="agent-workbench">
         <AgentClientList clients={agentDefinitions.map((agent) => {

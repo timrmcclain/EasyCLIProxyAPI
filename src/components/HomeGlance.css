@@ -96,3 +96,6 @@
   .home-page .home-status-accounts { flex: 1 1 100%; order: 1; flex-wrap: wrap; padding-left: 0; border-left: 0; }
   .home-status-verdict { flex-wrap: wrap; }
 }
+
+/* Proxy stopped or no accounts: not "all clear". */
+.glance-clear.glance-blocked { color: var(--c-danger); }

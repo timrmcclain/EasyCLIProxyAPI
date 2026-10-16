@@ -35,6 +35,13 @@ describe('quota alerts', () => {
     const low = run(null, [item(a, 'low', 9)]).memory;
     expect(run(low, []).alerts).toEqual([]);
   });
+  it('reports a signed-out account as unable to take requests, not out of quota, and its return as working again', () => {
+    const base = run(null, []).memory;
+    const signedOut = run(base, [{ ...item(a, 'blocked'), unavailable: true }]);
+    expect(signedOut.alerts.map(alert => [alert.kind, alert.account])).toEqual([['unavailable', 'a']]);
+    expect(signedOut.memory.accounts[quotaKey(a)]).toBe('unavailable');
+    expect(run(signedOut.memory, []).alerts.map(alert => [alert.kind, alert.account])).toEqual([['working', 'a']]);
+  });
   it('still notices a recovery when a failed check came in between', () => {
     const blocked = run(null, [item(a, 'blocked', 0)]).memory;
     const gap = run(blocked, [item(a, 'unconfirmed')]);

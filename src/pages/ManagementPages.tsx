@@ -17,7 +17,7 @@ import kimiIcon from '../assets/icons/kimi-light.svg';
 import metaIcon from '../assets/icons/meta.svg';
 import { useI18n } from '../i18n';
 import { FeedbackNotice, MessageNotice, useAppNotice, type NoticeMessage } from '../appNotice';
-import { OAUTH_SUBPAGE_EVENT, oauthSubpages, takePendingOAuthSubpage, type OAuthSubpage } from '../oauthNavigation';
+import { OAUTH_SUBPAGE_EVENT, oauthSubpages, takePendingOAuthSubpage, takePendingSignInProvider, type OAuthSubpage } from '../oauthNavigation';
 import {
   changedOAuthAuthFileNames,
   snapshotAuthFiles,
@@ -182,7 +182,15 @@ export function OAuthManagementPage() {
 }
 
 export function OAuthLoginPage() {
-  const [showOtherProviders, setShowOtherProviders] = useState(false);
+  // "Sign in again" names a provider: reveal it even if it's one of the hidden ones, then bring its button into view.
+  const [focusProvider] = useState(() => { const id = takePendingSignInProvider(); return id === 'grok' ? 'xai' : id; });
+  const [showOtherProviders, setShowOtherProviders] = useState(() => Boolean(focusProvider && !['claude', 'codex'].includes(focusProvider)));
+  useEffect(() => {
+    if (!focusProvider) return;
+    const button = document.querySelector<HTMLButtonElement>(`[data-oauth-provider="${focusProvider}"] .oauth-start-button`);
+    button?.scrollIntoView({ block: 'center' });
+    button?.focus();
+  }, [focusProvider]);
   const { t } = useI18n();
   const [states, setStates] = useState<Partial<Record<OAuthProviderId, OAuthProviderState>>>(
     cachedOAuthProviderStates,
@@ -597,7 +605,7 @@ export function OAuthLoginPage() {
               : t('oauth.startLogin');
 
           return (
-            <section className="panel oauth-card" key={provider.id}>
+            <section className={`panel oauth-card${focusProvider === provider.id ? ' oauth-card-focus' : ''}`} key={provider.id} data-oauth-provider={provider.id}>
               <div className="provider-title-row">
                 <img src={provider.icon} alt="" className={provider.id === 'devin' ? 'provider-logo devin-logo' : 'provider-logo'} />
                 <div>
@@ -660,7 +668,7 @@ export function OAuthLoginPage() {
 
               <MessageNotice inline message={providerErrors[provider.id]} onDismiss={() => clearProviderError(provider.id)} />
               <div className="button-row management-card-actions">
-                <button type="button" className="primary-button" disabled={Boolean(state.polling) || browsersLoading} onClick={() => void startLogin(provider.id)}>
+                <button type="button" className="primary-button oauth-start-button" disabled={Boolean(state.polling) || browsersLoading} onClick={() => void startLogin(provider.id)}>
                   {state.polling ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : <LogIn size={16} aria-hidden="true" />}
                   {loginLabel}
                 </button>

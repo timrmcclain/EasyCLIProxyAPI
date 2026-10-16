@@ -1108,3 +1108,9 @@ body, html, #root {
   margin-left: 0;
   justify-self: end;
 }
+
+/* "Sign in again" lands here: mark the provider it was clicked for. */
+.oauth-card.oauth-card-focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}

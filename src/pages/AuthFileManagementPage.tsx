@@ -571,7 +571,7 @@ export function AuthFileManagementPage() {
                   <div className="auth-list-cell auth-list-status" data-label={t('authFiles.list.status')}>
                     <span className={`auth-status-badge ${badgeTone}`} title={statusLabel}><BadgeIcon size={14} aria-hidden="true" /><span>{statusLabel}</span></span>
                     <small>{t('authFiles.priority.button', { priority })}</small>
-                    {needsSignIn(file) ? <SignInAgainButton account={identity || name} /> : null}
+                    {needsSignIn(file) ? <SignInAgainButton account={identity || name} provider={String(file.provider ?? file.type ?? '')} /> : null}
                   </div>
                   <div className="auth-list-cell auth-list-recent" data-label={t('authFiles.list.recent')}><AuthFileRequestStatus file={file} compact /></div>
                   <div className="auth-list-cell auth-list-usage" data-label={t('authFiles.usage.title')}><AuthFileUsageSummary file={file} /></div>
