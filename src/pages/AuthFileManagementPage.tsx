@@ -8,6 +8,7 @@ import { AuthFileSettingsDialog } from '../components/AuthFileSettingsDialog';
 import { useQuotaReset } from '../components/useQuotaReset';
 import './AuthFileManagementPage.css';
 import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
+import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
 import { AuthFileModelsDialog } from '../components/AuthFileModelsDialog';
 import { AuthFileRequestStatus } from '../components/AuthFileRequestStatus';
 import { AuthFileHealthStatus } from '../components/AuthFileHealthStatus';
@@ -128,7 +129,8 @@ export function AuthFileManagementPage() {
   const friendlyName = (file: AuthFile) => names[privateAccountLabel(file, quotaProviderForFile(file) ?? providerKey(file))] ?? '';
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  // 'auto' shows every account up to 50, then pages by 50; a size you pick is remembered.
+  const [pageChoice, setPageChoice] = useState(() => readDashboardPreference('accountsPageSize', ['auto', '10', '20', '50'], 'auto'));
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(() => new Set());
   const [providerFilter, setProviderFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled' | 'runtime'>('all');
@@ -373,10 +375,11 @@ export function AuthFileManagementPage() {
     });
   }, [files, filter, providerFilter, statusFilter, names]);
 
+  const pageSize = pageChoice === 'auto' ? (visibleFiles.length < 50 ? Math.max(1, visibleFiles.length) : 50) : Number(pageChoice);
   const pageCount = Math.max(1, Math.ceil(visibleFiles.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pageFiles = visibleFiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  useEffect(() => setPage(1), [filter, providerFilter, statusFilter, pageSize]);
+  useEffect(() => setPage(1), [filter, providerFilter, statusFilter, pageChoice]);
   useEffect(() => setPage((current) => Math.min(current, pageCount)), [pageCount]);
 
   const toggleDetails = (key: string) => setExpandedFiles((current) => {
@@ -637,10 +640,11 @@ export function AuthFileManagementPage() {
           </div>
           </div>
         )}
-        {!loading && visibleFiles.length > 0 && files.length > 10 ? <nav className="auth-list-pagination" aria-label={t('authFiles.title')}>
+        {!loading && visibleFiles.length > 0 && (pageCount > 1 || (pageChoice !== 'auto' && files.length > 10)) ? <nav className="auth-list-pagination" aria-label={t('authFiles.title')}>
           <span>{t('authFiles.list.pageSummary', { page: currentPage, pages: pageCount, start: (currentPage - 1) * pageSize + 1, end: Math.min(currentPage * pageSize, visibleFiles.length), total: visibleFiles.length })}</span>
-          <label>{t('authFiles.list.pageSize')}<select value={pageSize} onChange={(event) => setPageSize(Number(event.currentTarget.value))}>
-            {[10, 20, 50].map((size) => <option key={size} value={size}>{t('authFiles.list.perPage', { count: size })}</option>)}
+          <label>{t('authFiles.list.pageSize')}<select value={pageChoice} onChange={(event) => { const value = event.currentTarget.value as typeof pageChoice; setPageChoice(value); saveDashboardPreference('accountsPageSize', value); }}>
+            <option value="auto">{t('authFiles.list.allUnder50')}</option>
+            {(['10', '20', '50'] as const).map((size) => <option key={size} value={size}>{t('authFiles.list.perPage', { count: Number(size) })}</option>)}
           </select></label>
           <button type="button" className="secondary-button compact-button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><ChevronLeft size={14} aria-hidden="true" />{t('authFiles.list.previous')}</button>
           <button type="button" className="secondary-button compact-button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>{t('authFiles.list.next')}<ChevronRight size={14} aria-hidden="true" /></button>

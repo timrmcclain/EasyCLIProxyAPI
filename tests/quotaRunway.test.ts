@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { providerRunways, upcomingResets } from '../src/services/quotaRunway';
 import { quotaKey, type QuotaState } from '../src/services/quotaService';
-import type { QuotaSample } from '../src/services/quotaForecast';
+import { forecastQuota, type QuotaSample } from '../src/services/quotaForecast';
 
 const now = Date.parse('2026-10-09T12:00:00Z');
 const H = 3_600_000;
@@ -56,7 +56,8 @@ describe('provider runway', () => {
     const quotas = { [quotaKey(a)]: quota([{ label: 'w', remainingPercent: 50, resetAtMs: now + 48 * H }]) };
     const history = { [quotaKey(a)]: [{ at: now - 60_000, percent: 50, window: 'w' }] };
     expect(providerRunways([a, off], quotas, history, now, false, providerOf)).toEqual([
-      { provider: 'claude', kind: 'unknown', accounts: 1 },
+      // One reading a minute ago: the forecast is ready 20 minutes after it.
+      { provider: 'claude', kind: 'unknown', accounts: 1, readyAt: now - 60_000 + 20 * 60_000 },
     ]);
   });
 
@@ -93,5 +94,13 @@ describe('upcoming resets', () => {
     const files = [1, 2, 3, 4].map(n => file(`f${n}`));
     const quotas = Object.fromEntries(files.map((f, i) => [quotaKey(f), quota([{ label: 'w', remainingPercent: 50, resetAtMs: now + (4 - i) * H }])]));
     expect(upcomingResets(files, quotas, now, 2).map(reset => reset.file.name)).toEqual(['f4.json', 'f3.json']);
+  });
+});
+
+describe('runway forecast readiness', () => {
+  it('says when the pace forecast will be ready from the first reading', () => {
+    const now = Date.UTC(2026, 9, 16, 9, 0);
+    expect(forecastQuota([{ at: now - 5 * 60_000, percent: 80 }], now)).toEqual({ kind: 'unknown', readyAt: now + 15 * 60_000 });
+    expect(forecastQuota([], now)).toEqual({ kind: 'unknown' });
   });
 });

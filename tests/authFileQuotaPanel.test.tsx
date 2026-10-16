@@ -128,7 +128,7 @@ it.each([
   const credentialHtml = renderToStaticMarkup(<I18nProvider><AuthFileQuotaPanel file={file} quota={quota} disabled={file.disabled} onRefresh={() => {}} onReset={onReset} /></I18nProvider>);
   const quotaHtml = renderToStaticMarkup(<I18nProvider><QuotaCard file={file} quota={quota} onRefresh={() => {}} onReset={onReset} /></I18nProvider>);
   const buttonState = (html: string) => {
-    const button = html.match(/<button[^>]*title="Reset Quota"[^>]*>Reset Quota<\/button>/)?.[0];
+    const button = html.match(/<button[^>]*title="Spends one of this account’s reset credits to restore its used-up limit now."[^>]*>Use a reset \(\d+ left\)<\/button>/)?.[0];
     return { visible: Boolean(button), disabled: Boolean(button?.includes('disabled=""')) };
   };
   expect(buttonState(credentialHtml)).toEqual({ visible: values.visible, disabled: values.disabled });

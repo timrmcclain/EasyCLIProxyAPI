@@ -30,7 +30,7 @@ const path = require('node:path');
     await summary.getByRole('button',{name:'Show',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('.quota-provider-groups')?.textContent.includes('Claude/GPT'));
     assert.equal(await summary.locator('.quota-summary-value').innerText(),'2');
-    assert.match(await summary.innerText(),/of 2 reported groups available/);
+    assert.match(await summary.innerText(),/of 2 model groups available/);
     for(const [fractions,expected,blocked] of [[[1,0],'1',1],[[0,0],'0',2],[[null,null],'—',0]]) {
       await page.evaluate(values=>{window.groupFractions=values},fractions);
       await page.locator('.quota-refresh').click();

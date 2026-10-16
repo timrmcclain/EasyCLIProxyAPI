@@ -71,6 +71,11 @@ export function hasPendingClaudeReset(file: AuthFile): boolean {
   return Boolean(operation && !operation.code);
 }
 
+/** "Use a reset (2 left)", or "Retry reset" while an earlier Claude reset is still pending. */
+export function resetLabel(t: (key: 'quota.claude.retry' | 'quota.useReset', variables?: Record<string, string | number>) => string, file: AuthFile, quota: QuotaState): string {
+  return hasPendingClaudeReset(file) ? t('quota.claude.retry') : t('quota.useReset', { count: quota.resetCredits ?? 0 });
+}
+
 export function canResetQuota(file: AuthFile, quota: QuotaState): boolean {
   if (providerForFile(file) !== 'claude') return canResetCodexQuota(file, quota);
   if (readBoolean(file, 'disabled') || quota.status === 'loading' || !normalizeAuthIndex(file.auth_index ?? file.authIndex)) return false;

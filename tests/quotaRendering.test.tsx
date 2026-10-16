@@ -15,8 +15,8 @@ describe('quota card rendering', () => {
       status: 'success', rows: [], resetCredits: 2, resetCreditsApplicable: 0,
       resetCreditsError: 'temporary failure', subscriptionActiveUntil: '2030-01-01T00:00:00Z',
     });
-    expect(html).toMatch(/<button[^>]*title="Reset Quota"[^>]*>Reset Quota<\/button>/);
-    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Reset Quota<\/button>/);
+    expect(html).toMatch(/<button[^>]*title="Spends one of this account’s reset credits to restore its used-up limit now."[^>]*>Use a reset \(\d+ left\)<\/button>/);
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Use a reset \(\d+ left\)<\/button>/);
     expect(html).not.toContain('No applicable reset credits');
     expect(html).not.toContain('Currently applicable: 0');
     expect(html).not.toContain('temporary failure');
@@ -29,8 +29,8 @@ describe('quota card rendering', () => {
       status: 'success', rows: [], resetCredits: 2,
       actionResult: { action: 'reset', status, error: 'temporary failure' },
     });
-    expect(html).toMatch(/<button[^>]*title="Reset Quota"[^>]*>Reset Quota<\/button>/);
-    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Reset Quota<\/button>/);
+    expect(html).toMatch(/<button[^>]*title="Spends one of this account’s reset credits to restore its used-up limit now."[^>]*>Use a reset \(\d+ left\)<\/button>/);
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Use a reset \(\d+ left\)<\/button>/);
     expect(html).not.toContain('temporary failure');
   });
 

@@ -217,3 +217,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* "Use a reset" sits in the row it restores, under that window's reset time. */
+.credential-quota-row > .credential-quota-reset {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+  text-align: start;
+}

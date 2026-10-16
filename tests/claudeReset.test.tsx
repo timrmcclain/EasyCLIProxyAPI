@@ -55,7 +55,7 @@ test('loads grant counts and renders a working reset action on both surfaces', a
     renderToStaticMarkup(<I18nProvider><AuthFileQuotaPanel file={file} quota={quota} disabled={false} compact dense onRefresh={() => {}} onReset={() => {}} /></I18nProvider>),
     renderToStaticMarkup(<I18nProvider><QuotaCard file={file} quota={quota} onRefresh={() => {}} onReset={() => {}} /></I18nProvider>),
   ]) {
-    expect(html).toContain('Reset Quota');
+    expect(html).toMatch(/Use a reset \(\d+ left\)/);
     expect(html).not.toContain('disabled=""');
   }
   updateQuotaCache({ [quotaKey(file)]: quota });

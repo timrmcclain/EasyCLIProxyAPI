@@ -12,9 +12,9 @@ export type ProviderRunway =
   /** No account is confirmed available: each one is blocked or its availability is unknown. */
   | { provider: string; kind: 'unconfirmed'; accounts: number }
   /** Not enough readings yet to judge the pace. */
-  | { provider: string; kind: 'unknown'; accounts: number };
+  | { provider: string; kind: 'unknown'; accounts: number; readyAt?: number };
 
-type AccountRunway = { kind: 'blocked'; backAt?: number } | { kind: 'unconfirmed' } | { kind: 'lasts' } | { kind: 'runsOut'; emptyAt: number } | { kind: 'unknown' };
+type AccountRunway = { kind: 'blocked'; backAt?: number } | { kind: 'unconfirmed' } | { kind: 'lasts' } | { kind: 'runsOut'; emptyAt: number } | { kind: 'unknown'; readyAt?: number };
 
 const blockedKinds = ['exhausted', 'unavailable', 'limited', 'resetDue'];
 
@@ -28,7 +28,7 @@ function accountRunway(file: AuthFile, quota: QuotaState | undefined, history: Q
   if (state.kind !== 'available') return { kind: 'unconfirmed' };
   const forecast = forecastQuota(history[quotaKey(file)], now);
   if (forecast.kind === 'runsOut') return { kind: 'runsOut', emptyAt: forecast.emptyAt };
-  if (forecast.kind === 'unknown') return { kind: 'unknown' };
+  if (forecast.kind === 'unknown') return { kind: 'unknown', readyAt: forecast.readyAt };
   return { kind: 'lasts' };
 }
 
@@ -55,7 +55,12 @@ export function providerRunways(
       return { provider, kind: 'allOut', accounts, ...(backs.length ? { backAt: Math.min(...backs) } : {}) };
     }
     if (runways.every(runway => runway.kind === 'blocked' || runway.kind === 'unconfirmed')) return { provider, kind: 'unconfirmed', accounts };
-    if (runways.some(runway => runway.kind === 'unknown')) return { provider, kind: 'unknown', accounts };
+    const waiting = runways.filter((runway): runway is { kind: 'unknown'; readyAt?: number } => runway.kind === 'unknown');
+    if (waiting.length) {
+      // The provider's forecast needs every waiting account's, so it's ready when the last one is.
+      const readyAt = waiting.every(runway => runway.readyAt !== undefined) ? Math.max(...waiting.map(runway => runway.readyAt!)) : undefined;
+      return { provider, kind: 'unknown', accounts, ...(readyAt !== undefined ? { readyAt } : {}) };
+    }
     const empties = runways.flatMap(runway => (runway.kind === 'runsOut' ? [runway.emptyAt] : []));
     return { provider, kind: 'runsOut', accounts, emptyAt: Math.max(...empties) };
   }).sort((a, b) => runwayRank[a.kind] - runwayRank[b.kind] || emptyOf(a) - emptyOf(b));

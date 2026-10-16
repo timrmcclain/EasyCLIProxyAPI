@@ -4,7 +4,7 @@ import { useI18n } from '../i18n';
 import { MessageNotice } from '../appNotice';
 import { readBoolean } from '../services/managementApi';
 import { fileName, formatQuotaTimestamp, type AuthFile, type QuotaState } from '../services/quotaService';
-import { canResetQuota, hasPendingClaudeReset } from '../services/quotaActions';
+import { canResetQuota, hasPendingClaudeReset, resetLabel } from '../services/quotaActions';
 import { formatQuotaReset, useQuotaClock } from '../services/quotaTime';
 import { quotaAvailability, quotaPercent } from '../services/quotaAvailability';
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
@@ -30,6 +30,10 @@ export function AuthFileQuotaPanel({ quota, file, disabled, onRefresh, onReset, 
   const compactLayout = compact || dense;
   const fileDisabled = readBoolean(file, 'disabled');
   const showReset = Boolean(onReset && ((quota.resetCredits ?? 0) > 0 || hasPendingClaudeReset(file)));
+  // The reset goes beside the window that ran out, which is what it restores; with none out, it stays in the heading.
+  const resetRow = showReset ? availability.blockers.find(row => rows.indexOf(row) < (compact || dense ? 2 : rows.length)) : undefined;
+  const resetButton = showReset ? <button type="button" className="secondary-button compact-button credential-quota-reset" onClick={onReset} disabled={disabled || !canResetQuota(file, quota)}
+    title={t('quota.useResetHint')}>{resetLabel(t, file, quota)}</button> : null;
   const accountCreditsLabel = quota.creditsUnlimited
     ? t('quota.creditUnlimited')
     : quota.creditBalance !== undefined ? quota.creditBalance : '';
@@ -57,15 +61,15 @@ export function AuthFileQuotaPanel({ quota, file, disabled, onRefresh, onReset, 
       {row.justReset ? <small className="credential-quota-just-reset">{t('authFiles.quota.justReset')}</small> : null}
       {reset ? <small className={dense ? 'credential-quota-reset-time' : undefined} title={dense ? reset : undefined}>{resetText}</small> : null}
       {row.detail ? <small className={dense ? 'credential-quota-row-detail' : undefined} title={dense ? row.detail : undefined}>{row.detail}</small> : null}
+      {row === resetRow ? resetButton : null}
     </div>;
   };
   return (
     <section className={`credential-quota${compactLayout ? ' credential-quota-compact' : ''}${dense ? ' credential-quota-dense' : ''}`} aria-label={t('authFiles.quota.aria')} aria-busy={loading} title={denseMetadata || undefined}>
-      {!compactLayout || showReset ? <div className="credential-quota-heading">
+      {!compactLayout || (showReset && !resetRow) ? <div className="credential-quota-heading">
         {!compactLayout ? <strong>{t('authFiles.settings.quotaRemaining')}</strong> : null}
         {!compactLayout && quota.plan ? <span className="credential-quota-plan">{quota.plan}</span> : null}
-        {showReset ? <button type="button" className="secondary-button compact-button credential-quota-reset" onClick={onReset} disabled={disabled || !canResetQuota(file, quota)}
-          title={t('quota.reset')}>{t(hasPendingClaudeReset(file) ? 'quota.claude.retry' : 'quota.reset')}</button> : null}
+        {resetRow ? null : resetButton}
         {!compactLayout ? <button type="button" className="credential-quota-refresh" disabled={disabled || loading} onClick={onRefresh}
           title={disabled ? t('quota.fileDisabled') : t('authFiles.quota.refresh')}>
           {loading ? <LoaderCircle size={14} className="spin" /> : <RefreshCw size={14} />}
@@ -78,7 +82,7 @@ export function AuthFileQuotaPanel({ quota, file, disabled, onRefresh, onReset, 
         {dense && quota.error ? <details className="credential-quota-error-details"><summary title={quota.error}>{t('authFiles.quota.failed')}</summary><small>{quota.error}</small></details>
           : <><span>{t('authFiles.quota.failed')}</span>{quota.error ? <small>{quota.error}</small> : null}</>}
       </div> : null}
-      <QuotaAvailabilityNotice state={availability} now={clock} />
+      <QuotaAvailabilityNotice state={showReset ? { ...availability, resetsAvailable: 0 } : availability} now={clock} onAccounts />
       {quota.status === 'success' || (loading && rows.length > 0) ? <>
         {rows.length ? <>
           <div className="credential-quota-rows">{(compactLayout ? rows.slice(0, 2) : rows).map(renderRow)}</div>

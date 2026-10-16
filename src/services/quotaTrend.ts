@@ -19,6 +19,16 @@ function longestWindow(rows: QuotaRow[]): QuotaRow | undefined {
   return withPercent.reduce<QuotaRow | undefined>((best, row) => (!best || (row.resetAtMs ?? 0) >= (best.resetAtMs ?? 0) ? row : best), undefined);
 }
 
+/** "7-day window", "Weekly quota" and "Weekly limit" name the same window; wording changes shouldn't restart its line. */
+export function sameWindow(a: string, b: string): boolean {
+  const key = (label: string) => label.toLowerCase()
+    .replace(/\b7-day\b|\bweekly\b/g, 'week')
+    .replace(/\s*\b(window|limit|quota)\b\s*/g, ' ')
+    .replace(/(窗口|限额|额度|枠|制限|7\s*天|每周|周|7\s*日間|週間)/g, m => /7|每?周|週間/.test(m) ? 'week' : ' ')
+    .replace(/\s+/g, ' ').trim();
+  return a === b || key(a) === key(b);
+}
+
 export function recordQuotaTrends(trends: QuotaTrends, files: AuthFile[], quotas: Record<string, QuotaState>, now: number): QuotaTrends {
   const next: QuotaTrends = {};
   for (const file of files) {
@@ -27,7 +37,7 @@ export function recordQuotaTrends(trends: QuotaTrends, files: AuthFile[], quotas
     const quota = quotas[key];
     const row = quota?.status === 'success' ? longestWindow(quota.rows) : undefined;
     // A different window (say the provider renamed it) starts a fresh line rather than joining two scales.
-    let samples = previous && (!row || previous.label === row.label) ? previous.samples.filter(sample => now - sample.at <= KEEP_MS) : [];
+    let samples = previous && (!row || sameWindow(previous.label, row.label)) ? previous.samples.filter(sample => now - sample.at <= KEEP_MS) : [];
     if (row && typeof row.remainingPercent === 'number') {
       const at = quota?.fetchedAt ?? now;
       const sample = { at, percent: Math.round(row.remainingPercent * 10) / 10 };

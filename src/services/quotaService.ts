@@ -499,8 +499,11 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
                     ? quotaText('quota.service.duration.hours', { count: duration / 60 })
                     : quotaText('quota.service.duration.minutes', { count: duration })
           : '';
-        const durationLabel = durationText
-          ? quotaText('quota.service.window.duration', { duration: durationText })
+        const hours = duration === null ? null : unit.startsWith('hour') ? duration : unit.startsWith('minute') ? duration / 60 : unit.startsWith('second') ? duration / 3600 : null;
+        const days = duration === null ? null : unit.startsWith('week') ? duration * 7 : unit.startsWith('day') ? duration : null;
+        const durationLabel = hours === 5 ? quotaText('quota.service.limit.fiveHours')
+          : days === 7 ? quotaText('quota.service.limit.week')
+          : durationText ? quotaText('quota.service.window.duration', { duration: durationText })
           : '';
         return {
           label:
@@ -612,7 +615,10 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
       .map((rawBucket, index): QuotaRow => {
         const bucket = isRecord(rawBucket) ? rawBucket : {};
         const remaining = quotaFraction(bucket.remaining_fraction ?? bucket.remainingFraction);
-        const bucketLabel = readString(bucket, 'display_name', 'displayName', 'window');
+        const rawWindow = readString(bucket, 'window').toLowerCase();
+        const bucketLabel = readString(bucket, 'display_name', 'displayName')
+          || (['5h', 'five-hour', 'five_hour'].includes(rawWindow) ? quotaText('quota.service.limit.fiveHours')
+            : ['weekly', 'week'].includes(rawWindow) ? quotaText('quota.service.limit.week') : readString(bucket, 'window'));
         const label = bucketLabel && (buckets.length > 1 || bucketLabel !== groupLabel)
           ? `${groupLabel} · ${bucketLabel}`
           : groupLabel;

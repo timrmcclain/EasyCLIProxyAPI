@@ -178,7 +178,9 @@ function RunwayTile({ files, quotas, stale, now, providerOf, nameFor, labelFor }
       case 'runsOut': return <span className="runway-out">{t('glance.runway.runsOut', { time: resetCountdown(runway.emptyAt, now) })}</span>;
       case 'allOut': return <span className="runway-all-out">{t('glance.runway.allOut')}{runway.backAt ? <small>{t('glance.runway.backIn', { time: resetCountdown(runway.backAt, now) })}</small> : null}</span>;
       case 'unconfirmed': return <span className="runway-unknown">{t('glance.attention.unconfirmed')}</span>;
-      case 'unknown': return <span className="runway-unknown">{t('glance.runway.unknown')}</span>;
+      // Says when the forecast will be ready instead of an open-ended "measuring"; one line, so the card does not grow.
+      case 'unknown': return <span className="runway-unknown" title={t('glance.runway.unknown')}>{runway.readyAt && runway.readyAt > now
+        ? t('glance.runway.readyIn', { time: resetCountdown(runway.readyAt, now) }) : t('glance.runway.readyNext')}</span>;
     }
   };
   return <article className="glance-tile glance-runway" aria-labelledby="glance-runway-title">

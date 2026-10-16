@@ -17,6 +17,7 @@ export const authFileListZhCN = {
   'authFiles.list.size': '文件大小',
   'authFiles.list.pageSummary': '第 {page} / {pages} 页 · 显示 {start}–{end} / {total}',
   'authFiles.list.pageSize': '每页',
+  'authFiles.list.allUnder50': '全部（超过 50 个时每页 50 个）',
   'authFiles.list.perPage': '{count} 条/页',
   'authFiles.list.previous': '上一页',
   'authFiles.list.next': '下一页',
@@ -25,7 +26,7 @@ export const authFileListZhCN = {
   'authFiles.toolbar.refreshList': '刷新列表',
   'authFiles.toolbar.refreshQuota': '刷新全部额度',
   'authFiles.signInAgain': '重新登录',
-  'authFiles.signInAgainHint': '此账户的登录已过期或被拒绝。请在“账户”页面重新登录。',
+  'authFiles.signInAgainHint': '此账户的登录已过期或被拒绝。重新登录后即可继续使用。',
 } as const;
 
 export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
@@ -47,6 +48,7 @@ export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.list.size': 'File size',
   'authFiles.list.pageSummary': 'Page {page} / {pages} · {start}–{end} of {total}',
   'authFiles.list.pageSize': 'Per page',
+  'authFiles.list.allUnder50': 'All (pages of 50 above 50)',
   'authFiles.list.perPage': '{count} / page',
   'authFiles.list.previous': 'Previous',
   'authFiles.list.next': 'Next',
@@ -55,7 +57,7 @@ export const authFileListEn: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.toolbar.refreshList': 'Refresh list',
   'authFiles.toolbar.refreshQuota': 'Refresh all quotas',
   'authFiles.signInAgain': 'Sign in again',
-  'authFiles.signInAgainHint': 'This account’s sign-in expired or was rejected. Sign in again on the Accounts page.',
+  'authFiles.signInAgainHint': 'This account’s sign-in expired or was rejected. Sign in again to keep using it.',
 };
 
 export const authFileListJa: Record<keyof typeof authFileListZhCN, string> = {
@@ -77,6 +79,7 @@ export const authFileListJa: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.list.size': 'ファイルサイズ',
   'authFiles.list.pageSummary': '{page} / {pages} ページ · {start}–{end} / {total} 件',
   'authFiles.list.pageSize': '表示件数',
+  'authFiles.list.allUnder50': 'すべて（50 件を超えると 50 件ずつ）',
   'authFiles.list.perPage': '{count} 件/ページ',
   'authFiles.list.previous': '前へ',
   'authFiles.list.next': '次へ',
@@ -85,5 +88,5 @@ export const authFileListJa: Record<keyof typeof authFileListZhCN, string> = {
   'authFiles.toolbar.refreshList': '一覧を更新',
   'authFiles.toolbar.refreshQuota': 'すべてのクォータを更新',
   'authFiles.signInAgain': '再ログイン',
-  'authFiles.signInAgainHint': 'このアカウントのログインは期限切れか拒否されました。アカウントページで再ログインしてください。',
+  'authFiles.signInAgainHint': 'このアカウントのログインは期限切れか拒否されました。再ログインすると引き続き使えます。',
 };

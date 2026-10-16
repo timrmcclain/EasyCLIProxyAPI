@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { recordQuotaTrends, type QuotaTrends } from '../src/services/quotaTrend';
+import { recordQuotaTrends, sameWindow, type QuotaTrends } from '../src/services/quotaTrend';
 import { quotaKey, type AuthFile, type QuotaState } from '../src/services/quotaService';
 
 const HOUR = 3_600_000;
@@ -37,5 +37,23 @@ describe('quota trends', () => {
     const failed = { [key]: { status: 'error', rows: [] } as unknown as QuotaState };
     expect(recordQuotaTrends(trends, [file], failed, HOUR)[key].samples).toHaveLength(1);
     expect(recordQuotaTrends(trends, [], {}, HOUR)).toEqual({});
+  });
+});
+
+describe('sameWindow', () => {
+  it('treats renamed windows as the same, in every language, so the trend keeps its history', () => {
+    expect(sameWindow('7-day window', 'Weekly limit')).toBe(true);
+    expect(sameWindow('Weekly quota', 'Weekly limit')).toBe(true);
+    expect(sameWindow('5-hour window', '5-hour limit')).toBe(true);
+    expect(sameWindow('7-day Opus window', 'Weekly Opus limit')).toBe(true);
+    expect(sameWindow('7 天窗口', '周限额')).toBe(true);
+    expect(sameWindow('7 天 Opus 窗口', '每周 Opus 限额')).toBe(true);
+    expect(sameWindow('7 日間枠', '週間制限')).toBe(true);
+    expect(sameWindow('7 日間 Opus 枠', '週間 Opus 制限')).toBe(true);
+  });
+  it('still tells different windows apart', () => {
+    expect(sameWindow('5-hour limit', 'Weekly limit')).toBe(false);
+    expect(sameWindow('Weekly Opus limit', 'Weekly limit')).toBe(false);
+    expect(sameWindow('週間 Opus 制限', '週間制限')).toBe(false);
   });
 });

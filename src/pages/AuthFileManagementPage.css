@@ -56,9 +56,9 @@
 .auth-list-plan > span { max-width: 100%; color: var(--auth-text); font-size: 12px; font-weight: 600; text-transform: capitalize; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .auth-list-plan small, .auth-list-status small { color: var(--auth-muted); font-size: 11px; line-height: 1.25; }
 .auth-list-status small { font-weight: 600; }
-.auth-status-badge { display: inline-flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; padding: 4px 8px; border-radius: 8px; background: var(--bg-secondary); color: var(--auth-muted); font-size: 12px; line-height: 1.4; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-status-badge { display: inline-flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; padding: 4px 8px; border-radius: 8px; background: var(--bg-secondary); color: var(--auth-muted); font-size: 12px; line-height: 1.3; font-weight: 600; text-align: center; overflow-wrap: anywhere; white-space: normal; }
 .auth-status-badge > svg { flex: none; }
-.auth-status-badge > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.auth-status-badge > span { min-width: 0; }
 .auth-status-badge.success { color: var(--success-color); background: color-mix(in srgb, var(--success-color) 8%, var(--bg-card)); }
 .auth-status-badge.warning { color: var(--amber-text); background: color-mix(in srgb, var(--amber-text) 8%, var(--bg-card)); }
 .auth-status-badge.error { color: var(--failure-badge-text); background: color-mix(in srgb, var(--failure-badge-text) 7%, var(--bg-card)); }

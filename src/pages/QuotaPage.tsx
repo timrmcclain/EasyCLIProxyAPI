@@ -1,4 +1,5 @@
 import { isSignInExpiredError, requestOAuthSubpage } from '../oauthNavigation';
+import { labelFor } from '../services/quotaWatcher';
 import { ResetCreditExpiries } from '../components/ResetCreditExpiries';
 import { MessageNotice } from '../appNotice';
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react';
@@ -6,7 +7,7 @@ import { AlertCircle, Gauge, ListRestart, LoaderCircle, RefreshCw } from 'lucide
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { OAuthPageToolbar } from '../components/OAuthPageToolbar';
 import { QuotaActionFeedback } from '../components/QuotaActionFeedback';
-import { canResetQuota, hasPendingClaudeReset } from '../services/quotaActions';
+import { canResetQuota, hasPendingClaudeReset, resetLabel } from '../services/quotaActions';
 import { useQuotaReset } from '../components/useQuotaReset';
 import antigravityIcon from '../assets/icons/antigravity.svg';
 import claudeIcon from '../assets/icons/claude.svg';
@@ -220,7 +221,8 @@ export function QuotaCard({ file, quota, onRefresh, onReset, stale = false }: { 
   const availability = quotaAvailability(file, quota, clock, stale);
   const rows = [...quota.rows].sort((a, b) => Number(availability.blockers.includes(b)) - Number(availability.blockers.includes(a)));
   const provider = providerForFile(file);
-  const name = fileName(file);
+  // The same name as Overview, Activity and notifications; the file name stays on hover.
+  const name = labelFor(file);
   const disabled = readBoolean(file, 'disabled');
   const priority = parseAuthFilePriority(file.priority) ?? 0;
   return (
@@ -228,7 +230,7 @@ export function QuotaCard({ file, quota, onRefresh, onReset, stale = false }: { 
       <div className="real-quota-card-header">
         <div className="quota-identity">
           <img src={provider ? providerMeta[provider].icon : ''} alt="" className="quota-account-icon" />
-          <div><strong title={name}>{name}</strong><span>{provider ? providerMeta[provider].label : t('quota.unknownProvider')}</span></div>
+          <div><strong title={fileName(file)}>{name}</strong><span>{provider ? providerMeta[provider].label : t('quota.unknownProvider')}</span></div>
         </div>
         <div className="quota-plan"><strong>{quota.plan || '—'}</strong><span>{quota.subscriptionActiveUntil ? t('quota.expiresAt', { time: formatQuotaTimestamp(quota.subscriptionActiveUntil, locale) }) : ''}</span></div>
         <div className="quota-status"><span className={quota.status === 'success' ? 'quota-status-badge checked' : quota.status === 'error' ? 'quota-status-badge error' : 'quota-status-badge'}>{quota.status === 'success' ? t('quota.loaded') : quota.status === 'loading' ? t('quota.querying') : quota.status === 'error' ? t('common.unavailable') : t('quota.notFetched')}</span><small>{t('authFiles.settings.priority')} {priority}</small></div>
@@ -263,7 +265,7 @@ export function QuotaCard({ file, quota, onRefresh, onReset, stale = false }: { 
           <small>{[row.detail, reset].filter(Boolean).join(' · ')}</small>
         </div>;
       })}</div> : null}
-      {onReset && ((quota.resetCredits ?? 0) > 0 || hasPendingClaudeReset(file)) ? <button type="button" className="secondary-button compact-button quota-reset-footer" onClick={onReset} disabled={!canResetQuota(file, quota)} title={t('quota.reset')}>{t(hasPendingClaudeReset(file) ? 'quota.claude.retry' : 'quota.reset')}</button> : null}
+      {onReset && ((quota.resetCredits ?? 0) > 0 || hasPendingClaudeReset(file)) ? <button type="button" className="secondary-button compact-button quota-reset-footer" onClick={onReset} disabled={!canResetQuota(file, quota)} title={t('quota.useResetHint')}>{resetLabel(t, file, quota)}</button> : null}
     </article>
   );
 }

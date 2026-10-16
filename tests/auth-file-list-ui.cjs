@@ -25,6 +25,8 @@ const fs = require('node:fs/promises');
       return route.abort();
     });
     await page.clock.install({ time: new Date('2026-10-03T04:00:00Z') });
+    // Under 50 accounts every one shows by default; this test exercises paging, so it picks 10 per page as a user would.
+    await page.addInitScript(() => localStorage.setItem('personal.accountsPageSize', '10'));
     const cards = () => page.locator('.auth-file-card');
     const card = number => cards().filter({ has: page.locator(`.auth-card-filename[title="${String(number).padStart(2, '0')}-account.json"]`) });
     const pagination = () => page.locator('.auth-list-pagination');
@@ -266,6 +268,15 @@ const fs = require('node:fs/promises');
     } });
     await open('theme=light&locale=zh-CN&small=1');
     await page.locator('.auth-file-table-scroll').screenshot({ path: path.join(screenshotDir, 'reference-small-idle-preview.png') });
+    // With no saved page size, all twelve accounts show on one page and there is no pager.
+    const fresh = await browser.newPage({ viewport: { width: 1800, height: 1000 }, timezoneId: 'Asia/Shanghai' });
+    await fresh.route('**/*', route => route.request().url().startsWith(`${base}/`) ? route.continue() : route.abort());
+    await fresh.goto(`${base}/tests/fixtures/auth-file-list.html?theme=light&locale=zh-CN`);
+    await fresh.locator('.auth-file-card').first().waitFor();
+    await fresh.waitForFunction(() => window.authFileListFixture.reads === 1);
+    assert.equal(await fresh.locator('.auth-file-card').count(), 12, 'Under 50 accounts, every account shows by default');
+    assert.equal(await fresh.locator('.auth-list-pagination').count(), 0, 'No pager when everything fits on one page');
+    await fresh.close();
     assert.deepEqual(errors, []);
     assert.deepEqual(externalRequests, []);
     console.log('PASS: offline seven-column dense credential list with visible request/runtime/quota/action data, compact row height, exact quota percentages/reset timestamps, unknown quota, ten/two pagination, search/provider/status reset, page size twenty, additional quota disclosure, main-row and detail-summary request keyboard tooltips, directly visible cooldown controls, exact status PATCH, direct delete confirmation/cancel, small idle accounts without pagination, light/dark Chinese/English 1800/1280/1024/390 without page or card overflow, contained table scrolling only at intermediate widths.');

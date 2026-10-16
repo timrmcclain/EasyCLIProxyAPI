@@ -43,7 +43,7 @@ const base = process.env.QUOTA_TEST_BASE || 'http://127.0.0.1:1421';
       }
     }
     const claudeCard = page.locator('.real-quota-card').filter({ has: page.locator('strong[title="claude.json"]') });
-    assert.equal(await claudeCard.getByRole('button', { name: 'Reset Quota', exact: true }).isEnabled(), true);
+    assert.equal(await claudeCard.getByRole('button', { name: /^Use a reset \(\d+ left\)$/ }).isEnabled(), true);
     assert.equal(await page.locator('.credential-quota-reset').isEnabled(), true);
     // The reset count label was replaced by one expiry line per available reset credit.
     const denseExpiries = page.locator('.credential-quota-dense .reset-credit-expiries li');

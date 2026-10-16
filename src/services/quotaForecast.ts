@@ -7,7 +7,8 @@ export type QuotaSample = { at: number; percent: number; window: string; resetAt
 export type QuotaHistory = Record<string, QuotaSample[]>;
 
 export type QuotaForecast =
-  | { kind: 'unknown' }
+  /** Not enough readings yet. `readyAt` is when the readings so far will span long enough, if any exist. */
+  | { kind: 'unknown'; readyAt?: number }
   /** Using too little to matter (under half a percent an hour). */
   | { kind: 'steady'; ratePerHour: number }
   /** At this pace the window resets before it empties. */
@@ -61,7 +62,9 @@ function usageRatePerHour(samples: QuotaSample[]): number {
 /** When the account's deciding window runs out at its recent pace, compared with when it resets. */
 export function forecastQuota(samples: QuotaSample[] | undefined, now: number): QuotaForecast {
   const recent = (samples ?? []).filter(sample => now - sample.at <= RATE_WINDOW_MS);
-  if (recent.length < 2 || recent[recent.length - 1].at - recent[0].at < MIN_SPAN_MS) return { kind: 'unknown' };
+  if (recent.length < 2 || recent[recent.length - 1].at - recent[0].at < MIN_SPAN_MS) {
+    return recent.length ? { kind: 'unknown', readyAt: recent[0].at + MIN_SPAN_MS } : { kind: 'unknown' };
+  }
   const ratePerHour = usageRatePerHour(recent);
   if (ratePerHour < STEADY_RATE) return { kind: 'steady', ratePerHour: Math.max(0, ratePerHour) };
   const latest = recent[recent.length - 1];

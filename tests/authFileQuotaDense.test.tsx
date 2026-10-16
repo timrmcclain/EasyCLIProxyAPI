@@ -29,11 +29,21 @@ it('shows reset credits beside the button while preserving applicability and exp
     resetCredits: 2, resetCreditsApplicable: 0, subscriptionActiveUntil: '2030-01-01T00:00:00Z',
   });
   const resetButton = html.match(/<button[^>]*credential-quota-reset[^>]*>[\s\S]*?<\/button>/)?.[0];
-  expect(resetButton).toContain('Reset');
+  expect(resetButton).toContain('Use a reset (2 left)');
   expect(html).not.toContain('Manual resets');
   expect(resetButton).not.toContain('disabled=""');
   expect(html).not.toContain('Currently applicable: 0');
   expect(html).toContain('Subscription expires');
+});
+
+it('puts the reset beside the window that ran out, which is the window it restores', () => {
+  const now = Date.now();
+  const html = renderDense({ status: 'success', fetchedAt: now, resetCredits: 1, rows: [
+    { label: 'Weekly limit', scope: 'account', remainingPercent: 60, resetAtMs: now + 86_400_000 },
+    { label: '5-hour limit', scope: 'account', remainingPercent: 0, resetAtMs: now + 3_600_000 },
+  ] }, { name: 'test.json', provider: 'codex', status: 'active' });
+  expect(html).not.toContain('credential-quota-heading');
+  expect(html).toMatch(/<span title="5-hour limit">(?:(?!credential-quota-row ).)*>Use a reset \(1 left\)<\/button>/s);
 });
 
 it('does not confuse a busy list with a disabled credential or discard cached quota', () => {
