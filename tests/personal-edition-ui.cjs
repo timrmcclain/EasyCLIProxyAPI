@@ -54,11 +54,14 @@ const os = require('node:os');
     await nav.getByRole('button', { name: 'Accounts', exact: true }).click();
     await page.getByRole('heading', { name: 'Saved accounts' }).waitFor();
     await page.locator('#oauth-subpage-tab-login').click();
-    assert.equal(await page.locator('.oauth-card').count(), 2);
+    // Claude and Codex, plus every provider the mock already has accounts with (all but Meta).
+    await page.locator('.oauth-card').nth(5).waitFor();
+    assert.equal(await page.locator('.oauth-card').count(), 6, 'providers you already use are always shown');
+    assert.equal(await page.locator('[data-oauth-provider="meta"]').count(), 0, 'unused providers stay behind the toggle');
     await page.getByLabel('Show other providers').check();
     assert.equal(await page.locator('.oauth-card').count(), 7, 'Antigravity, Kimi, xAI, Devin and Meta join Claude and Codex');
     await page.getByLabel('Show other providers').uncheck();
-    assert.equal(await page.locator('.oauth-card').count(), 2);
+    assert.equal(await page.locator('.oauth-card').count(), 6);
     await nav.getByRole('button', { name: 'Connected apps', exact: true }).click();
     await page.locator('.personal-context > summary').filter({ hasText: 'Desktop and terminal connections are separate.' }).waitFor();
     // The app list shows detected apps; Manage Clients narrows it and Restore automatic display brings the others back.

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useI18n } from '../i18n';
-import { groupFailures, type ErrorCauseGroup, type FailedRequest } from '../services/errorCauses';
+import { classifyFailure, failureMessage, groupFailures, type ErrorCauseGroup, type FailedRequest } from '../services/errorCauses';
+import { useAccountLabelBySource } from '../services/accountLabelBySource';
 import './ErrorCausesCard.css';
 
 const ago = (iso: string) => {
@@ -16,6 +17,10 @@ export function ErrorCausesCard({ failures, truncated }: { failures: FailedReque
   const { t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
   const groups = groupFailures(failures);
+  const accountLabel = useAccountLabelBySource();
+  const SHOWN = 8;
+  // The requests behind a cause, newest first, so "12 sign-in failures" can be traced to accounts.
+  const requestsFor = (group: ErrorCauseGroup) => failures.filter(item => classifyFailure(item.failure_status, item.failure_body) === group.cause);
   const fix = (group: ErrorCauseGroup) => window.dispatchEvent(new CustomEvent('app:navigate', { detail: group.target }));
 
   return (
@@ -44,6 +49,14 @@ export function ErrorCausesCard({ failures, truncated }: { failures: FailedReque
                   <div className="error-cause-detail">
                     <p>{t(`errors.help.${group.cause}`)}</p>
                     {group.example && <blockquote>{group.example}</blockquote>}
+                    <ul className="error-cause-requests" aria-label={t('errors.recent')}>
+                      {requestsFor(group).slice(0, SHOWN).map((item, index) => <li key={`${item.timestamp}-${index}`}>
+                        <time dateTime={item.timestamp} title={new Date(item.timestamp).toLocaleString()}>{ago(item.timestamp)}</time>
+                        <strong>{accountLabel(item.source_display || item.source) || item.provider}</strong>
+                        <span title={item.failure_body}>{item.failure_status > 0 ? `HTTP ${item.failure_status} · ` : ''}{failureMessage(item.failure_body)}</span>
+                      </li>)}
+                      {requestsFor(group).length > SHOWN && <li className="error-cause-more">{t('errors.more', { count: requestsFor(group).length - SHOWN })}</li>}
+                    </ul>
                     {group.target && (
                       <button type="button" className="secondary-button compact-button" onClick={() => fix(group)}>{t('errors.openAccounts')}</button>
                     )}

@@ -41,6 +41,9 @@ export type HealthInput = {
   /** Null when the hub can't tell (e.g. permission never asked). */
   notificationsAllowed: boolean | null;
   notificationsEnabled: boolean;
+  /** Whether the hub, and then the proxy, come back by themselves after Windows restarts. Null when unknown. */
+  startsWithWindows?: { autostart: boolean; startProxy: boolean } | null;
+  connectedApps?: number;
 };
 
 const rank: Record<HealthLevel, number> = { fail: 0, warn: 1, ok: 2 };
@@ -101,6 +104,10 @@ export function healthChecks(input: HealthInput): HealthCheck[] {
   if (exposed && input.managementSecretConfigured === false) checks.push({ id: 'management', level: 'fail', key: 'health.management.open', target: 'config' });
 
   if (input.compression?.running && !input.compression.enabled) checks.push({ id: 'compression', level: 'warn', key: 'health.compression.stray', target: 'compression' });
+
+  // Connected apps send everything through the proxy; if nothing starts it after a reboot, they all fail until you open the hub.
+  const boot = input.startsWithWindows;
+  if (boot && (input.connectedApps ?? 0) > 0 && (!boot.autostart || !boot.startProxy)) checks.push({ id: 'startup', level: 'warn', key: boot.autostart ? 'health.startup.proxyOff' : 'health.startup.off', target: 'config' });
 
   if (!input.notificationsEnabled) checks.push({ id: 'notifications', level: 'warn', key: 'health.notifications.off', target: 'config' });
   else if (input.notificationsAllowed === false) checks.push({ id: 'notifications', level: 'warn', key: 'health.notifications.blocked' });

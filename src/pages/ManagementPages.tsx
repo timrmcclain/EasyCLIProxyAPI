@@ -24,6 +24,8 @@ import {
   type AuthFileSnapshot,
 } from '../services/authFiles';
 import { managementApi, responseList } from '../services/managementApi';
+import { labelFor } from '../services/quotaWatcher';
+import { requestOAuthSubpage } from '../oauthNavigation';
 import {
   createOAuthLoginSuccessCache,
   shouldShowOAuthLoginStatus,
@@ -185,6 +187,17 @@ export function OAuthLoginPage() {
   // "Sign in again" names a provider: reveal it even if it's one of the hidden ones, then bring its button into view.
   const [focusProvider] = useState(() => { const id = takePendingSignInProvider(); return id === 'grok' ? 'xai' : id; });
   const [showOtherProviders, setShowOtherProviders] = useState(() => Boolean(focusProvider && !['claude', 'codex'].includes(focusProvider)));
+  // Providers you already have accounts with are always shown, not hidden behind "other providers".
+  const [usedProviders, setUsedProviders] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    let active = true;
+    void managementApi.get('/credentials').then((payload) => {
+      const aliases: Record<string, string> = { grok: 'xai', 'x-ai': 'xai', anthropic: 'claude', openai: 'codex' };
+      const ids = responseList(payload, 'files').map((file) => String(file.provider ?? file.type ?? '').toLowerCase()).map((id) => aliases[id] ?? id);
+      if (active) setUsedProviders(new Set(ids));
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     if (!focusProvider) return;
     const button = document.querySelector<HTMLButtonElement>(`[data-oauth-provider="${focusProvider}"] .oauth-start-button`);
@@ -296,17 +309,20 @@ export function OAuthLoginPage() {
     credentialSnapshots.current[provider] = snapshotAuthFiles(responseList(payload, 'files'));
   }, []);
 
-  const applyDefaultCredentialPriority = useCallback(async (provider: OAuthProviderId) => {
+  // Returns who signed in, so the success message can name the account rather than just the provider.
+  const applyDefaultCredentialPriority = useCallback(async (provider: OAuthProviderId): Promise<string[]> => {
     const before = credentialSnapshots.current[provider];
     delete credentialSnapshots.current[provider];
-    if (!before) return;
+    if (!before) return [];
 
     const payload = await managementApi.get('/credentials');
-    const names = changedOAuthAuthFileNames(before, responseList(payload, 'files'), provider);
+    const files = responseList(payload, 'files');
+    const names = changedOAuthAuthFileNames(before, files, provider);
     await Promise.all(names.map((name) => managementApi.patch('/credentials/fields', {
       name,
       priority: 0,
     })));
+    return files.filter((file) => names.includes(String(file.name))).map((file) => labelFor(file));
   }, []);
 
   const startPolling = useCallback(
@@ -344,15 +360,17 @@ export function OAuthLoginPage() {
           const status = (result.status || '').toLowerCase();
           if (status === 'ok') {
             let priorityError = '';
+            let who: string[] = [];
             try {
-              await applyDefaultCredentialPriority(provider);
+              who = await applyDefaultCredentialPriority(provider);
             } catch (error) {
               priorityError = String(error);
             }
             if (!isCurrent()) return;
             completeProviderAuth(provider);
             if (priorityError) showProviderError(provider, t('oauth.priorityApplyFailed', { error: priorityError }));
-            else showNotice(t('oauth.loginSuccess', { provider: providerLabel(provider) }), 'success');
+            else showNotice(who.length ? t('oauth.loginSuccessAs', { accounts: who.join(', ') }) : t('oauth.loginSuccess', { provider: providerLabel(provider) }), 'success',
+              { action: { label: { key: 'oauth.viewAccount' }, onAction: () => requestOAuthSubpage('authFiles') } });
           } else if (status === 'error') {
             updateProviderState(provider, {
               status: 'error',
@@ -595,7 +613,7 @@ export function OAuthLoginPage() {
       <p className="oauth-hint oauth-page-hint">{t('oauth.hint')}</p>
       <label className="personal-provider-toggle"><input type="checkbox" checked={showOtherProviders} onChange={(event) => setShowOtherProviders(event.target.checked)} />{t('personal.otherProviders')}</label>
       <div className="oauth-grid">
-        {oauthProviders.filter((provider) => showOtherProviders || ['claude', 'codex'].includes(provider.id)).map((provider) => {
+        {oauthProviders.filter((provider) => showOtherProviders || ['claude', 'codex'].includes(provider.id) || usedProviders.has(provider.id)).map((provider) => {
           const state = states[provider.id] ?? { status: 'idle' as const };
           const canSubmitCallback = OAUTH_CALLBACK_SUPPORTED.has(provider.id) && Boolean(state.url);
           const loginLabel = state.status === 'success'

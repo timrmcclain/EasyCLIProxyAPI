@@ -54,6 +54,14 @@ describe('health check', () => {
     expect(healthChecks(healthy).some(check => check.id === 'unavailable')).toBe(false);
   });
 
+  it('warns when nothing restarts the proxy after Windows restarts, but only with apps connected', () => {
+    const find = (input: Partial<typeof healthy>) => healthChecks({ ...healthy, ...input }).find(check => check.id === 'startup');
+    expect(find({ startsWithWindows: { autostart: false, startProxy: true }, connectedApps: 2 })).toMatchObject({ level: 'warn', key: 'health.startup.off' });
+    expect(find({ startsWithWindows: { autostart: true, startProxy: false }, connectedApps: 1 })).toMatchObject({ key: 'health.startup.proxyOff' });
+    expect(find({ startsWithWindows: { autostart: true, startProxy: true }, connectedApps: 2 })).toBeUndefined();
+    expect(find({ startsWithWindows: { autostart: false, startProxy: false }, connectedApps: 0 })).toBeUndefined();
+  });
+
   it('covers no accounts, no keys, disabled accounts, a stray compression service and notifications', () => {
     expect(levels({ totalAccounts: 0 }).accounts).toBe('fail');
     expect(levels({ keyCount: 0 }).keys).toBe('fail');

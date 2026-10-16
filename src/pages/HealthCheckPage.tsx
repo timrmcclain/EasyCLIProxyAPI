@@ -35,7 +35,7 @@ export function HealthCheckPage() {
   const run = useCallback(async () => {
     setChecking(true);
     try {
-      const [settings, listen, filesResult, appsResult, compression, allowed] = await Promise.all([
+      const [settings, listen, filesResult, appsResult, compression, allowed, software] = await Promise.all([
         invoke<CoreSettings>('get_core_config_settings').catch(() => null),
         invoke<ListenStatus>('proxy_listen_status').catch(() => null),
         // Null (not []) when a probe fails, so the checks say "couldn't check" instead of reporting a guess.
@@ -43,6 +43,7 @@ export function HealthCheckPage() {
         loadAppStatuses(true).catch(() => null),
         compressionService.status().catch(() => null),
         isPermissionGranted().catch(() => null),
+        invoke<{ autostartEnabled: boolean; startCoreOnLaunch: boolean }>('get_software_settings').catch(() => null),
       ]);
       const files = filesResult ?? [];
       const apps = appsResult ?? [];
@@ -78,6 +79,8 @@ export function HealthCheckPage() {
         compression: compression ? { enabled: compression.enabled, running: compression.running } : null,
         notificationsAllowed: allowed,
         notificationsEnabled: readDesktopAlertsPreference(),
+        startsWithWindows: software ? { autostart: software.autostartEnabled, startProxy: software.startCoreOnLaunch } : null,
+        connectedApps: apps.filter(app => app.installed && app.connectionState !== 'not-configured').length,
       }));
     } finally {
       setChecking(false);

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { Check, LoaderCircle, Play, RefreshCw, RotateCw, Square } from 'lucide-react';
+import { Check, Download, LoaderCircle, Play, RefreshCw, RotateCw, Square } from 'lucide-react';
 import { type CoreStatus, useCoreRuntime } from '../coreRuntime';
 import { clientApiProfiles } from '../services/clientAccess';
 import { useI18n } from '../i18n';
@@ -139,6 +139,14 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
     } catch (error) {
       const errorMessage = String(error);
       await refreshStatus();
+      // The most common reason a start fails is another program holding the port: name it instead of the raw error.
+      if (command !== 'stop_core_process') {
+        const listen = await invoke<{ port: number; portInUse: boolean; owner: { pid: number; name: string } | null }>('proxy_listen_status').catch(() => null);
+        if (listen?.portInUse && listen.owner && !/cli-proxy-api/i.test(listen.owner.name)) {
+          showProcessNotice({ key: 'health.proxy.portBlocked', variables: { port: listen.port, name: listen.owner.name, pid: listen.owner.pid } }, 'error');
+          return false;
+        }
+      }
       showProcessNotice(
         { key: 'kernel.notice.actionFailed', variables: { action: actionLabel, error: errorMessage } },
         'error',
@@ -278,6 +286,10 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
           {statusError && <p className="home-runtime-error" role="alert">{statusError}</p>}
 
           <div className="button-row panel-action-row control-action-row">
+            {/* Nothing to start yet: offer the install where Start would be, instead of a dead button. */}
+            {coreStatus && !coreInstalled && <button type="button" className="primary-button" onClick={() => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'versions' }))}>
+              <Download size={14} aria-hidden="true" />{t('kernel.action.install')}
+            </button>}
             <button
               type="button"
               className={coreRunning ? 'danger-button home-runtime-stop' : 'primary-button'}

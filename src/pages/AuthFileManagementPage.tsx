@@ -23,6 +23,7 @@ import {
   FileDown,
   FolderOpen,
   Import,
+  LogIn,
   LoaderCircle,
   MinusCircle,
   Network,
@@ -33,6 +34,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import { requestOAuthSubpage } from '../oauthNavigation';
 
 const statusBadgeIcons = { success: CheckCircle2, warning: AlertTriangle, error: XCircle, neutral: MinusCircle, info: MinusCircle } as const;
 import { ProviderLogo, SignInAgainButton, needsSignIn } from '../components/AuthFileProviderIcon';
@@ -485,8 +487,12 @@ export function AuthFileManagementPage() {
         <button type="button" className="secondary-button compact-button auth-toolbar-quiet" onClick={() => void refreshAllQuotas()} disabled={loading || busy || quotaRefreshing || !files.some((file) => !readBoolean(file, 'disabled') && quotaProviderForFile(file))}>
           <RefreshCw size={16} className={quotaRefreshing ? 'spin' : ''} />{t('authFiles.toolbar.refreshQuota')}
         </button>
-        <button type="button" className="primary-button compact-button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+        <button type="button" className="secondary-button compact-button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
           <Import size={16} />{t('authFiles.import')}
+        </button>
+        {/* Signing in is the usual way to add one; importing a file is the rarer case. */}
+        <button type="button" className="primary-button compact-button" onClick={() => requestOAuthSubpage('login')}>
+          <LogIn size={16} />{t('authFiles.addAccount')}
         </button>
         <input ref={fileInputRef} type="file" accept=".json,application/json" multiple hidden onChange={(event) => void handleUpload(event)} />
         </div>

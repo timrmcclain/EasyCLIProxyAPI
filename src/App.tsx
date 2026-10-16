@@ -456,6 +456,8 @@ function AppContent() {
 
   const select = useCallback((pageId: PageId) => {
     if (!canOpenAppPage(pageId, coreReady)) {
+      // Say why nothing happened rather than ignoring the click.
+      paletteFeedback.showNotice({ key: 'app.locked.notice' }, 'info', { action: { label: { key: 'app.nav.home' }, onAction: () => setActive('home') } });
       return;
     }
     if (pageId !== active && !confirmLeave()) return;

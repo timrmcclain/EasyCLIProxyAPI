@@ -13,6 +13,7 @@ import { FeedbackNotice, useAppNotice } from '../appNotice';
 import { usageProviderDetails } from '../services/usageProvider';
 import { usageModelDetails } from '../services/usageModel';
 import { useAccountLabelBySource } from '../services/accountLabelBySource';
+import { classifyFailure, failureMessage } from '../services/errorCauses';
 
 const compactNumber = (value: number) => formatUsageNumber(value, getCurrentLocale());
 const compactDuration = (value: number) => formatDuration(value, getCurrentLocale());
@@ -323,13 +324,17 @@ function UsageResultCell({ record }: { record: UsageRecord }) {
   ]
     .filter(Boolean)
     .join(' · ');
+  // In the row, say why it failed in words; the provider's raw reply stays in the tooltip and the details dialog.
+  const summary = state === 'failed' && (record.failure_status > 0 || record.failure_body.trim())
+    ? [t(`errors.cause.${classifyFailure(record.failure_status, record.failure_body)}`), record.failure_status > 0 ? `HTTP ${record.failure_status}` : '', failureMessage(record.failure_body)].filter(Boolean).join(' · ')
+    : detail;
   return (
     <td className="usage-result-cell align-left" title={detail || t(`usage.result.${state}`)}>
       <span className={`usage-result ${state}`}>
         <span className="usage-result-dot" />
         {t(`usage.result.${state}`)}
       </span>
-      {detail ? <small title={detail}>{detail}</small> : null}
+      {summary ? <small title={detail}>{summary}</small> : null}
     </td>
   );
 }

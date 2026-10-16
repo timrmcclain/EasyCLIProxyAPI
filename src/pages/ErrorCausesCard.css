@@ -13,3 +13,11 @@
 .error-cause-detail p { margin: 0; color: var(--text-secondary); }
 .error-cause-detail blockquote { margin: 0; padding: 6px 10px; border-left: 3px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-family: var(--font-mono, monospace); font-size: 12px; overflow-wrap: anywhere; }
 .error-causes-note { margin: 0; color: var(--text-tertiary); font-size: 12px; }
+
+/* The requests behind a cause. */
+.error-cause-requests { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.error-cause-requests li { display: grid; grid-template-columns: 3.5em minmax(8em, 14em) 1fr; gap: 8px; align-items: baseline; }
+.error-cause-requests time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.error-cause-requests strong { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.error-cause-requests span { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.error-cause-requests .error-cause-more { display: block; color: var(--text-tertiary); }

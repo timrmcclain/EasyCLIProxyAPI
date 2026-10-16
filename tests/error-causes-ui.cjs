@@ -44,7 +44,7 @@ const path = require('node:path');
     assert.equal(await signIn.getAttribute('aria-expanded'), 'false');
     await signIn.click();
     assert.equal(await signIn.getAttribute('aria-expanded'), 'true');
-    await card.getByText('OAuth access token has been revoked.').waitFor();
+    await card.locator('blockquote').getByText('OAuth access token has been revoked.').waitFor();
     await card.getByRole('button', { name: 'Open Accounts' }).click();
     await page.locator('.nav-section').getByRole('button', { name: 'Accounts', exact: true }).and(page.locator('.active, [aria-current="page"]')).waitFor();
 
