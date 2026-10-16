@@ -114,6 +114,13 @@ let proxy;
     await wait(250);
   }
   assert.ok(log.includes('plugin registered plugin_id=secret-guard'), `plugin didn't register:\n${log.slice(-2000)}`);
+  // The plugin can register before the proxy opens its port; wait until it answers, or the first request fails.
+  let listening = false;
+  for (let i = 0; i < 60 && !listening; i++) {
+    listening = await fetch(`${BASE}/`).then(() => true, () => false);
+    if (!listening) await wait(250);
+  }
+  assert.ok(listening, `the proxy never started answering on ${BASE}:\n${log.slice(-2000)}`);
   const lines = ['plugin loads and registers'];
 
   for (const [format, build] of Object.entries(formats)) {
