@@ -9,7 +9,7 @@ import { readDashboardPreference, readDesktopAlertsPreference } from './dashboar
 import { attentionItems } from './homeGlance';
 import { driftedApps, loadAppStatuses, newlyInstalledApps } from './connectedApps';
 import { managementApi, readString, responseList } from './managementApi';
-import { providerTallies, quotaAlerts, type AlertMemory, type QuotaAlert } from './quotaAlerts';
+import { paceAlerts, providerTallies, quotaAlerts, type AlertMemory, type PaceAlert, type PaceMemory, type QuotaAlert } from './quotaAlerts';
 import { invoke } from '@tauri-apps/api/core';
 import { getQuotaCacheSnapshot } from './quotaCache';
 import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaForecast';
@@ -81,6 +81,16 @@ async function send(messages: { title: string; body: string }[]) {
   for (const message of messages.slice(0, 3)) sendNotification(message);
 }
 
+/** "Claude (work) will run out in about 1h 20m" with when it resets, for the pace warning. */
+export function paceAlertText(alert: PaceAlert, now: number): { title: string; body: string } {
+  const locale = getCurrentLocale();
+  const t = (key: Parameters<typeof translate>[1], variables?: Record<string, string | number>) => translate(locale, key, variables);
+  return {
+    title: t('notify.pace.title', { account: alert.account, time: resetCountdown(alert.emptyAt, now) }),
+    body: alert.resetAt ? t('notify.pace.bodyReset', { time: resetCountdown(alert.resetAt, now) }) : t('notify.pace.body'),
+  };
+}
+
 /**
  * Checks quotas every five minutes while the proxy is running, even with the window hidden in the
  * tray: records samples for the run-out forecast and raises a Windows notification when an account
@@ -89,6 +99,7 @@ async function send(messages: { title: string; body: string }[]) {
 export function startQuotaWatcher(): () => void {
   let stopped = false;
   let memory: AlertMemory | null = null;
+  let paceMemory: PaceMemory | null = null;
   let driftBaseline: Set<string> | null = null;
   let installedBaseline: Set<string> | null = null;
 
@@ -108,7 +119,9 @@ export function startQuotaWatcher(): () => void {
       await updateTray(files, attention);
       const result = quotaAlerts(memory, files, attention, providerOf, labelFor);
       memory = result.memory;
-      await send(result.alerts.map(alert => alertText(alert, now)));
+      const pace = paceAlerts(paceMemory, files, getQuotaHistory(), attention, now, providerOf, labelFor);
+      paceMemory = pace.memory;
+      await send([...result.alerts.map(alert => alertText(alert, now)), ...pace.alerts.map(alert => paceAlertText(alert, now))]);
     } catch {
       // The proxy may be restarting; try again on the next tick.
     }

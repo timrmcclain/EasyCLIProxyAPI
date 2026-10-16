@@ -43,8 +43,8 @@ updateQuotaCache(Object.fromEntries(files.map((file, index) => {
     resetCreditsApplicable: index === 0 ? 0 : undefined,
     rows: index === 4 ? [{ label: 'Paid API account', scope: 'paid', remainingPercent: null, detail: 'Upstream does not report remaining quota.' }]
       : [
-        { label: '5h', scope: 'account', remainingPercent: index === 1 ? 0 : index === 2 ? 8 : 72 - index * 3, resetAtMs: startedAt + 3 * 3600000 },
-        { label: 'Weekly', scope: 'account', remainingPercent: 83 - index * 5, resetAtMs: startedAt + 5 * 86400000 },
+        { label: '5h', scope: 'account', remainingPercent: index === 1 ? 0 : index === 2 ? 8 : 72 - index * 3, resetAtMs: startedAt + 3 * 3600000, windowMs: 5 * 3600000 },
+        { label: 'Weekly', scope: 'account', remainingPercent: 83 - index * 5, resetAtMs: startedAt + 5 * 86400000, windowMs: 7 * 86400000 },
         ...(index === 3 ? [
           { label: 'Additional model A', scope: 'model', remainingPercent: 34, resetAtMs: startedAt + 3600000 },
           { label: 'Additional model B', scope: 'model', remainingPercent: null, detail: 'No quota limit supplied for this model.' },

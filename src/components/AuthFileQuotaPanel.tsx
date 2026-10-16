@@ -3,7 +3,7 @@ import { LoaderCircle, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { MessageNotice } from '../appNotice';
 import { readBoolean } from '../services/managementApi';
-import { fileName, formatQuotaTimestamp, type AuthFile, type QuotaState } from '../services/quotaService';
+import { evenPaceRemaining, fileName, formatQuotaTimestamp, type AuthFile, type QuotaState } from '../services/quotaService';
 import { canResetQuota, hasPendingClaudeReset, resetLabel } from '../services/quotaActions';
 import { formatQuotaReset, useQuotaClock } from '../services/quotaTime';
 import { quotaAvailability, quotaPercent } from '../services/quotaAvailability';
@@ -48,14 +48,17 @@ export function AuthFileQuotaPanel({ quota, file, disabled, onRefresh, onReset, 
       ? new Intl.DateTimeFormat(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(row.resetAtMs)
       : reset;
     const isBlocker = availability.blockers.includes(row);
+    const pace = percent === null ? null : evenPaceRemaining(row, now);
     // A window can report healthy remaining% while the account is still blocked by a different, already-exhausted window (e.g. the 5-hour window looks fine while the 7-day cap is at zero). Don't render that as green.
     const blockedElsewhere = !isBlocker && ['exhausted', 'creditBacked', 'resetDue'].includes(availability.kind);
     const tone = isBlocker ? 'low' : blockedElsewhere ? 'blocked' : percent === null ? 'unknown' : percent < 15 ? 'low' : percent < 50 ? 'medium' : 'high';
     return <div className={`credential-quota-row ${tone}`} key={`${row.label}-${index}`}>
       <div className="credential-quota-label"><span title={row.label}>{row.label}</span><strong>{percent === null ? '—' : `${quotaPercent(percent)}%`}</strong></div>
       <div className="credential-quota-track" role={percent === null ? undefined : 'progressbar'} aria-label={`${row.label} · ${t('authFiles.settings.quotaRemaining')}`}
-        aria-valuemin={percent === null ? undefined : 0} aria-valuemax={percent === null ? undefined : 100} aria-valuenow={percent ?? undefined}>
+        aria-valuemin={percent === null ? undefined : 0} aria-valuemax={percent === null ? undefined : 100} aria-valuenow={percent ?? undefined}
+        title={pace === null ? undefined : t('authFiles.quota.evenPace', { percent: quotaPercent(pace) })}>
         {percent === null ? <span className="sr-only">{t('authFiles.settings.quotaUnknown')}</span> : <i style={{ width: `${percent}%` }} />}
+        {pace === null ? null : <b className="credential-quota-pace" style={{ left: `${pace}%` }} aria-hidden="true" />}
       </div>
       {blockedElsewhere ? <small>{t('authFiles.quota.blockedElsewhere')}</small> : null}
       {row.justReset ? <small className="credential-quota-just-reset">{t('authFiles.quota.justReset')}</small> : null}

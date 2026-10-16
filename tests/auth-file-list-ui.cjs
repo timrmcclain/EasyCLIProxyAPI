@@ -107,6 +107,11 @@ const fs = require('node:fs/promises');
     assert.equal(await card(2).getByRole('progressbar').first().getAttribute('aria-valuenow'), '0');
     assert.equal(await card(1).getByRole('progressbar').first().getAttribute('aria-valuenow'), '72');
     assert.equal(await card(1).getByRole('progressbar').nth(1).getAttribute('aria-valuenow'), '83');
+    // Even-pace markers: 3 of 5 hours and 5 of 7 days still to run.
+    const paceLefts = await card(1).locator('.credential-quota-pace').evaluateAll(nodes => nodes.map(node => parseFloat(node.style.left)));
+    assert.equal(paceLefts.length, 2, 'Each window with a known length shows an even-pace marker');
+    assert.ok(Math.abs(paceLefts[0] - 60) < 1 && Math.abs(paceLefts[1] - 500 / 7) < 1, `even-pace positions: ${paceLefts}`);
+    assert.match(await card(1).getByRole('progressbar').first().getAttribute('title'), /60%/);
     assert.equal(await card(5).locator('.credential-quota-row.unknown [role="progressbar"]').count(), 0, 'Unknown quota is not reported as a zero-percent progress bar');
     assert.equal(await card(5).locator('.credential-quota-label strong').innerText(), '—', 'Unknown quota retains its separate presentation');
     const resetTimes = card(1).locator('.credential-quota-reset-time');
@@ -133,15 +138,24 @@ const fs = require('node:fs/promises');
     assert.equal(await previous().isDisabled(), true, 'Provider filter resets to the first page');
     await page.locator('.auth-files-toolbar select').first().selectOption('all');
     await next().click();
-    await page.locator('.auth-files-toolbar select').last().selectOption('disabled');
+    await page.locator('.auth-files-toolbar select').nth(1).selectOption('disabled');
     await card(3).waitFor();
     assert.equal(await cards().count(), 2, 'Disabled filter retains matching rows');
     assert.equal(await previous().isDisabled(), true);
-    await page.locator('.auth-files-toolbar select').last().selectOption('all');
+    await page.locator('.auth-files-toolbar select').nth(1).selectOption('all');
     await pagination().locator('select').selectOption('20');
     await card(12).waitFor();
     assert.equal(await cards().count(), 12, 'Page size twenty shows all twelve credentials');
     assert.equal(await next().isDisabled(), true);
+    // Sorting by least quota left brings the exhausted account (02, 0%) to the top; routing order puts it back.
+    const sortSelect = page.locator('.auth-files-toolbar select').nth(2);
+    const firstFile = () => cards().first().locator('.auth-card-filename').getAttribute('title');
+    await sortSelect.selectOption('quota');
+    await page.waitForFunction(() => document.querySelector('.auth-file-card .auth-card-filename')?.getAttribute('title') === '02-account.json');
+    assert.equal(await page.evaluate(() => localStorage.getItem('personal.accountsSort')), 'quota', 'The chosen sort is remembered');
+    await sortSelect.selectOption('routing');
+    await page.waitForFunction(() => document.querySelector('.auth-file-card .auth-card-filename')?.getAttribute('title') !== '02-account.json');
+    assert.notEqual(await firstFile(), '02-account.json');
 
     const detailsButton = card(1).locator('.auth-list-details-button');
     assert.equal(await card(1).locator('.auth-list-details').isVisible(), false);

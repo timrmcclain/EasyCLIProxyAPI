@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { AttentionItem } from '../src/services/homeGlance';
-import { emptyAlertMemory, providerTallies, quotaAlerts, type AlertMemory } from '../src/services/quotaAlerts';
+import { emptyAlertMemory, paceAlerts, providerTallies, quotaAlerts, type AlertMemory } from '../src/services/quotaAlerts';
 import { quotaKey, type AuthFile } from '../src/services/quotaService';
 
 const file = (name: string, provider = 'claude'): AuthFile => ({ name: `${name}.json`, auth_index: name, provider });
@@ -63,5 +63,32 @@ describe('provider tallies for the tray', () => {
       { provider: 'codex', total: 2, low: 0, blocked: 2 },
       { provider: 'claude', total: 2, low: 1, blocked: 0 },
     ]);
+  });
+});
+
+describe('pace alerts', () => {
+  const H = 3_600_000;
+  const t0 = 1_000_000_000_000;
+  const now = t0 + 0.5 * H;
+  // 50% → 30% in half an hour: 40 points an hour, so 30% lasts 45 minutes; the window resets in 5 hours.
+  const fast = (window = 'five_hour', resetAt = t0 + 5 * H) => [
+    { at: t0, percent: 50, window, resetAt }, { at: now, percent: 30, window, resetAt },
+  ];
+  const pace = (previous: Parameters<typeof paceAlerts>[0], history: Parameters<typeof paceAlerts>[2], attention: AttentionItem[] = []) =>
+    paceAlerts(previous, files, history, attention, now, providerOf, labelFor);
+
+  it('stays silent on the first check, then warns once per window', () => {
+    const first = pace(null, { [quotaKey(a)]: fast() });
+    expect(first.alerts).toEqual([]);
+    const fresh = pace({}, { [quotaKey(a)]: fast() });
+    expect(fresh.alerts.map(alert => [alert.account, alert.emptyAt - now])).toEqual([['a', 0.75 * H]]);
+    expect(pace(fresh.memory, { [quotaKey(a)]: fast() }).alerts).toEqual([]);
+    expect(pace(fresh.memory, { [quotaKey(a)]: fast('weekly') }).alerts.map(alert => alert.account)).toEqual(['a']);
+  });
+  it('skips accounts that last to the reset, run out later than two hours, or already alert as low', () => {
+    expect(pace({}, { [quotaKey(a)]: fast('five_hour', t0 + 0.6 * H) }).alerts).toEqual([]);
+    const slow = [{ at: t0, percent: 90, window: 'w' }, { at: now, percent: 88, window: 'w' }];
+    expect(pace({}, { [quotaKey(a)]: slow }).alerts).toEqual([]);
+    expect(pace({}, { [quotaKey(a)]: fast() }, [item(a, 'low', 30)]).alerts).toEqual([]);
   });
 });

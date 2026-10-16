@@ -9,6 +9,7 @@ import { useQuotaReset } from '../components/useQuotaReset';
 import './AuthFileManagementPage.css';
 import { MessageNotice, FloatingNotice, useAppNotice } from '../appNotice';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
+import { accountSorts, sortAccounts, type AccountSort } from '../services/accountSort';
 import { AuthFileModelsDialog } from '../components/AuthFileModelsDialog';
 import { AuthFileRequestStatus } from '../components/AuthFileRequestStatus';
 import { AuthFileHealthStatus } from '../components/AuthFileHealthStatus';
@@ -131,6 +132,7 @@ export function AuthFileManagementPage() {
   const [page, setPage] = useState(1);
   // 'auto' shows every account up to 50, then pages by 50; a size you pick is remembered.
   const [pageChoice, setPageChoice] = useState(() => readDashboardPreference('accountsPageSize', ['auto', '10', '20', '50'], 'auto'));
+  const [sortChoice, setSortChoice] = useState<AccountSort>(() => readDashboardPreference('accountsSort', accountSorts, 'routing'));
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(() => new Set());
   const [providerFilter, setProviderFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled' | 'runtime'>('all');
@@ -357,7 +359,7 @@ export function AuthFileManagementPage() {
 
   const visibleFiles = useMemo(() => {
     const query = filter.trim().toLowerCase();
-    return files.filter((file) => {
+    const matching = files.filter((file) => {
       const providerMatch = providerFilter === 'all' || providerName(file) === providerFilter;
       const disabled = authFileHealth(file).disabled;
       const runtimeMatch =
@@ -373,13 +375,14 @@ export function AuthFileManagementPage() {
           .includes(query);
       return providerMatch && runtimeMatch && searchMatch;
     });
-  }, [files, filter, providerFilter, statusFilter, names]);
+    return sortAccounts(matching, sortChoice, providerName, (file) => quotas[quotaKey(file)], Date.now());
+  }, [files, filter, providerFilter, statusFilter, names, sortChoice, quotas]);
 
   const pageSize = pageChoice === 'auto' ? (visibleFiles.length < 50 ? Math.max(1, visibleFiles.length) : 50) : Number(pageChoice);
   const pageCount = Math.max(1, Math.ceil(visibleFiles.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pageFiles = visibleFiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  useEffect(() => setPage(1), [filter, providerFilter, statusFilter, pageChoice]);
+  useEffect(() => setPage(1), [filter, providerFilter, statusFilter, pageChoice, sortChoice]);
   useEffect(() => setPage((current) => Math.min(current, pageCount)), [pageCount]);
 
   const toggleDetails = (key: string) => setExpandedFiles((current) => {
@@ -533,6 +536,9 @@ export function AuthFileManagementPage() {
             <option value="enabled">{t('authFiles.filter.enabled')}</option>
             <option value="disabled">{t('authFiles.filter.disabled')}</option>
             <option value="runtime">{t('authFiles.filter.runtime')}</option>
+          </select>
+          <select value={sortChoice} onChange={(event) => { const value = event.currentTarget.value as AccountSort; setSortChoice(value); saveDashboardPreference('accountsSort', value); }} aria-label={t('authFiles.sort.label')} title={t('authFiles.sort.label')}>
+            {accountSorts.map((mode) => <option key={mode} value={mode}>{t(`authFiles.sort.${mode}`)}</option>)}
           </select>
           </div>
         </div>

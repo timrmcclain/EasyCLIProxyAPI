@@ -3,6 +3,7 @@ import {
   codexAccountCreditsFor,
   codexResetCreditDetailsFor,
   codexResetCreditsFor,
+  evenPaceRemaining,
   quotaRowsFor,
 } from '../src/services/quotaService';
 
@@ -350,5 +351,22 @@ describe('quotaRowsFor', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].remainingPercent).toBe(100);
     expect(rows[0].resetAtMs).toBeUndefined();
+  });
+});
+
+describe('even pace', () => {
+  const H = 3_600_000;
+  it('records each window length so the even-pace point can be worked out', () => {
+    const codex = quotaRowsFor('codex', { rate_limit: { primary_window: { used_percent: 10, limit_window_seconds: 18_000 } } });
+    expect(codex[0].windowMs).toBe(5 * H);
+    const claude = quotaRowsFor('claude', { five_hour: { utilization: 20 }, seven_day: { utilization: 10 } });
+    expect(claude.map(row => row.windowMs)).toEqual([5 * H, 7 * 24 * H]);
+  });
+  it('is the share of the window still to run, and unknown without a length or a future reset', () => {
+    const now = 1_000_000_000_000;
+    expect(evenPaceRemaining({ windowMs: 5 * H, resetAtMs: now + 2 * H }, now)).toBe(40);
+    expect(evenPaceRemaining({ windowMs: 5 * H, resetAtMs: now + 9 * H }, now)).toBe(100);
+    expect(evenPaceRemaining({ resetAtMs: now + H }, now)).toBeNull();
+    expect(evenPaceRemaining({ windowMs: 5 * H, resetAtMs: now - 1 }, now)).toBeNull();
   });
 });

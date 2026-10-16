@@ -34,6 +34,8 @@ export type QuotaRow = {
   remainingPercent: number | null;
   reset?: string;
   resetAtMs?: number;
+  /** How long the window lasts, when known; with resetAtMs it gives the even-pace point. */
+  windowMs?: number;
   detail?: string;
   /** Set by the cache layer when this row's remaining% climbed since the last successful fetch -- a reset, not a refresh artifact. */
   justReset?: boolean;
@@ -308,6 +310,7 @@ const codexWindowRows = (value: Record<string, unknown>): QuotaRow[] => {
         ?? (reached && resetAtMs !== undefined ? 0 : null),
       reset: codexResetLabel(raw),
       resetAtMs,
+      ...(duration ? { windowMs: duration * 1000 } : {}),
     };
   }).filter((row): row is QuotaRow => row !== null);
 };
@@ -424,6 +427,7 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
           remainingPercent: remainingFromUsedPercent(raw.utilization),
           reset: absoluteResetLabel(raw.resets_at ?? raw.resetsAt),
           resetAtMs: quotaResetFor(raw, ['resets_at', 'resetsAt']),
+          windowMs: key === 'five_hour' ? 5 * 3_600_000 : 7 * 24 * 3_600_000,
         };
       })
       .filter((row): row is QuotaRow => row !== null);
@@ -434,6 +438,7 @@ export const quotaRowsFor = (provider: QuotaProvider, payload: unknown): QuotaRo
       remainingPercent: remainingFromUsedPercent(fable.percent),
       reset: absoluteResetLabel(fable.resets_at ?? fable.resetsAt),
       resetAtMs: quotaResetFor(fable, ['resets_at', 'resetsAt']),
+      windowMs: 7 * 24 * 3_600_000,
     });
     const extraUsage = isRecord(value.extra_usage)
       ? value.extra_usage
@@ -1066,4 +1071,13 @@ export function consumeClaudeResetCredit(file: AuthFile): Promise<QuotaState> {
 export function quotaResetExpiries(quota: QuotaState): string[] {
   return (quota.resetCreditExpiries ?? (quota.resetCreditsEarliestExpiry ? [quota.resetCreditsEarliestExpiry] : []))
     .slice().sort((left, right) => (quotaResetInstant(left) ?? Infinity) - (quotaResetInstant(right) ?? Infinity));
+}
+
+/**
+ * Where an evenly paced account would be now: the share of the window still to run, as remaining%.
+ * Null when the window's length or reset time isn't known, or the reset has passed.
+ */
+export function evenPaceRemaining(row: Pick<QuotaRow, 'windowMs' | 'resetAtMs'>, now: number): number | null {
+  if (!row.windowMs || row.windowMs <= 0 || row.resetAtMs === undefined || !Number.isFinite(row.resetAtMs) || row.resetAtMs <= now) return null;
+  return Math.max(0, Math.min(100, ((row.resetAtMs - now) / row.windowMs) * 100));
 }

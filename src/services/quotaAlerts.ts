@@ -1,4 +1,5 @@
 import type { AttentionItem } from './homeGlance';
+import { forecastQuota, type QuotaHistory } from './quotaForecast';
 import { quotaKey, type AuthFile } from './quotaService';
 
 export type AccountLevel = 'ok' | 'low' | 'blocked' | 'unavailable';
@@ -93,4 +94,43 @@ export function providerTallies(files: AuthFile[], attention: AttentionItem[], p
   }
   const rank = (tally: ProviderTally) => (tally.blocked === tally.total ? 0 : tally.blocked ? 1 : tally.low ? 2 : 3);
   return [...tallies.values()].sort((a, b) => rank(a) - rank(b));
+}
+
+/** Which window each account was last warned about, so the pace warning comes once per window. */
+export type PaceMemory = Record<string, string>;
+export type PaceAlert = { key: string; account: string; provider: string; emptyAt: number; resetAt?: number };
+
+/** Warn this far ahead of an account running out at its recent pace. */
+export const PACE_WARNING_MS = 2 * 3_600_000;
+
+/**
+ * Accounts that aren't low yet but, at their recent pace, will run out within two hours and before
+ * their window resets. Each window warns once; the first check after start only records the baseline.
+ */
+export function paceAlerts(
+  previous: PaceMemory | null,
+  files: AuthFile[],
+  history: QuotaHistory,
+  attention: AttentionItem[],
+  now: number,
+  providerOf: (file: AuthFile) => string,
+  labelFor: (file: AuthFile) => string,
+): { memory: PaceMemory; alerts: PaceAlert[] } {
+  const severity = new Map(attention.map(item => [quotaKey(item.file), item.severity]));
+  const memory: PaceMemory = {};
+  const alerts: PaceAlert[] = [];
+  for (const file of files) {
+    const key = quotaKey(file);
+    const samples = history[key];
+    const window = samples?.[samples.length - 1]?.window;
+    if (!window) continue;
+    if (previous?.[key] === window) { memory[key] = window; continue; }
+    // Low, blocked or unconfirmed accounts already have their own alerts (or none on purpose).
+    if (severity.has(key)) continue;
+    const forecast = forecastQuota(samples, now);
+    if (forecast.kind !== 'runsOut' || forecast.emptyAt <= now || forecast.emptyAt - now > PACE_WARNING_MS) continue;
+    memory[key] = window;
+    if (previous) alerts.push({ key, account: labelFor(file), provider: providerOf(file), emptyAt: forecast.emptyAt, resetAt: forecast.resetAt });
+  }
+  return { memory, alerts };
 }
