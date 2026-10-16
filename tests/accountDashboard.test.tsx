@@ -93,7 +93,7 @@ describe('account dashboard evidence', () => {
     const html = render({ status: 'success', rows: [{ label: 'Week', remainingPercent: null }] });
     expect(html).toContain('Not reported');
     expect(html).not.toContain('<meter');
-    expect(render({ status: 'error', rows: [] })).toContain('Quota unavailable');
+    expect(render({ status: 'error', rows: [] })).toContain('Couldn&#x27;t read this account&#x27;s quota.');
   });
   it('labels stale status and disables priority edits while offline', () => {
     const html = render({ status: 'idle', rows: [] }, true);

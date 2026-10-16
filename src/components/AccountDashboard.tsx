@@ -23,7 +23,8 @@ import type { HomeUsageSummary } from '../services/homeOverview';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
 import { readAccountNames, saveAccountNames } from '../services/accountNames';
 import { privateAccountLabel } from '../services/accountPrivacy';
-import { ProviderLogo, SignInAgainButton, needsSignIn } from './AuthFileProviderIcon';
+import { ProviderLogo, SignInAgainButton, needsSignIn, openSignIn } from './AuthFileProviderIcon';
+import { requestAccountRequests } from '../usageNavigation';
 import { loadPlanBlocks, withPlanBlocks } from '../services/planBlock';
 import { accountRequests, loadDashboardActivity, requestClient, successfulRequest, privateText, type DashboardActivity, type DashboardRequest } from '../services/dashboardActivity';
 import './AccountDashboard.css';
@@ -125,6 +126,21 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     } finally {
       busy.current = false;
       setSaving(false);
+    }
+  };
+
+  const [checkingUnconfirmed, setCheckingUnconfirmed] = useState(false);
+  const checkUnconfirmed = async () => {
+    if (!readyRef.current || busy.current) return;
+    const targets = attentionItems(files, quotas, Date.now(), false).filter(item => item.severity === 'unconfirmed').map(item => item.file).filter(file => providerForFile(file));
+    if (!targets.length) return;
+    busy.current = true;
+    setCheckingUnconfirmed(true);
+    try {
+      await refreshDashboardQuotas(targets, true, () => mounted.current && readyRef.current);
+    } finally {
+      busy.current = false;
+      if (mounted.current) setCheckingUnconfirmed(false);
     }
   };
 
@@ -245,6 +261,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       })}
     </div>
     <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} attention={attention} now={now} labelFor={labelFor} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} proxyReady={ready} nameFor={(provider) => providerNames[provider] ?? provider}
+      onCheckUnconfirmed={() => void checkUnconfirmed()} checkingUnconfirmed={checkingUnconfirmed}
       onView={viewAccount} onMore={() => listHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
     {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
     {files.length > 0 && <div ref={listHeading} className="ad-list-heading">
@@ -385,6 +402,9 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
     ...(onName && !hideEmails ? [{ key: 'rename', label: t('accountDashboard.rename'), onSelect: () => openEditor('name'), movesFocus: true }] : []),
     { key: 'priority', label: t('accountDashboard.setPriority'), onSelect: () => openEditor('priority'), movesFocus: true },
     { key: 'refresh', label: t(refreshing ? 'accountDashboard.refreshing' : 'accountDashboard.refreshQuota'), disabled: !canRefresh, onSelect: () => void onRefresh?.(file) },
+    ...(needsSignIn(file) ? [{ key: 'sign-in', label: t('authFiles.signInAgain'), onSelect: () => openSignIn(String(file.provider ?? file.type ?? '')) }] : []),
+    // Activity's Account filter matches the email the proxy records as each request's source.
+    ...(typeof file.email === 'string' && file.email ? [{ key: 'requests', label: t('accountDashboard.viewRequests'), onSelect: () => requestAccountRequests(String(file.email)) }] : []),
     ...(onAlternatives && ['exhausted', 'limited', 'unavailable'].includes(availability.kind) ? [{ key: 'alternatives', label: t('ux.alternatives'), onSelect: () => onAlternatives(file) }] : []),
   ];
   const renderQuota = (row: QuotaRow, index: number) => {
@@ -423,7 +443,7 @@ export function AccountCard({ file, quota, now, disabled, stale = false, onSave,
         {stale && <span className="state-pill neutral">{t('accountDashboard.stale')}</span>}
       </div>
       <div className={`ad-quota-list ad-row-quota ad-row-quota-${faceRows.length || 1}`} aria-busy={quota.status === 'loading'}>
-        {quota.status === 'error' ? <p className="ad-card-note ad-error">{t('accountDashboard.quotaError')}</p> : null}
+        {quota.status === 'error' ? <p className="ad-card-note ad-error">{t('accountDashboard.quotaError')}{canRefresh && <button type="button" className="glance-open" disabled={refreshing} onClick={() => void onRefresh?.(file)}>{t(refreshing ? 'accountDashboard.refreshing' : 'common.retry')}</button>}</p> : null}
         {/* The availability notice already explains an incomplete success; don't repeat it. */}
         {!quota.rows.length && quota.status !== 'error' && !(quota.status === 'success' && availability.uncertainty === 'incomplete') ? <p className="ad-card-note">{!providerForFile(file) ? t('ledger.unsupportedQuota') : summary.health.disabled ? t('accountDashboard.disabled') : quota.status === 'loading' ? t('accountDashboard.checking') : quota.status === 'success' ? t('accountDashboard.noLimits') : t('accountDashboard.notChecked')}</p> : null}
         {faceRows.map(renderQuota)}

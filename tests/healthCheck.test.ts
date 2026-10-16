@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { findDuplicateAccounts, findOutrankingKeys, healthChecks, type HealthInput } from '../src/services/healthCheck';
+import { findDuplicateAccounts, findOutrankingKeys, healthChecks, providersWithoutUsableAccount, type HealthInput } from '../src/services/healthCheck';
 
 const healthy: HealthInput = {
   proxyRunning: true, host: '127.0.0.1', exposed: false, portBlockedBy: null, keyCount: 1, managementSecretConfigured: true,
@@ -109,5 +109,22 @@ describe('findOutrankingKeys', () => {
   it('warns on the Health check page with a link to API Access', () => {
     const check = healthChecks({ ...healthy, outrankingKeys: ['Codex Direct (10 > 2)'] }).find(c => c.id === 'paid-keys');
     expect(check).toMatchObject({ level: 'warn', target: 'api' });
+  });
+});
+
+describe('providersWithoutUsableAccount', () => {
+  it('lists a provider only when none of its accounts can take requests', () => {
+    expect(providersWithoutUsableAccount([
+      { provider: 'claude', usable: false },
+      { provider: 'Claude', usable: false },
+      { provider: 'codex', usable: false },
+      { provider: 'codex', usable: true },
+      { provider: '', usable: false },
+    ])).toEqual(['claude']);
+  });
+  it('fails Health check with a link to Accounts, and flags an engine update', () => {
+    const checks = healthChecks({ ...healthy, providersWithoutAccount: ['claude'], engineUpdate: { current: '8.0.29', latest: '8.0.31' } });
+    expect(checks.find(c => c.id === 'no-usable-account')).toMatchObject({ level: 'fail', target: 'oauth' });
+    expect(checks.find(c => c.id === 'engine-update')).toMatchObject({ level: 'warn', target: 'versions', variables: { latest: '8.0.31' } });
   });
 });

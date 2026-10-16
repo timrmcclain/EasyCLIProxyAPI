@@ -31,6 +31,9 @@ type GlanceProps = {
   files: AuthFile[]; quotas: Record<string, QuotaState>; stale: boolean; nameFor: (provider: string) => string;
   /** False while the proxy is stopped: then nothing can take requests, whatever the accounts say. */
   proxyReady?: boolean;
+  /** Re-checks the accounts whose availability is unconfirmed. */
+  onCheckUnconfirmed?: () => void;
+  checkingUnconfirmed?: boolean;
 };
 
 /** The at-a-glance row under the provider runway: what the proxy is doing, what compression saves, and what needs you. */
@@ -126,9 +129,16 @@ function CompressionTile() {
   </article>;
 }
 
-function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore, proxyReady = true, files }: GlanceProps) {
+function AttentionTile({ attention: all, now, labelFor, providerOf, onView, onMore, proxyReady = true, files, onCheckUnconfirmed, checkingUnconfirmed }: GlanceProps) {
   const { t } = useI18n();
+  // Unconfirmed accounts aren't problems yet, so they get one line with a way to check them instead of a row each.
+  const attention = all.filter(item => item.severity !== 'unconfirmed');
+  const unconfirmed = all.length - attention.length;
   const shown = attention.slice(0, ATTENTION_ROWS);
+  const uncheckedLine = unconfirmed > 0 && <p className="glance-unconfirmed">
+    <span>{t('glance.attention.uncheckedLine', { count: unconfirmed })}</span>
+    {onCheckUnconfirmed && <button type="button" className="glance-open" disabled={checkingUnconfirmed} onClick={onCheckUnconfirmed}>{t(checkingUnconfirmed ? 'glance.attention.checking' : 'glance.attention.checkNow')}</button>}
+  </p>;
   const history = useQuotaHistory();
   const runsOut = (item: AttentionItem) => {
     if (item.severity !== 'low') return undefined;
@@ -142,8 +152,8 @@ function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore, p
     {/* "Nothing needs you" is only true when the proxy is up and there are accounts to route to. */}
     {!proxyReady ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.proxyDown')}</strong><small>{t('glance.attention.proxyDownDetail')}</small></span></div>
       : !files.length ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.noAccounts')}</strong><small>{t('glance.attention.noAccountsDetail')}</small></span></div>
-      : !attention.length ? <div className="glance-clear"><CircleCheck size={18} aria-hidden="true" /><span><strong>{t('glance.attention.none')}</strong><small>{t('glance.attention.noneDetail')}</small></span></div>
-      : <ul className="glance-attention-list">
+      : !attention.length ? <>{unconfirmed ? uncheckedLine : <div className="glance-clear"><CircleCheck size={18} aria-hidden="true" /><span><strong>{t('glance.attention.none')}</strong><small>{t('glance.attention.noneDetail')}</small></span></div>}</>
+      : <><ul className="glance-attention-list">
         {shown.map(item => <li key={quotaKey(item.file)} className={`attention-${item.severity}`}>
           <ProviderLogo provider={providerOf(item.file)} />
           <span className="glance-attention-name" title={labelFor(item.file)}>{labelFor(item.file)}</span>
@@ -152,7 +162,7 @@ function AttentionTile({ attention, now, labelFor, providerOf, onView, onMore, p
           <button type="button" className="glance-open" onClick={() => onView(item.file)} aria-label={`${t('glance.attention.view')}: ${labelFor(item.file)}`}>{t('glance.attention.view')}</button>
         </li>)}
         {attention.length > shown.length && <li className="glance-attention-more"><button type="button" className="glance-open" onClick={onMore}>{t('glance.attention.more', { count: attention.length - shown.length })}</button></li>}
-      </ul>}
+      </ul>{uncheckedLine}</>}
   </article>;
 }
 

@@ -3,7 +3,7 @@
  * rules can be tested without the app; the Health check page gathers them.
  */
 export type HealthLevel = 'ok' | 'warn' | 'fail';
-export type HealthTarget = 'home' | 'oauth' | 'agents' | 'config' | 'compression' | 'proxy' | 'api';
+export type HealthTarget = 'home' | 'oauth' | 'agents' | 'config' | 'compression' | 'proxy' | 'api' | 'versions';
 export type HealthCheck = {
   id: string;
   level: HealthLevel;
@@ -46,9 +46,24 @@ export type HealthInput = {
   connectedApps?: number;
   /** Paid API keys that outrank every enabled subscription account of the same provider. Null when unknown. */
   outrankingKeys?: string[] | null;
+  /** Providers with accounts but none that can take requests, so every app request for them fails. */
+  providersWithoutAccount?: string[];
+  /** A newer proxy engine is available. */
+  engineUpdate?: { current: string; latest: string } | null;
 };
 
 const rank: Record<HealthLevel, number> = { fail: 0, warn: 1, ok: 2 };
+
+/** Providers where every account is switched off or refused, so nothing can serve that provider's models. */
+export function providersWithoutUsableAccount(accounts: { provider: string; usable: boolean }[]): string[] {
+  const usable = new Map<string, boolean>();
+  for (const { provider, usable: ok } of accounts) {
+    const key = provider.toLowerCase();
+    if (!key) continue;
+    usable.set(key, (usable.get(key) ?? false) || ok);
+  }
+  return [...usable].filter(([, ok]) => !ok).map(([provider]) => provider).sort();
+}
 
 /** API key sections whose keys share a scheduler with the same provider's signed-in accounts. */
 const keyProvider: Record<string, string> = { 'claude-api-key': 'claude', 'codex-api-key': 'codex', 'xai-api-key': 'xai', 'meta-api-key': 'meta' };
@@ -132,6 +147,8 @@ export function healthChecks(input: HealthInput): HealthCheck[] {
   if (input.compression?.running && !input.compression.enabled) checks.push({ id: 'compression', level: 'warn', key: 'health.compression.stray', target: 'compression' });
 
   // Connected apps send everything through the proxy; if nothing starts it after a reboot, they all fail until you open the hub.
+  if (input.providersWithoutAccount?.length) checks.push({ id: 'no-usable-account', level: 'fail', key: 'health.noUsableAccount', variables: { providers: input.providersWithoutAccount.join(', ') }, target: 'oauth' });
+  if (input.engineUpdate) checks.push({ id: 'engine-update', level: 'warn', key: 'health.engineUpdate', variables: input.engineUpdate, target: 'versions' });
   if (input.outrankingKeys?.length) checks.push({ id: 'paid-keys', level: 'warn', key: 'health.paidKeys', variables: { keys: input.outrankingKeys.join(', ') }, target: 'api' });
 
   const boot = input.startsWithWindows;

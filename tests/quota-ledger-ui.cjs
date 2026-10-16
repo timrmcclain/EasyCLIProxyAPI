@@ -78,11 +78,15 @@ const path = require('node:path');
     assert.match(await verdict.innerText(), /^3 accounts need attention/);
     assert.match(await verdict.innerText(), /codex-account-0[68]\.json has 5% left, resets in 2d/);
     const attention = page.locator('.glance-attention');
-    // Unconfirmed Grok is listed too, after the accounts running low; the status-line verdict only counts the three that can stop work.
-    assert.equal(await attention.locator('.glance-count').innerText(), '4');
+    // Only the three that can stop work are rows and counted, matching the status line; unconfirmed Grok gets one line with Check now.
+    assert.equal(await attention.locator('.glance-count').innerText(), '3');
     const attentionRows = await attention.locator('.glance-attention-list li').evaluateAll(nodes => nodes.map(node => node.innerText.replace(/\s+/g, ' ').trim()));
-    assert.equal(attentionRows.length, 4, JSON.stringify(attentionRows));
-    assert.ok(attentionRows[0].includes('5% left') && attentionRows[2].includes('7% left') && attentionRows[3].includes('Unconfirmed'), `worst first: ${JSON.stringify(attentionRows)}`);
+    assert.equal(attentionRows.length, 3, JSON.stringify(attentionRows));
+    assert.ok(attentionRows[0].includes('5% left') && attentionRows[2].includes('7% left'), `worst first: ${JSON.stringify(attentionRows)}`);
+    assert.ok(attentionRows.every(row => !row.includes('Unconfirmed')), 'unconfirmed accounts are not rows');
+    const unchecked = attention.locator('.glance-unconfirmed');
+    assert.match(await unchecked.innerText(), /^1 account not checked yet\./);
+    await unchecked.getByRole('button', { name: 'Check now' }).waitFor();
     assert.match(attentionRows[0], /resets in 2d/);
     // "View" scrolls to that account's row in the list and focuses it.
     await attention.getByRole('button', { name: 'View: codex-account-07.json' }).click();
@@ -133,7 +137,8 @@ const path = require('node:path');
     assert.ok((await page.evaluate(() => window.ledgerRequests)).every(request => request.index === 0));
     await page.evaluate(() => { window.failLedger = true; });
     await refreshFirst();
-    await claude.locator('.ad-card').first().getByText(/Quota unavailable/).waitFor();
+    await claude.locator('.ad-card').first().getByText(/Couldn't read this account's quota./).waitFor();
+    await claude.locator('.ad-card').first().locator('.ad-error').getByRole('button', { name: 'Retry' }).waitFor();
     assert.equal(await page.locator('.quota-provider-summary-cell').first().locator('.quota-summary-value').innerText(), '4');
     assert.ok((await page.locator('.quota-provider-summary-cell').first().innerText()).includes('1 Availability unconfirmed'));
     await page.evaluate(() => { window.failLedger = false; });

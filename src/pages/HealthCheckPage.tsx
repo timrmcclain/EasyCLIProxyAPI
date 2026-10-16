@@ -5,13 +5,14 @@ import { isPermissionGranted } from '@tauri-apps/plugin-notification';
 import { AlertTriangle, ArrowRight, Check, CircleCheck, CircleX, ClipboardCopy, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useCoreRuntime } from '../coreRuntime';
+import { useCoreUpdate } from '../coreUpdate';
 import { cantTakeRequests, needsSignIn } from '../components/AuthFileProviderIcon';
 import { accountSummary } from '../services/accountDashboard';
 import { dedupeAuthFiles, parseAuthFilePriority } from '../services/authFiles';
 import { compressionService } from '../services/compression';
 import { driftedApps, loadAppStatuses } from '../services/connectedApps';
 import { readDesktopAlertsPreference } from '../services/dashboardPreferences';
-import { findDuplicateAccounts, findOutrankingKeys, healthChecks, type HealthCheck, type HealthLevel } from '../services/healthCheck';
+import { findDuplicateAccounts, findOutrankingKeys, healthChecks, providersWithoutUsableAccount, type HealthCheck, type HealthLevel } from '../services/healthCheck';
 import { diagnosticReport, type DiagnosticInput } from '../services/diagnostics';
 import { managementApi, providerGroupsApi, readString, responseList } from '../services/managementApi';
 import { summarizeUptime, useProxyUptime } from '../services/proxyUptime';
@@ -26,6 +27,7 @@ const icons: Record<HealthLevel, typeof CircleCheck> = { ok: CircleCheck, warn: 
 export function HealthCheckPage() {
   const { t } = useI18n();
   const { status } = useCoreRuntime();
+  const { hasUpdate, latest } = useCoreUpdate();
   const [snapshot, setSnapshot] = useState<Omit<DiagnosticInput, 'generatedAt' | 'hubVersion' | 'checks'> | null>(null);
   const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
   const proxyRunning = Boolean(status?.ready);
@@ -81,6 +83,11 @@ export function HealthCheckPage() {
         compression: compression ? { enabled: compression.enabled, running: compression.running } : null,
         notificationsAllowed: allowed,
         notificationsEnabled: readDesktopAlertsPreference(),
+        providersWithoutAccount: filesResult ? providersWithoutUsableAccount(files.map(file => ({
+          provider: readString(file, 'provider', 'type'),
+          usable: !accountSummary(file).health.disabled && !cantTakeRequests(file) && !needsSignIn(file),
+        }))) : [],
+        engineUpdate: hasUpdate && latest && status?.currentVersion ? { current: status.currentVersion, latest: latest.version } : null,
         outrankingKeys: keyGroups && filesResult ? findOutrankingKeys(
           keyGroups.flatMap(({ section, groups }) => groups.map((group, index) => ({
             section,
@@ -96,7 +103,7 @@ export function HealthCheckPage() {
     } finally {
       setChecking(false);
     }
-  }, [proxyRunning, status?.running, status?.currentVersion, status?.managed, t]);
+  }, [proxyRunning, status?.running, status?.currentVersion, status?.managed, t, hasUpdate, latest]);
 
   useEffect(() => { void run(); }, [run]);
 

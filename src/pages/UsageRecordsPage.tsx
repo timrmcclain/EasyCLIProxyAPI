@@ -271,7 +271,7 @@ export function UsageRecordsPage() {
   const [customEnd, setCustomEnd] = useState('');
   const [model, setModel] = useState('');
   const [provider, setProvider] = useState('');
-  const [source, setSource] = useState('');
+  const [source, setSource] = useState(jump?.source ?? '');
   const [apiKeyHash, setApiKeyHash] = useState('');
   const [result, setResult] = useState<string>(jump?.result ?? 'all');
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
