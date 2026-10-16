@@ -3,7 +3,7 @@
  * rules can be tested without the app; the Health check page gathers them.
  */
 export type HealthLevel = 'ok' | 'warn' | 'fail';
-export type HealthTarget = 'home' | 'oauth' | 'agents' | 'config' | 'compression' | 'proxy';
+export type HealthTarget = 'home' | 'oauth' | 'agents' | 'config' | 'compression' | 'proxy' | 'api';
 export type HealthCheck = {
   id: string;
   level: HealthLevel;
@@ -44,9 +44,35 @@ export type HealthInput = {
   /** Whether the hub, and then the proxy, come back by themselves after Windows restarts. Null when unknown. */
   startsWithWindows?: { autostart: boolean; startProxy: boolean } | null;
   connectedApps?: number;
+  /** Paid API keys that outrank every enabled subscription account of the same provider. Null when unknown. */
+  outrankingKeys?: string[] | null;
 };
 
 const rank: Record<HealthLevel, number> = { fail: 0, warn: 1, ok: 2 };
+
+/** API key sections whose keys share a scheduler with the same provider's signed-in accounts. */
+const keyProvider: Record<string, string> = { 'claude-api-key': 'claude', 'codex-api-key': 'codex', 'xai-api-key': 'xai', 'meta-api-key': 'meta' };
+
+/**
+ * The proxy only uses the highest-priority group of ready credentials for a model, so a paid key
+ * above every subscription account takes all of that provider's traffic and bills per use.
+ */
+export function findOutrankingKeys(
+  keys: { section: string; name: string; priority: number; disabled: boolean }[],
+  accounts: { provider: string; priority: number; disabled: boolean }[],
+): string[] {
+  const best = new Map<string, number>();
+  for (const account of accounts) {
+    if (account.disabled) continue;
+    const provider = account.provider.toLowerCase();
+    best.set(provider, Math.max(best.get(provider) ?? -Infinity, account.priority));
+  }
+  return keys.flatMap(key => {
+    const provider = keyProvider[key.section];
+    const top = provider ? best.get(provider) : undefined;
+    return !key.disabled && top !== undefined && key.priority > top ? [`${key.name} (${key.priority} > ${top})`] : [];
+  });
+}
 
 /**
  * Accounts signed in more than once: separate credential files for the same provider and email.
@@ -106,6 +132,8 @@ export function healthChecks(input: HealthInput): HealthCheck[] {
   if (input.compression?.running && !input.compression.enabled) checks.push({ id: 'compression', level: 'warn', key: 'health.compression.stray', target: 'compression' });
 
   // Connected apps send everything through the proxy; if nothing starts it after a reboot, they all fail until you open the hub.
+  if (input.outrankingKeys?.length) checks.push({ id: 'paid-keys', level: 'warn', key: 'health.paidKeys', variables: { keys: input.outrankingKeys.join(', ') }, target: 'api' });
+
   const boot = input.startsWithWindows;
   if (boot && (input.connectedApps ?? 0) > 0 && (!boot.autostart || !boot.startProxy)) checks.push({ id: 'startup', level: 'warn', key: boot.autostart ? 'health.startup.proxyOff' : 'health.startup.off', target: 'config' });
 

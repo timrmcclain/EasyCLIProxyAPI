@@ -24,6 +24,9 @@ struct BackupVersion {
     created_at: String,
     files: Vec<BackupFile>,
     mappings: Option<ClaudeDesktopModelMappings>,
+    /// Taken by the hub just before it changed the files. Omitted when false, so older backups keep their checksum.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    automatic: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -50,6 +53,7 @@ pub(crate) struct BackupSummary {
     files: Vec<BackupFileSummary>,
     restorable: bool,
     error: Option<String>,
+    automatic: bool,
 }
 
 #[derive(Serialize)]
@@ -150,6 +154,7 @@ fn make_version(client: &str, paths: &[PathBuf], images: &Images) -> BackupVersi
         } else {
             None
         },
+        automatic: false,
     }
 }
 
@@ -252,9 +257,13 @@ fn file_summaries(images: &Images) -> Vec<BackupFileSummary> {
 
 fn backup_summary(client: &str, paths: &[PathBuf], id: &str) -> Result<BackupSummary, String> {
     let location = path_to_string(&version_path(client, paths, id)?);
+    let mut automatic = false;
     let (created_at, files, error) = match read_version(client, paths, id) {
         Ok(version) => (
-            Some(version.created_at.clone()),
+            {
+                automatic = version.automatic;
+                Some(version.created_at.clone())
+            },
             file_summaries(&backup_images(&version)),
             validate_restorable(&version).err(),
         ),
@@ -279,6 +288,7 @@ fn backup_summary(client: &str, paths: &[PathBuf], id: &str) -> Result<BackupSum
         files,
         restorable: error.is_none(),
         error,
+        automatic,
     })
 }
 
@@ -292,6 +302,61 @@ pub(crate) fn create_backup(client: &str, home: &Path) -> Result<BackupSummary, 
     }
     write_version(&paths, &version)?;
     backup_summary(client, &paths, &version.id)
+}
+
+/// Automatic backups kept per app; manual ones are never removed by this.
+const AUTOMATIC_KEEP: usize = 10;
+
+fn backup_ids(client: &str, paths: &[PathBuf]) -> Vec<String> {
+    let Ok(directory) = backup_directory(client, paths) else { return Vec::new() };
+    let mut ids: Vec<String> = fs::read_dir(&directory)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|entry| entry.path())
+                .filter(|path| path.extension().and_then(|e| e.to_str()) == Some("json"))
+                .filter_map(|path| path.file_stem().and_then(|v| v.to_str()).map(str::to_string))
+                .filter(|id| valid_version_id(id))
+                .collect()
+        })
+        .unwrap_or_default();
+    // Ids start with a timestamp, so they sort by age.
+    ids.sort_by(|a, b| b.cmp(a));
+    ids
+}
+
+/// Backs up an app's config just before the hub changes it, so Update, Overwrite and Clear can be undone from
+/// Back up & restore. Skips when nothing exists yet or the newest backup already holds this content.
+/// The caller holds AGENT_CONFIG_FILE_LOCK.
+pub(crate) fn auto_backup(client: &str, home: &Path) -> Result<Option<String>, String> {
+    auto_backup_paths(client, &config_paths(client, home)?)
+}
+
+pub(crate) fn auto_backup_paths(client: &str, paths: &[PathBuf]) -> Result<Option<String>, String> {
+    let paths = paths.to_vec();
+    let images = config_images(&paths)?;
+    if images.iter().all(|(_, bytes)| bytes.is_none()) {
+        return Ok(None);
+    }
+    let ids = backup_ids(client, &paths);
+    if let Some(newest) = ids.first() {
+        if read_version(client, &paths, newest).is_ok_and(|version| backup_images(&version) == images) {
+            return Ok(None);
+        }
+    }
+    let mut version = make_version(client, &paths, &images);
+    version.automatic = true;
+    write_version(&paths, &version)?;
+    let automatic: Vec<String> = backup_ids(client, &paths)
+        .into_iter()
+        .filter(|id| read_version(client, &paths, id).is_ok_and(|v| v.automatic))
+        .collect();
+    for old in automatic.into_iter().skip(AUTOMATIC_KEEP) {
+        if let Ok(path) = version_path(client, &paths, &old) {
+            let _ = fs::remove_file(path);
+        }
+    }
+    Ok(Some(version.id))
 }
 
 pub(crate) fn list_backups(client: &str, home: &Path) -> Result<BackupList, String> {

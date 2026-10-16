@@ -6,7 +6,7 @@ import { useI18n } from '../i18n';
 import './AgentConfigBackupDialog.css';
 
 type FileSummary = { path: string; exists: boolean | null; size: number | null };
-type Version = { id: string; createdAt: string | null; fileCount: number; location: string; files: FileSummary[]; restorable: boolean; error: string | null };
+type Version = { id: string; createdAt: string | null; fileCount: number; location: string; files: FileSummary[]; restorable: boolean; error: string | null; automatic?: boolean };
 type Listing = { versions: Version[] };
 type Preview = { revision: string; files: FileSummary[]; differences: { file: string; field: string; before: string; after: string }[] };
 
@@ -72,7 +72,7 @@ export function AgentConfigBackupDialog({ client, onClose, onRestored, initialId
         {!listing.versions.length && !busy && <p>{t('agents.backup.empty')}</p>}
         {listing.versions.map((version) => <button type="button" key={version.id} disabled={busy || !!confirmation} className={selected?.id === version.id ? 'active' : ''} onClick={() => void choose(version)}>
           <strong>{date(version)}</strong>
-          <small>{t('agents.backup.files', { count: version.fileCount })}</small>
+          <small>{version.automatic ? `${t('agents.backup.automatic')} · ` : ''}{t('agents.backup.files', { count: version.fileCount })}</small>
           {!version.restorable && <span>{t('agents.backup.invalid')}</span>}
         </button>)}
       </nav>

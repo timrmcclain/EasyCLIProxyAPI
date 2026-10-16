@@ -7,13 +7,13 @@ import { useI18n } from '../i18n';
 import { useCoreRuntime } from '../coreRuntime';
 import { cantTakeRequests, needsSignIn } from '../components/AuthFileProviderIcon';
 import { accountSummary } from '../services/accountDashboard';
-import { dedupeAuthFiles } from '../services/authFiles';
+import { dedupeAuthFiles, parseAuthFilePriority } from '../services/authFiles';
 import { compressionService } from '../services/compression';
 import { driftedApps, loadAppStatuses } from '../services/connectedApps';
 import { readDesktopAlertsPreference } from '../services/dashboardPreferences';
-import { findDuplicateAccounts, healthChecks, type HealthCheck, type HealthLevel } from '../services/healthCheck';
+import { findDuplicateAccounts, findOutrankingKeys, healthChecks, type HealthCheck, type HealthLevel } from '../services/healthCheck';
 import { diagnosticReport, type DiagnosticInput } from '../services/diagnostics';
-import { managementApi, readString, responseList } from '../services/managementApi';
+import { managementApi, providerGroupsApi, readString, responseList } from '../services/managementApi';
 import { summarizeUptime, useProxyUptime } from '../services/proxyUptime';
 import './HealthCheckPage.css';
 
@@ -35,7 +35,8 @@ export function HealthCheckPage() {
   const run = useCallback(async () => {
     setChecking(true);
     try {
-      const [settings, listen, filesResult, appsResult, compression, allowed, software] = await Promise.all([
+      const keySections = ['claude-api-key', 'codex-api-key', 'xai-api-key', 'meta-api-key'];
+      const [settings, listen, filesResult, appsResult, compression, allowed, software, keyGroups] = await Promise.all([
         invoke<CoreSettings>('get_core_config_settings').catch(() => null),
         invoke<ListenStatus>('proxy_listen_status').catch(() => null),
         // Null (not []) when a probe fails, so the checks say "couldn't check" instead of reporting a guess.
@@ -44,6 +45,7 @@ export function HealthCheckPage() {
         compressionService.status().catch(() => null),
         isPermissionGranted().catch(() => null),
         invoke<{ autostartEnabled: boolean; startCoreOnLaunch: boolean }>('get_software_settings').catch(() => null),
+        proxyRunning ? Promise.all(keySections.map(section => providerGroupsApi.get(section).then(groups => ({ section, groups })))).catch(() => null) : Promise.resolve(null),
       ]);
       const files = filesResult ?? [];
       const apps = appsResult ?? [];
@@ -79,6 +81,15 @@ export function HealthCheckPage() {
         compression: compression ? { enabled: compression.enabled, running: compression.running } : null,
         notificationsAllowed: allowed,
         notificationsEnabled: readDesktopAlertsPreference(),
+        outrankingKeys: keyGroups && filesResult ? findOutrankingKeys(
+          keyGroups.flatMap(({ section, groups }) => groups.map((group, index) => ({
+            section,
+            name: readString(group, 'name') || `${section} #${index + 1}`,
+            priority: Number(group.priority ?? 0) || 0,
+            disabled: group.disabled === true,
+          }))),
+          files.map(file => ({ provider: readString(file, 'provider', 'type'), priority: parseAuthFilePriority(file.priority) ?? 0, disabled: accountSummary(file).health.disabled })),
+        ) : null,
         startsWithWindows: software ? { autostart: software.autostartEnabled, startProxy: software.startCoreOnLaunch } : null,
         connectedApps: apps.filter(app => app.installed && app.connectionState !== 'not-configured').length,
       }));

@@ -1339,3 +1339,47 @@ fn nested_model_options_and_third_party_providers_survive_all_updates() {
             .is_empty());
     }
 }
+
+#[test]
+fn automatic_backup_skips_unchanged_and_missing_configs() {
+    let home = Home::new();
+    let paths = config_paths("codex", &home.0).unwrap();
+    assert_eq!(auto_backup("codex", &home.0).unwrap(), None, "nothing to back up before the app is configured");
+    save(&paths[0], "model = \"one\"\n");
+    let first = auto_backup("codex", &home.0).unwrap().expect("first change is backed up");
+    assert_eq!(auto_backup("codex", &home.0).unwrap(), None, "same content isn't backed up twice");
+    let list = list_backups("codex", &home.0).unwrap();
+    assert_eq!(list.versions.len(), 1);
+    assert!(list.versions[0].automatic);
+    assert_eq!(list.versions[0].id, first);
+}
+
+#[test]
+fn automatic_backups_keep_ten_and_never_remove_manual_ones() {
+    let home = Home::new();
+    let paths = config_paths("codex", &home.0).unwrap();
+    save(&paths[0], "model = \"manual\"\n");
+    let manual = create_backup("codex", &home.0).unwrap();
+    assert!(!manual.automatic);
+    for step in 0..14 {
+        save(&paths[0], format!("model = \"auto-{step}\"\n"));
+        auto_backup("codex", &home.0).unwrap().expect("each change is backed up");
+    }
+    let versions = list_backups("codex", &home.0).unwrap().versions;
+    assert_eq!(versions.iter().filter(|v| v.automatic).count(), AUTOMATIC_KEEP);
+    assert!(versions.iter().any(|v| v.id == manual.id), "manual backup survives pruning");
+    // The newest automatic backup restores the content from just before the last change.
+    let newest = versions.iter().find(|v| v.automatic).unwrap();
+    assert_eq!(read_version("codex", &paths, &newest.id).unwrap().files[0].bytes.as_deref(), Some(&b"model = \"auto-13\"\n"[..]));
+}
+
+#[test]
+fn older_backups_without_the_automatic_flag_still_verify() {
+    let home = Home::new();
+    let paths = config_paths("codex", &home.0).unwrap();
+    save(&paths[0], "model = \"one\"\n");
+    let manual = create_backup("codex", &home.0).unwrap();
+    let raw = fs::read_to_string(version_path("codex", &paths, &manual.id).unwrap()).unwrap();
+    assert!(!raw.contains("automatic"), "manual backups are written exactly as before");
+    assert!(read_version("codex", &paths, &manual.id).is_ok());
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { findDuplicateAccounts, healthChecks, type HealthInput } from '../src/services/healthCheck';
+import { findDuplicateAccounts, findOutrankingKeys, healthChecks, type HealthInput } from '../src/services/healthCheck';
 
 const healthy: HealthInput = {
   proxyRunning: true, host: '127.0.0.1', exposed: false, portBlockedBy: null, keyCount: 1, managementSecretConfigured: true,
@@ -85,5 +85,29 @@ describe('probes that failed', () => {
     expect(byId.apps.key).toBe('health.unknown.apps');
     for (const id of ['network', 'keys', 'accounts', 'apps']) expect(byId[id].level).toBe('warn');
     expect(byId.management).toBeUndefined();
+  });
+});
+
+describe('findOutrankingKeys', () => {
+  const accounts = [
+    { provider: 'codex', priority: 2, disabled: false },
+    { provider: 'codex', priority: 5, disabled: true },
+    { provider: 'claude', priority: 0, disabled: false },
+  ];
+  it('flags a paid key above every enabled account of its provider', () => {
+    expect(findOutrankingKeys([{ section: 'codex-api-key', name: 'Codex Direct', priority: 10, disabled: false }], accounts)).toEqual(['Codex Direct (10 > 2)']);
+  });
+  it('ignores disabled accounts when finding the best one, and disabled or lower keys', () => {
+    expect(findOutrankingKeys([
+      { section: 'codex-api-key', name: 'Low', priority: 2, disabled: false },
+      { section: 'codex-api-key', name: 'Off', priority: 99, disabled: true },
+    ], accounts)).toEqual([]);
+  });
+  it('says nothing when the provider has no signed-in accounts to compete with', () => {
+    expect(findOutrankingKeys([{ section: 'xai-api-key', name: 'Grok key', priority: 10, disabled: false }], accounts)).toEqual([]);
+  });
+  it('warns on the Health check page with a link to API Access', () => {
+    const check = healthChecks({ ...healthy, outrankingKeys: ['Codex Direct (10 > 2)'] }).find(c => c.id === 'paid-keys');
+    expect(check).toMatchObject({ level: 'warn', target: 'api' });
   });
 });

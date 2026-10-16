@@ -29,11 +29,15 @@ const path = require('node:path');
     assert.equal(await rows.count(), 3);
     assert.match(await rows.nth(0).innerText(), /Current/);
     assert.equal(await rows.nth(0).getByRole('button').count(), 0, 'the current version has no Restore button');
+    // Each version names the settings it changed, and the confirmation names what restoring would change.
+    assert.match(await rows.nth(0).innerText(), /Changed: port, routing\.strategy/);
+    assert.match(await rows.nth(1).innerText(), /Changed: api-keys/);
 
     // Restoring asks first; cancelling changes nothing.
     await rows.nth(2).getByRole('button', { name: 'Restore' }).click();
     const dialog = page.getByRole('alertdialog');
     await dialog.getByText('Restore this config version?').waitFor();
+    await dialog.getByText(/Restoring changes: port, routing\.strategy\./).waitFor();
     await dialog.getByRole('button', { name: 'Cancel' }).click();
     assert.match(await rows.nth(0).innerText(), /Current/);
 

@@ -411,13 +411,26 @@ export function AuthFileManagementPage() {
     }
   };
 
-  const toggleStatus = async (file: AuthFile) => {
+  // `target` is set when undoing, so the reverse doesn't depend on the list having refreshed.
+  const toggleStatus = async (file: AuthFile, target?: boolean) => {
     feedback.clearNotice();
+    const undo = target !== undefined;
+    const disabling = target ?? !authFileHealth(file).disabled;
+    const provider = String(file.provider ?? file.type ?? '');
+    // Switching off the provider's last enabled account cuts every app off from that provider, so ask first.
+    const lastEnabled = disabling && !undo && provider !== '' && !files.some(other => other !== file
+      && String(other.provider ?? other.type ?? '') === provider && isOAuthCredentialFile(other) && !authFileHealth(other).disabled);
+    if (lastEnabled && !await askConfirmation({ title: t('common.disable'), message: t('authFiles.disableLastConfirm', { name: fileName(file) }), confirmText: t('common.disable'), variant: 'danger' })) return;
     setBusy(true);
     setError('');
     try {
-      await setOAuthCredentialFileDisabled(file, !authFileHealth(file).disabled);
+      await setOAuthCredentialFileDisabled(file, disabling);
       await loadFiles(false);
+      if (!undo) {
+        showNotice({ key: disabling ? 'authFiles.disabledNotice' : 'authFiles.enabledNotice', variables: { name: fileName(file) } }, 'success', {
+          action: { label: { key: 'common.undo' }, onAction: () => void toggleStatus(file, !disabling) },
+        });
+      }
     } catch (requestError) {
       setError(String(requestError));
     } finally {

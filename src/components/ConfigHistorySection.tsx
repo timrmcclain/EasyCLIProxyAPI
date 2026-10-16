@@ -5,7 +5,11 @@ import { useI18n } from '../i18n';
 import { useConfirmation } from './ConfirmationDialog';
 import './ConfigHistorySection.css';
 
-type ConfigVersion = { name: string; savedAt: string; size: number; current: boolean };
+type ConfigVersion = {
+  name: string; savedAt: string; size: number; current: boolean;
+  /** Setting names only; the backend never sends values, since the config holds keys. */
+  changes: string[]; moreChanges: number; restoreChanges: string[]; moreRestoreChanges: number;
+};
 
 /** Settings → Diagnostics: earlier versions of the proxy's config.yaml, each restorable. */
 export function ConfigHistorySection({ hidden }: { hidden: boolean }) {
@@ -22,10 +26,13 @@ export function ConfigHistorySection({ hidden }: { hidden: boolean }) {
 
   const when = (iso: string) => new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'medium' });
 
+  const listOf = (names: string[], more: number) => more > 0 ? t('configHistory.more', { list: names.join(', '), count: more }) : names.join(', ');
+
   const restore = async (version: ConfigVersion) => {
+    const restoring = version.restoreChanges.length > 0 ? ` ${t('configHistory.confirm.changes', { list: listOf(version.restoreChanges, version.moreRestoreChanges) })}` : '';
     const confirmed = await askConfirmation({
       title: t('configHistory.confirm.title'),
-      message: t('configHistory.confirm.message', { time: when(version.savedAt) }),
+      message: t('configHistory.confirm.message', { time: when(version.savedAt) }) + restoring,
       warning: t('configHistory.confirm.warning'),
       confirmText: t('configHistory.restore'),
     });
@@ -59,6 +66,9 @@ export function ConfigHistorySection({ hidden }: { hidden: boolean }) {
             <li key={version.name}>
               <span className="config-history-time">{when(version.savedAt)}</span>
               <span className="config-history-size">{t('configHistory.size', { size: (version.size / 1024).toFixed(1) })}</span>
+              <span className="config-history-changes">
+                {version.changes.length > 0 ? t('configHistory.changed', { list: listOf(version.changes, version.moreChanges) }) : versions.indexOf(version) < versions.length - 1 ? t('configHistory.noChanges') : ''}
+              </span>
               {version.current
                 ? <span className="config-history-current">{t('configHistory.current')}</span>
                 : (

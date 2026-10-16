@@ -7,3 +7,11 @@
 .config-history-message { margin: 10px 0 0; font-size: 13px; }
 .config-history-message-ok { color: var(--c-success); }
 .config-history-message-error { color: var(--c-danger); }
+
+.config-history-changes {
+  flex: 1 1 16rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}

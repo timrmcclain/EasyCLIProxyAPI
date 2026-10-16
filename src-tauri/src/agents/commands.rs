@@ -1143,6 +1143,8 @@ pub(crate) async fn apply_agent_config(
         let _guard = AGENT_CONFIG_FILE_LOCK
             .lock()
             .map_err(|_| "Agent configuration file lock is poisoned".to_string())?;
+        // Best effort: a failed backup shouldn't block the change you asked for.
+        let _ = auto_backup(client.id(), &home);
         apply_agent_configuration_with_oauth(
             client,
             &home,
@@ -1169,6 +1171,7 @@ pub(crate) fn clear_codex_config(app: tauri::AppHandle) -> Result<Vec<String>, S
     let _guard = AGENT_CONFIG_FILE_LOCK
         .lock()
         .map_err(|_| "Agent configuration file lock is poisoned".to_string())?;
+    let _ = auto_backup(AgentClient::Codex.id(), &home);
     clear_codex_config_files(&home)
 }
 
@@ -1214,6 +1217,7 @@ pub(crate) async fn set_agent_config_enabled(
             let _guard = AGENT_CONFIG_FILE_LOCK
                 .lock()
                 .map_err(|_| "Agent configuration file lock is poisoned".to_string())?;
+            let _ = auto_backup(client.id(), &home);
             let oauth_configuration = if client == AgentClient::Codex {
                 current_codex_oauth_configuration(&home)?
             } else {
@@ -1240,6 +1244,7 @@ pub(crate) async fn set_agent_config_enabled(
             .lock()
             .map_err(|_| "Agent configuration file lock is poisoned".to_string())?;
         let _ = force_restore;
+        let _ = auto_backup(client.id(), &home);
         let result = clear_agent_managed_configuration(client, &home, config.port)?;
         app.state::<AgentConfigStatusCache>().clear()?;
         Ok(result)

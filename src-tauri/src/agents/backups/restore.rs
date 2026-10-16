@@ -220,6 +220,8 @@ pub(crate) async fn execute_restore_plan(
         {
             return Err("Configuration or backup changed during restoration. Select the backup version again".into());
         }
+        // What's being replaced, so this restore can be undone too.
+        let _ = auto_backup_paths(&plan.version.client, &plan.paths);
         commit_config_with_mappings(
             &plan.version.client,
             &plan.paths,

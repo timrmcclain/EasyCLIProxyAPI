@@ -982,10 +982,12 @@ export function createBrowserMockRuntime(
       case 'get_core_config_settings': return clone(state.coreConfig);
       case 'list_core_config_history': {
         // Three saved versions, newest (the current file) first; restoring one makes it current.
-        const history = (state as { configHistory?: { name: string; savedAt: string; size: number; current: boolean }[] });
+        const history = (state as { configHistory?: Record<string, unknown>[] });
+        const changes = [['port', 'routing.strategy'], ['api-keys'], []];
         history.configHistory ??= [0, 1, 2].map(index => ({
           name: `config-20261010-${String(15 - index).padStart(2, '0')}0000-000.yaml`,
           savedAt: new Date(Date.now() - index * 3_600_000).toISOString(), size: 4096 + index * 64, current: index === 0,
+          changes: changes[index], moreChanges: 0, restoreChanges: index === 0 ? [] : ['port', 'routing.strategy'], moreRestoreChanges: 0,
         }));
         return clone(history.configHistory);
       }

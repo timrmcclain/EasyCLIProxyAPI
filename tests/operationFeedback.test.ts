@@ -39,7 +39,10 @@ describe('控件自身反馈', () => {
 
 
   it('凭证文件的启用停用由按钮与状态标签反馈', () => {
-    expect(actionCalls('AuthFileManagementPage.tsx', 'toggleStatus', 'showNotice').calls).toHaveLength(0);
+    // The switch's own state is the feedback; a notice is only allowed to offer Undo, like Settings' switches.
+    const { source, calls } = actionCalls('AuthFileManagementPage.tsx', 'toggleStatus', 'showNotice');
+    expect(calls.length).toBeLessThanOrEqual(1);
+    for (const call of calls) expect(call.getText(source)).toContain("label: { key: 'common.undo' }");
   });
 
   it('凭证启用开关在启用时使用主题高亮，停用时为中性样式', () => {
