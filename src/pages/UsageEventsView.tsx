@@ -14,6 +14,7 @@ import { usageProviderDetails } from '../services/usageProvider';
 import { usageModelDetails } from '../services/usageModel';
 import { useAccountLabelBySource } from '../services/accountLabelBySource';
 import { classifyFailure, failureMessage } from '../services/errorCauses';
+import { readableError } from '../services/readableError';
 
 const compactNumber = (value: number) => formatUsageNumber(value, getCurrentLocale());
 const compactDuration = (value: number) => formatDuration(value, getCurrentLocale());
@@ -726,7 +727,7 @@ export function EventsView({
       }
       await invoke('save_usage_events_export', { path, contents: usageEventsCsv(items) });
     } catch (error) {
-      showNotice({ key: 'usage.events.exportFailed', variables: { error: String(error) } }, 'error');
+      showNotice({ key: 'usage.events.exportFailed', variables: { error: readableError(error) } }, 'error');
     } finally {
       setExporting(false);
     }

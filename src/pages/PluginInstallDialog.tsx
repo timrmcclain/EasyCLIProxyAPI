@@ -8,6 +8,7 @@ import { pluginText } from '../i18n/plugins';
 import { pluginStoreApi, type PluginStoreEntry, type PluginStoreInstallResult } from '../services/plugins';
 import { buildRepositoryURL } from '../services/pluginResources';
 import { isValidManualReleaseTag, supportsPluginVersionSelection } from '../services/pluginReleaseVersions';
+import { readableError } from '../services/readableError';
 
 export function PluginInstallDialog({ entry, onClose, onInstalled }: {
   entry: PluginStoreEntry;
@@ -35,7 +36,7 @@ export function PluginInstallDialog({ entry, onClose, onInstalled }: {
       const result = await pluginStoreApi.install(entry.id, { sourceId: entry.sourceId, version: canSelectVersion ? version.trim() : undefined });
       if (mounted.current) onInstalled(result);
     } catch (reason) {
-      if (mounted.current) setError(reason instanceof Error ? reason.message : String(reason));
+      if (mounted.current) setError(readableError(reason));
     } finally { pending.current = false; if (mounted.current) setBusy(false); }
   };
   return createPortal(<div className="config-dialog-backdrop">

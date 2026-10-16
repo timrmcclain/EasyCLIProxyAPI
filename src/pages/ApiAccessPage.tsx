@@ -95,6 +95,7 @@ import { getCurrentLocale, translate, useI18n } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
 import { MessageNotice, FeedbackNotice, useAppNotice, type NoticeMessage, type NoticeTone } from '../appNotice';
 import { useUnsavedChangesGuard } from '../services/unsavedChanges';
+import { readableError } from '../services/readableError';
 
 export type ProviderSection =
   | 'gemini-api-key'
@@ -226,7 +227,7 @@ type ProviderSaveResult =
   | { saved: false; error: string; target: 'form' | 'models' };
 
 const requestErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+  readableError(error);
 
 export type ProviderDraft = {
   weight?: string;
@@ -1262,7 +1263,7 @@ export function ApiAccessPage() {
         setError(t('apiAccess.error.partialLoad', { errors: failures.join('; ') }));
       }
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -1814,7 +1815,7 @@ function ProviderHealthDialog({ row, onClose, keySelector }: ProviderHealthDialo
     ).then((discovered) => {
       if (!disposed) setModels(mergeProviderHealthModels(discovered, row.models));
     }).catch((requestError) => {
-      if (!disposed) setModelError(String(requestError).replace(/^Error:\s*/i, ''));
+      if (!disposed) setModelError(readableError(requestError));
     }).finally(() => {
       if (!disposed) setModelLoading(false);
     });

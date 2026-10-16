@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { History, RotateCcw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useConfirmation } from './ConfirmationDialog';
+import { readableError } from '../services/readableError';
 import './ConfigHistorySection.css';
 
 type ConfigVersion = {
@@ -43,7 +44,7 @@ export function ConfigHistorySection({ hidden }: { hidden: boolean }) {
       await invoke('restore_core_config_history', { name: version.name });
       setMessage({ tone: 'ok', text: t('configHistory.restored', { time: when(version.savedAt) }) });
     } catch (error) {
-      setMessage({ tone: 'error', text: String(error) });
+      setMessage({ tone: 'error', text: readableError(error) });
     } finally {
       setBusy(null);
       await load();

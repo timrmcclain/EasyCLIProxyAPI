@@ -4,6 +4,7 @@ import { ClipboardCopy, FolderOpen, Pause, Play, ScrollText } from 'lucide-react
 import { useI18n } from '../i18n';
 import { readDashboardPreference } from '../services/dashboardPreferences';
 import { maskEmail } from '../services/accountLabelBySource';
+import { readableError } from '../services/readableError';
 import './ProxyLogSection.css';
 
 type CoreLogTail = { lines: string[]; path: string; truncated: boolean; exists: boolean };
@@ -35,7 +36,7 @@ export function ProxyLogSection({ hidden }: { hidden: boolean }) {
       setTail(await invoke<CoreLogTail>('read_core_log', { limit: 1000 }));
       setError('');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      setError(readableError(reason));
     }
   }, []);
   useEffect(() => {

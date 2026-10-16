@@ -35,6 +35,7 @@ import { validateDevinCallback } from '../services/devinOAuth';
 import { handleHorizontalTabKey } from '../components/tabKeyboardNavigation';
 import { PluginOAuthProviders } from './PluginOAuthProviders';
 import { notifyPluginResourcesChanged } from '../services/pluginResources';
+import { readableError } from '../services/readableError';
 
 type OAuthProviderId = 'codex' | 'claude' | 'antigravity' | 'kimi' | 'xai' | 'devin' | 'meta';
 type OAuthFlowStatus = 'idle' | 'waiting' | 'success' | 'error';
@@ -364,7 +365,7 @@ export function OAuthLoginPage() {
             try {
               who = await applyDefaultCredentialPriority(provider);
             } catch (error) {
-              priorityError = String(error);
+              priorityError = readableError(error);
             }
             if (!isCurrent()) return;
             completeProviderAuth(provider);
@@ -387,11 +388,11 @@ export function OAuthLoginPage() {
           if (!isCurrent()) return;
           updateProviderState(provider, {
             status: 'error',
-            error: String(error),
+            error: readableError(error),
             polling: false,
           });
           clearPollingTimer(provider);
-          showProviderError(provider, String(error));
+          showProviderError(provider, readableError(error));
         } finally {
           if (isCurrent()) delete pollingRequests.current[provider];
         }
@@ -467,10 +468,10 @@ export function OAuthLoginPage() {
       delete credentialSnapshots.current[provider];
       updateProviderState(provider, {
         status: 'error',
-        error: String(error),
+        error: readableError(error),
         polling: false,
       });
-      showProviderError(provider, String(error));
+      showProviderError(provider, readableError(error));
     }
   };
 
@@ -486,7 +487,7 @@ export function OAuthLoginPage() {
       if (provider === 'devin') {
         updateProviderState(provider, { refreshing: false });
         if (currentState) startPolling(provider, currentState);
-        showProviderError(provider, String(error));
+        showProviderError(provider, readableError(error));
         return;
       }
       console.warn('Failed to cancel the previous OAuth session before refreshing', error);
@@ -506,7 +507,7 @@ export function OAuthLoginPage() {
         browser: selectedBrowser === NO_AUTO_OPEN_BROWSER_ID ? 'default' : selectedBrowser,
       });
     } catch (error) {
-      showProviderError(provider, String(error));
+      showProviderError(provider, readableError(error));
     }
   };
 
@@ -570,9 +571,9 @@ export function OAuthLoginPage() {
       updateProviderState(provider, {
         callbackSubmitting: false,
         callbackStatus: 'error',
-        callbackError: String(error),
+        callbackError: readableError(error),
       });
-      showProviderError(provider, String(error));
+      showProviderError(provider, readableError(error));
     }
   };
 

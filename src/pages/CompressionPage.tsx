@@ -11,6 +11,7 @@ import {
   type CompressionStatus,
 } from '../services/compression';
 import { CompressionLearnings } from './CompressionLearnings';
+import { readableError } from '../services/readableError';
 import './CompressionPage.css';
 
 const REFRESH_MS = 15_000;
@@ -44,7 +45,7 @@ export default function CompressionPage() {
         }
       }
     } catch (error) {
-      feedback.showNotice(String(error), 'error');
+      feedback.showNotice(readableError(error), 'error');
     }
   }, [feedback.showNotice]);
 
@@ -60,7 +61,7 @@ export default function CompressionPage() {
       setStatus(await compressionService.setEnabled(enabled));
       await refresh();
     } catch (error) {
-      feedback.showNotice(t(enabled ? 'turnOnFailed' : 'turnOffFailed', { error: String(error) }), 'error');
+      feedback.showNotice(t(enabled ? 'turnOnFailed' : 'turnOffFailed', { error: readableError(error) }), 'error');
     } finally {
       setBusy(false);
     }
@@ -71,7 +72,7 @@ export default function CompressionPage() {
     try {
       setStatus(await compressionService.setRoutes(claudeCode, claudeDesktop));
     } catch (error) {
-      feedback.showNotice(t('routeFailed', { error: String(error) }), 'error');
+      feedback.showNotice(t('routeFailed', { error: readableError(error) }), 'error');
     } finally {
       setBusy(false);
     }
@@ -82,7 +83,7 @@ export default function CompressionPage() {
     try {
       setStatus(await compressionService.stopService());
     } catch (error) {
-      feedback.showNotice(t('stopFailed', { error: String(error) }), 'error');
+      feedback.showNotice(t('stopFailed', { error: readableError(error) }), 'error');
     } finally {
       setBusy(false);
     }
@@ -93,7 +94,7 @@ export default function CompressionPage() {
     try {
       setStatus(await compressionService.setMemory(memory));
     } catch (error) {
-      feedback.showNotice(t('routeFailed', { error: String(error) }), 'error');
+      feedback.showNotice(t('routeFailed', { error: readableError(error) }), 'error');
     } finally {
       setBusy(false);
     }

@@ -5,6 +5,7 @@ import { useI18n } from '../i18n';
 import { managementApi } from '../services/managementApi';
 import { oauthModelsFromPayload, type OAuthModelDefinition } from '../services/oauthModels';
 import { useDialogFocusTrap } from './useDialogFocusTrap';
+import { readableError } from '../services/readableError';
 
 type AuthFileModelsDialogProps = {
   name: string;
@@ -27,7 +28,7 @@ export function AuthFileModelsDialog({ name, onClose }: AuthFileModelsDialogProp
     setError('');
     void managementApi.get('/credentials/models', { name })
       .then((payload) => { if (!cancelled) setModels(oauthModelsFromPayload(payload)); })
-      .catch((requestError: unknown) => { if (!cancelled) setError(String(requestError)); })
+      .catch((requestError: unknown) => { if (!cancelled) setError(readableError(requestError)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [name]);

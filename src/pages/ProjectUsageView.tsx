@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { FolderGit2, LoaderCircle } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { readableError } from '../services/readableError';
 import './ProjectUsageView.css';
 
 export type ProjectUsage = {
@@ -34,7 +35,7 @@ export function ProjectUsageView() {
     setLoading(true);
     setError('');
     try { setReport(await invoke<Report>('claude_project_usage', { days: window })); }
-    catch (reason) { setError(String(reason)); }
+    catch (reason) { setError(readableError(reason)); }
     finally { setLoading(false); }
   }, []);
 

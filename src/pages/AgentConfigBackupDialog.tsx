@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { ArchiveRestore, LoaderCircle, X } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { readableError } from '../services/readableError';
 import './AgentConfigBackupDialog.css';
 
 type FileSummary = { path: string; exists: boolean | null; size: number | null };
@@ -35,7 +36,7 @@ export function AgentConfigBackupDialog({ client, onClose, onRestored, initialId
           if (!disposed) setPreview(result);
         }
       })
-      .catch((cause) => { if (!disposed) setError(String(cause)); })
+      .catch((cause) => { if (!disposed) setError(readableError(cause)); })
       .finally(() => { if (!disposed) setBusy(false); });
     return () => { disposed = true; };
   }, [client, initialId]);
@@ -43,7 +44,7 @@ export function AgentConfigBackupDialog({ client, onClose, onRestored, initialId
     setBusy(true); setError(''); setSelected(version); setPreview(null); setConfirmation(null);
     try {
       if (version.restorable) setPreview(await invoke<Preview>('preview_agent_config_backup', { client, id: version.id }));
-    } catch (cause) { setError(String(cause)); }
+    } catch (cause) { setError(readableError(cause)); }
     finally { setBusy(false); }
   };
   const confirm = async () => {
@@ -58,7 +59,7 @@ export function AgentConfigBackupDialog({ client, onClose, onRestored, initialId
         setSelected(null); setPreview(null); setConfirmation(null);
         setListing(await invoke<Listing>('list_agent_config_backups', { client }));
       }
-    } catch (cause) { setError(String(cause)); setPreview(null); setConfirmation(null); }
+    } catch (cause) { setError(readableError(cause)); setPreview(null); setConfirmation(null); }
     finally { setBusy(false); }
   };
   const date = (version: Version) => version.createdAt

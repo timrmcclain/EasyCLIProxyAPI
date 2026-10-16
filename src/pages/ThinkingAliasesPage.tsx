@@ -26,6 +26,7 @@ import {
 import { getCurrentLocale, translate, useI18n } from '../i18n';
 import { SettingsHelp } from '../components/SettingsHelp';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { readableError } from '../services/readableError';
 
 type PresetThinkingEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
@@ -245,7 +246,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
           : ''
       ));
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setLoading(false);
     }
@@ -459,7 +460,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
       setEditorOpen(false);
       resetEditor();
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setBusyAlias('');
       setBusyAction('');
@@ -522,7 +523,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
       setSearch('');
       setEditorOpen(true);
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setBusyAlias('');
       setBusyAction('');
@@ -550,7 +551,7 @@ export function ThinkingAliasesPage({ embedded = false }: { embedded?: boolean }
       setNotice(t('aliases.deleted', { alias: entry.alias }));
       await load();
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setBusyAlias('');
       setBusyAction('');

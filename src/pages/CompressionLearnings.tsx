@@ -5,6 +5,7 @@ import { useAppNotice, FeedbackNotice } from '../appNotice';
 import { useI18n } from '../i18n';
 import { compressionText, type CompressionTextKey } from '../i18n/compression';
 import { compressionService, type LearnPreview } from '../services/compression';
+import { readableError } from '../services/readableError';
 
 /** Project learnings: dry-run `headroom learn` for one folder, then write its CLAUDE.local.md on request. */
 export function CompressionLearnings({ installed }: { installed: boolean }) {
@@ -32,7 +33,7 @@ export function CompressionLearnings({ installed }: { installed: boolean }) {
     try {
       setPreview(await compressionService.learnPreview(folder.trim()));
     } catch (error) {
-      feedback.showNotice(t('learnFailed', { error: String(error) }), 'error');
+      feedback.showNotice(t('learnFailed', { error: readableError(error) }), 'error');
     } finally {
       setBusy(false);
     }
@@ -44,7 +45,7 @@ export function CompressionLearnings({ installed }: { installed: boolean }) {
       setApplied((paths) => [...paths, path]);
       feedback.showNotice(t('learnApplied'), 'success');
     } catch (error) {
-      feedback.showNotice(String(error), 'error');
+      feedback.showNotice(readableError(error), 'error');
     }
   };
 

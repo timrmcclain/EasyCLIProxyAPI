@@ -7,6 +7,7 @@ import { useI18n } from '../i18n';
 import { pluginOAuthText, type PluginOAuthMessage } from '../i18n/pluginOAuth';
 import { managementApi } from '../services/managementApi';
 import type { PluginListEntry } from '../services/plugins';
+import { readableError } from '../services/readableError';
 import './PluginOAuthDialog.css';
 
 type OAuthStart = { url: string; state?: string | null; userCode?: string | null; flow?: string | null; expiresIn?: number | null };
@@ -15,7 +16,7 @@ type Session = { state: string; url: string; code: string; device: boolean; expi
 type Phase = 'starting' | 'waiting' | 'success' | 'error';
 const MAX_SESSION_MS = 30 * 60 * 1000;
 
-function message(error: unknown) { return error instanceof Error ? error.message : String(error); }
+function message(error: unknown) { return readableError(error); }
 
 export function PluginOAuthDialog({ plugin, browser = 'default', onClose, onCompleted }: {
   plugin: PluginListEntry;

@@ -8,6 +8,7 @@ import { managementApi, responseList } from '../services/managementApi';
 import type { ModelOption } from '../services/modelService';
 import { useQuotaCache } from '../services/quotaCache';
 import type { AuthFile } from '../services/quotaService';
+import { readableError } from '../services/readableError';
 import './AppDriftBanner.css';
 
 /**
@@ -58,7 +59,7 @@ export function ClaudeFallbackBanner({ coreReady }: { coreReady: boolean }) {
       const state = await invoke<{ model: string | null }>(command, command === 'switch_claude_code_model' ? { model: choice } : undefined);
       setSwitchedTo(state.model ?? null);
     } catch (reason) {
-      setError(String(reason));
+      setError(readableError(reason));
     } finally {
       setBusy(false);
     }

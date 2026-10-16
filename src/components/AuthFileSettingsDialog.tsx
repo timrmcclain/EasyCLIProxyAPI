@@ -8,6 +8,7 @@ import { modelMatchesRule, normalizeOAuthExcludedRules, oauthModelCandidates, oa
 import './AuthFileSettingsDialog.css';
 import { CredentialAdvancedFields, CredentialHeadersEditor, credentialProviderKey } from './CredentialAdvancedFields';
 import { modelSearchText, type ModelOption } from '../services/modelService';
+import { readableError } from '../services/readableError';
 
 export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }: {
   name: string;
@@ -54,7 +55,7 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
     void loadAuthFileSettings(name).then((value) => {
       if (active) { setOriginal(value); setDraft(value); }
     }).catch((reason: unknown) => {
-      if (active) setError(reason instanceof Error ? reason.message : String(reason));
+      if (active) setError(readableError(reason));
     }).finally(() => { if (active) setLoading(false); });
     void managementApi.get('/credentials/models', { name }).then((payload) => {
       const catalog = oauthModelsFromPayload(payload);
@@ -62,7 +63,7 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
       setModels(catalog);
       setPickerModels(catalog.map((model) => ({ name: model.id, alias: model.displayName })));
     }).catch((reason: unknown) => {
-      if (active) setCatalogError(reason instanceof Error ? reason.message : String(reason));
+      if (active) setCatalogError(readableError(reason));
     }).finally(() => { if (active) setCatalogLoading(false); });
     return () => { active = false; };
   }, [name, attempt]);
@@ -85,7 +86,7 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
       if (changed) onSaved();
       else onClose();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      setError(readableError(reason));
     } finally {
       savingRef.current = false;
       setSaving(false);

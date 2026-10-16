@@ -47,6 +47,7 @@ import { EventsView, type UsageEventPage } from './UsageEventsView';
 import { SelectMenu } from '../components/SelectMenu';
 import { takePendingUsageJump } from '../usageNavigation';
 import { UsageAnalysisView, type UsageAnalysis, type UsageCategory } from './UsageAnalysisView';
+import { readableError } from '../services/readableError';
 
 type UsageTab = 'overview' | 'analysis' | 'events' | 'projects' | 'pricing' | 'data-management';
 type UsageRange = '4h' | '24h' | 'today' | '7d' | '30d' | 'all' | 'custom';
@@ -429,7 +430,7 @@ export function UsageRecordsPage() {
         if (filtersChanged) loadedFilterScopeKeyRef.current = filterScopeKey;
         setError('');
       } catch (requestError) {
-        if (requestId === requestIdRef.current) setError(String(requestError));
+        if (requestId === requestIdRef.current) setError(readableError(requestError));
       } finally {
         if (requestId === requestIdRef.current) setLoading(false);
       }
@@ -811,7 +812,7 @@ function UsageDataManagementView() {
         setLimitDraft(String(next.maxDatabaseSizeMb));
       })
       .catch((requestError) => {
-        if (!disposed) setError(String(requestError));
+        if (!disposed) setError(readableError(requestError));
       })
       .finally(() => {
         if (!disposed) setLoadingLimit(false);
@@ -840,7 +841,7 @@ function UsageDataManagementView() {
         variables: { deleted: next.deletedRecords.toLocaleString() },
       });
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setSavingLimit(false);
     }
@@ -872,7 +873,7 @@ function UsageDataManagementView() {
         },
       });
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setShrinking(false);
     }
@@ -891,7 +892,7 @@ function UsageDataManagementView() {
       const nextStorage = await invoke<UsageStorageSettings>('get_usage_storage_settings');
       setStorage(nextStorage);
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setRunning(false);
     }

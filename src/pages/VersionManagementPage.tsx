@@ -16,6 +16,7 @@ import { useI18n } from '../i18n';
 import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
 import { createVersionManagementVisitTracker } from '../services/versionManagementVisits';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { readableError } from '../services/readableError';
 
 export type CoreInstallResult = {
   version: string;
@@ -168,7 +169,7 @@ export function VersionManagementPage() {
       setVersionSource(settings);
       setVersionSourceError('');
     } catch (error) {
-      setVersionSourceError(String(error));
+      setVersionSourceError(readableError(error));
     }
   };
 
@@ -194,7 +195,7 @@ export function VersionManagementPage() {
       } : undefined);
     } catch (error) {
       await loadVersionSourceSettings();
-      setVersionSourceError(t('kernel.versions.gitcodeSaveFailed', { error: String(error) }));
+      setVersionSourceError(t('kernel.versions.gitcodeSaveFailed', { error: readableError(error) }));
     } finally {
       setVersionSourceSaving(false);
     }
@@ -213,7 +214,7 @@ export function VersionManagementPage() {
       resetLatest();
       showNotice({ key: 'kernel.versions.customMirrorAdded' }, 'success');
     } catch (error) {
-      const message = t('kernel.versions.customMirrorAddFailed', { error: String(error) });
+      const message = t('kernel.versions.customMirrorAddFailed', { error: readableError(error) });
       setVersionSourceError(message);
     } finally {
       setVersionSourceSaving(false);
@@ -234,7 +235,7 @@ export function VersionManagementPage() {
         resetLatest();
       }
     } catch (error) {
-      const message = t('kernel.versions.customMirrorRemoveFailed', { error: String(error) });
+      const message = t('kernel.versions.customMirrorRemoveFailed', { error: readableError(error) });
       setVersionSourceError(message);
     } finally {
       setVersionSourceSaving(false);
@@ -280,7 +281,7 @@ export function VersionManagementPage() {
       setCancellingInstall(false);
     } catch (error) {
       manualInstallInProgressRef.current = false;
-      const errorMessage = String(error);
+      const errorMessage = readableError(error);
       const cancelled = /cancel/i.test(errorMessage);
       showNotice(errorMessage, cancelled ? 'info' : 'error');
       setProgress((current) => ({
@@ -309,7 +310,7 @@ export function VersionManagementPage() {
       await invoke('cancel_core_install');
     } catch (error) {
       setCancellingInstall(false);
-      showNotice(String(error), 'error');
+      showNotice(readableError(error), 'error');
     }
   };
 
@@ -374,7 +375,7 @@ export function VersionManagementPage() {
         if (!disposed) setBundledCore(info);
       })
       .catch((error) => {
-        if (!disposed) setBundledCoreError(String(error));
+        if (!disposed) setBundledCoreError(readableError(error));
       });
 
     void getVersion()

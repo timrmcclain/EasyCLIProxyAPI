@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Check, LoaderCircle, RefreshCw, RotateCcw, Search, X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { readableError } from '../services/readableError';
 import {
   cloneCodexModelConfiguration,
   codexContextSourceHint,
@@ -67,7 +68,7 @@ export function CodexModelCatalogDialog({ onClose, onSaved }: CodexModelCatalogD
         : next.models[0]?.slug ?? '');
       return true;
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
       return false;
     } finally {
       setLoading(false);

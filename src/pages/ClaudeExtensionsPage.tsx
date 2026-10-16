@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, ExternalLink, Link2, Search } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useConfirmation } from '../components/ConfirmationDialog';
+import { readableError } from '../services/readableError';
 import {
   claudeExtensionsService as service, formatBytes, isSessionPlugin, isWebLink, pluginMarketplace, pluginName,
   searchAvailable, searchSkills, type AvailablePlugin, type ExtensionsOverview, type InstallOutcome, type InstalledPlugin, type SkillPreview,
@@ -35,7 +36,7 @@ export function ClaudeExtensionsPage() {
       setOverview(await service.overview());
       setLoadError(null);
     } catch (cause) {
-      setLoadError(String(cause));
+      setLoadError(readableError(cause));
     }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -51,7 +52,7 @@ export function ClaudeExtensionsPage() {
       await load();
       return true;
     } catch (cause) {
-      setError(String(cause));
+      setError(readableError(cause));
       return false;
     } finally {
       setBusy(null);
@@ -67,7 +68,7 @@ export function ClaudeExtensionsPage() {
       const text = await service.pluginDetails(id);
       setDetails(current => ({ ...current, [id]: text }));
     } catch (cause) {
-      setError(String(cause));
+      setError(readableError(cause));
     }
   };
 
@@ -107,7 +108,7 @@ export function ClaudeExtensionsPage() {
     try {
       setPreview(await service.previewSkill(skillSource));
     } catch (cause) {
-      setError(String(cause));
+      setError(readableError(cause));
     } finally {
       setBusy(null);
     }
@@ -221,7 +222,7 @@ export function ClaudeExtensionsPage() {
               </div>
               <div className="ext-actions">
                 {isWebLink(plugin.sourceUrl) && <button type="button" className="secondary-button compact-button" title={plugin.sourceUrl}
-                  onClick={() => void service.openUrl(plugin.sourceUrl as string).catch(cause => setError(String(cause)))}>
+                  onClick={() => void service.openUrl(plugin.sourceUrl as string).catch(cause => setError(readableError(cause)))}>
                   {t('ext.add.source')}<ExternalLink size={12} aria-hidden="true" />
                 </button>}
                 <button type="button" className="secondary-button compact-button" disabled={busy !== null} onClick={() => void install(plugin)}>

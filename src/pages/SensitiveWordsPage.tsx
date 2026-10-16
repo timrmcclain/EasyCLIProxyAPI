@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Check, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useConfirmation } from '../components/ConfirmationDialog';
+import { readableError } from '../services/readableError';
 
 type SensitiveWordsSettings = {
   antigravitySensitiveWords: string[];
@@ -126,7 +127,7 @@ export function SensitiveWordsPage({ onDirtyChange }: { onDirtyChange?: (dirty: 
       replaceDraft(result);
       setSavedNotice(false);
     } catch (cause) {
-      setError(String(cause));
+      setError(readableError(cause));
     } finally {
       setLoading(false);
     }
@@ -203,7 +204,7 @@ export function SensitiveWordsPage({ onDirtyChange }: { onDirtyChange?: (dirty: 
       replaceDraft(result);
       setSavedNotice(true);
     } catch (cause) {
-      setError(String(cause));
+      setError(readableError(cause));
     } finally {
       setSaving(false);
     }

@@ -11,6 +11,7 @@ import { disableQuotaRouting, enableQuotaRouting, readQuotaRoutingPreference } f
 import type { AuthFile } from '../services/quotaService';
 import { labelFor } from '../services/quotaWatcher';
 import { SettingsHelp } from './SettingsHelp';
+import { readableError } from '../services/readableError';
 
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 
@@ -46,7 +47,7 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
         action: { label: { key: 'common.undo' }, onAction: () => void change(!next, false) },
       } : undefined);
     } catch (error) {
-      notice.showNotice(t('qrouting.error', { error: String(error) }), 'error');
+      notice.showNotice(t('qrouting.error', { error: readableError(error) }), 'error');
     } finally {
       busyRef.current = false;
       setBusy(false);

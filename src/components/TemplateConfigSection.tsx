@@ -7,6 +7,7 @@ import { useI18n } from '../i18n';
 import { templateMessages, templateText } from '../i18n/templateConfig';
 import { useCoreRuntime, type CoreStatus } from '../coreRuntime';
 import { SettingsHelp } from './SettingsHelp';
+import { readableError } from '../services/readableError';
 import {
   applyTemplateChanges, draftTemplateField, readTemplatePath, templateFieldKey, templateFieldValidation, templateFieldSaveValue,
   type TemplateConfigChange, type TemplateConfigDraft, type TemplateConfigField, type TemplateConfigGroup, type TemplateConfigSaveResult, type TemplateText,
@@ -53,7 +54,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
       const value = await invoke<Record<string, unknown>>('get_extended_core_config');
       if (mounted.current && request === revision.current) { setConfig(value); setLoadError(''); }
     } catch (error) {
-      if (mounted.current && request === revision.current) setLoadError(String(error));
+      if (mounted.current && request === revision.current) setLoadError(readableError(error));
     }
   }, []);
 
@@ -65,7 +66,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
     void listen('config-files-changed', () => { if (!disposed) void reload(); }).then((unlisten) => {
       if (!disposed) stop = unlisten;
       else unlisten();
-    }).catch((error) => { if (!disposed) setLoadError(String(error)); });
+    }).catch((error) => { if (!disposed) setLoadError(readableError(error)); });
     return () => { disposed = true; mounted.current = false; ++revision.current; stop?.(); };
   }, [reload]);
 
@@ -128,7 +129,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
       setSaved((previous) => ({ ...previous, [group.id]: true }));
       if (result.restartRequired) setRestartNeeded(true);
     } catch (error) {
-      setGroupErrors((previous) => ({ ...previous, [group.id]: String(error) }));
+      setGroupErrors((previous) => ({ ...previous, [group.id]: readableError(error) }));
       // Refresh untouched values while retaining both the draft and its original conflict check.
       await reload();
     } finally { if (mounted.current) setBusy(null); }
@@ -137,7 +138,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
   const restart = async () => {
     setBusy('restart');
     try { publishStatus(await invoke<CoreStatus>('restart_core_process')); setRestartNeeded(false); setLoadError(''); }
-    catch (error) { setLoadError(String(error)); await refreshStatus(); }
+    catch (error) { setLoadError(readableError(error)); await refreshStatus(); }
     finally { setBusy(null); }
   };
 
@@ -147,7 +148,7 @@ export function TemplateConfigSection({ groups, visibleGroups, onDirtyGroupsChan
       const selected = await open({ directory: true, multiple: false, title: templateText(field.label, locale) });
       if (mounted.current && typeof selected === 'string') changeField(group, field, selected);
     } catch (error) {
-      if (mounted.current) setGroupErrors((previous) => ({ ...previous, [group.id]: String(error) }));
+      if (mounted.current) setGroupErrors((previous) => ({ ...previous, [group.id]: readableError(error) }));
     } finally { if (mounted.current) setBusy(null); }
   };
 

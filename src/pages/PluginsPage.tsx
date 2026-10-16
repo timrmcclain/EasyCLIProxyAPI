@@ -17,12 +17,13 @@ import { PluginConfigDialog } from './PluginConfigDialog';
 import { PluginInstallDialog } from './PluginInstallDialog';
 import { PluginOAuthDialog } from './PluginOAuthDialog';
 import { PluginSettingsPanel } from './PluginSettingsPanel';
+import { readableError } from '../services/readableError';
 import './PluginsPage.css';
 
 type Tab = 'installed' | 'store' | 'settings';
 /** Directory name shown when the core does not report one (a path, not prose). */
 const DEFAULT_PLUGINS_DIR = 'plugins';
-const message = (error: unknown) => error instanceof Error ? error.message : String(error);
+const message = (error: unknown) => readableError(error);
 
 export function PluginsPage() {
   const { t, locale } = useI18n();

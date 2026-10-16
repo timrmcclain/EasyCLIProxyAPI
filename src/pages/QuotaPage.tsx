@@ -40,6 +40,7 @@ import {
 } from '../services/quotaCache';
 import { dedupeAuthFiles, parseAuthFilePriority, sortAuthFilesByPriority } from '../services/authFiles';
 import { useI18n } from '../i18n';
+import { readableError } from '../services/readableError';
 import './QuotaPage.css';
 
 const providerMeta: Record<QuotaProvider, { label: string; icon: string }> = {
@@ -87,7 +88,7 @@ export function QuotaPage() {
       });
     } catch (requestError) {
       setFileListStale(true);
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setLoading(false);
     }

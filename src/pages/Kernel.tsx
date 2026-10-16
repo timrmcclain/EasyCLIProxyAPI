@@ -22,6 +22,7 @@ import { CompressionStatusChip } from './CompressionStatusChip';
 import { useHomeOverview } from './useHomeOverview';
 import './HomeDashboard.css';
 import { useConfirmation } from '../components/ConfirmationDialog';
+import { readableError } from '../services/readableError';
 
 type CoreProcessCommand = 'start_core_process' | 'stop_core_process' | 'restart_core_process';
 
@@ -137,7 +138,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
       }
       return true;
     } catch (error) {
-      const errorMessage = String(error);
+      const errorMessage = readableError(error);
       await refreshStatus();
       // The most common reason a start fails is another program holding the port: name it instead of the raw error.
       if (command !== 'stop_core_process') {

@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useCoreRuntime } from './coreRuntime';
+import { readableError } from './services/readableError';
 
 export type CoreLatest = {
   version: string;
@@ -114,7 +115,7 @@ export function requestLatestCore(force = false) {
     .catch((error) => {
       if (requestEpoch === latestRequestEpoch) {
         cachedLatest = null;
-        cachedLatestError = String(error);
+        cachedLatestError = readableError(error);
       }
       throw error;
     })

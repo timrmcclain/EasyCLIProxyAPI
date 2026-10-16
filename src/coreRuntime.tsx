@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { readableError } from './services/readableError';
 
 export type CoreStatus = {
   installed: boolean;
@@ -48,7 +49,7 @@ export function CoreRuntimeProvider({ children }: { children: ReactNode }) {
       .catch((error) => {
         if (revision !== statusRevision.current) return;
         setStatus(null);
-        setStatusError(String(error));
+        setStatusError(readableError(error));
       })
       .finally(() => { refreshRequest.current = null; });
     return refreshRequest.current;
@@ -70,7 +71,7 @@ export function CoreRuntimeProvider({ children }: { children: ReactNode }) {
       }
     }).catch((error) => {
       if (!disposed) {
-        setStatusError(String(error));
+        setStatusError(readableError(error));
       }
     });
 

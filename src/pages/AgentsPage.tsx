@@ -75,6 +75,7 @@ import { AgentConfigBackupDialog } from './AgentConfigBackupDialog';
 import { AgentClientList } from './AgentClientList';
 import { AgentConfigManagementPanel, AgentConfigurationFeedback, AgentRunControls } from './AgentControls';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { readableError } from '../services/readableError';
 
 type AgentClientId =
   | 'claude-code'
@@ -710,7 +711,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
         return next;
       });
     } catch (requestError) {
-      if (modelRequestRef.current === requestId) setModelError(String(requestError));
+      if (modelRequestRef.current === requestId) setModelError(readableError(requestError));
     } finally {
       if (modelRequestRef.current === requestId) setModelLoading(false);
     }
@@ -722,7 +723,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     try {
       await loadStatuses(true);
     } catch (requestError) {
-      setDetectionError(String(requestError));
+      setDetectionError(readableError(requestError));
     } finally {
       setLoading(false);
     }
@@ -732,7 +733,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     setLoading(agentStatusesCache === null);
     setDetectionError('');
     void loadStatuses()
-      .catch((requestError) => setDetectionError(String(requestError)))
+      .catch((requestError) => setDetectionError(readableError(requestError)))
       .finally(() => setLoading(false));
   }, [loadStatuses]);
 
@@ -750,7 +751,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       if (disposed) return;
       setDetectionError('');
       void loadStatuses().catch((requestError) => {
-        if (!disposed) setDetectionError(String(requestError));
+        if (!disposed) setDetectionError(readableError(requestError));
       });
       void loadModels(selected, '', true);
     }).then((unlisten) => {
@@ -768,7 +769,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     let disposed = false;
     const refreshProcessStatus = () => {
       void loadDeepSeekHarnessProcessStatus().catch((requestError) => {
-        if (!disposed) setLaunchError(String(requestError));
+        if (!disposed) setLaunchError(readableError(requestError));
       });
     };
     refreshProcessStatus();
@@ -1021,7 +1022,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     try {
       await loadStatuses(true);
     } catch (requestError) {
-      setDetectionError(String(requestError));
+      setDetectionError(readableError(requestError));
     }
   };
 
@@ -1191,7 +1192,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       await reloadStatusesAfterAction();
       setConfigurationNotice(t('agents.nativeOAuth.restored'));
     } catch (cause) {
-      setConfigurationError(String(cause));
+      setConfigurationError(readableError(cause));
     } finally {
       setBusyAction(null);
     }
@@ -1212,7 +1213,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       setConfigurationNotice(selected === 'codex' ? t('agents.modify.closed')
         : t('agents.clearIntegration.success', { name: activeDefinition.name }));
     } catch (cause) {
-      setConfigurationError(String(cause));
+      setConfigurationError(readableError(cause));
     } finally {
       setBusyAction(null);
     }
@@ -1234,7 +1235,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       setOauthConfigurationDraft(true);
     } catch (requestError) {
       if (!handleOAuthLoginError(requestError, 'enable')) {
-        setConfigurationError(String(requestError));
+        setConfigurationError(readableError(requestError));
       }
     } finally {
       setBusyAction(null);
@@ -1273,7 +1274,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       onConfigurationApplied?.();
     } catch (requestError) {
       if (!handleOAuthLoginError(requestError, 'apply')) {
-        setConfigurationError(String(requestError));
+        setConfigurationError(readableError(requestError));
       }
     } finally {
       setBusyAction(null);
@@ -1294,7 +1295,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       setConfigurationNotice(t('agents.management.pluginInstalled'));
       onConfigurationApplied?.();
     } catch (requestError) {
-      setConfigurationError(String(requestError));
+      setConfigurationError(readableError(requestError));
     } finally {
       setBusyAction(null);
     }
@@ -1315,7 +1316,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       setConfigurationNotice(t('agents.management.pluginUpdated'));
       await loadPiProviderUpdateStatus();
     } catch (requestError) {
-      setConfigurationError(String(requestError));
+      setConfigurationError(readableError(requestError));
     } finally {
       setBusyAction(null);
     }
@@ -1333,7 +1334,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       setConfigurationNotice(t(result.outcome === 'unchanged' ? 'agents.backup.unchanged' : 'agents.backup.updated'));
       onConfigurationApplied?.();
     } catch (requestError) {
-      setConfigurationError(String(requestError));
+      setConfigurationError(readableError(requestError));
     } finally {
       setBusyAction(null);
     }
@@ -1351,7 +1352,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       await reloadStatusesAfterAction();
       setConfigurationNotice(t('agents.management.pluginUninstalled'));
     } catch (requestError) {
-      setConfigurationError(String(requestError));
+      setConfigurationError(readableError(requestError));
     } finally {
       setBusyAction(null);
     }
@@ -1388,7 +1389,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       setOauthConfigurationDraft(null);
     } catch (requestError) {
       if (!handleOAuthLoginError(requestError, 'apply')) {
-        setDefaultError(String(requestError));
+        setDefaultError(readableError(requestError));
       }
     } finally {
       setBusyAction(null);
@@ -1420,7 +1421,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       await reloadStatusesAfterAction();
       setOauthConfigurationDraft(null);
     } catch (requestError) {
-      setClearError(String(requestError));
+      setClearError(readableError(requestError));
     } finally {
       setBusyAction(null);
     }
@@ -1450,7 +1451,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       });
       if (typeof selectedDirectory === 'string') setLaunchDirectory(selectedDirectory);
     } catch (requestError) {
-      setLaunchDirectoryError(String(requestError));
+      setLaunchDirectoryError(readableError(requestError));
     } finally {
       setBusyAction(null);
     }
@@ -1491,9 +1492,9 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       }
     } catch (requestError) {
       if (workingDirectory) {
-        setLaunchDirectoryError(String(requestError));
+        setLaunchDirectoryError(readableError(requestError));
       } else if (!handleOAuthLoginError(requestError, 'launch')) {
-        setLaunchError(String(requestError));
+        setLaunchError(readableError(requestError));
       }
     } finally {
       setBusyAction(null);
@@ -1516,7 +1517,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       const status = await invoke<DeepSeekHarnessProcessStatus>('stop_deepseek_harness_process');
       setDeepSeekHarnessProcessStatus(status);
     } catch (requestError) {
-      setLaunchError(String(requestError));
+      setLaunchError(readableError(requestError));
     } finally {
       setBusyAction(null);
     }
@@ -1530,7 +1531,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       await invoke('restart_agent_app', { client: selected });
     } catch (requestError) {
       if (!handleOAuthLoginError(requestError, 'launch')) {
-        setLaunchError(String(requestError));
+        setLaunchError(readableError(requestError));
       }
     } finally {
       setBusyAction(null);
@@ -1543,7 +1544,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     try {
       setDeepSeekHarnessProcessStatus(await invoke<DeepSeekHarnessProcessStatus>('restart_deepseek_harness_process'));
     } catch (requestError) {
-      setLaunchError(String(requestError));
+      setLaunchError(readableError(requestError));
       await loadDeepSeekHarnessProcessStatus().catch(() => undefined);
     } finally {
       setBusyAction(null);
@@ -1581,7 +1582,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
     try {
       await invoke('create_agent_config_backup', { client: selected });
       setConfigurationNotice(t('agents.backup.created'));
-    } catch (cause) { setConfigurationError(String(cause)); }
+    } catch (cause) { setConfigurationError(readableError(cause)); }
     finally { setBusyAction(null); }
   };
 
@@ -1599,7 +1600,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
         claudeDesktopModelMappings: selected === 'claude-desktop' ? mappings : null,
       });
     } catch (cause) {
-      setConfigurationError(String(cause));
+      setConfigurationError(readableError(cause));
       return;
     } finally { setBusyAction(null); }
     const confirmed = await askConfirmation({

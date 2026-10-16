@@ -3,6 +3,7 @@ import { AlertTriangle, CircleCheck, CircleSlash, KeyRound, RefreshCw } from 'lu
 import { useI18n } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
 import { resetCountdown } from '../services/accountDashboard';
+import { readableError } from '../services/readableError';
 import {
   SECRET_GUARD_MODES, SECRET_GUARD_PROVIDERS, modeFor, openFindings, secretGuardApp, secretGuardKind, secretGuardService,
   type SecretGuardFinding, type SecretGuardMode, type SecretGuardProvider, type SecretGuardStatus,
@@ -34,7 +35,7 @@ export function SecretGuardPage() {
       setFindings(await secretGuardService.findings());
       setLoadError(null);
     } catch (cause) {
-      setLoadError(String(cause));
+      setLoadError(readableError(cause));
     }
     try {
       setStatus(await secretGuardService.status());
@@ -62,7 +63,7 @@ export function SecretGuardPage() {
     try {
       await action();
     } catch (cause) {
-      setActionError(t('sg.error', { error: String(cause) }));
+      setActionError(t('sg.error', { error: readableError(cause) }));
     } finally {
       await load();
       busyRef.current = false;

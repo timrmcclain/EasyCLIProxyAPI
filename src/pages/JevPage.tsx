@@ -3,6 +3,7 @@ import { AlertTriangle, CircleCheck, CircleX, ExternalLink, RefreshCw } from 'lu
 import { useI18n } from '../i18n';
 import { resetCountdown } from '../services/accountDashboard';
 import { approvalHourOptions, interventionCounts, jevService, jevStatusRows, jevTime, type JevGuards, type JevIntervention, type JevInterventionKind, type JevOverview, type JevStatusLevel, type JevStatusRow } from '../services/jev';
+import { readableError } from '../services/readableError';
 import './HealthCheckPage.css';
 import './JevPage.css';
 
@@ -28,7 +29,7 @@ export function JevPage() {
       setOverview(await jevService.overview());
       setError(null);
     } catch (cause) {
-      setError(String(cause));
+      setError(readableError(cause));
     }
     setNow(Date.now());
   }, []);
@@ -42,7 +43,7 @@ export function JevPage() {
       await jevService.refreshReport();
       await load();
     } catch (cause) {
-      setRefreshError(String(cause));
+      setRefreshError(readableError(cause));
     } finally {
       setRefreshing(false);
     }
@@ -57,7 +58,7 @@ export function JevPage() {
       const guards = await jevService.setGuards({ ...overview.guards, ...change });
       setOverview(current => (current ? { ...current, guards } : current));
     } catch (cause) {
-      setGuardError(String(cause));
+      setGuardError(readableError(cause));
     } finally {
       setSavingGuards(false);
     }

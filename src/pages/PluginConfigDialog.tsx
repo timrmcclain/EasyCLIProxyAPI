@@ -7,6 +7,7 @@ import { useI18n } from '../i18n';
 import { pluginConfigText, type PluginConfigMessage } from '../i18n/pluginConfig';
 import { isRecord } from '../services/managementApi';
 import { pluginsApi, type PluginConfigField, type PluginConfigObject, type PluginListEntry } from '../services/plugins';
+import { readableError } from '../services/readableError';
 import {
   buildPluginConfigDraft, buildPluginConfigPatch, normalizePluginConfigFieldType,
   type PluginConfigDraft, type PluginDraftValue,
@@ -21,7 +22,7 @@ function customConfig(config: PluginConfigObject): PluginConfigObject {
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return readableError(error);
 }
 
 export function PluginConfigDialog({ plugin, onClose, onSaved }: {

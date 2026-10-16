@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
+import { readableError } from '../services/readableError';
 import {
   codexSessionPageCounts,
   retainVisibleCodexSessionIds,
@@ -48,7 +49,7 @@ let sessionViewCache = {
 };
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return readableError(error);
 }
 
 export function CodexSessionsPanel() {

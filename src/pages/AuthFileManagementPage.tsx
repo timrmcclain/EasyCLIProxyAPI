@@ -92,6 +92,7 @@ import {
   type OAuthModelTarget,
 } from '../services/oauthModelSettings';
 import { getCurrentLocale, translate, useI18n } from '../i18n';
+import { readableError } from '../services/readableError';
 
 type AuthFile = Record<string, unknown>;
 
@@ -193,7 +194,7 @@ export function AuthFileManagementPage() {
       });
     } catch (requestError) {
       setFileListStale(true);
-      if (mountedRef.current && requestId === fileRequestRef.current) setError(String(requestError));
+      if (mountedRef.current && requestId === fileRequestRef.current) setError(readableError(requestError));
     } finally {
       if (mountedRef.current && requestId === fileRequestRef.current) setLoading(false);
     }
@@ -228,7 +229,7 @@ export function AuthFileManagementPage() {
       await loadFiles(false);
     } catch (requestError) {
       if (mountedRef.current) setError(t('authFiles.cooldown.resetFailed', {
-        name, message: requestError instanceof Error ? requestError.message : String(requestError),
+        name, message: readableError(requestError),
       }));
     } finally {
       cooldownResetPendingRef.current.delete(authIndex);
@@ -295,7 +296,7 @@ export function AuthFileManagementPage() {
       setOauthModelSettings(settings);
       setOauthExcludedRulesText(settings.excludedRules.join('\n'));
     } catch (requestError) {
-      if (oauthModelRequestRef.current === requestId) setOauthModelError(String(requestError));
+      if (oauthModelRequestRef.current === requestId) setOauthModelError(readableError(requestError));
     } finally {
       if (oauthModelRequestRef.current === requestId) setOauthModelLoading(false);
     }
@@ -316,7 +317,7 @@ export function AuthFileManagementPage() {
       closeOauthModels();
       if (settings.target.scope === 'credential') void loadFiles(false);
     } catch (requestError) {
-      setOauthModelError(String(requestError));
+      setOauthModelError(readableError(requestError));
     } finally {
       oauthModelSaveRef.current = false;
       setOauthModelSaving(false);
@@ -397,7 +398,7 @@ export function AuthFileManagementPage() {
         await managementApi.uploadAuthFile(file);
         uploaded += 1;
       } catch (requestError) {
-        failures.push(`${file.name}：${String(requestError)}`);
+        failures.push(`${file.name}：${readableError(requestError)}`);
       }
     }
     try {
@@ -405,7 +406,7 @@ export function AuthFileManagementPage() {
       if (uploaded > 0) showNotice({ key: 'authFiles.uploaded', variables: { count: uploaded } });
       if (failures.length > 0) setError(t('authFiles.uploadFailed', { count: failures.length, errors: failures.join('; ') }));
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setBusy(false);
     }
@@ -432,7 +433,7 @@ export function AuthFileManagementPage() {
         });
       }
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setBusy(false);
     }
@@ -452,7 +453,7 @@ export function AuthFileManagementPage() {
       showNotice({ key: 'authFiles.deleted' });
       await loadFiles();
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setBusy(false);
     }
@@ -464,7 +465,7 @@ export function AuthFileManagementPage() {
     try {
       await managementApi.openAuthFilesDirectory();
     } catch (requestError) {
-      setError(String(requestError));
+      setError(readableError(requestError));
     } finally {
       setBusy(false);
     }

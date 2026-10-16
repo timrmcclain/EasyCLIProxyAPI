@@ -51,6 +51,7 @@ import { TemplateConfigSection } from '../components/TemplateConfigSection';
 import { SettingsHelp } from '../components/SettingsHelp';
 import { QuotaRoutingSetting } from '../components/QuotaRoutingSetting';
 import { templateMessages, templateText } from '../i18n/templateConfig';
+import { readableError } from '../services/readableError';
 import {
   settingsCategories, settingsTemplateGroups,
   allSettingsTemplateGroups, settingsMessages, type SettingsCategory,
@@ -425,7 +426,7 @@ export function ConfigPanelPage() {
       applySettings(result, mode);
     } catch (error) {
       setSettings(null);
-      setLoadError(String(error));
+      setLoadError(readableError(error));
     } finally {
       setLoading(false);
     }
@@ -444,7 +445,7 @@ export function ConfigPanelPage() {
       setSoftwareDefaultTerminalDraft(result.defaultTerminal);
     } catch (error) {
       setSoftwareSettings(null);
-      softwareFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      softwareFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: readableError(error) } }, 'error');
     } finally {
       setSoftwareSettingsLoading(false);
     }
@@ -462,7 +463,7 @@ export function ConfigPanelPage() {
       setTlsError('');
     } catch (error) {
       setTlsSettings(null);
-      setTlsError(String(error));
+      setTlsError(readableError(error));
     } finally {
       setTlsSettingsLoading(false);
     }
@@ -487,7 +488,7 @@ export function ConfigPanelPage() {
       return true;
     } catch (error) {
       if (settings) setSettings(settings);
-      mutationFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      mutationFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: readableError(error) } }, 'error');
       void loadSettings('preserve');
       return false;
     } finally {
@@ -679,7 +680,7 @@ export function ConfigPanelPage() {
         loggingFeedback.showNotice({ key: 'config.diagnostics.notice.saved' }, 'success');
       }
     } catch (error) {
-      const message = t('config.error.saveFailed', { error: String(error) });
+      const message = t('config.error.saveFailed', { error: readableError(error) });
       setLoggingError(message);
       void refreshStatus();
       void loadSettings('preserve');
@@ -694,7 +695,7 @@ export function ConfigPanelPage() {
     try {
       await invoke<void>('open_core_logs_directory');
     } catch (error) {
-      loggingFeedback.showNotice({ key: 'config.diagnostics.error.openLogs', variables: { error: String(error) } }, 'error');
+      loggingFeedback.showNotice({ key: 'config.diagnostics.error.openLogs', variables: { error: readableError(error) } }, 'error');
     } finally {
       setBusyAction(null);
     }
@@ -717,7 +718,7 @@ export function ConfigPanelPage() {
       setRotation(result.previousKey ? { previousKey: result.previousKey, outcomes: result.outcomes } : null);
       savePendingRotation(result.previousKey ? await keyFingerprint(result.previousKey) : null);
     } catch (error) {
-      keyFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      keyFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: readableError(error) } }, 'error');
       void loadSettings('preserve');
     } finally {
       setBusyAction(null);
@@ -789,7 +790,7 @@ export function ConfigPanelPage() {
         url: webUiManagementUrl(latestSettings.port, latestTlsSettings.enabled, latestSettings.host),
       });
     } catch (error) {
-      managementFeedback.showNotice({ key: 'config.webuiKey.error.openFailed', variables: { error: String(error) } }, 'error');
+      managementFeedback.showNotice({ key: 'config.webuiKey.error.openFailed', variables: { error: readableError(error) } }, 'error');
     }
   };
 
@@ -821,7 +822,7 @@ export function ConfigPanelPage() {
         tlsFeedback.showNotice({ key: 'config.tls.notice.saved' }, 'success');
       }
     } catch (error) {
-      setTlsError(String(error));
+      setTlsError(readableError(error));
       void refreshStatus();
       void loadTlsSettings('preserve');
     } finally {
@@ -849,7 +850,7 @@ export function ConfigPanelPage() {
       if (target === 'cert') setTlsCertDraft(selected);
       else setTlsKeyDraft(selected);
     } catch (error) {
-      const message = t('config.tls.error.selectFileFailed', { error: String(error) });
+      const message = t('config.tls.error.selectFileFailed', { error: readableError(error) });
       setTlsError(message);
     } finally {
       setTlsFileSelecting(null);
@@ -905,7 +906,7 @@ export function ConfigPanelPage() {
     try {
       await invoke('set_global_hotkey', { enabled });
     } catch (error) {
-      softwareFeedback.showNotice({ key: 'hotkey.failed', variables: { error: String(error) } }, 'error');
+      softwareFeedback.showNotice({ key: 'hotkey.failed', variables: { error: readableError(error) } }, 'error');
       return;
     } finally {
       globalHotkeyBusyRef.current = false;
@@ -927,7 +928,7 @@ export function ConfigPanelPage() {
         action: { label: { key: 'common.undo' }, onAction: () => void changeClaudeStatusLine(!enabled, false) },
       } : undefined);
     } catch (error) {
-      softwareFeedback.showNotice(t('statusline.error', { error: String(error) }), 'error');
+      softwareFeedback.showNotice(t('statusline.error', { error: readableError(error) }), 'error');
     } finally {
       setClaudeStatusLineBusy(false);
     }
@@ -994,7 +995,7 @@ export function ConfigPanelPage() {
           ].filter(Boolean).join(' '), manual.length ? 'error' : 'success');
         } catch (error) {
           await refreshStatus();
-          networkFeedback.showNotice({ key: 'config.error.networkRestartFailed', variables: { error: String(error) } }, 'error');
+          networkFeedback.showNotice({ key: 'config.error.networkRestartFailed', variables: { error: readableError(error) } }, 'error');
         }
       } else if (networkChanged) {
         networkFeedback.showNotice({ key: 'config.notice.networkNextStart' }, 'success');
@@ -1002,7 +1003,7 @@ export function ConfigPanelPage() {
         networkFeedback.showNotice({ key: 'config.notice.networkUpdated' }, 'success');
       }
     } catch (error) {
-      networkFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      networkFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: readableError(error) } }, 'error');
       void loadSettings('preserve');
     } finally {
       setBusyAction(null);
@@ -1049,7 +1050,7 @@ export function ConfigPanelPage() {
       setLoadError('');
       retryFeedback.showNotice({ key: 'config.notice.retryUpdated' }, 'success');
     } catch (error) {
-      retryFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      retryFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: readableError(error) } }, 'error');
       void loadSettings('preserve');
     } finally {
       setBusyAction(null);
@@ -1074,7 +1075,7 @@ export function ConfigPanelPage() {
       setLoadError('');
       routingFeedback.showNotice({ key: 'config.notice.sessionRoutingUpdated' }, 'success');
     } catch (error) {
-      routingFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      routingFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: readableError(error) } }, 'error');
       void loadSettings('preserve');
     } finally {
       setBusyAction(null);
@@ -1111,7 +1112,7 @@ export function ConfigPanelPage() {
       setSoftwareDefaultTerminalDraft(result.defaultTerminal);
       softwareFeedback.showNotice({ key: 'common.saved' }, 'success');
     } catch (error) {
-      softwareFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: String(error) } }, 'error');
+      softwareFeedback.showNotice({ key: 'config.error.saveFailed', variables: { error: readableError(error) } }, 'error');
       void loadSoftwareSettings('preserve');
     } finally {
       setBusyAction(null);

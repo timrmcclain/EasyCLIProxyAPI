@@ -56,6 +56,7 @@ import { useThemePreference } from './theme';
 import { useDialogFocusTrap } from './components/useDialogFocusTrap';
 import { CommandPalette, type PaletteCommand } from './components/CommandPalette';
 import { confirmLeave } from './services/unsavedChanges';
+import { readableError } from './services/readableError';
 
 
 const pages = [
@@ -271,7 +272,7 @@ function AppContent() {
     // rather than leaving Settings showing a shortcut that does nothing.
     if (readGlobalHotkeyPreference()) invoke('set_global_hotkey', { enabled: true }).catch((error) => {
       saveGlobalHotkeyPreference(false);
-      paletteFeedback.showNotice({ key: 'hotkey.failed', variables: { error: String(error) } }, 'error');
+      paletteFeedback.showNotice({ key: 'hotkey.failed', variables: { error: readableError(error) } }, 'error');
     });
   }, []);
   const activePage = pages.find((page) => page.id === active) ?? pages[0];
@@ -498,12 +499,12 @@ function AppContent() {
           ? {
               ...current,
               resolvingAction: null,
-              error: error instanceof Error ? error.message : String(error),
+              error: readableError(error),
             }
           : {
               resolvingAction: null,
               rememberChoice: false,
-              error: error instanceof Error ? error.message : String(error),
+              error: readableError(error),
             },
       );
     }
@@ -535,7 +536,7 @@ function AppContent() {
         try {
           publishStatus(await invoke<CoreStatus>('restart_core_process'));
         } catch (error) {
-          paletteFeedback.showNotice({ key: 'palette.action.restartFailed', variables: { error: String(error) } }, 'error');
+          paletteFeedback.showNotice({ key: 'palette.action.restartFailed', variables: { error: readableError(error) } }, 'error');
         } finally {
           restartingRef.current = false;
         }

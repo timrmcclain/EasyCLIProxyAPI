@@ -6,6 +6,7 @@ import { GitHubMark, GoogleMark, PlaywrightMark } from '../components/BrandMarks
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { useI18n } from '../i18n';
 import { connectorDynamicText, connectorText, type ConnectorTextKey } from '../i18n/connectors';
+import { readableError } from '../services/readableError';
 import {
   aiTestableConnectors,
   connectorsApi,
@@ -30,7 +31,7 @@ import './ConnectorsPage.css';
 type TestState = { running: boolean; result?: ConnectorTestResult; error?: string };
 
 function errorText(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  return readableError(error);
 }
 
 const guideLinks = {
