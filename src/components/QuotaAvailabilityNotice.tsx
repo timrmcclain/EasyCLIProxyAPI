@@ -3,6 +3,7 @@ import { useI18n } from '../i18n';
 import { resetCountdown } from '../services/accountDashboard';
 import type { Availability } from '../services/quotaAvailability';
 
+const blockedKinds = new Set<Availability['kind']>(['exhausted', 'limited', 'creditBacked']);
 const stateMark = (kind: Availability['kind']) => kind === 'exhausted' || kind === 'unavailable' ? '⊘' : kind === 'available' ? '✓' : '•';
 
 /** `onAccounts`: shown on the Accounts page, so the text names the control beside it instead of sending you to Accounts. */
@@ -20,8 +21,11 @@ export function QuotaAvailabilityNotice({ state, now, compact = false, onAccount
       reasonText,
       ...(state.groups ?? []).map(group => `${group.label}: ${t(`availability.${group.kind}`)}`),
     ].filter(Boolean).join('\n');
+    // A blocked row leads with when it comes back: the window that blocks it, not whichever resets soonest.
+    const recovery = state.recoveryAt && state.recoveryAt > now && !state.groups && blockedKinds.has(state.kind) && !state.reason;
+    const chipLabel = state.kind === 'exhausted' && !state.reason ? t('availability.chipUnavailable') : label;
     return <span className={`quota-availability-chip quota-availability-${state.kind}`} title={hint || undefined}>
-      <span aria-hidden="true">{stateMark(state.kind)}</span>{label}
+      <span aria-hidden="true">{stateMark(state.kind)}</span>{recovery ? t('availability.chipResets', { label: chipLabel, time: resetCountdown(state.recoveryAt!, now) }) : chipLabel}
     </span>;
   }
   return <div className={`quota-availability quota-availability-${state.kind}`}>

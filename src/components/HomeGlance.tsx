@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, ArrowRight, CircleAlert, CircleCheck, Hourglass, Shrink } from 'lucide-react';
+import { Activity, ArrowRight, Hourglass, Shrink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { compressionService, lifetimeSavingsPercent, type CompressionStats, type CompressionStatus } from '../services/compression';
 import { busiestClient, canRecheck, hourlyActivity, type AttentionItem, type UnknownReason } from '../services/homeGlance';
@@ -8,38 +8,27 @@ import { requestClient, type DashboardActivity } from '../services/dashboardActi
 import { resetCountdown } from '../services/accountDashboard';
 import { navigateHelp } from '../services/uxNavigation';
 import { requestFailedRequests } from '../usageNavigation';
-import { quotaPercent } from '../services/quotaAvailability';
-import { quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
-import { providerRunways, upcomingResets, type ProviderRunway } from '../services/quotaRunway';
-import { forecastQuota, useQuotaHistory } from '../services/quotaForecast';
+import { type AuthFile, type QuotaState } from '../services/quotaService';
+import { providerRunways, type ProviderRunway } from '../services/quotaRunway';
+import { useQuotaHistory } from '../services/quotaForecast';
 import { formatTokens } from '../pages/CompressionPage';
 import { ProviderLogo } from './AuthFileProviderIcon';
 import './HomeGlance.css';
 
-const ATTENTION_ROWS = 4;
-const RESET_ROWS = 2;
 /** Worst providers shown; the rest fold into one line so the tile row stays short. */
 const RUNWAY_ROWS = 5;
 const COMPRESSION_REFRESH_MS = 30_000;
 
 type GlanceProps = {
   usage: HomeUsageSummary | null; usageLoading: boolean; activity: DashboardActivity | null;
-  attention: AttentionItem[]; now: number; labelFor: (file: AuthFile) => string; providerOf: (file: AuthFile) => string;
+  now: number; providerOf: (file: AuthFile) => string;
   /** The account that served the latest successful request, if it could be matched. */
   latestAccount?: string;
-  onView: (file: AuthFile) => void; onMore: () => void;
   files: AuthFile[]; quotas: Record<string, QuotaState>; stale: boolean; nameFor: (provider: string) => string;
-  /** False while the proxy is stopped: then nothing can take requests, whatever the accounts say. */
-  proxyReady?: boolean;
-  /** Whether the account list has arrived yet; an empty list only means "no accounts" once it has. */
-  accountsState?: 'loading' | 'failed' | 'loaded';
-  /** Re-checks the accounts whose availability is unconfirmed. */
-  onCheckUnconfirmed?: () => void;
-  checkingUnconfirmed?: boolean;
 };
 
 /**
- * What Needs attention says when it has no rows to list. An empty list only means "no accounts" once the list
+ * What the account ledger says when it has no rows to list. An empty list only means "no accounts" once the list
  * has actually arrived; before that it's loading, and if the fetch failed it says so.
  */
 export function attentionEmptyState(proxyReady: boolean, accountCount: number, accountsState: 'loading' | 'failed' | 'loaded'): 'proxyDown' | 'loading' | 'failed' | 'noAccounts' | null {
@@ -48,12 +37,11 @@ export function attentionEmptyState(proxyReady: boolean, accountCount: number, a
   return accountsState === 'loaded' ? 'noAccounts' : accountsState;
 }
 
-/** The at-a-glance row under the provider runway: what the proxy is doing, what compression saves, and what needs you. */
+/** The summary row under the account ledger: what the proxy is doing, what compression saves, and how long each provider lasts. */
 export function HomeGlance(props: GlanceProps) {
   return <div className="home-glance">
     <ActivityTile usage={props.usage} loading={props.usageLoading} activity={props.activity} now={props.now} latestAccount={props.latestAccount} />
     <CompressionTile />
-    <AttentionTile {...props} />
     <RunwayTile {...props} />
   </div>;
 }
@@ -143,59 +131,26 @@ function CompressionTile() {
   </article>;
 }
 
-function AttentionTile({ attention: all, now, labelFor, providerOf, onView, onMore, proxyReady = true, accountsState = 'loaded', files, onCheckUnconfirmed, checkingUnconfirmed }: GlanceProps) {
+/** Accounts whose availability isn't confirmed, one line per reason; Check now only where another check could change it. */
+export function UnconfirmedLines({ attention, onCheck, checking = false }: { attention: AttentionItem[]; onCheck?: () => void; checking?: boolean }) {
   const { t } = useI18n();
-  // Unconfirmed accounts aren't problems yet, so they get one line with a way to check them instead of a row each.
-  const attention = all.filter(item => item.severity !== 'unconfirmed');
-  const unconfirmedItems = all.filter(item => item.severity === 'unconfirmed');
-  const unconfirmed = unconfirmedItems.length;
-  const count = (reason: UnknownReason) => unconfirmedItems.filter(item => item.unknownReason === reason).length;
-  const shown = attention.slice(0, ATTENTION_ROWS);
-  // Each reason gets its own line; only the ones another check could change offer Check now.
+  const items = attention.filter(item => item.severity === 'unconfirmed');
+  if (!items.length) return null;
+  const count = (reason: UnknownReason) => items.filter(item => item.unknownReason === reason).length;
   const reasonLines = ([['notChecked', 'glance.attention.uncheckedLine'], ['checkFailed', 'glance.attention.checkFailedLine'],
     ['notReported', 'glance.attention.notReportedLine'], ['partial', 'glance.attention.partialLine']] as const)
     .filter(([reason]) => count(reason) > 0);
-  const recheckable = unconfirmedItems.some(item => canRecheck(item.unknownReason));
-  const uncheckedLine = unconfirmed > 0 && <div className="glance-unconfirmed">
+  return <div className="glance-unconfirmed">
     <span className="glance-unconfirmed-reasons">{reasonLines.map(([reason, key]) => <span key={reason}>{t(key, { count: count(reason) })}</span>)}</span>
-    {onCheckUnconfirmed && recheckable && <button type="button" className="glance-open" disabled={checkingUnconfirmed} onClick={onCheckUnconfirmed}>{t(checkingUnconfirmed ? 'glance.attention.checking' : 'glance.attention.checkNow')}</button>}
+    {onCheck && items.some(item => canRecheck(item.unknownReason)) && <button type="button" className="glance-open" disabled={checking} onClick={onCheck}>{t(checking ? 'glance.attention.checking' : 'glance.attention.checkNow')}</button>}
   </div>;
-  const history = useQuotaHistory();
-  const runsOut = (item: AttentionItem) => {
-    if (item.severity !== 'low') return undefined;
-    const forecast = forecastQuota(history[quotaKey(item.file)], now);
-    return forecast.kind === 'runsOut' ? forecast.emptyAt : undefined;
-  };
-  const status = (item: AttentionItem) => item.severity === 'blocked' ? t(item.termsRequired ? 'availability.termsRequiredLabel' : item.unavailable ? 'glance.attention.unavailable' : 'glance.attention.blocked')
-    : item.severity === 'low' ? t('glance.attention.low', { percent: quotaPercent(item.percent ?? 0) }) : t('glance.attention.unconfirmed');
-  const emptyState = attentionEmptyState(proxyReady, files.length, accountsState);
-  return <article className={`glance-tile glance-attention ${attention.length ? `worst-${attention[0].severity}` : 'is-clear'}`} aria-labelledby="glance-attention-title">
-    <header><h3 id="glance-attention-title">{t('glance.attention.title')}{attention.length > 0 && <span className="glance-count">{attention.length}</span>}</h3></header>
-    {/* "Nothing needs you" is only true when the proxy is up and there are accounts to route to. */}
-    {!proxyReady ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.proxyDown')}</strong><small>{t('glance.attention.proxyDownDetail')}</small></span></div>
-      : emptyState === 'loading' ? <p className="glance-muted" role="status">{t('glance.attention.loadingAccounts')}</p>
-      : emptyState === 'failed' ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.loadFailed')}</strong><small>{t('glance.attention.loadFailedDetail')}</small></span></div>
-      : emptyState === 'noAccounts' ? <div className="glance-clear glance-blocked"><CircleAlert size={18} aria-hidden="true" /><span><strong>{t('glance.attention.noAccounts')}</strong><small>{t('glance.attention.noAccountsDetail')}</small></span></div>
-      : !attention.length ? <>{unconfirmed ? uncheckedLine : <div className="glance-clear"><CircleCheck size={18} aria-hidden="true" /><span><strong>{t('glance.attention.none')}</strong><small>{t('glance.attention.noneDetail')}</small></span></div>}</>
-      : <><ul className="glance-attention-list">
-        {shown.map(item => <li key={quotaKey(item.file)} className={`attention-${item.severity}`}>
-          <ProviderLogo provider={providerOf(item.file)} />
-          <span className="glance-attention-name" title={labelFor(item.file)}>{labelFor(item.file)}</span>
-          <span className="glance-attention-state">{status(item)}{runsOut(item) !== undefined ? <small className="glance-forecast">{t('glance.forecast.runsOut', { time: resetCountdown(runsOut(item), now) })}</small>
-            : item.resetAt ? <small>{t('glance.attention.resets', { time: resetCountdown(item.resetAt, now) })}</small> : null}</span>
-          <button type="button" className="glance-open" onClick={() => onView(item.file)} aria-label={`${t('glance.attention.view')}: ${labelFor(item.file)}`}>{t('glance.attention.view')}</button>
-        </li>)}
-        {attention.length > shown.length && <li className="glance-attention-more"><button type="button" className="glance-open" onClick={onMore}>{t('glance.attention.more', { count: attention.length - shown.length })}</button></li>}
-      </ul>{uncheckedLine}</>}
-  </article>;
 }
 
 /** How long each provider lasts at the current pace, and which windows give quota back next. */
-function RunwayTile({ files, quotas, stale, now, providerOf, nameFor, labelFor }: GlanceProps) {
+function RunwayTile({ files, quotas, stale, now, providerOf, nameFor }: GlanceProps) {
   const { t } = useI18n();
   const history = useQuotaHistory();
   const runways = providerRunways(files, quotas, history, now, stale, providerOf);
-  const resets = upcomingResets(files, quotas, now, RESET_ROWS);
   const verdict = (runway: ProviderRunway) => {
     switch (runway.kind) {
       case 'lasts': return <span className="runway-lasts">{t('glance.runway.lasts')}</span>;
@@ -217,14 +172,6 @@ function RunwayTile({ files, quotas, stale, now, providerOf, nameFor, labelFor }
       </li>)}
       {runways.length > RUNWAY_ROWS && <li className="glance-runway-more">{t('glance.runway.more', { count: runways.length - RUNWAY_ROWS })}</li>}
     </ul>
-    <p className="glance-runway-subhead">{t('glance.runway.next')}</p>
-    {!resets.length ? <p className="glance-muted">{t('glance.runway.none')}</p>
-      : <ul className="glance-runway-resets">
-        {resets.map(reset => <li key={`${quotaKey(reset.file)}-${reset.label}`}>
-          <ProviderLogo provider={providerOf(reset.file)} />
-          <span className="glance-attention-name" title={labelFor(reset.file)}>{labelFor(reset.file)}<small>{t('glance.runway.reset', { label: reset.label, percent: quotaPercent(reset.percent) })}</small></span>
-          <time dateTime={new Date(reset.at).toISOString()} title={new Date(reset.at).toLocaleString()}>{resetCountdown(reset.at, now)}</time>
-        </li>)}
-      </ul>}
+    <p className="glance-muted glance-runway-note">{t('glance.runway.estimate')}</p>
   </article>;
 }

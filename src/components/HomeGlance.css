@@ -1,7 +1,7 @@
 /* At-a-glance row under the provider runway. Same surface and border as the runway cards; colour only for status. */
-.home-glance { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr); gap: 16px; margin: 0 0 32px; }
-/* Compression off hides its tile; the other three share the row. Wide windows only, so the narrow layouts below still apply. */
-@media (min-width: 1401px) { .home-glance:not(:has(.glance-compression)) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.home-glance { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 32px; }
+/* Compression off hides its tile; the other two share the row. Wide windows only, so the narrow layouts below still apply. */
+@media (min-width: 1401px) { .home-glance:not(:has(.glance-compression)) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .account-dashboard .ad-accounts + .home-glance { margin-top: 24px; }
 .account-dashboard.quota-ledger .quota-provider-summary:has(+ .home-glance) { margin-bottom: 16px; }
 .glance-tile { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 18px 20px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-primary); }
@@ -44,9 +44,6 @@
 .attention-low .glance-attention-state { color: var(--c-warning); }
 /* The tile takes on its worst item's tint; healthy tiles stay neutral. */
 /* Doubled class outranks the light theme's plain .glance-tile background. */
-.glance-tile.glance-attention.worst-blocked { background: color-mix(in srgb, var(--c-status-danger) 6%, var(--bg-card)); border-color: color-mix(in srgb, var(--c-status-danger) 35%, var(--border-color)); }
-.glance-tile.glance-attention.worst-low { background: color-mix(in srgb, var(--c-status-warning) 7%, var(--bg-card)); border-color: color-mix(in srgb, var(--c-status-warning) 40%, var(--border-color)); }
-.glance-attention.worst-low .glance-count { background: var(--c-warning-soft); color: var(--c-warning); }
 .attention-unconfirmed .glance-attention-state { color: var(--text-tertiary); font-weight: 500; }
 .glance-attention-list li.glance-attention-more { display: block; }
 
@@ -57,10 +54,23 @@
 .quota-provider-summary-cell { background-image: linear-gradient(var(--provider-accent, transparent), var(--provider-accent, transparent)); background-repeat: no-repeat; background-size: 100% 3px; background-position: top; }
 
 /* The account list opens on the accounts that need attention. */
-.ad-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
+/* Account availability: the heading carries the attention count as a filter, and the way to Accounts. */
+.ad-list-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 12px; }
+.ad-list-heading .ad-manage { margin-left: auto; }
+.ad-all-clear { color: var(--text-tertiary); font-size: 13px; }
+.ad-attention-filter.worst-blocked { border-color: color-mix(in srgb, var(--c-status-danger) 45%, var(--border-color)); color: var(--c-status-danger); }
+.ad-attention-filter.worst-low { border-color: color-mix(in srgb, var(--c-status-warning) 50%, var(--border-color)); color: var(--c-warning); }
+.ad-attention-filter[aria-pressed='true'] { background: color-mix(in srgb, currentColor 10%, var(--bg-card)); }
+.account-dashboard > .glance-unconfirmed { justify-content: flex-start; margin: -4px 0 12px; }
+/* Rows counted under "N need attention" carry a matching edge, so the count and the rows agree at a glance. */
+.ad-card.ad-needs-attention { box-shadow: inset 3px 0 0 var(--c-status-warning); }
+.ad-card.ad-needs-attention.quota-account-exhausted, .ad-card.ad-needs-attention.quota-account-unavailable { box-shadow: inset 3px 0 0 var(--c-status-danger); }
+.ad-display-options { position: relative; }
+.ad-display-options > summary { min-height: 36px; display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--border-primary); border-radius: 8px; color: var(--text-secondary); font-size: 14px; cursor: pointer; list-style: none; }
+.ad-display-options > summary::-webkit-details-marker { display: none; }
+.ad-display-options > div { position: absolute; z-index: 5; top: calc(100% + 6px); right: 0; display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border-primary); border-radius: 10px; background: var(--bg-card); box-shadow: 0 8px 24px rgb(0 0 0 / 12%); }
 .ad-list-heading h3 { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
 .ad-list-heading h3 span { color: var(--text-tertiary); font-weight: 500; }
-.ad-list-heading h3 .ad-list-unchecked { color: var(--text-tertiary); font-size: 13px; font-weight: 400; }
 .account-dashboard .ad-footnote { margin: 16px 0 0; color: var(--text-tertiary); font-size: 11px; }
 
 /* Status-line verdict. */
@@ -116,3 +126,14 @@
   color: var(--text-muted);
   font-size: 0.85em;
 }
+
+/* Provider cards are compact filters above the ledger: name, how many are available, and one bar per account. */
+.account-dashboard.quota-ledger .quota-provider-summary { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); margin-bottom: 16px; }
+.account-dashboard.quota-ledger .quota-provider-summary-cell { padding: 10px 14px 12px; border-top: 0; }
+.account-dashboard.quota-ledger .quota-summary-heading { margin-bottom: 4px; font-size: 14px; flex-wrap: nowrap; }
+/* "N credentials" repeats the "of N" line below it. */
+.account-dashboard.quota-ledger .quota-summary-heading > span { display: none; }
+.account-dashboard.quota-ledger .quota-summary-total { gap: 6px; }
+.account-dashboard.quota-ledger .quota-summary-total > span { font-size: 12px; }
+.account-dashboard.quota-ledger .quota-summary-value { font-size: 20px; line-height: 1.2; }
+.account-dashboard.quota-ledger .quota-account-states { margin: 6px 0 0; }

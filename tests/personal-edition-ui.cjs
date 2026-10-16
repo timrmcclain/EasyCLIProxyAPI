@@ -39,12 +39,14 @@ const os = require('node:os');
     assert.equal(await page.locator('.ad-card').count(), 0);
     await page.getByText('No accounts match these filters', { exact: true }).waitFor();
     await page.locator('.quota-no-results').getByRole('button', { name: 'Clear filters', exact: true }).click();
-    // Healthy accounts collapse behind a toggle once no filter is active.
-    await page.locator('.ad-list-heading').getByRole('button', { name: /^Show all \d+$/ }).click();
+    // With the filters cleared, every account shows again.
     assert.ok(await page.locator('.ad-card').count() >= 3);
+    // Hide emails sits under Display.
+    await page.locator('.ad-display-options > summary').click();
     await page.getByLabel('Hide emails', { exact: true }).check();
     assert.ok(!(await page.locator('.account-dashboard').innerText()).includes('@example.com'));
     assert.ok(!(await page.locator('.ad-card h3').first().getAttribute('title')).includes('@'));
+    await page.locator('.ad-display-options').evaluate(node => { node.open = true; });
     await page.getByLabel('Hide emails', { exact: true }).uncheck();
     const details = page.locator('.ad-account-details').first();
     assert.equal(await details.getAttribute('open'), null);

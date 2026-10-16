@@ -52,15 +52,18 @@ const path = require('node:path');
     });
     await page.getByRole('button', { name: 'Refresh accounts', exact: true }).click();
     await page.waitForFunction(() => !document.querySelector('.quota-refresh').disabled && document.querySelector('.ad-list-heading'));
-    // Healthy accounts collapse behind a toggle by default; show them all for the density checks.
-    // The list opens on the accounts that need attention: the three Codex ones (plus Grok, which is unconfirmed).
-    assert.match(await page.locator('.ad-list-heading h3').innerText(), /^Accounts that need attention/);
-    assert.equal(await page.locator('.ad-card').count(), 4);
-    assert.equal(await page.locator('.quota-workflow-tools').count(), 0, 'list controls stay hidden until Show all');
-    await page.locator('.ad-list-heading').getByRole('button', { name: 'Show all 10', exact: true }).click();
+    // Account availability is Overview's main content: every account shows, with its controls.
+    assert.equal(await page.locator('.ad-list-heading h3').innerText(), 'Account availability');
     await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 10);
+    assert.equal(await page.locator('.quota-workflow-tools').count(), 1);
+    // Rarely changed display choices sit behind Display.
+    assert.equal(await page.locator('.ad-display-options').evaluate(node => node.open), false);
+    assert.equal(await page.locator('.ad-list-heading').getByRole('button', { name: 'Manage accounts', exact: true }).count(), 1);
     assert.equal(await page.locator('.quota-provider-summary-cell').count(), 4);
-    assert.match(await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Grok' }).innerText(), /Remaining quota not reported/);
+    // Compact filters: the count lines are hover text (and read out), not extra lines.
+    assert.match(await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Grok' }).getAttribute('title'), /Remaining quota not reported/);
+    assert.match(await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Grok' }).locator('.sr-only').innerText(), /Remaining quota not reported/);
+    assert.ok((await page.locator('.quota-provider-summary-cell').first().boundingBox()).height < 100, 'provider filters stay compact');
     assert.equal(await page.locator('.quota-provider-summary-cell').first().locator('.quota-summary-value').innerText(), '5');
     assert.ok((await page.locator('.quota-provider-summary-cell').first().innerText()).includes('of 5 accounts available'));
     assert.equal(await page.locator('.quota-provider-summary-cell').nth(1).locator('.quota-summary-value').innerText(), '3');
@@ -72,26 +75,28 @@ const path = require('node:path');
     const codexSegments = await segments(1);
     assert.deepEqual(codexSegments.map(segment => [segment.tone, segment.fill]), [['tone-critical', '5%'], ['tone-critical', '7%'], ['tone-critical', '5%']]);
     assert.match(codexSegments[1].label, /Quota available · 7% left$/);
-    assert.match(await page.locator('.quota-provider-summary-cell').nth(1).innerText(), /3 running low/);
-    // Glance row: the status line names the worst account, and the attention tile lists the Codex accounts lowest first.
+    assert.match(await page.locator('.quota-provider-summary-cell').nth(1).getAttribute('title'), /3 running low/);
+    // The status line names the worst account; the ledger counts the same problems and filters to them.
     const verdict = page.locator('.home-status-verdict');
     assert.match(await verdict.innerText(), /^3 accounts need attention/);
     assert.match(await verdict.innerText(), /codex-account-0[68]\.json has 5% left, resets in 2d/);
-    const attention = page.locator('.glance-attention');
-    // Only the three that can stop work are rows and counted, matching the status line; unconfirmed Grok gets one line with Check now.
-    assert.equal(await attention.locator('.glance-count').innerText(), '3');
-    const attentionRows = await attention.locator('.glance-attention-list li').evaluateAll(nodes => nodes.map(node => node.innerText.replace(/\s+/g, ' ').trim()));
-    assert.equal(attentionRows.length, 3, JSON.stringify(attentionRows));
-    assert.ok(attentionRows[0].includes('5% left') && attentionRows[2].includes('7% left'), `worst first: ${JSON.stringify(attentionRows)}`);
-    assert.ok(attentionRows.every(row => !row.includes('Unconfirmed')), 'unconfirmed accounts are not rows');
-    const unchecked = attention.locator('.glance-unconfirmed');
+    assert.equal(await page.locator('.glance-attention').count(), 0, 'no separate Needs attention card');
+    // Only the three that can stop work are counted and marked, matching the status line; unconfirmed Grok is not.
+    const attentionFilter = page.locator('.ad-attention-filter');
+    assert.equal(await attentionFilter.innerText(), '3 need attention');
+    assert.equal(await page.locator('.ad-card.ad-needs-attention').count(), 3);
+    await attentionFilter.click();
+    assert.equal(await attentionFilter.getAttribute('aria-pressed'), 'true');
+    await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 3);
+    const attentionRows = await page.locator('.ad-card').evaluateAll(nodes => nodes.map(node => node.getAttribute('aria-label')));
+    assert.ok(attentionRows.every(label => /^codex-account-0\d\.json$/.test(label)), JSON.stringify(attentionRows));
+    assert.equal(await page.locator('.ad-card.ad-needs-attention').count(), 3);
+    await attentionFilter.click();
+    await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 10);
+    const unchecked = page.locator('.account-dashboard > .glance-unconfirmed');
     // Grok doesn't report quota, so it says so, and offers no Check now that could never resolve it.
     assert.match(await unchecked.innerText(), /^1 account on providers that don't report quota\./);
     assert.equal(await unchecked.getByRole('button', { name: 'Check now' }).count(), 0);
-    assert.match(attentionRows[0], /resets in 2d/);
-    // "View" scrolls to that account's row in the list and focuses it.
-    await attention.getByRole('button', { name: 'View: codex-account-07.json' }).click();
-    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'codex-account-07.json');
     // Clicking a runway tile filters the list to that provider; clicking it again clears the filter.
     const codexFilter = page.locator('.quota-summary-filter').filter({ hasText: 'Codex' });
     await codexFilter.click();
@@ -100,12 +105,13 @@ const path = require('node:path');
     assert.ok(await page.locator('.quota-provider-summary-cell.is-selected').count() === 1);
     await codexFilter.click();
     assert.equal(await codexFilter.getAttribute('aria-pressed'), 'false');
-    // Tiles: compression mock is off, so its tile is hidden; activity reads the mock usage.
-    assert.equal(await page.locator('.glance-tile').count(), 3);
-    assert.doesNotMatch(await page.locator('.quota-provider-summary-cell').first().innerText(), /running low/);
+    // Tiles: compression mock is off, so activity and provider pace remain; activity reads the mock usage.
+    assert.equal(await page.locator('.glance-tile').count(), 2);
+    assert.doesNotMatch(await page.locator('.quota-provider-summary-cell').first().getAttribute('title') ?? '', /running low/);
     const claude = page.locator('.quota-account-group').first();
     assert.equal(await claude.locator('.ad-card').count(), 5);
-    // The aligned three-limit ledger is an opt-in layout; compact one-row cards are the default.
+    // The aligned three-limit ledger is an opt-in layout under Display; compact one-row cards are the default.
+    await page.locator('.ad-display-options > summary').click();
     await page.getByLabel('Layout', {exact:true}).selectOption('ledger');
     assert.equal(await claude.locator('.ad-quota').count(), 15);
     const rows = await claude.locator('.ad-card').evaluateAll(nodes => nodes.map(node => { const b = node.getBoundingClientRect(); return {height:b.height, bottom:b.bottom}; }));
@@ -158,11 +164,10 @@ const path = require('node:path');
     await claude.locator('.ad-card').first().getByText('Extra usage', {exact:true}).waitFor();
     assert.equal(await claude.locator('.ad-card').first().locator('.ad-quota').count(), 4);
     await moreLimits.click();
-    await page.locator('.quota-provider-summary-cell').first().getByRole('button', {name:'Show',exact:true}).click();
-    assert.equal(await page.locator('.quota-summary-breakdown').count(), 1);
-    await page.locator('.quota-provider-summary-cell').first().getByRole('button', {name:'Hide',exact:true}).click();
+    assert.equal(await page.locator('.quota-summary-breakdown').count(), 0, 'the ledger rows are the breakdown');
     // Both layouts are one-row cards; compact shows only the deciding limit instead of three aligned columns.
     assert.equal(await claude.locator('.ad-card').first().locator('.ad-row-quota .ad-quota').count(), 3);
+    await page.locator('.ad-display-options').evaluate(node => { node.open = true; });
     await page.getByLabel('Layout', {exact:true}).selectOption('compact');
     assert.equal(await claude.locator('.ad-card').first().locator('.ad-row-quota .ad-quota').count(), 1);
     assert.ok((await claude.locator('.ad-card').first().boundingBox()).height <= rows[0].height);
@@ -217,6 +222,7 @@ const path = require('node:path');
     assert.equal(await page.locator('.quota-result-count').innerText(), 'Account list: 10 of 10');
     await page.getByRole('searchbox', {name:'Search accounts'}).fill('  claude-account-01  ');
     assert.equal(await page.locator('.ad-card').count(), 1);
+    await page.locator('.ad-display-options').evaluate(node => { node.open = true; });
     await page.getByRole('checkbox', {name:'Hide emails'}).check();
     assert.equal(await page.getByRole('searchbox', {name:'Search accounts'}).inputValue(), '');
     const aliases=await page.locator('.ad-card h3').allTextContents();
@@ -228,6 +234,7 @@ const path = require('node:path');
     await page.getByRole('searchbox',{name:'Search accounts'}).fill(aliases[0]);
     assert.equal(await page.locator('.ad-card').count(),1,'Masked aliases are searchable');
     await page.getByRole('searchbox',{name:'Search accounts'}).fill('');
+    await page.locator('.ad-display-options').evaluate(node => { node.open = true; });
     await page.getByRole('checkbox', {name:'Hide emails'}).uncheck();
     const named=page.locator('.ad-card').first();
     await named.getByRole('button', { name: /^Actions for / }).click();
@@ -237,8 +244,10 @@ const path = require('node:path');
     await named.getByLabel('Friendly name',{exact:true}).fill('Personal Max');
     await named.getByRole('button',{name:'Save name',exact:true}).click();
     assert.equal(await named.locator('h3').innerText(),'Personal Max');
+    await page.locator('.ad-display-options').evaluate(node => { node.open = true; });
     await page.getByRole('checkbox',{name:'Hide emails'}).check();
     assert.ok(!(await page.locator('.account-dashboard').innerText()).includes('Personal Max'));
+    await page.locator('.ad-display-options').evaluate(node => { node.open = true; });
     await page.getByRole('checkbox',{name:'Hide emails'}).uncheck();
     await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Accounts',exact:true}).click();
     await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:/^Overview/}).click();

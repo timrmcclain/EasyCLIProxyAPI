@@ -60,8 +60,8 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
     fs.mkdirSync('misc', { recursive: true });
     await page.screenshot({ path: 'misc/home-dashboard-initial.png', fullPage: true, animations: 'disabled' });
     console.log('Initial homepage rendered: misc/home-dashboard-initial.png');
-    // Compression is off in the mock, so its tile is hidden: activity, attention and runway remain.
-    assert.equal(await page.locator('.glance-tile').count(), 3, 'activity, attention and runway tiles');
+    // Compression is off in the mock, so its tile is hidden; Needs attention lives in the ledger: activity and runway remain.
+    assert.equal(await page.locator('.glance-tile').count(), 2, 'activity and runway tiles');
     assert.equal(await page.locator('.glance-compression').count(), 0, 'no compression tile while compression is off');
     assert.equal(await page.locator('.glance-runway').count(), 1, 'runway & resets tile');
     assert.equal(await page.locator('.home-stat-card').count(), 0, 'the static count tiles are gone');
@@ -328,7 +328,7 @@ const base = process.env.HOME_DASHBOARD_TEST_BASE_URL || 'http://127.0.0.1:1421'
       await page.locator('.glance-activity[aria-busy="false"]').waitFor();
       const toolbar = page.locator('#browser-mock-toolbar');
       if (await toolbar.count()) await toolbar.evaluate(node => { node.style.display = 'none'; });
-      assert.equal(await page.locator('.glance-tile').count(), 3);
+      assert.equal(await page.locator('.glance-tile').count(), 2);
       assert.equal(await page.locator('.home-status .core-health-open').count(), 1);
       assert.equal(await page.locator('.home-page > .core-health-entry').count(), 0);
       assert.equal(await page.locator('.core-health-table').count(), 0);

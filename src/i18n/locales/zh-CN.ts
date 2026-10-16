@@ -82,6 +82,8 @@ export const zhCN = {
   "availability.planBlocked": "服务商拒绝了此账号的所有请求：“{message}” 登录正常，但订阅需要包含此服务。",
   "availability.resetDue": "已到重置时间，请刷新确认",
   "availability.wait": "预计 {time} 后重置",
+  "availability.chipUnavailable": "不可用",
+  "availability.chipResets": "{label} · {time} 后重置",
   "availability.included": "套餐额度可用状态",
   "availability.ofAccounts": "/ {count} 个账号可用",
   "availability.scopeHint": "已报告额度；付费使用另计",

@@ -102,9 +102,13 @@ export function setQuotaHistory(next: QuotaHistory) {
   listeners.forEach(listener => listener());
 }
 
+// Server rendering (and its tests) has no stored history: no forecast, rather than an error.
+const noHistory: QuotaHistory = {};
+
 export function useQuotaHistory(): QuotaHistory {
   return useSyncExternalStore(
     listener => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     getQuotaHistory,
+    () => noHistory,
   );
 }

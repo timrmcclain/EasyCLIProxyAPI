@@ -26,9 +26,10 @@ const path = require('node:path');
     });
     await page.getByRole('button',{name:'Refresh accounts',exact:true}).click();
     const summary=page.locator('.quota-provider-summary-cell');
-    // The per-group breakdown sits behind the tile's Show toggle.
-    await summary.getByRole('button',{name:'Show',exact:true}).click();
-    await page.waitForFunction(()=>document.querySelector('.quota-provider-groups')?.textContent.includes('Claude/GPT'));
+    // The per-group breakdown lives in the account row's details; the provider filter only counts.
+    const row=page.locator('.ad-card').first();
+    await row.locator('.ad-account-details > summary').click();
+    await row.locator('.quota-group-state').filter({hasText:'Claude/GPT'}).waitFor();
     assert.equal(await summary.locator('.quota-summary-value').innerText(),'2');
     assert.match(await summary.innerText(),/of 2 model groups available/);
     for(const [fractions,expected,blocked] of [[[1,0],'1',1],[[0,0],'0',2],[[null,null],'—',0]]) {
@@ -36,7 +37,7 @@ const path = require('node:path');
       await page.locator('.quota-refresh').click();
       await page.waitForFunction(()=>!document.querySelector('.quota-refresh').disabled);
       assert.equal(await summary.locator('.quota-summary-value').innerText(),expected);
-      assert.equal(await summary.locator('.quota-provider-groups .quota-availability-exhausted').count(),blocked);
+      assert.equal(await row.locator('.quota-group-state.quota-availability-exhausted').count(),blocked);
     }
     await page.setViewportSize({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No mobile horizontal overflow');

@@ -83,6 +83,8 @@ export const jaOverrides = {
   "availability.planBlocked": "プロバイダーがこのアカウントのすべてのリクエストを拒否しています：「{message}」 サインインは正常です。サブスクリプションにこのサービスを含める必要があります。",
   "availability.resetDue": "リセット時刻経過 — 更新して確認",
   "availability.wait": "約 {time} 後にリセット予定",
+  "availability.chipUnavailable": "利用不可",
+  "availability.chipResets": "{label} · {time} 後にリセット",
   "availability.included": "プラン利用枠の状態",
   "availability.ofAccounts": "/ {count} アカウントが利用可能",
   "availability.scopeHint": "取得済みの上限・従量課金は別枠",

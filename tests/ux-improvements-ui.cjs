@@ -29,8 +29,11 @@ const path = require('node:path');
   const alternatives=page.getByRole('region',{name:'Compare alternatives'});await alternatives.waitFor();
   await alternatives.getByRole('button',{name:'Load available models'}).first().click();await alternatives.getByText('fixture-model',{exact:true}).waitFor();await alternatives.getByText('Reported inputs: text, image',{exact:true}).waitFor();
   await alternatives.getByRole('button',{name:'Close',exact:true}).click();
-  await page.locator('.ux-insight summary').filter({hasText:'Upcoming allowance resets'}).click();
-  await page.getByText('Provider estimates. A new quota check must confirm availability after each reset.',{exact:true}).waitFor();
+  // Reset times live on the account rows; a blocked row's details say a reset is an estimate, not a promise.
+  assert.equal(await page.locator('.ux-insight summary').filter({hasText:'Upcoming allowance resets'}).count(),0,'no separate recovery list');
+  const blockedRow=page.locator('.ad-card.quota-account-exhausted').first();
+  await blockedRow.locator('.ad-account-details > summary').click();
+  await blockedRow.getByText('Provider estimates. A new quota check must confirm availability after each reset.',{exact:true}).waitFor();
   // The opt-in switch moved to Settings -> App preferences; Overview only shows the alerts.
   await nav.getByRole('button',{name:'Settings',exact:true}).click();await page.locator('#config-subpage-tab-software').click();
   await page.getByRole('switch',{name:'Notify me in Overview',exact:true}).check();

@@ -29,8 +29,7 @@ const path = require('node:path');
       };
     });
     await page.locator('.quota-refresh').click();
-    // Accounts still running on credits aren't problems, so they sit behind Show all.
-    await page.locator('.ad-list-heading').getByRole('button',{name:/^Show all \d+$/}).click();
+    // Every account shows on Overview, including ones running on credits.
     const codex=page.locator('.ad-card').filter({hasText:'codex-personal.json'});
     // The one-row card shows the state chip; the full notice (credit balance) lives in the card details.
     const chip=codex.locator('.quota-availability-chip').filter({hasText:'Included quota used · credits available'});

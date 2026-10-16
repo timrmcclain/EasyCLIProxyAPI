@@ -83,6 +83,8 @@ export const en: Record<MessageKey, string> = {
   "availability.planBlocked": "The provider refuses every request from this account: “{message}” The sign-in is fine; the subscription needs to include this service.",
   "availability.resetDue": "Reset due — refresh to confirm",
   "availability.wait": "Blocked for {time} · expected reset",
+  "availability.chipUnavailable": "Unavailable",
+  "availability.chipResets": "{label} · resets in {time}",
   "availability.included": "Included quota availability",
   "availability.ofAccounts": "of {count} accounts available",
   "availability.scopeHint": "Reported limits · paid usage separate",
