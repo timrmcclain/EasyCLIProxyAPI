@@ -7,6 +7,7 @@ import type { HomeUsageSummary } from '../services/homeOverview';
 import { requestClient, type DashboardActivity } from '../services/dashboardActivity';
 import { resetCountdown } from '../services/accountDashboard';
 import { navigateHelp } from '../services/uxNavigation';
+import { requestFailedRequests } from '../usageNavigation';
 import { quotaPercent } from '../services/quotaAvailability';
 import { quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
 import { providerRunways, upcomingResets, type ProviderRunway } from '../services/quotaRunway';
@@ -67,7 +68,7 @@ function ActivityTile({ usage, loading, activity, now, latestAccount }: { usage:
         </svg>
         <p className="glance-meta">
           {usage.successRate !== null && <span className={usage.successRate < 90 ? 'glance-warn' : undefined}>{t('glance.activity.success', { rate: formatNumber(usage.successRate, { maximumFractionDigits: 1 }) })}</span>}
-          {usage.failureCount > 0 && <span className="glance-bad">{t('glance.activity.failed', { count: formatNumber(usage.failureCount) })}</span>}
+          {usage.failureCount > 0 && <button type="button" className="glance-bad glance-link" onClick={requestFailedRequests} title={t('glance.activity.failedLink')}>{t('glance.activity.failed', { count: formatNumber(usage.failureCount) })}</button>}
           {busiest && <span>{t('glance.activity.busiest', { client: busiest.client })}</span>}
         </p>
       </>}

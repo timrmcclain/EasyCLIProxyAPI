@@ -21,6 +21,7 @@ import { CoreHealthPanel } from './CoreHealthPanel';
 import { CompressionStatusChip } from './CompressionStatusChip';
 import { useHomeOverview } from './useHomeOverview';
 import './HomeDashboard.css';
+import { useConfirmation } from '../components/ConfirmationDialog';
 
 type CoreProcessCommand = 'start_core_process' | 'stop_core_process' | 'restart_core_process';
 
@@ -60,6 +61,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const [listenHost, setListenHost] = useState('127.0.0.1');
   const [customPort, setCustomPort] = useState('8317');
   const [processBusy, setProcessBusy] = useState(false);
+  const { askConfirmation, confirmationDialog } = useConfirmation();
   const processFeedback = useAppNotice();
   const { showNotice: showProcessNotice, clearNotice: clearProcessNotice } = processFeedback;
   const copyFeedback = useAppNotice();
@@ -116,6 +118,8 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   }, []);
 
   const runCoreProcessCommand = async (command: CoreProcessCommand) => {
+    // Stopping cuts off every app routed through the proxy mid-request, so ask first.
+    if (command === 'stop_core_process' && !(await askConfirmation({ title: t('kernel.stopConfirm.title'), message: t('kernel.stopConfirm.message'), confirmText: t('kernel.action.stop'), variant: 'danger' }))) return false;
     const actionLabel =
       command === 'start_core_process'
         ? t('kernel.notice.verb.start')
@@ -332,6 +336,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   if (view === 'home') {
     return (
       <section className="page kernel-page home-page">
+        {confirmationDialog}
         <header className="management-header home-page-header">
           <div><h1>{t('app.nav.home')}</h1></div>
         </header>
@@ -396,6 +401,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
 
   return (
     <section className="page kernel-page home-page proxy-page">
+      {confirmationDialog}
       <header className="management-header">
         <div><h1>{t('app.nav.proxy')}</h1></div>
       </header>

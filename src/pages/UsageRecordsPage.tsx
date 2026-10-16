@@ -45,6 +45,7 @@ import { createRefreshScheduler } from '../services/refreshScheduler';
 import { usageViewScopeKey } from '../services/usageViewScope';
 import { EventsView, type UsageEventPage } from './UsageEventsView';
 import { SelectMenu } from '../components/SelectMenu';
+import { takePendingUsageJump } from '../usageNavigation';
 import { UsageAnalysisView, type UsageAnalysis, type UsageCategory } from './UsageAnalysisView';
 
 type UsageTab = 'overview' | 'analysis' | 'events' | 'projects' | 'pricing' | 'data-management';
@@ -262,15 +263,17 @@ const filterOptions = (items: UsageCategory[]) => items.filter((item) => item.ke
 
 export function UsageRecordsPage() {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<UsageTab>(loadTab);
-  const [range, setRange] = useState<UsageRange>(loadRange);
+  // Opened from a link such as Overview's "7 failed": start on the matching requests instead of the saved view.
+  const [jump] = useState(takePendingUsageJump);
+  const [activeTab, setActiveTab] = useState<UsageTab>(() => jump ? 'events' : loadTab());
+  const [range, setRange] = useState<UsageRange>(() => jump?.range ?? loadRange());
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [model, setModel] = useState('');
   const [provider, setProvider] = useState('');
   const [source, setSource] = useState('');
   const [apiKeyHash, setApiKeyHash] = useState('');
-  const [result, setResult] = useState('all');
+  const [result, setResult] = useState<string>(jump?.result ?? 'all');
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(loadPageSize);

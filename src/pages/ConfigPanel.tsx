@@ -1,4 +1,4 @@
-import { rotateProxyKey, type ReapplyOutcome } from '../services/connectedApps';
+import { loadAppStatuses, reapplyApps, rotateProxyKey, type ReapplyOutcome } from '../services/connectedApps';
 import { readDesktopAlertsPreference, readGlobalHotkeyPreference, readOverviewAlertsPreference, saveDesktopAlertsPreference, saveGlobalHotkeyPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
 import { FormEvent, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -945,6 +945,23 @@ export function ConfigPanelPage() {
 
     const proxyUrl = proxyUrlDraft.trim();
     const networkChanged = port !== settings.port || host !== settings.host;
+    // A new port or address restarts the proxy and leaves connected apps pointing at the old one, so ask first
+    // and re-point them afterwards, as key rotation does.
+    let connectedIds: Set<string> | null = null;
+    if (networkChanged) {
+      const before = await loadAppStatuses(true).catch(() => []);
+      const connected = before.filter(status => status.installed && status.connectionState === 'configured');
+      connectedIds = new Set(connected.map(status => status.id));
+      const local = ['127.0.0.1', 'localhost', '::1'].includes(host.toLowerCase());
+      const confirmed = await askConfirmation({
+        title: t('network.confirm.title'),
+        message: connected.length ? t('network.confirm.apps', { apps: connected.map(status => status.name).join(', ') }) : t('network.confirm.noApps'),
+        warning: local ? undefined : t('network.confirm.exposed', { host: host || '0.0.0.0' }),
+        confirmText: t('network.confirm.action'),
+        variant: local ? undefined : 'danger',
+      });
+      if (!confirmed) return;
+    }
     setHostError('');
     setPortError('');
     setBusyAction('network');
@@ -965,7 +982,15 @@ export function ConfigPanelPage() {
         try {
           const status = await invoke<CoreStatus>('restart_core_process');
           publishStatus(status);
-          networkFeedback.showNotice({ key: 'config.notice.networkRestarted' }, 'success');
+          const after = connectedIds ? await loadAppStatuses(true).catch(() => []) : [];
+          const outcomes = await reapplyApps(after.filter(app => connectedIds?.has(app.id) || app.connectionState === 'needs-update'));
+          const reapplied = outcomes.filter(outcome => outcome.result === 'reapplied').map(outcome => outcome.name);
+          const manual = outcomes.filter(outcome => outcome.result !== 'reapplied').map(outcome => outcome.name);
+          if (outcomes.length) void loadAppStatuses(true).catch(() => undefined);
+          networkFeedback.showNotice([
+            reapplied.length ? t('network.reapplied', { apps: reapplied.join(', ') }) : t('config.notice.networkRestarted'),
+            manual.length ? t('rotate.manual', { apps: manual.join(', ') }) : '',
+          ].filter(Boolean).join(' '), manual.length ? 'error' : 'success');
         } catch (error) {
           await refreshStatus();
           networkFeedback.showNotice({ key: 'config.error.networkRestartFailed', variables: { error: String(error) } }, 'error');

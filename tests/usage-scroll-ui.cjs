@@ -371,7 +371,7 @@ function parseCsv(text) {
     await chooseFilter('Model', 'test-model');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-summary').textContent === 'Showing 1 - 20 of 266');
     assert.deepEqual(await page.locator('.usage-td-model > strong').allTextContents(), Array(20).fill('test-model'), 'Changing a filter resets pagination and shows matching models');
-    await chooseFilter('Source', 'Test source');
+    await chooseFilter('Account', 'Test source');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-summary').textContent === 'Showing 1 - 20 of 133');
     assert.ok((await page.locator('.usage-td-source').allTextContents()).every(text => text === 'Test source'));
     await chooseFilter('Request result', 'Failed');
@@ -386,11 +386,11 @@ function parseCsv(text) {
     assert.equal(await page.locator('.usage-filter-panel button:not(.select-menu-trigger):not(.usage-filter-more)').count(), 0, 'Custom time ranges do not show a reset filters control');
     await chooseFilter('Time range', 'Last 4 Hours');
     await chooseFilter('Model', 'All Models');
-    await chooseFilter('Source', 'All Sources');
+    await chooseFilter('Account', 'All accounts');
     await chooseFilter('Request result', 'All Results');
     await page.waitForFunction(() => document.querySelector('.usage-pagination-summary').textContent === 'Showing 1 - 20 of 400');
     assert.equal(await filterValue('Model'), 'All Models');
-    assert.equal(await filterValue('Source'), 'All Sources');
+    assert.equal(await filterValue('Account'), 'All accounts');
     assert.equal(await filterValue('Request result'), 'All Results');
     assert.deepEqual(errors, [], 'Request log interactions do not produce runtime errors');
 

@@ -64,7 +64,7 @@ fs.mkdirSync(screenshots, { recursive: true });
     assert.equal(await moreFilters.getAttribute('aria-expanded'), 'false');
     await moreFilters.click();
     assert.deepEqual(await filterTriggers.evaluateAll(items => items.map(item => item.getAttribute('aria-label'))),
-      ['Time range', 'Model', 'Provider', 'Source', 'API Key', 'Request result'], 'Analysis keeps all six shared filter controls behind More filters');
+      ['Time range', 'Model', 'Provider', 'Account', 'API Key', 'Request result'], 'Analysis keeps all six shared filter controls behind More filters');
     assert.equal(await page.locator('.usage-filter-panel button:not(.select-menu-trigger):not(.usage-filter-more)').count(), 0, 'Analysis does not restore the removed reset button');
     await moreFilters.click();
     assert.equal(await filterTriggers.count(), 2, 'More filters collapses back to the primary filters');

@@ -12,6 +12,7 @@ import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { FeedbackNotice, useAppNotice } from '../appNotice';
 import { usageProviderDetails } from '../services/usageProvider';
 import { usageModelDetails } from '../services/usageModel';
+import { useAccountLabelBySource } from '../services/accountLabelBySource';
 
 const compactNumber = (value: number) => formatUsageNumber(value, getCurrentLocale());
 const compactDuration = (value: number) => formatDuration(value, getCurrentLocale());
@@ -347,6 +348,7 @@ function UsageEventCell({
   compact?: boolean;
 }) {
   const { t, formatDate } = useI18n();
+  const accountLabel = useAccountLabelBySource();
 
   switch (columnKey) {
     case 'time':
@@ -406,8 +408,8 @@ function UsageEventCell({
     }
     case 'source':
       return (
-        <td className="usage-td-source align-left" title={record.source_display || record.source || undefined}>
-          <span className="usage-event-source">{record.source_display || record.source || '—'}</span>
+        <td className="usage-td-source align-left" title={accountLabel(record.source_display || record.source) || undefined}>
+          <span className="usage-event-source">{accountLabel(record.source_display || record.source) || '—'}</span>
         </td>
       );
     case 'key':
