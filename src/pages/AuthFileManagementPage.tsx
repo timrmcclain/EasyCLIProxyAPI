@@ -1,6 +1,7 @@
 import { requestAccountRequests } from '../usageNavigation';
 import { ACCOUNTS_VIEW_EVENT, takePendingAccountsView, type AccountsView } from '../oauthNavigation';
 import { QuotaCard } from './QuotaPage';
+import { AccountStatusSection } from '../components/AccountStatusSection';
 
 const accountsViews: readonly AccountsView[] = ['list', 'quotas'];
 import { readAccountNames } from '../services/accountNames';
@@ -679,6 +680,8 @@ export function AuthFileManagementPage() {
                     resetting={resettingCooldown} resetDisabled={busy || loading}
                     onReset={cooldownResetIndex ? () => void resetCooldown(file) : undefined} /> : null}
                   <div className="auth-list-details" id={detailsId} hidden={!expanded}>
+                    {/* The same status explanation as Overview's row details; the row already shows the notice. */}
+                    <AccountStatusSection file={file} quota={quota} now={now} stale={fileListStale} notice={false} credential={false} />
                     {!showCooldown ? <AuthFileHealthStatus file={file} receivedAtMs={receivedAtMs} observedAt={observedAt} /> : null}
                     <AuthFileRequestStatus file={file} summary />
                     <div className="auth-card-meta">

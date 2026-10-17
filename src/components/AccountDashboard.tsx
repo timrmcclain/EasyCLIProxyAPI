@@ -1,6 +1,6 @@
 import { QuotaTrendChart } from './QuotaTrendChart';
 import { useQuotaTrends } from '../services/quotaTrend';
-import { forecastQuota, useQuotaHistory } from '../services/quotaForecast';
+import { AccountStatusSection } from './AccountStatusSection';
 import { AlternativeComparison, OverviewAlerts } from './OverviewInsights';
 import { subscribeActivity } from '../services/activitySubscription';
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
@@ -378,7 +378,6 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
   const [pending, setPending] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const trends = useQuotaTrends();
-  const history = useQuotaHistory();
   const [focusTarget, setFocusTarget] = useState<'name' | 'priority' | null>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const priorityInput = useRef<HTMLInputElement>(null);
@@ -389,8 +388,6 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
     setFocusTarget(null);
   }, [detailsOpen, focusTarget]);
   const availability = quotaAvailability(file, quota, now, stale);
-  // A pace estimate, only for accounts that can still take requests; blocked ones say when they're back instead.
-  const forecast = availability.kind === 'available' ? forecastQuota(history[quotaKey(file)], now) : undefined;
   // Compact rows show one window per account, so don't pad them with other accounts' columns.
   const orderedRows = orderedQuotaRows(quota.rows, layout === 'ledger' ? columns : undefined);
   // The face shows the window that decides availability: a blocker if any, otherwise the lowest remaining.
@@ -472,14 +469,9 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
     <details className="personal-disclosure ad-account-details" open={detailsOpen} onToggle={event => setDetailsOpen(event.currentTarget.open)}>
       <summary title={detailsLabel}><span className="sr-only">{detailsLabel}</span>{detailRows.length > 0 && <span aria-hidden="true">+{detailRows.length}</span>}<ChevronDown size={14} aria-hidden="true" /></summary>
       <div className="ad-details-body">
-        <QuotaAvailabilityNotice state={availability} now={now} />
-        {/* The row says when it resets; a reset is the provider's estimate, not a promise the account works again. */}
-        {availability.recoveryAt && ['exhausted', 'limited', 'creditBacked'].includes(availability.kind) && <p className="ad-card-note ad-recovery-hint">{t('ux.recoveryHint')}</p>}
-        {forecast?.kind === 'runsOut' && <p className="ad-card-note ad-forecast">{t('glance.forecast.runsOut', { time: resetCountdown(forecast.emptyAt, now) })}</p>}
+        <AccountStatusSection file={file} quota={quota} now={now} stale={stale} hideEmails={hideEmails} />
         {providerForFile(file) && !summary.health.disabled && <QuotaTrendChart trend={trends[quotaKey(file)]} now={now} />}
         {detailRows.length > 0 && <div className="ad-quota-list ad-detail-quotas">{detailRows.map((row, index) => renderQuota(row, index + faceRows.length))}</div>}
-        {summary.health.message && <p className="ad-card-note">{privateText(summary.health.message, hideEmails)}</p>}
-        <p className="ad-card-note"><strong>{t('desk.credentialHealth')}: </strong>{stale ? t('accountDashboard.stale') : summary.health.tone === 'success' ? t('desk.active') : t(summary.health.label)} · {t('desk.healthHint')}</p>
         {!hideEmails && <p className="ad-card-note">{t('desk.filename')}: {fileName(file)}</p>}
         {onName && !hideEmails && <div className="ad-name-editor"><label>{t('desk.friendlyName')}<input ref={nameInput} maxLength={80} value={nameDraft} onChange={event => { setNameDraft(event.target.value); setNameFeedback(''); }} /></label><button type="button" className="secondary-button" disabled={nameDraft === friendlyName} onClick={() => setNameFeedback(onName(file, nameDraft) ? t('desk.nameSaved') : t('desk.nameFailed'))}>{t('desk.saveName')}</button><small>{t('desk.nameHint')}</small><span role="status">{nameFeedback}</span></div>}
         <div className="ad-card-activity">

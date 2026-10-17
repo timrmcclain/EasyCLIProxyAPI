@@ -71,3 +71,5 @@
   color: var(--text-secondary);
   font-size: var(--font-size-meta);
 }
+/* Shared status block: its lines sit in the surrounding details layout and spacing. */
+.account-status-section { display: contents; }
