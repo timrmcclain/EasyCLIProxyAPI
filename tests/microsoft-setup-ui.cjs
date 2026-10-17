@@ -35,6 +35,10 @@ const path = require('node:path');
         }, 5);
       }, preset);
       await page.goto(`${base}/?mock=running&mockDelay=5`);
+      // Connectors are one-line rows until opened.
+      const row = page.getByRole('button', { name: /Microsoft 365 \(work\)/ });
+      await row.waitFor();
+      if (await row.getAttribute('aria-expanded') !== 'true') await row.click();
       const card = page.locator('.connector-auto-setup');
       await card.waitFor();
       return { page, card };
@@ -55,6 +59,36 @@ const path = require('node:path');
       await card.getByText('Claude Desktop restarted.').waitFor();
       assert.deepEqual(await page.evaluate(() => window.invoked.find(call => call.command === 'restart_agent_app')?.args), { client: 'claude-desktop' });
       await card.getByRole('button', { name: 'Run setup again' }).waitFor();
+      await page.close();
+    }
+
+    // Rows: collapsed by default with each app's state visible; an opened row stays open after a reload.
+    {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      page.setDefaultTimeout(15000);
+      await page.route('**/*', route => route.request().url().startsWith(`${base}/`) ? route.continue() : route.abort());
+      await page.addInitScript(() => {
+        localStorage.setItem('easy-cli-proxy-api.locale', 'en'); localStorage.setItem('personal.lastPage', 'connectors');
+        globalThis.mockConnectorTest = { status: 'needsSignIn', toolCount: null, message: null };
+      });
+      await page.goto(`${base}/?mock=running&mockDelay=5`);
+      const toggles = page.locator('.connector-row-toggle');
+      await toggles.first().waitFor();
+      assert.equal(await toggles.count(), 8);
+      assert.equal(await page.locator('.connector-card-body:visible').count(), 0, 'all rows start collapsed');
+      const google = page.getByRole('button', { name: /Google/ }).first();
+      assert.match(await google.innerText(), /Claude Code · On[\s\S]*Claude Desktop · On/);
+      const rowHeight = (await google.boundingBox()).height;
+      assert.ok(rowHeight < 70, `a collapsed row is one line (${rowHeight}px)`);
+      await google.click();
+      await page.reload();
+      await page.locator('.connector-row-toggle').first().waitFor();
+      assert.equal(await page.getByRole('button', { name: /Google/ }).first().getAttribute('aria-expanded'), 'true', 'opened row remembered');
+      // A Claude Code check that needs sign-in explains the separate sign-in and offers to open Claude Code.
+      const googleCard = page.locator('.connector-card.is-open').first();
+      await googleCard.getByRole('button', { name: 'Check connection' }).first().click();
+      await googleCard.getByText(/Claude Code signs in separately, once: open Claude Code, type \/mcp, choose google-workspace/).waitFor();
+      await googleCard.getByRole('button', { name: 'Open Claude Code' }).waitFor();
       await page.close();
     }
 

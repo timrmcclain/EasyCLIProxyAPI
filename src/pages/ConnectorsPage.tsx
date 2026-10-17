@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Building2, Check, ExternalLink, FileText, Flame, Monitor, Network, Plug, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
+import { Building2, Check, ChevronDown, ExternalLink, FileText, Flame, Monitor, Network, Plug, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { GitHubMark, GoogleMark, PlaywrightMark } from '../components/BrandMarks';
 import { useConfirmation } from '../components/ConfirmationDialog';
@@ -60,6 +60,20 @@ const connectorIcons: Partial<Record<ConnectorId, ComponentType<{ size?: number 
 
 /** Notes longer than this collapse behind a disclosure so cards stay scannable. */
 const LONG_NOTE = 100;
+
+/** Which connector rows are expanded; the rest stay one line each. */
+/** What each connector is called in Claude Code's /mcp list (the hub writes these names). */
+const CODE_ENTRY_NAMES: Partial<Record<ConnectorId, string>> = { google: 'google-workspace', microsoft365: 'microsoft-365', github: 'github' };
+const EXPANDED_KEY = 'personal.connectorsExpanded';
+function readExpanded(): string[] {
+  try { const value = JSON.parse(localStorage.getItem(EXPANDED_KEY) ?? '[]'); return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []; }
+  catch { return []; }
+}
+function saveExpanded(id: string, open: boolean) {
+  const next = new Set(readExpanded());
+  if (open) next.add(id); else next.delete(id);
+  localStorage.setItem(EXPANDED_KEY, JSON.stringify([...next]));
+}
 
 function openLink(url: string) {
   void invoke('open_external_url', { url }).catch(() => undefined);
@@ -201,6 +215,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
   const [saveError, setSaveError] = useState<string | null>(null);
   const [tests, setTests] = useState<Partial<Record<ConnectorTarget, TestState>>>({});
   const [aiTest, setAiTest] = useState<TestState | null>(null);
+  const [expanded, setExpanded] = useState(() => readExpanded().includes(item.id));
 
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -291,15 +306,31 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
     return item.id === 'github' ? ct('accessFullGithub') : ct('accessFull');
   };
 
+  // Unsaved edits or an error keep the row open so they can't be hidden by collapsing it.
+  const open = expanded || changed || Boolean(saveError);
+  const toggle = () => { const next = !open; setExpanded(next); saveExpanded(item.id, next); };
+  // Only flag missing sign-in settings where an app that needs them is turned on.
+  const needsSetup = item.secretNames.length > 0 && !item.secretsConfigured
+    && (item.secretsDesktopOnly ? item.claudeDesktop.enabled : item.claudeCode.enabled || item.claudeDesktop.enabled);
+  const bodyId = `connector-${item.id}-body`;
   return (
-    <section className="connector-card" aria-labelledby={`connector-${item.id}-title`}>
+    <section className={`connector-card${open ? ' is-open' : ''}`} aria-labelledby={`connector-${item.id}-title`}>
       <header className="connector-card-header">
-        <span className="connector-icon" aria-hidden="true"><Icon size={18} /></span>
-        <div>
+        <button type="button" className="connector-row-toggle" aria-expanded={open} aria-controls={bodyId} onClick={toggle}>
+          <span className="connector-icon" aria-hidden="true"><Icon size={18} /></span>
           <h2 id={`connector-${item.id}-title`}>{dt(`${item.id}_name`)}</h2>
-          <p>{dt(`${item.id}_body`)}</p>
-        </div>
+          <span className="connector-row-states">
+            {connectorTargets.map(target => (
+              <span key={target} className={`connector-row-state${item[target].enabled ? ' on' : ''}`}>{ct(target)} · {item[target].enabled ? ct('on') : ct('off')}</span>
+            ))}
+            {needsSetup ? <span className="connector-row-state warn">{ct('notConfigured')}</span> : null}
+            {unavailable ? <span className="connector-row-state warn">{ct('unavailableShort')}</span> : null}
+          </span>
+          <ChevronDown size={16} aria-hidden="true" className="connector-row-chevron" />
+        </button>
       </header>
+      <div id={bodyId} className="connector-card-body" hidden={!open}>
+      <p className="connector-card-description">{dt(`${item.id}_body`)}</p>
       {note && note.length > LONG_NOTE ? (
         <details className="connector-note connector-note-details">
           <summary>{ct('noteTitle')}</summary>
@@ -341,7 +372,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
                   {test?.running ? ct('testing') : ct('test')}
                 </button>
               ) : null}
-              {test && !test.running ? <TestLine test={test} /> : null}
+              {test && !test.running ? <TestLine test={test} target={target} name={CODE_ENTRY_NAMES[item.id] ?? dt(`${item.id}_name`)} /> : null}
             </div>
           );
         })}
@@ -506,13 +537,30 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           </button>
         </div>
       ) : null}
+      </div>
     </section>
   );
 }
 
-function TestLine({ test }: { test: TestState }) {
+function TestLine({ test, target, name }: { test: TestState; target: ConnectorTarget; name: string }) {
   const { locale } = useI18n();
   const ct = (key: ConnectorTextKey) => connectorText(key, locale);
+  const [launch, setLaunch] = useState<'idle' | 'busy' | 'done' | string>('idle');
+  const openClaudeCode = async () => {
+    setLaunch('busy');
+    try { await invoke('launch_agent', { client: 'claude-code' }); setLaunch('done'); }
+    catch (error) { setLaunch(errorText(error)); }
+  };
+  // Claude Code signs in to a remote connector by itself, once; setting it up for Claude Desktop doesn't do that.
+  if (target === 'claudeCode' && !test.error && test.result?.status === 'needsSignIn') return (
+    <div className="connector-test warn">
+      <p>{ct('codeSignInNeeded').replace('{name}', name)}</p>
+      <span className="connector-auto-setup-actions">
+        <button type="button" className="secondary-button compact-button" disabled={launch === 'busy'} onClick={() => void openClaudeCode()}>{ct('openClaudeCode')}</button>
+        {launch === 'done' ? <small>{ct('openClaudeCodeDone')}</small> : launch !== 'idle' && launch !== 'busy' ? <small>{launch}</small> : null}
+      </span>
+    </div>
+  );
   if (test.error) return <p className="connector-test failed">{ct('testFailed')} {test.error}</p>;
   const result = test.result;
   if (!result) return null;
