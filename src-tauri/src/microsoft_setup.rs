@@ -144,31 +144,34 @@ fn is_guid(value: &str) -> bool {
 }
 
 fn run_script() -> MicrosoftSetupResult {
+    run_powershell(&script(), SETUP_TIMEOUT)
+}
+
+fn run_powershell(script: &str, timeout: Duration) -> MicrosoftSetupResult {
+    // The whole script goes in as one encoded command: fed through stdin, PowerShell runs it line by line
+    // and multi-line blocks never finish, so no result was ever printed.
+    use base64::Engine;
+    let utf16: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    let encoded = base64::engine::general_purpose::STANDARD.encode(utf16);
     let mut command = Command::new("powershell.exe");
-    command.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "-"]);
+    command.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", &encoded]);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         command.creation_flags(CREATE_NO_WINDOW);
     }
-    command.stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+    // Only the result line on stdout matters; stderr is dropped so its pipe can never fill and stall the script.
+    command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::null());
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(error) => return MicrosoftSetupResult::failed(format!("Couldn't start PowerShell: {error}")),
     };
-    if let Some(mut stdin) = child.stdin.take() {
-        use std::io::Write;
-        if stdin.write_all(script().as_bytes()).is_err() {
-            let _ = child.kill();
-            return MicrosoftSetupResult::failed("Couldn't send the setup script to PowerShell.");
-        }
-    }
     let started = std::time::Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(_)) => break,
-            Ok(None) if started.elapsed() > SETUP_TIMEOUT => {
+            Ok(None) if started.elapsed() > timeout => {
                 let _ = child.kill();
                 return MicrosoftSetupResult { status: "signInFailed".into(), message: Some("Timed out waiting for the Microsoft sign-in.".into()), ..MicrosoftSetupResult::failed("") };
             }
@@ -224,6 +227,57 @@ mod tests {
         assert_eq!(result.status, "signInFailed");
         assert_eq!(result.tenant_id, None);
         assert_eq!(parse_output("nothing here").status, "failed");
+    }
+
+    /// Runs the script the way the hub does, with every Microsoft command replaced by a fake.
+    #[cfg(windows)]
+    #[test]
+    fn script_runs_end_to_end_against_fake_graph() {
+        let fakes = format!(r#"
+function Import-Module {{ }}
+function Set-MgGraphOption {{ }}
+function Connect-MgGraph {{ }}
+function Disconnect-MgGraph {{ }}
+function Get-MgContext {{ [pscustomobject]@{{ TenantId = '{TENANT}' }} }}
+function Get-MgServicePrincipal {{ param($Filter)
+  if ($Filter -match '00000003') {{ [pscustomobject]@{{ Id = 'graph-sp'; Oauth2PermissionScopes = @('User.Read','Mail.Read','Calendars.Read','Files.Read.All','Sites.Read.All','Chat.Read' | ForEach-Object {{ [pscustomobject]@{{ Value = $_; Id = [guid]::NewGuid() }} }}) }} }}
+}}
+function Get-MgApplication {{ }}
+function New-MgApplication {{ param($BodyParameter) [pscustomobject]@{{ Id = 'obj-1'; AppId = '{CLIENT}' }} }}
+function Update-MgApplication {{ }}
+function New-MgServicePrincipal {{ [pscustomobject]@{{ Id = 'app-sp' }} }}
+function Get-MgOauth2PermissionGrant {{ }}
+function New-MgOauth2PermissionGrant {{ }}
+"#);
+        let result = run_powershell(&format!("{fakes}
+{}", script()), Duration::from_secs(60));
+        assert_eq!(result.status, "ok", "{:?}", result.message);
+        assert_eq!(result.tenant_id.as_deref(), Some(TENANT));
+        assert_eq!(result.client_id.as_deref(), Some(CLIENT));
+        assert!(result.created);
+        assert_eq!(result.consent.as_deref(), Some("granted"));
+
+        // Running again finds the tagged app instead of creating another; an account that can't grant consent gets the admin link.
+        let again = format!(r#"{fakes}
+function Get-MgApplication {{ [pscustomobject]@{{ Id = 'obj-1'; AppId = '{CLIENT}' }} }}
+function New-MgApplication {{ throw 'should not create a second app' }}
+function New-MgOauth2PermissionGrant {{ throw 'Insufficient privileges to complete the operation.' }}
+"#);
+        let result = run_powershell(&format!("{again}
+{}", script()), Duration::from_secs(60));
+        assert_eq!(result.status, "ok", "{:?}", result.message);
+        assert!(!result.created);
+        assert_eq!(result.consent.as_deref(), Some("needsAdmin"));
+        assert_eq!(result.consent_url.as_deref(), Some(format!("https://login.microsoftonline.com/{TENANT}/adminconsent?client_id={CLIENT}").as_str()));
+
+        // A cancelled sign-in is reported as such, with no IDs.
+        let cancelled = format!("{fakes}
+function Connect-MgGraph {{ throw 'User canceled authentication.' }}
+");
+        let result = run_powershell(&format!("{cancelled}
+{}", script()), Duration::from_secs(60));
+        assert_eq!(result.status, "signInFailed");
+        assert_eq!(result.tenant_id, None);
     }
 
     /// Parses the script with PowerShell's own parser, without running it.
