@@ -103,6 +103,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   .personal-advanced { margin: 0; padding: 0; border: 0; }
   .personal-advanced summary { padding: 10px 6px; }
   .personal-advanced[open] { flex-basis: 100%; }
+  .nav-utility-groups { display: flex; gap: 4px; margin: 0; padding: 0 0 0 8px; border-top: 0; border-left: 1px solid var(--border-color); }
+  .nav-utility-groups > button { width: auto; min-height: 34px; padding: 8px; font-size: 11px; }
   .personal-advanced > div { display: flex; flex-wrap: wrap; }
   .personal-advanced-group { display: flex; flex-wrap: wrap; align-items: center; flex-basis: 100%; }
   .personal-advanced-group + .personal-advanced-group { margin-top: 4px; }
@@ -532,3 +534,16 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   border-radius: 4px;
   padding: 2px;
 }
+
+/* Prototype navigation: Settings and Diagnostics sit apart from the six main groups. */
+.nav-utility-groups { display: grid; gap: 4px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color); }
+/* Eight entries instead of seven plus a collapsed section: slightly tighter so all fit at 900px tall. */
+@media (min-width: 761px) { .nav-section.nav-grouped button { min-height: 38px; padding-top: 7px; padding-bottom: 7px; } .nav-section.nav-grouped .nav-utility-groups { margin-top: 8px; padding-top: 8px; } }
+/* A group's pages, listed above the page: plain links, not a second tab bar. */
+.nav-group-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+.nav-group-sections button { min-height: 32px; padding: 0 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+.nav-group-sections button:hover:not(:disabled) { background: var(--bg-hover, rgba(0,0,0,.04)); color: var(--text-primary); }
+.nav-group-sections button[aria-current='page'] { border-color: var(--border-color); background: var(--bg-elevated, #fff); color: var(--text-primary); font-weight: 600; }
+.nav-group-sections button:disabled { opacity: .5; cursor: not-allowed; }
+.nav-group-sections button:focus-visible { outline: 2px solid var(--p-blue-500, #3b82f6); outline-offset: 1px; }
+@media (forced-colors: active) { .nav-group-sections button[aria-current='page'] { forced-color-adjust: none; background: Highlight; color: HighlightText; } }

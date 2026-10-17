@@ -39,6 +39,7 @@ import { VersionManagementPage } from './pages/VersionManagementPage';
 import { OAuthManagementPage } from './pages/ManagementPages';
 import { QuotaPage } from './pages/QuotaPage';
 import { requestAccountsView } from './oauthNavigation';
+import { NEW_NAVIGATION_EVENT, groupForPage, mainNavGroups, pageForGroup, readNewNavigationPreference, utilityNavGroups, type NavGroup } from './navigationGroups';
 import { AgentsPage } from './pages/AgentsPage';
 import { GlossaryDialog } from './components/GlossaryDialog';
 import { UsageRecordsPage } from './pages/UsageRecordsPage';
@@ -184,6 +185,8 @@ const advancedGroups: ReadonlyArray<{ labelKey: 'personal.advanced.proxy' | 'per
   { labelKey: 'personal.advanced.diagnostics', ids: ['health'] },
 ];
 const advancedNav: PageId[] = advancedGroups.flatMap((group) => group.ids);
+// Icons for the prototype groups whose first page's icon doesn't describe the group.
+const groupIcons: Partial<Record<string, typeof House>> = { 'ai-apps': Bot, tools: Plug, safety: ShieldCheck, diagnostics: Stethoscope };
 const LAST_PAGE_KEY = 'personal.lastPage';
 
 function initialPage(): PageId {
@@ -242,6 +245,22 @@ function AppContent() {
   const { info: appUpdateInfo, hasUpdate, processing: appUpdateProcessing } = useAppUpdate();
   const { latest: coreLatest, hasUpdate: coreHasUpdate } = useCoreUpdate();
   const [active, setActive] = useState<PageId>(initialPage);
+  // The prototype navigation from the UI review, switched on in Settings → App preferences.
+  const [newNav, setNewNav] = useState(readNewNavigationPreference);
+  useEffect(() => {
+    const changed = (event: Event) => setNewNav(Boolean((event as CustomEvent<boolean>).detail));
+    window.addEventListener(NEW_NAVIGATION_EVENT, changed);
+    return () => window.removeEventListener(NEW_NAVIGATION_EVENT, changed);
+  }, []);
+  const lastInGroup = useRef<Record<string, string>>({});
+  useEffect(() => {
+    const group = groupForPage(active);
+    if (group) lastInGroup.current[group.id] = active;
+  }, [active]);
+  // Ctrl+1–7 open the six main groups and Settings, or the old primary pages with the switch off.
+  const shortcutTargets = (): PageId[] => newNav
+    ? [...mainNavGroups, utilityNavGroups[0]].map((group) => pageForGroup(group, lastInGroup.current) as PageId)
+    : primaryNav;
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [homeProblems, setHomeProblems] = useState(0);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
@@ -330,7 +349,7 @@ function AppContent() {
       }
       if (mod && /^[1-7]$/.test(event.key)) {
         event.preventDefault();
-        const target = primaryNav[Number(event.key) - 1];
+        const target = shortcutTargets()[Number(event.key) - 1];
         if (target && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
         return;
       }
@@ -521,7 +540,7 @@ function AppContent() {
       const page = pages.find((item) => item.id === id)!;
       return {
         id: `page-${id}`, label: t(page.labelKey), group: t('palette.pages'),
-        hint: position < primaryNav.length ? t('palette.pageShortcut', { key: position + 1 }) : undefined,
+        hint: newNav ? undefined : position < primaryNav.length ? t('palette.pageShortcut', { key: position + 1 }) : undefined,
         keywords: paletteKeywords[id], disabled: !canOpenAppPage(id, coreReady), run: () => select(id),
       };
     }),
@@ -595,6 +614,29 @@ function AppContent() {
 
   };
 
+  // A group lists its pages; opening it returns to the page last used there.
+  const renderNavigationGroup = (group: NavGroup) => {
+    const first = pages.find((page) => page.id === group.pages[0])!;
+    const Icon = groupIcons[group.id] ?? first.icon;
+    const current = group.pages.includes(active);
+    const locked = group.pages.every((id) => !canOpenAppPage(id, coreReady));
+    const updateIndicator = group.pages.includes('versions') ? appUpdateIndicatorState(hasUpdate, coreHasUpdate, appUpdateProcessing) : null;
+    return (
+      <button key={group.id} type="button" className={[current ? 'active' : '', locked ? 'locked' : ''].filter(Boolean).join(' ')}
+        aria-current={current ? 'page' : undefined} disabled={locked} title={locked ? t('app.nav.lockedHint') : undefined}
+        onClick={() => select(pageForGroup(group, lastInGroup.current) as PageId)}>
+        <Icon size={16} aria-hidden="true" />
+        <span>{t(group.labelKey as Parameters<typeof t>[0])}</span>
+        {group.id === 'overview' && homeProblems > 0 ? (
+          <i className="nav-attention-dot" title={t('app.nav.attention', { count: homeProblems })} aria-label={t('app.nav.attention', { count: homeProblems })} />
+        ) : null}
+        {locked ? <Lock size={14} className="nav-lock-icon" aria-hidden="true" />
+          : updateIndicator ? <i className={`nav-update-indicator ${updateIndicator}`} aria-label={availableUpdateLabel} title={availableUpdateLabel} /> : null}
+      </button>
+    );
+  };
+  const activeGroup = newNav ? groupForPage(active) : undefined;
+
   return (
     <>
       <div className="app-shell">
@@ -611,7 +653,11 @@ function AppContent() {
           <button type="button" className="sidebar-command-button" onClick={() => setPaletteOpen(true)} aria-keyshortcuts="Control+K">
             <Search size={14} aria-hidden="true" /><span>{t('palette.open')}</span><kbd>{t('palette.shortcut')}</kbd>
           </button>
-          <nav ref={navSectionRef} className={`nav-section${navMoreBelow ? ' nav-more-below' : ''}`} aria-label={t('app.navigation')} onScroll={updateNavMoreBelow}>
+          <nav ref={navSectionRef} className={`nav-section${navMoreBelow ? ' nav-more-below' : ''}${newNav ? ' nav-grouped' : ''}`} aria-label={t('app.navigation')} onScroll={updateNavMoreBelow}>
+            {newNav ? <>
+              {mainNavGroups.map(renderNavigationGroup)}
+              <div className="nav-utility-groups" role="group" aria-label={t('navGroup.utility')}>{utilityNavGroups.map(renderNavigationGroup)}</div>
+            </> : <>
             {primaryNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
             <details className="personal-advanced" open={advancedNav.includes(active) || undefined}>
               <summary>{t('personal.advanced')}</summary>
@@ -621,6 +667,7 @@ function AppContent() {
               </div>)}
               </div>
             </details>
+            </>}
           </nav>
 
           <div className="sidebar-bottom">
@@ -731,6 +778,16 @@ function AppContent() {
 
         <div className="workspace">
           <main className="content">
+            {activeGroup && activeGroup.pages.length > 1 ? (
+              <nav className="nav-group-sections" aria-label={t(activeGroup.labelKey as Parameters<typeof t>[0])}>
+                {activeGroup.pages.map((id) => {
+                  const page = pages.find((item) => item.id === id)!;
+                  const locked = !canOpenAppPage(id, coreReady);
+                  return <button key={id} type="button" className={id === active ? 'active' : ''} aria-current={id === active ? 'page' : undefined}
+                    disabled={locked} title={locked ? t('app.nav.lockedHint') : undefined} onClick={() => select(id as PageId)}>{t(page.labelKey)}</button>;
+                })}
+              </nav>
+            ) : null}
             {isAlwaysAvailablePage(activePage.id) || coreReady ? (
               <ActivePage />
             ) : (
