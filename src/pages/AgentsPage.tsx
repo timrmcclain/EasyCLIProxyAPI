@@ -125,6 +125,7 @@ type AgentConfigStatus = {
   appliedModel: string | null;
   claudeCodeModelMappings: ClaudeModelMappings | null;
   claudeDesktopModelMappings: ClaudeModelMappings | null;
+  claudeDesktopMappingsExternal?: boolean;
   warnings: string[];
   error: string | null;
 };
@@ -1741,6 +1742,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       </div>
       <button type="button" className="secondary-button compact-button" disabled={busy || modelLoading} onClick={refreshModels}>{t('preset.refreshCatalog')}</button>
       <DesktopModelPresetControls models={models} catalogReady={!modelLoading && !modelError} entries={desktopEntries} disabled={busy || loading} onImport={editDesktopEntries} />
+      {activeStatus?.claudeDesktopMappingsExternal ? <p className="agent-model-hint" role="status">{t('agents.claudeDesktopMapping.external')}</p> : null}
       {!desktopEntries.length ? <p className="agent-model-hint">{t('agents.claudeDesktopMapping.empty')}</p> : null}
       <div className="agent-desktop-model-list">
         {desktopEntries.map((entry, index) => {

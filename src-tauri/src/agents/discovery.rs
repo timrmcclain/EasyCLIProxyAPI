@@ -456,6 +456,7 @@ pub(crate) fn inspect_pi_provider_status(
         applied_model: current_model,
         claude_code_model_mappings: None,
         claude_desktop_model_mappings: None,
+        claude_desktop_mappings_external: false,
         warnings,
         error,
     }
@@ -1068,6 +1069,9 @@ pub(crate) fn inspect_agent_config(
 
     let configuration_synchronized = agent_configuration_is_synchronized(client, home, configured);
 
+    let desktop_mappings = (client == AgentClient::ClaudeDesktop)
+        .then(|| displayed_desktop_mappings(home))
+        .flatten();
     AgentConfigStatus {
         id: client.id().to_string(),
         name: client.name().to_string(),
@@ -1109,9 +1113,8 @@ pub(crate) fn inspect_agent_config(
         claude_code_model_mappings: (client == AgentClient::ClaudeCode)
             .then(|| inspect_claude_code_model_mappings(&paths[0]).ok().flatten())
             .flatten(),
-        claude_desktop_model_mappings: (client == AgentClient::ClaudeDesktop)
-            .then(|| current_desktop_mappings(home))
-            .flatten(),
+        claude_desktop_model_mappings: desktop_mappings.as_ref().map(|(mappings, _)| mappings.clone()),
+        claude_desktop_mappings_external: desktop_mappings.is_some_and(|(_, external)| external),
         warnings,
         error,
     }

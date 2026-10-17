@@ -1017,8 +1017,41 @@ fn desktop_current_mapping_survives_backup_deletion_and_rejects_unreliable_profi
     let persisted: DesktopMappingState =
         serde_json::from_slice(&fs::read(desktop_mapping_path(&paths).unwrap()).unwrap()).unwrap();
     assert_eq!(persisted.mappings.opus, "gpt-two");
+    // While the saved copy matches, the status shows it as the hub's own.
+    assert_eq!(displayed_desktop_mappings(&home.0).map(|(_, external)| external), Some(false));
     save(&paths[2], "{\"inferenceModels\":[]}");
     assert!(current_desktop_mappings(&home.0).is_none());
+    // An empty profile has nothing to read back: no mappings rather than invented ones.
+    assert!(displayed_desktop_mappings(&home.0).is_none());
+}
+
+#[test]
+fn desktop_mappings_changed_outside_the_hub_are_read_back_from_the_profile() {
+    if !AgentClient::ClaudeDesktop.supported_platform() {
+        return;
+    }
+    let home = Home::new();
+    let paths = config_paths("claude-desktop", &home.0).unwrap();
+    apply(&home.0, AgentClient::ClaudeDesktop, "gpt-one").unwrap();
+    // Something other than the hub rewrites the profile's model list.
+    save(&paths[2], &serde_json::json!({ "inferenceModels": [
+        { "name": "claude-sonnet-5" },
+        { "name": "claude-custom-1", "labelOverride": "gemini-3.1-pro-low", "supports1m": true, "prefer1m": true },
+        { "name": "claude-custom-2", "labelOverride": "claude-custom-2" },
+    ] }).to_string());
+    assert!(current_desktop_mappings(&home.0).is_none(), "the strict match still rejects it");
+    let (mappings, external) = displayed_desktop_mappings(&home.0).unwrap();
+    assert!(external, "flagged as changed outside the hub");
+    let entries = mappings.desktop_models.unwrap();
+    let read: Vec<_> = entries.iter().map(|entry| (entry.model.as_str(), entry.alias.as_str(), entry.context_1m)).collect();
+    assert_eq!(read, vec![
+        ("claude-sonnet-5", "", false),
+        // labelOverride is the source model; name is the id Desktop shows.
+        ("gemini-3.1-pro-low", "claude-custom-1", true),
+        // A label equal to the name is not an alias.
+        ("claude-custom-2", "", false),
+    ]);
+    assert_eq!(mappings.sonnet, "claude-sonnet-5");
 }
 
 #[test]

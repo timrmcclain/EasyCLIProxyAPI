@@ -1612,6 +1612,7 @@ export const zhCN = {
   'agents.claudeDesktopMapping.customAliasHint': '没有匹配的建议，可自行填写别名。',
   'agents.claudeDesktopMapping.newModel': '新模型',
   'agents.claudeDesktopMapping.idHint': '别名可以采用 claude-opus-*、claude-sonnet-*、claude-haiku-* 这样的格式，但不能包含 gpt、grok、gemini、deepseek 等其他模型系列的名称。星号表示自定义后缀，不要原样输入。',
+  'agents.claudeDesktopMapping.external': '已在中心之外更改。以下行读取自 Claude Desktop 当前的设置。点击应用即可保存到中心。',
   'agents.claudeDesktopMapping.empty': '点击“添加模型”，填写原模型；别名可留空。',
   'agents.claudeDesktopMapping.error.empty': '请至少选择或填写一个原模型。',
   'agents.claudeDesktopMapping.error.model': '请选择或填写原模型。',

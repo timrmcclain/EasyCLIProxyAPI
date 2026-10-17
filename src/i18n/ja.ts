@@ -1647,6 +1647,7 @@ export const jaOverrides = {
   'agents.model.useCustom': '入力したモデル ID を使用',
   'agents.claudeDesktopMapping.newModel': '新しいモデル',
   'agents.claudeDesktopMapping.idHint': 'エイリアスは claude-opus-*、claude-sonnet-*、claude-haiku-* などの形式にできます。ただし gpt・grok・gemini・deepseek など、他のモデル系列の名前は含められません。星印は任意の接尾辞を表します。そのまま入力せず、使いたい文字列に置き換えてください。',
+  'agents.claudeDesktopMapping.external': 'ハブの外で変更されました。以下の行は Claude Desktop の現在の設定から読み込んだものです。適用するとハブに保存されます。',
   'agents.claudeDesktopMapping.empty': '「モデルを追加」で元モデルを入力してください。エイリアスは省略できます。',
   'agents.claudeDesktopMapping.error.empty': '元モデルを1つ以上選択または入力してください。',
   'agents.claudeDesktopMapping.error.model': '元モデルを選択または入力してください。',

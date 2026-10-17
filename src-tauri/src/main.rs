@@ -1070,6 +1070,8 @@ struct AgentConfigStatus {
     applied_model: Option<String>,
     claude_code_model_mappings: Option<ClaudeDesktopModelMappings>,
     claude_desktop_model_mappings: Option<ClaudeDesktopModelMappings>,
+    /// The mappings above were read back from Claude Desktop's profile because it changed outside the hub.
+    claude_desktop_mappings_external: bool,
     warnings: Vec<String>,
     error: Option<String>,
 }

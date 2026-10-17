@@ -512,9 +512,56 @@ pub(crate) fn matching_desktop_mappings(
         .then_some(state.mappings)
 }
 
+/// The strict match only; the status shows [`displayed_desktop_mappings`].
+#[cfg(test)]
 pub(crate) fn current_desktop_mappings(home: &Path) -> Option<ClaudeDesktopModelMappings> {
     let paths = config_paths("claude-desktop", home).ok()?;
     matching_desktop_mappings(&paths, &config_images(&paths).ok()?)
+}
+
+/// The Desktop mappings the editor shows: the hub's saved copy while it still matches the profile, otherwise
+/// read back from the profile itself (`true` = changed outside the hub), so a configured app never reopens
+/// as a blank template. Backups and transactions keep using the strict match above.
+pub(crate) fn displayed_desktop_mappings(home: &Path) -> Option<(ClaudeDesktopModelMappings, bool)> {
+    let paths = config_paths("claude-desktop", home).ok()?;
+    let images = config_images(&paths).ok()?;
+    if let Some(saved) = matching_desktop_mappings(&paths, &images) {
+        return Some((saved, false));
+    }
+    profile_desktop_mappings(&images).map(|mappings| (mappings, true))
+}
+
+/// Reads the routes back the way they are written: `name` is the model id Desktop shows, `labelOverride`
+/// (when it differs) the source model behind it, and `prefer1m` the 1M-context choice.
+pub(crate) fn profile_desktop_mappings(images: &Images) -> Option<ClaudeDesktopModelMappings> {
+    let (path, bytes) = images.get(2)?;
+    let profile = parse(path, text(bytes.as_deref()).ok()?).ok()?;
+    let entries: Vec<ClaudeDesktopModelMapping> = profile
+        .get("inferenceModels")?
+        .as_array()?
+        .iter()
+        .filter_map(|entry| {
+            let name = entry.get("name")?.as_str()?.trim();
+            if name.is_empty() {
+                return None;
+            }
+            let source = entry
+                .get("labelOverride")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|label| !label.is_empty() && !label.eq_ignore_ascii_case(name));
+            let context_1m = entry.get("prefer1m").and_then(Value::as_bool) == Some(true);
+            Some(match source {
+                Some(source) => ClaudeDesktopModelMapping { model: source.into(), alias: name.into(), context_1m },
+                None => ClaudeDesktopModelMapping { model: name.into(), alias: String::new(), context_1m },
+            })
+        })
+        .collect();
+    let first = entries.first()?.source_or_alias().to_string();
+    let mut mappings: ClaudeDesktopModelMappings = serde_json::from_value(serde_json::json!({})).ok()?;
+    mappings.sonnet = first;
+    mappings.desktop_models = Some(entries);
+    Some(mappings)
 }
 
 pub(crate) fn mapping_revision(client: &str, paths: &[PathBuf]) -> Result<String, String> {

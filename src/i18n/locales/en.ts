@@ -1613,6 +1613,7 @@ export const en: Record<MessageKey, string> = {
   'agents.model.useCustom': 'Use the entered model ID',
   'agents.claudeDesktopMapping.newModel': 'New model',
   'agents.claudeDesktopMapping.idHint': 'Aliases can follow patterns such as claude-opus-*, claude-sonnet-*, or claude-haiku-*, but must not contain names of other model families such as gpt, grok, gemini, or deepseek. Replace the asterisk with your own suffix; do not enter it literally.',
+  'agents.claudeDesktopMapping.external': "Changed outside the hub. These rows were read from Claude Desktop's current settings. Apply to save them in the hub.",
   'agents.claudeDesktopMapping.empty': 'Click “Add model” and enter the original model. The alias is optional.',
   'agents.claudeDesktopMapping.error.empty': 'Choose or enter at least one original model.',
   'agents.claudeDesktopMapping.error.model': 'Choose or enter an original model.',
