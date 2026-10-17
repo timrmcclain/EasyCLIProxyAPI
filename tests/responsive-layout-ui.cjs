@@ -222,7 +222,7 @@ const viewports = [
       await page.locator('.accounts-view-switch [role="radio"]').nth(0).click();
       await page.locator('.auth-file-card').first().waitFor();
 
-      await open('智能体配置', '.agent-config-panel');
+      await open('AI 应用', '.agent-config-panel');
       await page.waitForFunction(() => !document.querySelector('.agent-client-list-heading button')?.disabled);
       await tab('agent-subpage-tab-core', '#agent-subpage-panel-core');
       await assertNoPageOverflow(`${label} agents`);

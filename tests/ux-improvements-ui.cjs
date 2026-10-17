@@ -44,7 +44,7 @@ const path = require('node:path');
   await page.locator('.ux-alerts [role=status]').waitFor();assert.equal(await page.locator('.ux-alerts li').count(),1);
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.waitForTimeout(1700);assert.equal(await page.locator('.ux-alerts li').count(),1,'No repeated alert for same failure');
   await page.getByRole('button',{name:'Dismiss notifications'}).click();
-  await nav.getByRole('button',{name:'Connected apps',exact:true}).click();
+  await nav.getByRole('button',{name:'AI apps',exact:true}).click();
   await page.locator('.ux-models summary').click();await page.getByText('Explicit reasoning override: high',{exact:true}).waitFor();
   await page.locator('.connection-evidence').getByText('The provider limited this request. Check quota and available alternatives.',{exact:true}).waitFor();
   await page.evaluate(()=>{window.uxItems=[{timestamp:new Date().toISOString(),model:'fixture-model',user_agent:'claude-desktop/1',failed:false,canceled:false,reasoning_effort:'high'}];window.dispatchEvent(new Event('focus'));});

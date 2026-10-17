@@ -170,7 +170,7 @@ const paletteKeywords: Partial<Record<PageId, readonly string[]>> = {
   oauth: ['sign in', 'login', 'accounts'],
   'usage-records': ['requests', 'logs', 'usage', 'history', 'export'],
   'secret-guard': ['credentials', 'leak', 'redact', 'security'],
-  agents: ['claude code', 'codex', 'clients'],
+  agents: ['claude code', 'codex', 'clients', 'connected apps'],
   config: ['settings', 'preferences', 'routing'],
   proxy: ['start', 'stop', 'port', 'core'],
   api: ['keys', 'api key', 'gemini', 'openai', 'provider'],

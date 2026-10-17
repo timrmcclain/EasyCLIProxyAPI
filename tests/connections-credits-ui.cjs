@@ -48,7 +48,7 @@ const path = require('node:path');
     // Saved accounts are paged in routing order; find this account by its file name.
     await page.locator('.auth-files-toolbar input').fill('codex-personal');
     await page.locator('.auth-card-identity strong').filter({hasText:'My work account'}).waitFor();
-    await nav.getByRole('button',{name:'Connected apps',exact:true}).click();
+    await nav.getByRole('button',{name:'AI apps',exact:true}).click();
     await page.locator('.connection-overview h2').getByText('Configured',{exact:true}).waitFor();
     const refresh=page.locator('.agent-client-list-heading').getByRole('button',{name:'Detect Again',exact:true});
     for(const [mode,text] of [['verified','Recent request verified'],['attention','Needs attention'],['notDetected','App not detected'],['detected','Detected'],['configured','Configured']]) {

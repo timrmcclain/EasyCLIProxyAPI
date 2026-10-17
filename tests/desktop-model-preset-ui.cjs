@@ -12,7 +12,7 @@ const path = require('node:path');
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem('easy-cli-proxy-api.locale', 'en'));
     await page.goto('http://127.0.0.1:1424/?mock=running');
-    await page.getByRole('button', { name: 'Connected apps', exact: true }).click();
+    await page.getByRole('button', { name: 'AI apps', exact: true }).click();
     await page.getByRole('button', { name: 'Import JSON', exact: true }).waitFor();
     await page.evaluate(() => {
       const original = window.__TAURI_INTERNALS__.invoke;

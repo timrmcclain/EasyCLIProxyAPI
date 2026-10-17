@@ -148,6 +148,9 @@ export function CodexSessionsPanel() {
 
   const sessions = page?.sessions ?? [];
   const pageCounts = codexSessionPageCounts(sessions);
+  // Before the first scan finishes, counts and the database are unknown, not zero or missing.
+  const firstLoad = page === null && loading;
+  const pending = '…';
   const currentOffset = page?.offset ?? initialOffsetRef.current;
   const currentPage = Math.floor(currentOffset / (page?.limit ?? PAGE_SIZE)) + 1;
   const selectedSessions = useMemo(
@@ -334,15 +337,15 @@ export function CodexSessionsPanel() {
         </div>
 
         <div className="codex-session-metrics">
-          <div><span>{t('agents.sessions.total')}</span><strong>{page?.totalCount ?? sessions.length}</strong></div>
-          <div><span>{t('agents.sessions.active')}</span><strong>{pageCounts.active}</strong></div>
-          <div><span>{t('agents.sessions.archived')}</span><strong>{pageCounts.archived}</strong></div>
+          <div><span>{t('agents.sessions.total')}</span><strong>{firstLoad ? pending : page?.totalCount ?? sessions.length}</strong></div>
+          <div><span>{t('agents.sessions.active')}</span><strong>{firstLoad ? pending : pageCounts.active}</strong></div>
+          <div><span>{t('agents.sessions.archived')}</span><strong>{firstLoad ? pending : pageCounts.archived}</strong></div>
           <div
             className="codex-session-database-metric"
             title={page?.databasePaths.join('\n') || page?.codexHome}
           >
             <span><Database size={14} />{t('agents.sessions.database')}</span>
-            <strong>{page?.databasePaths[0] || t('agents.sessions.databaseMissing')}</strong>
+            <strong>{firstLoad ? t('agents.sessions.loading') : page?.databasePaths[0] || t('agents.sessions.databaseMissing')}</strong>
           </div>
         </div>
 
@@ -446,7 +449,7 @@ export function CodexSessionsPanel() {
                   />
                 </label>
                 <div className="codex-session-main">
-                  <strong>{session.title || t('agents.sessions.untitled')}</strong>
+                  <strong>{session.title || untitledLabel(session.cwd, t)}</strong>
                   <code>{session.id}</code>
                   <span title={session.cwd}>{session.cwd || t('agents.sessions.noProject')}</span>
                 </div>
@@ -552,4 +555,10 @@ export function CodexSessionsPanel() {
       ) : null}
     </div>
   );
+}
+
+/** An untitled session is named after its project folder, so similar rows can be told apart. */
+function untitledLabel(cwd: string | undefined, t: (key: 'agents.sessions.untitled' | 'agents.sessions.untitledIn', values?: Record<string, string>) => string): string {
+  const folder = (cwd ?? '').replace(/[\\/]+$/, '').split(/[\\/]/).pop();
+  return folder ? t('agents.sessions.untitledIn', { folder }) : t('agents.sessions.untitled');
 }

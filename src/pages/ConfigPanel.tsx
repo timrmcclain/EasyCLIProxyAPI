@@ -303,6 +303,21 @@ export function ConfigPanelPage() {
     return () => observer.disconnect();
   }, [activeSubpage]);
 
+  const resetScrollRef = useRef(false);
+  useEffect(() => {
+    if (!resetScrollRef.current) return;
+    resetScrollRef.current = false;
+    const panel = document.getElementById('config-subpage-panel');
+    if (!panel) return;
+    let container: HTMLElement | null = panel.parentElement;
+    while (container && !(/(auto|scroll)/.test(getComputedStyle(container).overflowY) && container.scrollHeight > container.clientHeight)) container = container.parentElement;
+    const top = panel.getBoundingClientRect().top - (container ? container.getBoundingClientRect().top : 0);
+    // Only move when the new category's top is out of view above; a short scroll stays put.
+    if (top >= 0) return;
+    if (container) container.scrollTop += top - 8;
+    else window.scrollBy({ top: top - 8 });
+  }, [activeSubpage]);
+
   useEffect(() => {
     if (!pendingDestination) return;
     const frame = window.requestAnimationFrame(() => {
@@ -1200,6 +1215,8 @@ export function ConfigPanelPage() {
     preventEscape: keyMutationBusy,
   });
   const activateConfigSubpage = (subpage: ConfigSubpage) => {
+    // A new category starts at its top, never at the previous category's scroll offset.
+    if (subpage !== activeSubpage) resetScrollRef.current = true;
     setSettingsSearch('');
     setActiveSubpage(subpage);
     if (subpage === 'requests') {
@@ -1215,6 +1232,8 @@ export function ConfigPanelPage() {
     if (destination.category === 'extensions') setShowPluginAdvanced(true);
     if (destination.category === 'oauth') setShowUpstreamAdvanced(true);
     activateConfigSubpage(destination.category);
+    // Jumping to one field scrolls to that field instead.
+    resetScrollRef.current = false;
     setPendingDestination(destination);
   };
   const navigateRef = useRef(navigateToSetting);
