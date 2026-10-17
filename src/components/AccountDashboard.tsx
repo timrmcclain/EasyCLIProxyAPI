@@ -1,6 +1,7 @@
 import { QuotaTrendChart } from './QuotaTrendChart';
 import { useQuotaTrends } from '../services/quotaTrend';
 import { AccountStatusSection } from './AccountStatusSection';
+import { AccountValueLine } from './AccountValueLine';
 import { AlternativeComparison, OverviewAlerts } from './OverviewInsights';
 import { subscribeActivity } from '../services/activitySubscription';
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
@@ -480,6 +481,7 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
           {lastSuccess && <><span>{t('ledger.lastSuccess')}</span><time dateTime={lastSuccess.timestamp}>{new Date(lastSuccess.timestamp).toLocaleString()}</time><span>{requestClient(lastSuccess) ?? t('ledger.unknownClient')}</span></>}
           {activityStale && <span>{t('ledger.stale')}</span>}
         </div>
+        <AccountValueLine file={file} active={detailsOpen} />
         <div className="ad-card-footer"><label>{t('accountDashboard.priority')}<input ref={priorityInput} type="number" step="1" value={draft} onChange={(event) => { setDraft(event.target.value); setFeedback(''); }} aria-label={t('accountDashboard.priorityLabel', { account: displayLabel })} disabled={disabled || pending} /></label>
           <button className="secondary-button" disabled={disabled || pending || draft === String(summary.priority)} onClick={() => void save()}>{pending ? t('accountDashboard.saving') : t('accountDashboard.save')}</button>
           <span className="ad-freshness" title={quota.refreshError}>{quota.fetchedAt ? t(quota.refreshError ? 'accountDashboard.quotaKept' : 'accountDashboard.quotaChecked', { time: new Date(quota.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.noSnapshot')}</span></div>

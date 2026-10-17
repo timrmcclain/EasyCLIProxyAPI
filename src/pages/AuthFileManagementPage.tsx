@@ -2,6 +2,7 @@ import { requestAccountRequests } from '../usageNavigation';
 import { ACCOUNTS_VIEW_EVENT, takePendingAccountsView, type AccountsView } from '../oauthNavigation';
 import { QuotaCard } from './QuotaPage';
 import { AccountStatusSection } from '../components/AccountStatusSection';
+import { AccountValueLine } from '../components/AccountValueLine';
 
 const accountsViews: readonly AccountsView[] = ['list', 'quotas'];
 import { readAccountNames } from '../services/accountNames';
@@ -684,6 +685,7 @@ export function AuthFileManagementPage() {
                     <AccountStatusSection file={file} quota={quota} now={now} stale={fileListStale} notice={false} credential={false} />
                     {!showCooldown ? <AuthFileHealthStatus file={file} receivedAtMs={receivedAtMs} observedAt={observedAt} /> : null}
                     <AuthFileRequestStatus file={file} summary />
+                    <AccountValueLine file={file} active={expanded} />
                     <div className="auth-card-meta">
                       <strong title={name}>{name}</strong>
                       {expiryMs !== undefined ? <span>{t('authFiles.list.expiry', { time: formatDate(new Date(expiryMs).toISOString()) })}</span> : null}

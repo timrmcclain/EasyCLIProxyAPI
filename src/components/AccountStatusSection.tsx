@@ -5,6 +5,7 @@ import { quotaAvailability } from '../services/quotaAvailability';
 import { quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
 import { privateText } from '../services/dashboardActivity';
 import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
+import { summarizeResets, useResetHistory } from '../services/resetHistory';
 import './AccountDashboard.css';
 
 /**
@@ -21,6 +22,7 @@ export function AccountStatusSection({ file, quota, now, stale = false, hideEmai
 }) {
   const { t } = useI18n();
   const history = useQuotaHistory();
+  const resets = summarizeResets(useResetHistory()[quotaKey(file)], now);
   const summary = accountSummary(file);
   const availability = quotaAvailability(file, quota, now, stale);
   // A pace estimate, only for accounts that can still take requests; blocked ones say when they're back instead.
@@ -30,6 +32,9 @@ export function AccountStatusSection({ file, quota, now, stale = false, hideEmai
     {/* A reset time is the provider's estimate, not a promise the account works again. */}
     {availability.recoveryAt && ['exhausted', 'limited', 'creditBacked'].includes(availability.kind) && <p className="ad-card-note ad-recovery-hint">{t('ux.recoveryHint')}</p>}
     {forecast?.kind === 'runsOut' && <p className="ad-card-note ad-forecast">{t('glance.forecast.runsOut', { time: resetCountdown(forecast.emptyAt, now) })}</p>}
+    {resets.map(entry => <p key={entry.label} className="ad-card-note ad-reset-history">{t('resetHistory.line', {
+      label: entry.label, count: entry.resets, used: entry.averageUsed,
+    })}{entry.ranOut ? ` · ${t('resetHistory.ranOut', { count: entry.ranOut })}` : ''}</p>)}
     {credential && summary.health.message && <p className="ad-card-note">{privateText(summary.health.message, hideEmails)}</p>}
     {credential && <p className="ad-card-note"><strong>{t('desk.credentialHealth')}: </strong>{stale ? t('accountDashboard.stale') : summary.health.tone === 'success' ? t('desk.active') : t(summary.health.label)} · {t('desk.healthHint')}</p>}
   </div>;

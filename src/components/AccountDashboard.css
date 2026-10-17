@@ -73,3 +73,8 @@
 }
 /* Shared status block: its lines sit in the surrounding details layout and spacing. */
 .account-status-section { display: contents; }
+/* Subscription value: API-equivalent worth beside the price you set. */
+.account-value-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.account-value-editor { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.account-value-editor input { width: 90px; margin-left: 6px; }
+.account-value-editor [role='alert'] { color: var(--p-red-600, #dc2626); }

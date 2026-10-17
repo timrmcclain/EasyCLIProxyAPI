@@ -62,7 +62,7 @@ updateQuotaCache(Object.fromEntries(files.map((file, index) => {
   return [quotaKey(file), quota];
 })));
 
-const state = { files, requests: [] as Request[], unhandled: [] as string[], reads: 0, kept: {} as Record<string, Record<string, unknown>> };
+const state = { files, requests: [] as Request[], unhandled: [] as string[], valueQueries: [] as unknown[], reads: 0, kept: {} as Record<string, Record<string, unknown>> };
 (window as typeof window & { authFileListFixture: typeof state }).authFileListFixture = state;
 mockIPC(async (cmd, args) => {
   if (cmd === 'set_app_locale') return null;
@@ -80,6 +80,8 @@ mockIPC(async (cmd, args) => {
     delete state.kept[String(args?.id)];
     return kept.name;
   }
+  // Account details read the last 30 days' API-equivalent value from Activity's records.
+  if (cmd === 'get_usage_overview') { state.valueQueries.push(structuredClone(args?.query)); return { estimatedCost: 640 }; }
   if (cmd !== 'management_request') {
     state.unhandled.push(cmd);
     throw new Error(`Unhandled fixture command: ${cmd}`);

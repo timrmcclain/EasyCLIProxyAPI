@@ -14,6 +14,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getQuotaCacheSnapshot } from './quotaCache';
 import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaForecast';
 import { getQuotaTrends, recordQuotaTrends, setQuotaTrends } from './quotaTrend';
+import { getResetHistory, recordResetHistory, setResetHistory } from './resetHistory';
 import { applyQuotaRouting } from './quotaRoutingControl';
 import { initialProxyWatch, nextProxyWatch } from './proxyWatch';
 import { getProxyUptime, recordProxyCheck, setProxyUptime } from './proxyUptime';
@@ -111,6 +112,7 @@ export function startQuotaWatcher(): () => void {
       const quotas = getQuotaCacheSnapshot();
       setQuotaHistory(recordQuotaSamples(getQuotaHistory(), files, quotas, now));
       setQuotaTrends(recordQuotaTrends(getQuotaTrends(), files, quotas, now));
+      setResetHistory(recordResetHistory(getResetHistory(), files, quotas, now));
       // Soonest-reset-first routing, when switched on in Settings → Routing.
       await applyQuotaRouting(files).catch(() => undefined);
       const attention = attentionItems(files, quotas, now, false);
