@@ -1,3 +1,4 @@
+import { readOutageBadgesPreference, saveOutageBadgesPreference } from '../services/providerStatus';
 import { readNewNavigationPreference, saveNewNavigationPreference } from '../navigationGroups';
 import { loadAppStatuses, reapplyApps, rotateProxyKey, type ReapplyOutcome } from '../services/connectedApps';
 import { readDesktopAlertsPreference, readGlobalHotkeyPreference, readOverviewAlertsPreference, saveDesktopAlertsPreference, saveGlobalHotkeyPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
@@ -35,7 +36,7 @@ import {
   Power,
   Terminal,
   Trash2,
-  X, Bell, BellRing, Keyboard, LoaderCircle, PanelLeft, RotateCw } from 'lucide-react';
+  X, Bell, BellRing, Keyboard, LoaderCircle, PanelLeft, Activity, RotateCw } from 'lucide-react';
 import { useCoreRuntime, type CoreStatus } from '../coreRuntime';
 import { useI18n } from '../i18n';
 import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
@@ -264,6 +265,7 @@ export function ConfigPanelPage() {
   }, []);
   const [globalHotkey, setGlobalHotkey] = useState(() => readGlobalHotkeyPreference());
   const [newNavigation, setNewNavigation] = useState(readNewNavigationPreference);
+  const [outageBadges, setOutageBadges] = useState(readOutageBadgesPreference);
   const [globalHotkeyBusy, setGlobalHotkeyBusy] = useState(false);
   const globalHotkeyBusyRef = useRef(false);
   const [claudeStatusLine, setClaudeStatusLine] = useState<boolean | null>(null);
@@ -2450,6 +2452,21 @@ export function ConfigPanelPage() {
                   <label className="switch-control" title={t('navGroup.setting')}>
                     <input type="checkbox" role="switch" aria-label={t('navGroup.setting')} checked={newNavigation}
                       onChange={(event) => { const enabled = event.currentTarget.checked; setNewNavigation(enabled); saveNewNavigationPreference(enabled); }} />
+                    <span className="switch-track" />
+                  </label>
+                </div>
+                <div className="config-software-setting-row">
+                  <div className="config-software-setting-copy">
+                    <span className="config-software-setting-icon" aria-hidden="true">
+                      <Activity size={18} />
+                    </span>
+                    <div>
+                      <span className="config-field-label"><strong>{t('outage.setting')}</strong><SettingsHelp label={t('outage.setting')}>{t('outage.settingHint')}</SettingsHelp></span>
+                    </div>
+                  </div>
+                  <label className="switch-control" title={t('outage.setting')}>
+                    <input type="checkbox" role="switch" aria-label={t('outage.setting')} checked={outageBadges}
+                      onChange={(event) => { const enabled = event.currentTarget.checked; setOutageBadges(enabled); saveOutageBadgesPreference(enabled); }} />
                     <span className="switch-track" />
                   </label>
                 </div>

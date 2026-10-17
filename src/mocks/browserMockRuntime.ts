@@ -981,6 +981,10 @@ export function createBrowserMockRuntime(
       }
       case 'get_gui_settings': return clone(state.guiSettings);
       case 'get_core_config_settings': return clone(state.coreConfig);
+      case 'get_provider_status': return [
+        { provider: 'claude', indicator: 'major', description: 'Elevated errors on Claude Opus', pageUrl: 'https://status.claude.com' },
+        { provider: 'codex', indicator: 'none', description: 'All Systems Operational', pageUrl: 'https://status.openai.com' },
+      ];
       case 'keep_deleted_account': {
         const name = readString(payload.name);
         const kept = state.authFiles.find((file) => file.name === name);

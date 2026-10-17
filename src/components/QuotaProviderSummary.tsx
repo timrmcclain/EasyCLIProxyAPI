@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core';
+import type { Outage } from '../services/providerStatus';
 import type { CSSProperties, ReactNode } from 'react';
 import { useI18n } from '../i18n';
 import { quotaAvailability, quotaPercent, type Availability } from '../services/quotaAvailability';
@@ -14,10 +16,12 @@ export function blockingLabel(blocking: Availability[], t: (key: 'availability.t
   return t('availability.cantTakeRequests');
 }
 
-export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale, labelFor, selected = false, onSelect, provider }: {
+export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale, labelFor, selected = false, onSelect, provider, outage }: {
   accounts: AuthFile[]; quotas: Record<string, QuotaState>; name: string; icon: ReactNode;
   now: number; stale: boolean; labelFor: (file: AuthFile) => string;
   selected?: boolean; onSelect?: () => void; provider?: string;
+  /** A problem the provider's own status page reports (only when outage badges are on). */
+  outage?: Outage;
 }) {
   const { t } = useI18n();
   const states = accounts.map(file => quotaAvailability(file, quotas[quotaKey(file)], now, stale));
@@ -47,7 +51,9 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
   return <div className={`quota-provider-summary-cell${selected ? ' is-selected' : ''}`} style={accent} title={countText || undefined}>
     <div className="quota-summary-heading">{onSelect
       ? <button type="button" className="quota-summary-filter" aria-pressed={selected} title={t('glance.runway.filter', { provider: name })} onClick={onSelect}>{icon}<strong>{name}</strong></button>
-      : <>{icon}<strong>{name}</strong></>}<span>{accounts.length === 1 ? t('quotaLedger.credential') : t('quotaLedger.credentials', { count: accounts.length })}</span></div>
+      : <>{icon}<strong>{name}</strong></>}{outage ? <button type="button" className={`provider-outage-badge outage-${outage.indicator}`}
+        title={t('outage.badgeHint', { description: outage.description || t(`outage.${outage.indicator}`) })}
+        onClick={() => void invoke('open_external_url', { url: outage.pageUrl }).catch(() => undefined)}>{t(`outage.${outage.indicator}`)}</button> : null}<span>{accounts.length === 1 ? t('quotaLedger.credential') : t('quotaLedger.credentials', { count: accounts.length })}</span></div>
     <div className="quota-summary-total" title={t(groupBased ? 'availability.reportedGroups' : 'availability.included')}><strong className="quota-summary-value">{creditOnly ? '—' : groupBased ? (groupUnknown ? '—' : groups.filter(group => group.kind === 'available').length) : unconfirmed ? '—' : count('available')}</strong><span>{creditOnly ? t('credits.reported') : t(summaryLabel, { count: groupBased && groups.length ? groups.length : accounts.length })}</span></div>
     <div className="quota-account-states">{states.map((state, index) => {
       const fill = fills[index];

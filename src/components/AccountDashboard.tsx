@@ -1,3 +1,4 @@
+import { outageFor, useProviderStatus } from '../services/providerStatus';
 import { QuotaTrendChart } from './QuotaTrendChart';
 import { useQuotaTrends } from '../services/quotaTrend';
 import { AccountStatusSection } from './AccountStatusSection';
@@ -48,6 +49,7 @@ export type AccountStatusSummary = {
 export function AccountDashboard({ ready, onSummary, usage = null, usageLoading = false }: {
   ready: boolean; onSummary?: (summary: AccountStatusSummary) => void; usage?: HomeUsageSummary | null; usageLoading?: boolean;
 }) {
+  const providerStatuses = useProviderStatus();
   const { t } = useI18n();
   const [files, setFiles] = useState<AuthFile[]>([]);
   const [names, setNames] = useState(readAccountNames);
@@ -255,7 +257,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     <div className="quota-provider-summary">
       {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
         const accounts = files.filter((file) => dashboardProvider(file) === provider);
-        return <QuotaProviderSummary key={provider} accounts={accounts} quotas={quotas} name={providerNames[provider] ?? provider} icon={<ProviderLogo provider={provider} />} now={now} stale={stale} labelFor={labelFor}
+        return <QuotaProviderSummary key={provider} outage={outageFor(providerStatuses, provider)} accounts={accounts} quotas={quotas} name={providerNames[provider] ?? provider} icon={<ProviderLogo provider={provider} />} now={now} stale={stale} labelFor={labelFor}
           selected={filter === provider} onSelect={() => selectProvider(provider)} provider={provider} />;
       })}
     </div>
