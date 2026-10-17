@@ -1,3 +1,8 @@
+import { requestAccountRequests } from '../usageNavigation';
+import { ACCOUNTS_VIEW_EVENT, takePendingAccountsView, type AccountsView } from '../oauthNavigation';
+import { QuotaCard } from './QuotaPage';
+
+const accountsViews: readonly AccountsView[] = ['list', 'quotas'];
 import { readAccountNames } from '../services/accountNames';
 import { privateAccountLabel } from '../services/accountPrivacy';
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -25,6 +30,7 @@ import {
   Copy,
   FileDown,
   FolderOpen,
+  History,
   Import,
   LogIn,
   LoaderCircle,
@@ -135,6 +141,14 @@ export function AuthFileManagementPage() {
   const [pageChoice, setPageChoice] = useState(() => readDashboardPreference('accountsPageSize', ['auto', '10', '20', '50'], 'auto'));
   const [sortChoice, setSortChoice] = useState<AccountSort>(() => readDashboardPreference('accountsSort', accountSorts, 'routing'));
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(() => new Set());
+  // List manages accounts; Quotas shows every account's limits (what Quota Lookup used to show).
+  const [view, setView] = useState<AccountsView>(() => takePendingAccountsView() ?? readDashboardPreference('accountsView', accountsViews, 'list'));
+  const chooseView = (next: AccountsView) => { setView(next); saveDashboardPreference('accountsView', next); };
+  useEffect(() => {
+    const open = (event: Event) => { takePendingAccountsView(); chooseView((event as CustomEvent<AccountsView>).detail); };
+    window.addEventListener(ACCOUNTS_VIEW_EVENT, open);
+    return () => window.removeEventListener(ACCOUNTS_VIEW_EVENT, open);
+  }, []);
   const [providerFilter, setProviderFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled' | 'runtime'>('all');
   const [loading, setLoading] = useState(true);
@@ -171,7 +185,8 @@ export function AuthFileManagementPage() {
     .sort((a, b) => a.label.localeCompare(b.label)), [files]);
 
   const planBlocksRef = useRef<Record<string, PlanBlock>>({});
-  const loadFiles = useCallback(async (showLoading = true) => {
+  const loadFiles = useCallback(async (showLoading = true): Promise<AuthFile[] | undefined> => {
+    let loaded: AuthFile[] | undefined;
     const requestId = ++fileRequestRef.current;
     if (showLoading) setLoading(true);
     setError('');
@@ -183,6 +198,7 @@ export function AuthFileManagementPage() {
       const receivedAtMs = Date.now();
       const observedAt = readString(payload, 'observed_at');
       setFileSnapshot({ files: withPlanBlocks(nextFiles, planBlocksRef.current), receivedAtMs, observedAt });
+      loaded = nextFiles;
       void loadPlanBlocks(nextFiles).then((blocks) => {
         planBlocksRef.current = blocks;
         if (mountedRef.current && requestId === fileRequestRef.current) setFileSnapshot({ files: withPlanBlocks(nextFiles, blocks), receivedAtMs, observedAt });
@@ -203,6 +219,7 @@ export function AuthFileManagementPage() {
     } finally {
       if (mountedRef.current && requestId === fileRequestRef.current) setLoading(false);
     }
+    return loaded;
   }, []);
 
   const resetCooldown = async (file: AuthFile) => {
@@ -258,9 +275,8 @@ export function AuthFileManagementPage() {
     });
   };
 
-  const refreshAllQuotas = async () => {
-    if (quotaRefreshing || busy || loading) return;
-    const queryable = files.filter((file) => !readBoolean(file, 'disabled') && quotaProviderForFile(file));
+  const refreshAllQuotas = async (list: AuthFile[] = files) => {
+    const queryable = list.filter((file) => !readBoolean(file, 'disabled') && quotaProviderForFile(file));
     if (!queryable.length) return;
     setQuotaRefreshing(true);
     setError('');
@@ -271,6 +287,12 @@ export function AuthFileManagementPage() {
     } finally {
       if (mountedRef.current) setQuotaRefreshing(false);
     }
+  };
+
+  const refreshEverything = async () => {
+    if (quotaRefreshing || busy || loading) return;
+    const latest = await loadFiles();
+    if (latest && mountedRef.current) await refreshAllQuotas(latest);
   };
 
   const closeOauthModels = () => {
@@ -520,11 +542,9 @@ export function AuthFileManagementPage() {
           if (provider) void openOauthModelSettings({ ...provider, scope: 'provider' });
         }}><Settings2 size={16} />{t('authFiles.models.toolbarButton')}</button>
         <button type="button" className="secondary-button compact-button auth-toolbar-quiet" disabled={busy} onClick={() => void openAuthFilesDirectory()}><FolderOpen size={16} />{t('authFiles.openDirectory')}</button>
-        <button type="button" className="secondary-button compact-button auth-toolbar-quiet" onClick={() => void loadFiles()} disabled={loading || busy}>
-          <RefreshCw size={16} className={loading ? 'spin' : ''} />{t('authFiles.toolbar.refreshList')}
-        </button>
-        <button type="button" className="secondary-button compact-button auth-toolbar-quiet" onClick={() => void refreshAllQuotas()} disabled={loading || busy || quotaRefreshing || !files.some((file) => !readBoolean(file, 'disabled') && quotaProviderForFile(file))}>
-          <RefreshCw size={16} className={quotaRefreshing ? 'spin' : ''} />{t('authFiles.toolbar.refreshQuota')}
+        <button type="button" className="secondary-button compact-button auth-toolbar-quiet" onClick={() => void refreshEverything()} disabled={loading || busy || quotaRefreshing}
+          title={t('authFiles.toolbar.refreshHint')}>
+          <RefreshCw size={16} className={loading || quotaRefreshing ? 'spin' : ''} />{t(loading ? 'authFiles.toolbar.refreshingList' : quotaRefreshing ? 'authFiles.toolbar.refreshingQuota' : 'authFiles.toolbar.refresh')}
         </button>
         <button type="button" className="secondary-button compact-button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
           <Import size={16} />{t('authFiles.import')}
@@ -559,6 +579,12 @@ export function AuthFileManagementPage() {
           <select value={sortChoice} onChange={(event) => { const value = event.currentTarget.value as AccountSort; setSortChoice(value); saveDashboardPreference('accountsSort', value); }} aria-label={t('authFiles.sort.label')} title={t('authFiles.sort.label')}>
             {accountSorts.map((mode) => <option key={mode} value={mode}>{t(`authFiles.sort.${mode}`)}</option>)}
           </select>
+          <div className="accounts-view-switch" role="radiogroup" aria-label={t('authFiles.view.label')}>
+            {accountsViews.map((option) => (
+              <button key={option} type="button" role="radio" aria-checked={view === option} className={view === option ? 'active' : ''}
+                onClick={() => chooseView(option)}>{t(`authFiles.view.${option}`)}</button>
+            ))}
+          </div>
           </div>
         </div>
 
@@ -566,12 +592,25 @@ export function AuthFileManagementPage() {
           <div className="management-loading"><LoaderCircle size={20} className="spin" />{t('authFiles.loading')}</div>
         ) : visibleFiles.length === 0 ? (
           <div className="management-empty"><FileDown size={24} /><strong>{files.length ? t('authFiles.empty.filtered') : t('authFiles.empty.none')}</strong><span>{files.length ? t('authFiles.empty.tryFilter') : t('authFiles.empty.upload')}</span></div>
+        ) : view === 'quotas' ? (
+          <div className="quota-page accounts-quota-view">
+            <div className="real-quota-grid">
+              {visibleFiles.filter((file) => quotaProviderForFile(file)).map((file) => {
+                const quota = quotas[quotaKey(file)] ?? idleQuota();
+                const provider = quotaProviderForFile(file);
+                return <QuotaCard key={quotaKey(file)} stale={fileListStale} file={file} quota={quota} onRefresh={() => void refreshQuota(file)}
+                  onReset={provider === 'codex' || provider === 'claude' ? () => void resetQuota(file, quota) : undefined} />;
+              })}
+            </div>
+            {visibleFiles.some((file) => !quotaProviderForFile(file)) ? <p className="accounts-quota-unreported">{t('authFiles.view.unreported', {
+              names: visibleFiles.filter((file) => !quotaProviderForFile(file)).map((file) => friendlyName(file) || readString(file, 'email', 'label') || fileName(file)).join(', '),
+            })}</p> : null}
+          </div>
         ) : (
           <div className="auth-file-table-scroll">
           <div className="auth-file-list-head" aria-hidden="true">
             <span>{t('authFiles.list.credential')}</span>
             <span>{t('authFiles.list.plan')}</span><span>{t('authFiles.list.status')}</span>
-            <span>{t('authFiles.list.recent')}</span><span title={t('authFiles.requests.totalsHint')}>{t('authFiles.usage.title')}</span>
             <span>{t('authFiles.list.quota')}</span>
             <span>{t('authFiles.list.actions')}</span>
           </div>
@@ -621,8 +660,6 @@ export function AuthFileManagementPage() {
                     <small>{t('authFiles.priority.button', { priority })}</small>
                     {needsSignIn(file) ? <SignInAgainButton account={identity || name} provider={String(file.provider ?? file.type ?? '')} /> : null}
                   </div>
-                  <div className="auth-list-cell auth-list-recent" data-label={t('authFiles.list.recent')}><AuthFileRequestStatus file={file} compact /></div>
-                  <div className="auth-list-cell auth-list-usage" data-label={t('authFiles.usage.title')}><AuthFileUsageSummary file={file} /></div>
                   <div className="auth-list-cell auth-list-quota" data-label={t('authFiles.list.quota')}>
                     {quotaProvider ? <AuthFileQuotaPanel compact dense stale={fileListStale} quota={quota} file={file} disabled={busy || disabled} onRefresh={() => void refreshQuota(file)} onReset={quotaProvider === 'codex' || quotaProvider === 'claude' ? () => void resetQuota(file, quota) : undefined} /> : <span className="auth-list-muted">{t('authFiles.list.noQuota')}</span>}
                     <QuotaActionFeedback quota={quota} name={name} />
@@ -646,7 +683,6 @@ export function AuthFileManagementPage() {
                     <AuthFileRequestStatus file={file} summary />
                     <div className="auth-card-meta">
                       <strong title={name}>{name}</strong>
-                      <span>{t('authFiles.priority.button', { priority })}</span>
                       {expiryMs !== undefined ? <span>{t('authFiles.list.expiry', { time: formatDate(new Date(expiryMs).toISOString()) })}</span> : null}
                       <span>{t('authFiles.list.size')} · {readNumber(file, 'size') === null ? t('authFiles.unknownSize') : `${Math.ceil((readNumber(file, 'size') ?? 0) / 1024)} KB`}</span>
                       <span>{t('authFiles.list.updated')} · {formatDate(file.modtime ?? file.updated_at ?? file.last_refresh)}</span>
@@ -654,6 +690,7 @@ export function AuthFileManagementPage() {
                     {note ? <div className="auth-card-note"><span>{t('authFiles.settings.note')}</span><p>{note}</p></div> : null}
                     <div className="auth-list-details-usage"><AuthFileUsageSummary file={file} /></div>
                     <div className="auth-list-detail-actions">
+                      {typeof file.email === 'string' && file.email ? <button type="button" className="secondary-button compact-button" onClick={() => requestAccountRequests(String(file.email))}><History size={16} aria-hidden="true" />{t('accountDashboard.viewRequests')}</button> : null}
                       <button type="button" className="secondary-button compact-button" onClick={() => setModelViewName(name)} disabled={busy || !providerKey(file)}><Network size={16} aria-hidden="true" />{t('authFiles.models.viewTitle')}</button>
                       <button type="button" className="secondary-button compact-button" onClick={() => void copyName(name)} disabled={busy}>{copied === name ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}{t('authFiles.copyName')}</button>
                       <button type="button" className="danger-button compact-button" onClick={() => void deleteFile(file)} disabled={busy || resettingCooldown || isRuntimeOnly(file)}><Trash2 size={16} aria-hidden="true" />{t('common.delete')}</button>
@@ -665,7 +702,7 @@ export function AuthFileManagementPage() {
           </div>
           </div>
         )}
-        {!loading && visibleFiles.length > 0 && (pageCount > 1 || (pageChoice !== 'auto' && files.length > 10)) ? <nav className="auth-list-pagination" aria-label={t('authFiles.title')}>
+        {!loading && view === 'list' && visibleFiles.length > 0 && (pageCount > 1 || (pageChoice !== 'auto' && files.length > 10)) ? <nav className="auth-list-pagination" aria-label={t('authFiles.title')}>
           <span>{t('authFiles.list.pageSummary', { page: currentPage, pages: pageCount, start: (currentPage - 1) * pageSize + 1, end: Math.min(currentPage * pageSize, visibleFiles.length), total: visibleFiles.length })}</span>
           <label>{t('authFiles.list.pageSize')}<select value={pageChoice} onChange={(event) => { const value = event.currentTarget.value as typeof pageChoice; setPageChoice(value); saveDashboardPreference('accountsPageSize', value); }}>
             <option value="auto">{t('authFiles.list.allUnder50')}</option>

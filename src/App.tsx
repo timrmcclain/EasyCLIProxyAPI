@@ -38,6 +38,7 @@ import { KernelPage } from './pages/Kernel';
 import { VersionManagementPage } from './pages/VersionManagementPage';
 import { OAuthManagementPage } from './pages/ManagementPages';
 import { QuotaPage } from './pages/QuotaPage';
+import { requestAccountsView } from './oauthNavigation';
 import { AgentsPage } from './pages/AgentsPage';
 import { GlossaryDialog } from './components/GlossaryDialog';
 import { UsageRecordsPage } from './pages/UsageRecordsPage';
@@ -172,13 +173,13 @@ const paletteKeywords: Partial<Record<PageId, readonly string[]>> = {
   api: ['keys', 'api key', 'gemini', 'openai', 'provider'],
   versions: ['update', 'upgrade', 'version', 'about'],
   health: ['diagnostics', 'doctor', 'uptime', 'report'],
-  quota: ['limits', 'usage'],
+  quota: ['limits', 'usage', 'quota', 'quotas'],
 };
 
 const primaryNav: PageId[] = ['home', 'oauth', 'usage-records', 'secret-guard', 'agents', 'connectors', 'config'];
 // Grouped by what they manage, so the proxy's pages sit together and the two kinds of "plugins" are told apart.
 const advancedGroups: ReadonlyArray<{ labelKey: 'personal.advanced.proxy' | 'personal.advanced.claude' | 'personal.advanced.diagnostics'; ids: PageId[] }> = [
-  { labelKey: 'personal.advanced.proxy', ids: ['proxy', 'api', 'plugins', 'quota', 'versions'] },
+  { labelKey: 'personal.advanced.proxy', ids: ['proxy', 'api', 'plugins', 'versions'] },
   { labelKey: 'personal.advanced.claude', ids: ['claude-extensions', 'compression', 'jev'] },
   { labelKey: 'personal.advanced.diagnostics', ids: ['health'] },
 ];
@@ -188,6 +189,8 @@ const LAST_PAGE_KEY = 'personal.lastPage';
 function initialPage(): PageId {
   try {
     const saved = localStorage.getItem(LAST_PAGE_KEY);
+    // Quota Lookup is now a view of Accounts.
+    if (saved === 'quota') { requestAccountsView('quotas'); return 'oauth'; }
     return saved && pages.some((page) => page.id === saved) ? saved as PageId : 'home';
   } catch { return 'home'; }
 }
@@ -455,7 +458,10 @@ function AppContent() {
     return () => window.cancelAnimationFrame(frame);
   }, [active]);
 
-  const select = useCallback((pageId: PageId) => {
+  const select = useCallback((requested: PageId) => {
+    // Quota Lookup is now Accounts' Quotas view; old links and searches still land there.
+    if (requested === 'quota') requestAccountsView('quotas');
+    const pageId: PageId = requested === 'quota' ? 'oauth' : requested;
     if (!canOpenAppPage(pageId, coreReady)) {
       // Say why nothing happened rather than ignoring the click.
       paletteFeedback.showNotice({ key: 'app.locked.notice' }, 'info', { action: { label: { key: 'app.nav.home' }, onAction: () => setActive('home') } });
@@ -524,6 +530,8 @@ function AppContent() {
     { id: 'theme-system', label: t('app.theme.switchToSystem'), group: t('palette.appearance'), run: () => setTheme('system') },
     { id: 'density-compact', label: t('density.compact'), group: t('palette.appearance'), disabled: density === 'compact', run: () => setDensity('compact') },
     { id: 'density-comfortable', label: t('density.comfortable'), group: t('palette.appearance'), disabled: density === 'comfortable', run: () => setDensity('comfortable') },
+    { id: 'page-quota', label: t('app.nav.quota'), group: t('palette.pages'), keywords: paletteKeywords.quota,
+      disabled: !canOpenAppPage('oauth', coreReady), run: () => select('quota') },
     { id: 'glossary', label: t('glossary.title'), group: t('palette.help'), run: () => setGlossaryOpen(true) },
     { id: 'check-quota', label: t('palette.action.checkQuota'), group: t('palette.actions'), disabled: !coreReady,
       run: () => window.dispatchEvent(new CustomEvent('app:check-quota')) },

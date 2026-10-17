@@ -1,3 +1,4 @@
+import { requestOAuthSubpage } from '../oauthNavigation';
 import { formatAgo } from "../services/relativeTime";
 import { AppDriftBanner } from '../components/AppDriftBanner';
 import { SecretGuardBanner } from '../components/SecretGuardBanner';
@@ -329,7 +330,7 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   // First-run checklist (replaces the old Easy mode): shown until every step has been done once.
   const setupSteps = [
     { id: 'proxy', done: coreRunning, action: coreInstalled && !coreRunning ? toggleProxy : undefined, actionKey: 'kernel.action.start' as const },
-    { id: 'account', done: (accountStatus?.total ?? 0) > 0, action: () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'oauth' })), actionKey: 'home.checklist.accountAction' as const },
+    { id: 'account', done: (accountStatus?.total ?? 0) > 0, action: () => requestOAuthSubpage('login'), actionKey: 'home.checklist.accountAction' as const },
     { id: 'app', done: Boolean(accountStatus?.latestAt), action: () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'agents' })), actionKey: 'home.checklist.appAction' as const },
   ];
   const setupComplete = setupSteps.every((step) => step.done);

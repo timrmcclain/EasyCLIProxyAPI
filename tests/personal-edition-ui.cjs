@@ -55,7 +55,9 @@ const os = require('node:os');
     assert.equal(await page.locator('.sidebar-contact').count(), 0);
     await nav.getByRole('button', { name: 'Accounts', exact: true }).click();
     await page.getByRole('heading', { name: 'Saved accounts' }).waitFor();
-    await page.locator('#oauth-subpage-tab-login').click();
+    // One way in: Add account opens sign-in, with a way back to the list.
+    await page.locator('.auth-files-heading-actions').getByRole('button', { name: 'Add account', exact: true }).click();
+    await page.getByRole('heading', { name: 'Connect an account' }).waitFor();
     // Claude and Codex, plus every provider the mock already has accounts with (all but Meta).
     await page.locator('.oauth-card').nth(5).waitFor();
     assert.equal(await page.locator('.oauth-card').count(), 6, 'providers you already use are always shown');
@@ -89,7 +91,7 @@ const os = require('node:os');
     await nav.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.locator('.config-page').waitFor();
     await nav.locator('.personal-advanced > summary').click();
-    assert.equal(await nav.locator('.personal-advanced').getByRole('button').count(), 9, 'Advanced tools hold Health check, Jev, Skills & plugins, Compression, Quota Lookup, Proxy, API Access, Proxy plugins and About');
+    assert.equal(await nav.locator('.personal-advanced').getByRole('button').count(), 8, 'Advanced tools hold Health check, Jev, Skills & plugins, Compression, Proxy, API Access, Proxy plugins and About (Quota Lookup is a view of Accounts)');
     await nav.getByRole('button', { name: 'Updates' }).click();
     await page.getByText(/Personal build: app updates are manual/).waitFor();
     assert.equal(await page.locator('.app-module-card button').count(), 0);

@@ -203,17 +203,24 @@ const viewports = [
       }
       await assertReachable(page.locator('.provider-row-actions button').first(), `${label} provider action`);
 
-      await open('OAuth', '.oauth-subpage-tabs');
-      assert.equal(await page.locator('#oauth-subpage-tab-quota').count(), 0, `${label}: quota has a separate sidebar entry`);
-      await tab('oauth-subpage-tab-login', '.oauth-card');
-      await assertNoPageOverflow(`${label} OAuth login`);
-      await tab('oauth-subpage-tab-authFiles', '.auth-file-card');
+      await open('OAuth', '.auth-file-card');
       await assertNoPageOverflow(`${label} OAuth credentials`);
-      await open('额度查询', '.quota-page .real-quota-card');
-      assert.equal(await page.locator('.nav-section button.active').innerText(), '额度查询', `${label}: quota activates its sidebar entry`);
-      assert.equal(await page.locator('.quota-page').getAttribute('aria-label'), '额度查询', `${label}: standalone quota page has its own accessible name`);
-      assert.equal(await page.locator('.oauth-subpage-tabs').count(), 0, `${label}: standalone quota page does not contain OAuth navigation`);
+      // Add account opens sign-in; its back button returns to the list.
+      await page.locator('.auth-files-heading-actions .primary-button').click();
+      await page.locator('.oauth-card').first().waitFor();
+      await settle();
+      await assertNoPageOverflow(`${label} OAuth login`);
+      await page.locator('.oauth-login-heading button').click();
+      await page.locator('.auth-file-card').first().waitFor();
+      // Quota Lookup is now the Accounts page's Quotas view, under the same filters.
+      assert.equal(await page.locator('.nav-section button').filter({ has: page.getByText('额度查询', { exact: true }) }).count(), 0, `${label}: quota no longer has its own sidebar entry`);
+      await page.locator('.accounts-view-switch [role="radio"]').nth(1).click();
+      await page.locator('.accounts-quota-view .real-quota-card').first().waitFor();
+      await settle();
+      assert.equal(await page.locator('.auth-list-pagination').count(), 0, `${label}: the Quotas view shows every account without paging`);
       await assertNoPageOverflow(`${label} quota`);
+      await page.locator('.accounts-view-switch [role="radio"]').nth(0).click();
+      await page.locator('.auth-file-card').first().waitFor();
 
       await open('智能体配置', '.agent-config-panel');
       await page.waitForFunction(() => !document.querySelector('.agent-client-list-heading button')?.disabled);

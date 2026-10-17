@@ -660,6 +660,7 @@ export const zhCN = {
   'oauth.metaHint': '打开 Muse（Meta）授权链接，并在页面中输入设备码完成授权。',
   'quota.service.daily': '每日额度',
   'oauth.title': 'OAuth 登录',
+  'oauth.backToAccounts': '返回账号',
   'oauth.tabs.label': 'OAuth 管理子页面',
   'oauth.loginSuccess': '{provider} 登录成功',
   'oauth.loginSuccessAs': "已登录为 {accounts}。它的优先级为 0：会排在你设置更高优先级的账号之后。",

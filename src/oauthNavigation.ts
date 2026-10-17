@@ -41,3 +41,20 @@ export function takePendingOAuthSubpage(): OAuthSubpage | null {
 export function isSignInExpiredError(message: string | undefined) {
   return Boolean(message) && /\b401\b|unauthori[sz]ed|invalid[_ ]grant|token (has )?expired|expired token|refresh token|re-?authenticate|sign in again|login again/i.test(message!);
 }
+
+// Accounts shows either the account list or every account's quota (what Quota Lookup used to show).
+export type AccountsView = 'list' | 'quotas';
+let pendingView: AccountsView | null = null;
+export const ACCOUNTS_VIEW_EVENT = 'app:accounts-view';
+
+/** Opens Accounts on the given view; Quota Lookup links land on 'quotas'. */
+export function requestAccountsView(view: AccountsView) {
+  pendingView = view;
+  window.dispatchEvent(new CustomEvent(ACCOUNTS_VIEW_EVENT, { detail: view }));
+}
+
+export function takePendingAccountsView(): AccountsView | null {
+  const view = pendingView;
+  pendingView = null;
+  return view;
+}

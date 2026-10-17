@@ -50,25 +50,16 @@ const fs = require('node:fs/promises');
       )), `${label}: only intermediate widths may scroll inside the table; cards must fit ${JSON.stringify(dimensions)}`);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${label}: page overflow`);
     };
-    // The usage column folds into the Details panel when the list container is of medium width (701-1147px).
-    const usageInRow = async () => {
-      const listWidth = await page.locator('.auth-files-page .auth-file-table-scroll').evaluate(node => node.parentElement.getBoundingClientRect().width);
-      return listWidth <= 700 || listWidth > 1147;
-    };
+    // The row holds identity, plan, status, quota and actions; request history and counters live in Details (and Activity).
     const assertMainInformation = async (label, width) => {
-      const inRow = await usageInRow();
-      for (const selector of ['.auth-card-filename', '.auth-list-plan', '.auth-list-status', '.auth-list-recent', '.auth-list-quota', '.auth-card-actions']) {
+      for (const selector of ['.auth-card-filename', '.auth-list-plan', '.auth-list-status', '.auth-list-quota', '.auth-card-actions']) {
         assert.equal(await card(1).locator(selector).isVisible(), true, `${label}: ${selector} is visible without opening details`);
       }
-      assert.equal(await card(1).locator('.auth-list-usage').isVisible(), inRow, `${label}: usage column is in the row only outside medium widths`);
-      assert.equal(await card(1).locator('.auth-list-recent .auth-file-request-block:visible').count(), 20, `${label}: the request timeline remains visible`);
-      if (inRow) {
-        assert.equal(await card(1).locator('.auth-file-usage-metric:visible').count(), 4, `${label}: all four runtime counters remain visible`);
-      } else {
-        await expand(card(1));
-        assert.equal(await card(1).locator('.auth-list-details-usage .auth-file-usage-metric:visible').count(), 4, `${label}: all four runtime counters are in Details at medium width`);
-        await card(1).locator('.auth-list-details-button').click();
-      }
+      assert.equal(await card(1).locator('.auth-credential-row .auth-file-requests, .auth-credential-row .auth-file-usage').count(), 0, `${label}: request history is not repeated in the row`);
+      await expand(card(1));
+      assert.equal(await card(1).locator('.auth-list-details .auth-file-request-block:visible').count(), 20, `${label}: the request timeline is in Details`);
+      assert.equal(await card(1).locator('.auth-list-details-usage .auth-file-usage-metric:visible').count(), 4, `${label}: all four runtime counters are in Details`);
+      await card(1).locator('.auth-list-details-button').click();
       assert.equal(await card(1).locator('.auth-list-icon-actions > button:visible').count(), 2, `${label}: refresh and settings are directly available`);
       assert.equal(await card(1).getByRole('switch').isVisible(), true);
       assert.equal(await card(1).locator('.auth-list-details-button').isVisible(), true);
@@ -80,11 +71,11 @@ const fs = require('node:fs/promises');
           return { height: node.getBoundingClientRect().height, notice: notice ? notice.getBoundingClientRect().height : 0 };
         }));
         // 130px (was 120px) leaves room for the reset-credits button and the normalised spacing tokens.
-        assert.ok(heights.every(({ height, notice }) => height >= 88 && height - notice <= 130), `${label}: dense desktop rows stay near 104px plus the availability notice, including quota footnotes: ${JSON.stringify(heights)}`);
+        assert.ok(heights.every(({ height, notice }) => height >= 64 && height - notice <= 130), `${label}: dense desktop rows stay under 130px plus the availability notice, including quota footnotes: ${JSON.stringify(heights)}`);
         const cells = await card(1).locator('.auth-credential-row > .auth-list-cell').evaluateAll(nodes => nodes.filter(node => node.getClientRects().length).map(node => {
           const bounds = node.getBoundingClientRect(); return { left: bounds.left, right: bounds.right };
         }));
-        assert.equal(cells.length, inRow ? 7 : 6, `${label}: desktop has seven information columns (six when usage folds into Details)`);
+        assert.equal(cells.length, 5, `${label}: desktop has five information columns`);
         assert.ok(cells.slice(1).every((cell, index) => cell.left >= cells[index].right - 1), `${label}: all columns remain in one row`);
       }
     };
@@ -93,7 +84,7 @@ const fs = require('node:fs/promises');
     assert.equal(await cards().count(), 10, 'Default page contains ten of twelve credentials');
     assert.equal(await previous().isDisabled(), true);
     assert.ok((await pagination().innerText()).includes('1 / 2'));
-    assert.equal(await page.locator('.auth-file-list-head > span').count(), 7);
+    assert.equal(await page.locator('.auth-file-list-head > span').count(), 5);
     await assertMainInformation('initial desktop', 1800);
     assert.equal(await card(2).locator('.auth-file-health-compact').isVisible(), true, 'Cooldown summary is directly visible below the main row');
     assert.equal(await card(2).locator('.auth-health-body').isVisible(), false, 'Individual cooldown records start collapsed');
@@ -183,11 +174,13 @@ const fs = require('node:fs/promises');
     assert.equal(await extraQuota.locator('.credential-quota-row:visible').count(), 4, 'Expanding quota details shows all four rows');
     assert.equal(await card(4).locator('.auth-list-details').isVisible(), false, 'Additional quota rows open independently from health and metadata');
     await extraQuota.locator('.credential-quota-more > summary').click();
-    assert.equal(await card(1).locator('.auth-list-recent .auth-file-request-block').count(), 20);
-    await card(1).locator('.auth-list-recent .auth-file-request-block').nth(18).focus();
-    assert.equal(await card(1).locator('.auth-list-recent').getByRole('tooltip').isVisible(), true, 'Recent request details are keyboard accessible');
+    await expand(card(1));
+    assert.equal(await card(1).locator('.auth-list-details .auth-file-request-block').count(), 20);
+    await card(1).locator('.auth-list-details .auth-file-request-block').nth(18).focus();
+    assert.equal(await card(1).locator('.auth-list-details').getByRole('tooltip').isVisible(), true, 'Recent request details are keyboard accessible');
     await page.keyboard.press('Escape');
-    await card(1).locator('.auth-list-recent .auth-file-request-block').nth(18).blur();
+    await card(1).locator('.auth-list-details .auth-file-request-block').nth(18).blur();
+    await card(1).locator('.auth-list-details-button').click();
     assert.equal(await card(2).getByRole('button', { name: '清除冷却', exact: true }).isVisible(), true);
     await card(2).locator('.auth-health-summary').click();
     assert.ok((await card(2).locator('.auth-health-body').innerText()).includes('gpt-fictional-layout'), 'Model cooldown details remain available');
@@ -270,7 +263,7 @@ const fs = require('node:fs/promises');
       assert.equal(await pagination().count(), 0, 'Small lists omit unnecessary pagination');
       assert.equal(await page.locator('.auth-list-details:visible, .auth-file-health:visible').count(), 0, 'Small idle list starts with diagnostics collapsed');
       await assertMainInformation(`${locale} ${theme} ${width} small idle`, width);
-      if (await usageInRow()) assert.equal(await page.locator('.auth-file-usage-metric:visible').count(), 12, 'Idle counters stay visible on all three rows');
+      assert.equal(await page.locator('.auth-credential-row .auth-file-usage-metric').count(), 0, 'Idle counters live in Details, not the rows');
       assert.equal(await page.locator('.auth-list-quota:visible').count(), 3, 'Disabled and idle quota states remain visible');
       await assertFits(`${locale} ${theme} ${width} small idle`);
       await page.screenshot({ path: path.join(screenshotDir, `small-idle-${locale}-${theme}-${width}.png`), fullPage: true });

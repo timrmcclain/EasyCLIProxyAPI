@@ -661,6 +661,7 @@ export const en: Record<MessageKey, string> = {
   'oauth.metaHint': 'Open the Muse (Meta) authorization link and enter the device code to complete sign-in.',
   'quota.service.daily': 'Daily quota',
   'oauth.title': 'Connect an account',
+  'oauth.backToAccounts': 'Back to accounts',
   'oauth.tabs.label': 'OAuth management sections',
   'oauth.loginSuccess': '{provider} sign-in succeeded',
   'oauth.loginSuccessAs': "Signed in as {accounts}. It starts at priority 0: tried after any accounts you've ranked higher.",

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
+  ArrowLeft,
   Check,
   Copy,
   ExternalLink,
@@ -17,7 +18,7 @@ import kimiIcon from '../assets/icons/kimi-light.svg';
 import metaIcon from '../assets/icons/meta.svg';
 import { useI18n } from '../i18n';
 import { FeedbackNotice, MessageNotice, useAppNotice, type NoticeMessage } from '../appNotice';
-import { OAUTH_SUBPAGE_EVENT, oauthSubpages, takePendingOAuthSubpage, takePendingSignInProvider, type OAuthSubpage } from '../oauthNavigation';
+import { ACCOUNTS_VIEW_EVENT, OAUTH_SUBPAGE_EVENT, takePendingOAuthSubpage, takePendingSignInProvider, type OAuthSubpage } from '../oauthNavigation';
 import {
   changedOAuthAuthFileNames,
   snapshotAuthFiles,
@@ -34,7 +35,6 @@ import { AuthFileManagementPage } from './AuthFileManagementPage';
 import { OfflineAccounts } from '../components/OfflineAccounts';
 import { useOptionalCoreRuntime } from '../coreRuntime';
 import { validateDevinCallback } from '../services/devinOAuth';
-import { handleHorizontalTabKey } from '../components/tabKeyboardNavigation';
 import { PluginOAuthProviders } from './PluginOAuthProviders';
 import { notifyPluginResourcesChanged } from '../services/pluginResources';
 import { readableError } from '../services/readableError';
@@ -135,59 +135,30 @@ export function OAuthManagementPage() {
 
 function OAuthManagementTabs() {
   const { t } = useI18n();
+  // One way in: Accounts is the page; "Add account" opens sign-in, with a way back.
   const [activeSubpage, setActiveSubpage] = useState<OAuthSubpage>(() => takePendingOAuthSubpage() ?? 'authFiles');
   useEffect(() => {
     const open = (event: Event) => { takePendingOAuthSubpage(); setActiveSubpage((event as CustomEvent<OAuthSubpage>).detail); };
+    const showList = () => setActiveSubpage('authFiles');
     window.addEventListener(OAUTH_SUBPAGE_EVENT, open);
-    return () => window.removeEventListener(OAUTH_SUBPAGE_EVENT, open);
+    window.addEventListener(ACCOUNTS_VIEW_EVENT, showList);
+    return () => { window.removeEventListener(OAUTH_SUBPAGE_EVENT, open); window.removeEventListener(ACCOUNTS_VIEW_EVENT, showList); };
   }, []);
-  const subpageIds = oauthSubpages.map((subpage) => subpage.id);
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, subpage: OAuthSubpage) => {
-    handleHorizontalTabKey(
-      event,
-      subpageIds,
-      subpage,
-      setActiveSubpage,
-      (next) => document.getElementById(`oauth-subpage-tab-${next}`),
-    );
-  };
 
   return (
     <section className="page oauth-management-page">
-      <div
-        className="agent-subpage-tabs oauth-subpage-tabs"
-        role="tablist"
-        aria-label={t('oauth.tabs.label')}
-      >
-        {oauthSubpages.map((subpage) => {
-          const active = activeSubpage === subpage.id;
-          return (
-            <button
-              type="button"
-              id={`oauth-subpage-tab-${subpage.id}`}
-              key={subpage.id}
-              role="tab"
-              className={active ? 'active' : ''}
-              aria-selected={active}
-              aria-controls="oauth-subpage-panel"
-              tabIndex={active ? 0 : -1}
-              onClick={() => setActiveSubpage(subpage.id)}
-              onKeyDown={(event) => handleTabKeyDown(event, subpage.id)}
-            >
-              {t(subpage.labelKey)}
-            </button>
-          );
-        })}
-      </div>
-
-      <div
-        className="oauth-subpage-panel"
-        id="oauth-subpage-panel"
-        role="tabpanel"
-        aria-labelledby={`oauth-subpage-tab-${activeSubpage}`}
-      >
-        {activeSubpage === 'login' ? <OAuthLoginPage /> : null}
-        {activeSubpage === 'authFiles' ? <AuthFileManagementPage /> : null}
+      <div className="oauth-subpage-panel" id="oauth-subpage-panel">
+        {activeSubpage === 'login' ? (
+          <>
+            <header className="oauth-login-heading">
+              <button type="button" className="secondary-button compact-button" onClick={() => setActiveSubpage('authFiles')}>
+                <ArrowLeft size={16} aria-hidden="true" />{t('oauth.backToAccounts')}
+              </button>
+              <h2>{t('oauth.title')}</h2>
+            </header>
+            <OAuthLoginPage />
+          </>
+        ) : <AuthFileManagementPage />}
       </div>
     </section>
   );

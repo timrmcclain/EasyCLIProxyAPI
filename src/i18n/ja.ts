@@ -674,6 +674,7 @@ export const jaOverrides = {
   'oauth.metaHint': 'Muse（Meta）の認証リンクを開き、デバイスコードを入力してログインを完了してください。',
   'quota.service.daily': '日次クォータ',
   'oauth.title': 'OAuth ログイン',
+  'oauth.backToAccounts': 'アカウントに戻る',
   'oauth.tabs.label': 'OAuth 管理ページ',
   'oauth.loginSuccess': '{provider} へのログインに成功しました',
   'oauth.loginSuccessAs': "{accounts} としてサインインしました。優先度 0 で始まり、より高い優先度のアカウントの後に使われます。",

@@ -19,7 +19,7 @@
 .auth-files-heading-actions > .auth-toolbar-quiet { border-color: transparent; background: transparent; color: var(--auth-muted); }
 .auth-files-heading-actions > .auth-toolbar-quiet:hover:not(:disabled) { background: var(--bg-hover); color: var(--auth-text); }
 .auth-files-page .auth-files-panel {
-  --auth-list-columns: minmax(160px, 1.15fr) 66px 104px 110px 152px minmax(220px, 3fr) 136px;
+  --auth-list-columns: minmax(180px, 1.3fr) 76px 128px minmax(260px, 3fr) 136px;
   padding: 0;
   min-height: 0;
   border: 0;
@@ -38,13 +38,13 @@
 .auth-files-page .auth-files-toolbar select:focus-visible { outline: 2px solid var(--auth-accent); outline-offset: 1px; }
 .auth-file-table-scroll { min-width: 0; overflow-x: auto; padding: 0 0 2px; }
 .auth-file-list-head, .auth-credential-row { display: grid; grid-template-columns: var(--auth-list-columns); align-items: center; column-gap: 10px; }
-.auth-file-list-head { min-width: 1148px; min-height: 36px; padding: 2px 12px 0; color: var(--auth-muted); font-size: 12px; font-weight: 600; }
+.auth-file-list-head { min-width: 860px; min-height: 36px; padding: 2px 12px 0; color: var(--auth-muted); font-size: 12px; font-weight: 600; }
 .auth-file-list-head > span { min-width: 0; line-height: 1.25; text-align: center; }
-.auth-file-list-head > :first-child, .auth-file-list-head > :nth-child(6) { text-align: left; }
-.auth-file-card-grid { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 1148px; gap: 8px; }
+.auth-file-list-head > :first-child, .auth-file-list-head > :nth-child(4) { text-align: left; }
+.auth-file-card-grid { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 860px; gap: 8px; }
 .auth-file-card { min-width: 0; padding: 0 12px; border: 1px solid var(--auth-border); border-radius: 8px; background: var(--bg-card); }
 .auth-file-card:hover { border-color: color-mix(in srgb, var(--auth-accent) 24%, var(--auth-border)); }
-.auth-credential-row { min-height: 102px; padding: 10px 0; }
+.auth-credential-row { min-height: 72px; padding: 10px 0; }
 .auth-list-cell { min-width: 0; }
 .auth-card-header { display: flex; gap: 10px; align-items: center; min-width: 0; }
 .auth-card-header .provider-logo { width: 35px; height: 35px; object-fit: contain; flex-shrink: 0; }
@@ -98,7 +98,7 @@
 .auth-list-details { display: grid; gap: 12px; border-top: 1px solid var(--auth-border); padding: 12px 0; }
 .auth-list-details[hidden] { display: none; }
 .auth-list-details > .auth-file-requests-summary { max-width: 620px; }
-.auth-list-details-usage { display: none; }
+.auth-list-details-usage { display: block; }
 .auth-list-detail-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 .auth-list-detail-actions > button { min-height: 32px; margin: 0; gap: var(--space-1); font-size: var(--font-size-caption); }
 .auth-card-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--auth-muted); font-size: 11px; overflow-wrap: anywhere; }
@@ -162,9 +162,7 @@
 
 
 @container credential-files (min-width: 701px) and (max-width: 1147px) {
-  .auth-file-list-head, .auth-credential-row { grid-template-columns: minmax(140px, 1fr) 60px 96px 96px minmax(180px, 2fr) 128px; column-gap: 8px; }
-  .auth-file-list-head > :nth-child(5), .auth-list-usage { display: none; }
-  .auth-list-details-usage { display: block; }
+  .auth-file-list-head, .auth-credential-row { grid-template-columns: minmax(140px, 1fr) 60px 104px minmax(180px, 2fr) 128px; column-gap: 8px; }
   .auth-file-card-grid, .auth-file-list-head { min-width: 760px; }
   .auth-card-actions { grid-template-columns: 68px 46px; gap: 8px; }
   .auth-list-details-button { width: 46px; }
@@ -177,9 +175,7 @@
   .auth-credential-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; padding: 14px 0; }
   .auth-card-header { grid-column: 1 / 3; }
   .auth-list-plan { grid-column: 3; }
-  .auth-list-status { grid-column: 1; }
-  .auth-list-recent { grid-column: 2; }
-  .auth-list-usage { grid-column: 3; }
+  .auth-list-status { grid-column: 1 / -1; }
   .auth-list-quota { grid-column: 1 / -1; border-top: 1px solid var(--auth-border); padding-top: 12px; }
   .auth-card-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--auth-border); padding-top: 12px; }
   .auth-list-main-actions { display: flex; gap: 8px; padding-left: 8px; }
@@ -249,3 +245,15 @@
 }
 .auth-card-header .ledger-provider-icon.provider-logo { width: 35px; height: 35px; border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); font-size: var(--font-size-section); font-weight: 600; }
 .auth-list-status .auth-sign-in-again { min-height: 32px; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-caption); white-space: nowrap; }
+/* Sign-in view: its own heading and a way back to the account list. */
+.oauth-login-heading { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
+.oauth-login-heading h2 { margin: 0; font-size: 20px; }
+/* List / Quotas switch: Quotas reuses Quota Lookup's cards under the same filters. */
+.accounts-view-switch { display: inline-flex; border: 1px solid var(--auth-border); border-radius: 8px; overflow: hidden; }
+.accounts-view-switch button { min-height: 32px; padding: 0 12px; border: 0; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.accounts-view-switch button + button { border-left: 1px solid var(--auth-border); }
+.accounts-view-switch button.active { background: var(--p-blue-50, #eef4ff); color: var(--p-blue-700, #1d4ed8); font-weight: 600; }
+.accounts-view-switch button:focus-visible { outline: 2px solid var(--p-blue-500, #3b82f6); outline-offset: -2px; }
+.accounts-quota-view { margin-top: 12px; }
+.accounts-quota-unreported { margin: 12px 0 0; color: var(--auth-muted); font-size: 13px; }
+@media (forced-colors: active) { .accounts-view-switch button.active { forced-color-adjust: none; background: Highlight; color: HighlightText; } }
