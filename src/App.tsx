@@ -29,6 +29,8 @@ import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
 import { useConfirmation } from './components/ConfirmationDialog';
 import { startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
+import { endAccountFocus, readAccountFocus } from './services/accountFocus';
+import { applyQuotaRouting, readQuotaRoutingPreference } from './services/quotaRoutingControl';
 import { startSecretGuardWatcher } from './services/secretGuardWatcher';
 import { readGlobalHotkeyPreference, saveGlobalHotkeyPreference } from './services/dashboardPreferences';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
@@ -286,6 +288,25 @@ function AppContent() {
   const restartingRef = useRef(false);
   // Quota checks, run-out forecasts and Windows notifications keep working with the window in the tray.
   useEffect(() => (coreReady ? startQuotaWatcher() : undefined), [coreReady]);
+  // Ends "use this account for an hour" on time, and on the next start if the hub was closed when the hour ran out.
+  useEffect(() => {
+    if (!coreReady) return;
+    let running = false;
+    const check = async () => {
+      const focus = readAccountFocus();
+      if (running || !focus || Date.now() < focus.until) return;
+      running = true;
+      try {
+        const routing = readQuotaRoutingPreference();
+        await endAccountFocus(routing);
+        if (routing) await applyQuotaRouting();
+      } catch { /* the proxy is unreachable: try again on the next tick */ }
+      finally { running = false; }
+    };
+    void check();
+    const timer = window.setInterval(() => void check(), 30_000);
+    return () => window.clearInterval(timer);
+  }, [coreReady]);
   // Runs whether or not the proxy is up, so it can notice the proxy stopping and coming back.
   useEffect(() => startProxyWatcher(), []);
   useEffect(() => startSecretGuardWatcher(), []);

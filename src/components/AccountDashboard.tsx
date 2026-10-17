@@ -13,7 +13,7 @@ import { dedupeAuthFiles, normalizeAuthFilePriorityInput } from '../services/aut
 import { managementApi, responseList, readString } from '../services/managementApi';
 import { useQuotaCache } from '../services/quotaCache';
 import { refreshDashboardQuotas } from '../services/accountDashboardRefresh';
-import { readQuotaRoutingPreference } from '../services/quotaRoutingControl';
+import { applyQuotaRouting, readQuotaRoutingPreference } from '../services/quotaRoutingControl';
 import { fileName, idleQuota, providerForFile, quotaKey, type AuthFile, type QuotaRow, type QuotaState } from '../services/quotaService';
 import { useQuotaClock } from '../services/quotaTime';
 import { ledgerWindows, orderedQuotaRows, primaryQuotaRow, quotaTone, remaining } from '../services/quotaLedger';
@@ -33,6 +33,7 @@ import { ProviderLogo, SignInAgainButton, needsSignIn, openSignIn } from './Auth
 import { requestAccountRequests } from '../usageNavigation';
 import { loadPlanBlocks, withPlanBlocks, type PlanBlock } from '../services/planBlock';
 import { accountRequests, loadDashboardActivity, requestClient, successfulRequest, privateText, type DashboardActivity, type DashboardRequest } from '../services/dashboardActivity';
+import { endAccountFocus, readAccountFocus, startAccountFocus, type AccountFocus } from '../services/accountFocus';
 import './AccountDashboard.css';
 
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
@@ -145,6 +146,32 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       busy.current = false;
       setSaving(false);
     }
+  };
+
+  const [focus, setFocus] = useState<AccountFocus | null>(() => readAccountFocus());
+  const [focusError, setFocusError] = useState('');
+  useEffect(() => {
+    const sync = () => setFocus(readAccountFocus());
+    window.addEventListener('app:account-focus', sync);
+    return () => window.removeEventListener('app:account-focus', sync);
+  }, []);
+  /** Starts "use this account first for an hour", or ends it early when file is null. */
+  const changeFocus = async (file: AuthFile | null) => {
+    // A refresh holds the write lock briefly; wait for it rather than silently ignoring the click.
+    for (let waited = 0; busy.current && waited < 10_000; waited += 50) await new Promise(resolve => window.setTimeout(resolve, 50));
+    if (busy.current) { setFocusError(t('accountFocus.failed')); return; }
+    busy.current = true;
+    setSaving(true); setFocusError('');
+    try {
+      if (file) await startAccountFocus(file);
+      else {
+        const routing = readQuotaRoutingPreference();
+        await endAccountFocus(routing);
+        if (routing) await applyQuotaRouting();
+      }
+    } catch { setFocusError(t('accountFocus.failed')); }
+    finally { busy.current = false; setSaving(false); }
+    void refresh(true);
   };
 
   const [checkingUnconfirmed, setCheckingUnconfirmed] = useState(false);
@@ -272,6 +299,14 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       {filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}
       <button type="button" className="secondary-button compact-button ad-manage" onClick={() => requestOAuthSubpage('authFiles')}>{t('glance.list.manage')}</button>
     </div>}
+    {(() => {
+      const focused = focus && Date.now() < focus.until ? files.find(item => fileName(item) === focus.name) : undefined;
+      return focused ? <p className="ad-notice ad-focus" role="status">
+        {t('accountFocus.active', { name: labelFor(focused), time: new Date(focus!.until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}
+        <button type="button" className="secondary-button compact-button" disabled={saving} onClick={() => void changeFocus(null)}>{t('accountFocus.stop')}</button>
+      </p> : null;
+    })()}
+    {focusError ? <p role="alert" className="ad-notice ad-error">{focusError}</p> : null}
     {files.length > 0 && !stale && <UnconfirmedLines attention={attention} onCheck={() => void checkUnconfirmed()} checking={checkingUnconfirmed} />}
     {files.length > 0 && <div className="quota-workflow-tools">
       <input type="search" aria-label={t('availability.search')} placeholder={t('availability.search')} value={search} onChange={event => setSearch(event.target.value)} />
@@ -301,6 +336,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
         label={labelFor(file)} hideEmails={hideEmails} requests={activity ? accountRequests(file, activity.items) : undefined} activityStale={activityError || stale}
         friendlyName={names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} onName={saveName} onAlternatives={viewAlternatives}
         columns={columns} layout={layout} needsAttention={urgentKeys.has(quotaKey(file))}
+        focused={Boolean(focus && Date.now() < focus.until && focus.name === fileName(file))} onFocus={(target, on) => void changeFocus(on ? target : null)}
         disabled={!ready || saving || loading || refreshingKey !== null || Boolean(error)} onSave={savePriority} onRefresh={refreshAccount} refreshing={refreshingKey === quotaKey(file)} stale={stale} />)}
       </section> : null; })}
       {!visible.length && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
@@ -356,7 +392,8 @@ function AccountMenu({ label, items }: { label: string; items: MenuItem[] }) {
   </div>;
 }
 
-export function AccountCard({ needsAttention = false, file, quota, now, disabled, stale = false, onSave, onRefresh, refreshing = false, columns, label, hideEmails = false, requests, activityStale = false, friendlyName = '', onName, onAlternatives, layout = 'compact' }: {
+export function AccountCard({ needsAttention = false, file, quota, now, disabled, stale = false, onSave, onRefresh, refreshing = false, columns, label, hideEmails = false, requests, activityStale = false, friendlyName = '', onName, onAlternatives, layout = 'compact', focused = false, onFocus }: {
+  focused?: boolean; onFocus?: (file: AuthFile, on: boolean) => void;
   friendlyName?: string; onName?: (file: AuthFile, value: string) => boolean; onAlternatives?: (file: AuthFile) => void;
   /** Counted under "N need attention", so the row is marked to match. */
   needsAttention?: boolean;
@@ -420,6 +457,7 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
     ...(needsSignIn(file) ? [{ key: 'sign-in', label: t('authFiles.signInAgain'), onSelect: () => openSignIn(String(file.provider ?? file.type ?? '')) }] : []),
     // Activity's Account filter matches the email the proxy records as each request's source.
     ...(typeof file.email === 'string' && file.email ? [{ key: 'requests', label: t('accountDashboard.viewRequests'), onSelect: () => requestAccountRequests(String(file.email)) }] : []),
+    ...(onFocus ? [{ key: 'focus', label: t(focused ? 'accountFocus.stop' : 'accountFocus.start'), disabled: disabled || (!focused && file.disabled === true), onSelect: () => onFocus(file, !focused) }] : []),
     ...(onAlternatives && ['exhausted', 'limited', 'unavailable'].includes(availability.kind) ? [{ key: 'alternatives', label: t('ux.alternatives'), onSelect: () => onAlternatives(file) }] : []),
   ];
   const renderQuota = (row: QuotaRow, index: number) => {
