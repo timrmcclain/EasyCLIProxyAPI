@@ -55,6 +55,7 @@ import { readableError } from '../services/readableError';
 import {
   settingsCategories, settingsTemplateGroups,
   allSettingsTemplateGroups, settingsMessages, type SettingsCategory,
+  SETTING_FIELD_EVENT, settingFieldLocation, takePendingSettingField,
 } from '../services/settingsNavigation';
 
 type CoreConfigSettings = {
@@ -1212,6 +1213,19 @@ export function ConfigPanelPage() {
     activateConfigSubpage(destination.category);
     setPendingDestination(destination);
   };
+  const navigateRef = useRef(navigateToSetting);
+  navigateRef.current = navigateToSetting;
+  // Another page asked for one field (e.g. Overview's paid-fallback link): open it the way search does.
+  useEffect(() => {
+    const open = () => {
+      const path = takePendingSettingField();
+      const location = path ? settingFieldLocation(path) : null;
+      if (location) navigateRef.current({ category: location.category, target: `config-group-${location.groupId}`, field: `template-field-${location.groupId}-${location.index}` });
+    };
+    open();
+    window.addEventListener(SETTING_FIELD_EVENT, open);
+    return () => window.removeEventListener(SETTING_FIELD_EVENT, open);
+  }, []);
   const nativeDirty = {
     keys: false, management: Boolean(managementSecretDraft || managementSecretConfirm),
     network: networkSettingsDirty, tls: tlsSettingsDirty, routing: sessionRoutingDirty,

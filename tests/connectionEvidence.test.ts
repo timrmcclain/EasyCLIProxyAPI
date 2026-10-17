@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { connectionEvidence, type ConnectionStatus } from '../src/services/connectionEvidence';
+import { connectionEvidence, listConnectionState, type ConnectionStatus } from '../src/services/connectionEvidence';
 import type { DashboardRequest } from '../src/services/dashboardActivity';
 const now = Date.parse('2026-10-04T21:00:00Z');
 const status: ConnectionStatus = { id: 'claude-desktop', installed: true, supportedPlatform: true, configValid: true, connectionState: 'configured', codexNativeOauth: false, error: null };
@@ -17,4 +17,19 @@ test('latest failure supersedes older success; direct sign-in and invalid config
   expect(connectionEvidence({ ...status, configValid: false }, [request()], now).stage).toBe('attention');
   expect(connectionEvidence({ ...status, installed: false }, [request()], now).stage).toBe('notDetected');
   expect(connectionEvidence({ ...status, codexNativeOauth: true }, [request()], now).stage).toBe('native');
+});
+
+test('the AI apps list keeps installed, connected and working apart', () => {
+  // Installed but not set up through the hub is not connected.
+  expect(listConnectionState({ ...status, connectionState: 'not-configured' }, [], now)).toEqual({ key: 'installed' });
+  // Connected with no request seen: no time, and never "working".
+  expect(listConnectionState(status, [], now)).toEqual({ key: 'connected', at: undefined });
+  // An older success is a timestamp on "connected", not "working".
+  const older = request({ timestamp: new Date(now - 2 * 3600000).toISOString() });
+  expect(listConnectionState(status, [older], now)).toEqual({ key: 'connected', at: Date.parse(older.timestamp) });
+  expect(listConnectionState(status, [request()], now)?.key).toBe('verified');
+  // A latest failure carries no success time.
+  expect(listConnectionState(status, [request({ failed: true })], now)).toEqual({ key: 'connected', at: undefined });
+  expect(listConnectionState({ ...status, connectionState: 'needs-update' }, [], now)).toEqual({ key: 'attention' });
+  expect(listConnectionState({ ...status, installed: false }, [], now)).toBeNull();
 });

@@ -1,4 +1,8 @@
 import { ConfigurationChangePreview } from '../components/ConfigurationChangePreview';
+import { listConnectionState } from '../services/connectionEvidence';
+import { loadDashboardActivity, type DashboardRequest } from '../services/dashboardActivity';
+import { subscribeActivity } from '../services/activitySubscription';
+import { resetCountdown } from '../services/accountDashboard';
 import { ConnectionOverview } from '../components/ConnectionOverview';
 import { ConnectionError } from '../components/ConnectionError';
 import { DesktopModelPickerDialog } from '../components/DesktopModelPickerDialog';
@@ -463,7 +467,13 @@ function AgentMark({ definition, size = 26 }: { definition: AgentDefinition; siz
   return <Icon size={size} aria-hidden />;
 }
 
-const listStatusText = (status: AgentConfigStatus | undefined) => {
+/** The list line: the app's state, then the model the hub applied (version stays in the hover text). */
+const listStatusText = (status: AgentConfigStatus | undefined, items: DashboardRequest[] = [], now = Date.now()) => {
+  const text = listStateText(status, items, now);
+  return status?.installed && status.modificationState === 'applied' && status.appliedModel ? `${text} · ${status.appliedModel}` : text;
+};
+
+const listStateText = (status: AgentConfigStatus | undefined, items: DashboardRequest[], now: number) => {
   const locale = getCurrentLocale();
   if (!status) return translate(locale, 'agents.list.detecting');
   if (!status.supportedPlatform) return translate(locale, 'agents.list.unsupported');
@@ -475,11 +485,20 @@ const listStatusText = (status: AgentConfigStatus | undefined) => {
   }
   if (status.modificationState === 'invalid') return translate(locale, 'agents.status.invalid');
   if (status.id === 'codex' && status.codexNativeOauth) return translate(locale, 'agents.nativeOAuth.status');
-  if (status.modificationState === 'applied') return translate(locale, 'agents.list.modified', { model: status.appliedModel ?? '—' });
+  // Installed, connected and working are different claims; the version and model go in the hover text.
+  const state = listConnectionState(status, items, now);
+  if (state?.key === 'verified' && state.at) return translate(locale, 'agents.list.state.verified', { time: resetCountdown(now, state.at) });
+  if (state?.key === 'connected') return state.at ? translate(locale, 'agents.list.state.connectedSeen', { time: resetCountdown(now, state.at) }) : translate(locale, 'agents.list.state.connected');
+  if (state?.key === 'attention') return translate(locale, 'agents.list.state.attention');
+  if (state?.key === 'installed') return translate(locale, 'agents.list.state.installed');
   return status.version
     ? translate(locale, 'agents.list.installedVersion', { version: status.version })
     : translate(locale, 'agents.list.installed');
 };
+
+/** The list's hover text: the version, which the one-line state leaves out. */
+const listStatusDetail = (status: AgentConfigStatus | undefined) => status?.version
+  ? translate(getCurrentLocale(), 'agents.list.installedVersion', { version: status.version }) : undefined;
 
 function ClaudeDesktopHelpDialog({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -561,6 +580,18 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
   const { askConfirmation, confirmationDialog } = useConfirmation();
   const setLaunchError = (launchError: string) => updateViewState({ launchError });
   const [statuses, setStatuses] = useState<AgentConfigStatus[]>(() => agentStatusesCache ?? []);
+  // Recent requests, so the list can say which apps have actually been seen working.
+  const [listActivity, setListActivity] = useState<DashboardRequest[]>([]);
+  const [listNow, setListNow] = useState(() => Date.now());
+  useEffect(() => {
+    let active = true;
+    const subscription = subscribeActivity(async () => {
+      try { const data = await loadDashboardActivity(); if (active) { setListActivity(data.items); setListNow(Date.now()); } }
+      catch { /* the list falls back to installed / connected */ }
+    });
+    const timer = window.setInterval(() => setListNow(Date.now()), 60_000);
+    return () => { active = false; subscription.dispose(); window.clearInterval(timer); };
+  }, []);
   const [modelData, setModelData] = useState(() => ({
     client: selected, models: agentModelsCache[selected] ?? [],
   }));
@@ -1814,7 +1845,8 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
             id: agent.id,
             name: agent.name,
             icon: <AgentMark definition={agent} />,
-            summary: listStatusText(status),
+            summary: listStatusText(status, listActivity, listNow),
+            detail: listStatusDetail(status),
             installed: Boolean(status?.installed),
             detected: Boolean(status && (status.installed || status.configExists || status.configured
               || (agent.id === 'pi' && status.pluginInstalled))),

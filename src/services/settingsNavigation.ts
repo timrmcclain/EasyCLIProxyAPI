@@ -28,6 +28,34 @@ export const settingsTemplateGroups = {
   software: [],
 };
 export const allSettingsTemplateGroups = Object.values(settingsTemplateGroups).flat();
+
+/** Where a template setting lives, by its config path ("a.b.c"), so other pages can open it directly. */
+export function settingFieldLocation(path: string): { category: SettingsCategory; groupId: string; index: number } | null {
+  for (const [category, groups] of Object.entries(settingsTemplateGroups) as [SettingsCategory, typeof allSettingsTemplateGroups][]) {
+    for (const group of groups) {
+      const index = group.fields.findIndex(field => field.path.join('.') === path);
+      if (index >= 0) return { category, groupId: group.id, index };
+    }
+  }
+  return null;
+}
+
+// Kept until Settings mounts and reads it, since navigation and mounting happen in that order.
+let pendingSettingField: string | null = null;
+export const SETTING_FIELD_EVENT = 'app:setting-field';
+
+/** Opens Settings at one field, the one place that setting is edited. */
+export function requestSettingField(path: string) {
+  pendingSettingField = path;
+  window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'config' }));
+  window.dispatchEvent(new CustomEvent(SETTING_FIELD_EVENT));
+}
+
+export function takePendingSettingField(): string | null {
+  const path = pendingSettingField;
+  pendingSettingField = null;
+  return path;
+}
 export const settingsMessages = {
   title: text('设置', 'Settings', '設定'),
   search: text('搜索设置', 'Search settings', '設定を検索'),

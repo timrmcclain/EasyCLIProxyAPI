@@ -390,7 +390,8 @@ const desktopViewports = [
             assert.equal(flow.whiteSpace, 'nowrap', `${label}: client status text must remain on one line`);
             assert.equal(flow.overflow, 'hidden', `${label}: long client status text must stay within its row`);
             assert.equal(flow.textOverflow, 'ellipsis', `${label}: truncated client status text must show an ellipsis`);
-            assert.equal(flow.title, flow.text, `${label}: the title must retain the full client status text`);
+            // The hover text keeps the whole line, then the version on its own line.
+            assert.equal(flow.title.split('\n')[0], flow.text, `${label}: the title must retain the full client status text`);
             assert.ok(flow.title.includes(longModel), `${label}: the title must include the full long model name`);
             const afterTruncation = await page.locator('.agent-client-list, .agent-config-panel')
               .evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().height));

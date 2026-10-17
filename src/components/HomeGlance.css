@@ -137,3 +137,8 @@
 .account-dashboard.quota-ledger .quota-summary-total > span { font-size: 12px; }
 .account-dashboard.quota-ledger .quota-summary-value { font-size: 20px; line-height: 1.2; }
 .account-dashboard.quota-ledger .quota-account-states { margin: 6px 0 0; }
+
+/* Antigravity's paid fallback, beside its quota: amber when on, because it means real spending. Opens its one setting. */
+.quota-group-heading .ad-paid-fallback { margin-left: 8px; padding: 2px 8px; border: 1px solid var(--border-primary); border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.quota-group-heading .ad-paid-fallback.is-on { border-color: color-mix(in srgb, var(--c-status-warning) 50%, var(--border-color)); color: var(--c-warning); }
+.quota-group-heading .ad-paid-fallback:hover { text-decoration: underline; text-underline-offset: 2px; }

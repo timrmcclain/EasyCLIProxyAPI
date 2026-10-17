@@ -20,6 +20,8 @@ import { QuotaAvailabilityNotice } from './QuotaAvailabilityNotice';
 import { QuotaProviderSummary } from './QuotaProviderSummary';
 import { HomeGlance, UnconfirmedLines } from './HomeGlance';
 import { requestOAuthSubpage } from '../oauthNavigation';
+import { ANTIGRAVITY_PAID_FALLBACK_PATH, loadAntigravityPaidFallback } from '../services/antigravityPaidFallback';
+import { requestSettingField } from '../services/settingsNavigation';
 import { attentionItems, canRecheck, type AttentionSeverity } from '../services/homeGlance';
 import type { HomeUsageSummary } from '../services/homeOverview';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
@@ -71,6 +73,15 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const planBlocks = useRef<Record<string, PlanBlock>>({});
   const quotas = useQuotaCache();
   const now = useQuotaClock();
+  // Whether Antigravity spends paid credits after included quota: shown beside its quota, edited in one place.
+  const [paidFallback, setPaidFallback] = useState<boolean | null>(null);
+  const hasAntigravity = files.some((file) => dashboardProvider(file) === 'antigravity');
+  useEffect(() => {
+    if (!ready || !hasAntigravity) return;
+    let active = true;
+    void loadAntigravityPaidFallback().then((value) => { if (active) setPaidFallback(value); });
+    return () => { active = false; };
+  }, [ready, hasAntigravity]);
 
   const refresh = useCallback(async (force = false) => {
     if (!ready || busy.current) return;
@@ -280,7 +291,9 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
         const group = visible.filter((file) => dashboardProvider(file) === provider);
         const columns = ledgerWindows(group, quotas).slice(0, 3);
         return group.length > 0 ? <section className="quota-account-group" key={provider} aria-label={providerNames[provider] ?? provider}>
-      <h3 className="quota-group-heading"><ProviderLogo provider={provider} />{providerNames[provider] ?? provider}<span>{group.length}</span></h3>
+      <h3 className="quota-group-heading"><ProviderLogo provider={provider} />{providerNames[provider] ?? provider}<span>{group.length}</span>
+        {provider === 'antigravity' && paidFallback !== null && <button type="button" className={`ad-paid-fallback${paidFallback ? ' is-on' : ''}`} title={t('glance.paidFallback.hint')}
+          onClick={() => requestSettingField(ANTIGRAVITY_PAID_FALLBACK_PATH)}>{t(paidFallback ? 'glance.paidFallback.on' : 'glance.paidFallback.off')}</button>}</h3>
       {group.map((file) => <AccountCard key={quotaKey(file)} file={file} quota={quotas[quotaKey(file)] ?? idleQuota()} now={now}
         label={labelFor(file)} hideEmails={hideEmails} requests={activity ? accountRequests(file, activity.items) : undefined} activityStale={activityError || stale}
         friendlyName={names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} onName={saveName} onAlternatives={viewAlternatives}

@@ -11,6 +11,8 @@ type Client<Id extends string> = {
   name: string;
   icon: ReactNode;
   summary: string;
+  /** Hover text for the summary, e.g. the version. */
+  detail?: string;
   installed: boolean;
   detected: boolean;
 };
@@ -126,7 +128,8 @@ export function AgentClientList<Id extends string>({
           className={selected === client.id ? 'active' : ''} aria-pressed={selected === client.id}
           onClick={() => onSelect(client.id)} disabled={busy}>
           <span className="agent-client-icon">{client.icon}</span>
-          <span><strong title={client.name}>{client.name}</strong><small title={client.summary}>{client.summary}</small></span>
+          <span><strong title={client.name}>{client.name}</strong><small title={client.detail ? `${client.summary}
+${client.detail}` : client.summary}>{client.summary}</small></span>
           {client.installed ? <i className="agent-installed-indicator" title={t('agents.clientDetected')} aria-hidden="true" /> : null}
         </button>)}
       </div>
