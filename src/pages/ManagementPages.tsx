@@ -21,6 +21,8 @@ import { FeedbackNotice, MessageNotice, useAppNotice, type NoticeMessage } from 
 import { ACCOUNTS_VIEW_EVENT, OAUTH_SUBPAGE_EVENT, takePendingOAuthSubpage, takePendingSignInProvider, type OAuthSubpage } from '../oauthNavigation';
 import {
   changedOAuthAuthFileNames,
+  supersededAuthFiles,
+  parseAuthFilePriority,
   snapshotAuthFiles,
   type AuthFileSnapshot,
 } from '../services/authFiles';
@@ -290,21 +292,49 @@ export function OAuthLoginPage() {
     credentialSnapshots.current[provider] = snapshotAuthFiles(responseList(payload, 'files'));
   }, []);
 
-  // Returns who signed in, so the success message can name the account rather than just the provider.
-  const applyDefaultCredentialPriority = useCallback(async (provider: OAuthProviderId): Promise<string[]> => {
+  // Returns who signed in, so the success message can name the account rather than just the provider,
+  // and any older file for the same account, so the hub can offer to replace it rather than keep both.
+  const applyDefaultCredentialPriority = useCallback(async (provider: OAuthProviderId): Promise<{ who: string[]; superseded: string[] }> => {
     const before = credentialSnapshots.current[provider];
     delete credentialSnapshots.current[provider];
-    if (!before) return [];
+    if (!before) return { who: [], superseded: [] };
 
     const payload = await managementApi.get('/credentials');
     const files = responseList(payload, 'files');
     const names = changedOAuthAuthFileNames(before, files, provider);
+    const superseded = supersededAuthFiles(files, names, provider);
+    // Signing in again keeps the account's place in routing instead of dropping it to 0.
+    const priority = Math.max(0, ...superseded.map((file) => parseAuthFilePriority(file.priority) ?? 0));
     await Promise.all(names.map((name) => managementApi.patch('/credentials/fields', {
       name,
-      priority: 0,
+      priority,
     })));
-    return files.filter((file) => names.includes(String(file.name))).map((file) => labelFor(file));
+    return {
+      who: files.filter((file) => names.includes(String(file.name))).map((file) => labelFor(file)),
+      superseded: superseded.map((file) => String(file.name)),
+    };
   }, []);
+
+  // Moves the older files to the 7-day kept copies (as Delete does), with Undo.
+  const replaceOldFiles = useCallback(async (names: string[]) => {
+    const kept: string[] = [];
+    try {
+      for (const name of names) {
+        kept.push(await invoke<string>('keep_deleted_account', { name }));
+        await managementApi.delete('/credentials', { query: { name } });
+      }
+      showNotice({ key: 'oauth.replacedOld', variables: { count: names.length } }, 'success', {
+        action: { label: { key: 'common.undo' }, onAction: () => void (async () => {
+          try {
+            for (const id of kept) await invoke<string>('restore_deleted_account', { id });
+            showNotice({ key: 'oauth.replaceUndone' }, 'success');
+          } catch (error) { showNotice(readableError(error), 'error'); }
+        })() },
+      });
+    } catch (error) {
+      showNotice(readableError(error), 'error');
+    }
+  }, [showNotice]);
 
   const startPolling = useCallback(
     (provider: OAuthProviderId, state: string, expiresIn?: number | null) => {
@@ -342,14 +372,17 @@ export function OAuthLoginPage() {
           if (status === 'ok') {
             let priorityError = '';
             let who: string[] = [];
+            let superseded: string[] = [];
             try {
-              who = await applyDefaultCredentialPriority(provider);
+              ({ who, superseded } = await applyDefaultCredentialPriority(provider));
             } catch (error) {
               priorityError = readableError(error);
             }
             if (!isCurrent()) return;
             completeProviderAuth(provider);
             if (priorityError) showProviderError(provider, t('oauth.priorityApplyFailed', { error: priorityError }));
+            else if (superseded.length) showNotice(t('oauth.loginReplaces', { accounts: who.join(', '), count: superseded.length }), 'success',
+              { action: { label: { key: 'oauth.replaceOld' }, onAction: () => void replaceOldFiles(superseded) } });
             else showNotice(who.length ? t('oauth.loginSuccessAs', { accounts: who.join(', ') }) : t('oauth.loginSuccess', { provider: providerLabel(provider) }), 'success',
               { action: { label: { key: 'oauth.viewAccount' }, onAction: () => requestOAuthSubpage('authFiles') } });
           } else if (status === 'error') {
@@ -382,7 +415,7 @@ export function OAuthLoginPage() {
         OAUTH_POLL_INTERVAL_MS,
       );
     },
-    [applyDefaultCredentialPriority, clearPollingTimer, completeProviderAuth, showNotice, showProviderError, t, updateProviderState],
+    [applyDefaultCredentialPriority, replaceOldFiles, clearPollingTimer, completeProviderAuth, showNotice, showProviderError, t, updateProviderState],
   );
 
   useEffect(() => {

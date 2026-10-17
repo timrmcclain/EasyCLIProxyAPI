@@ -1223,6 +1223,8 @@ export function createBrowserMockRuntime(
           state.authFiles.push({
             name: `${provider}-mock-login.json`, provider, type: provider, source: 'file',
             auth_index: `mock-${provider}-${state.authFiles.length + 1}`, priority: 0, disabled: false, modtime: Date.now(),
+            // Signing in to Codex again: the same account as codex-personal.json, saved under a new name.
+            ...(provider === 'codex' ? { email: 'codex.mock@example.com' } : {}),
           });
         }
         return { status: 'ok', error: null };

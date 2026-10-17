@@ -221,3 +221,20 @@ export const dedupeAuthFiles = (files: AuthFileRecord[]) => {
         .localeCompare(authFileCooldownResetIndex(right) ?? '');
     });
 };
+
+/**
+ * Older files for the same account a sign-in just saved again under a new name
+ * (same provider and email), so the hub can offer to replace them rather than keep both.
+ * Files without an email can't be matched and are never offered.
+ */
+export const supersededAuthFiles = (files: AuthFileRecord[], savedNames: string[], provider: string) => {
+  const expectedProvider = normalizeOAuthProvider(provider);
+  const emailOf = (file: AuthFileRecord) => readString(file, 'email').trim().toLowerCase();
+  const saved = files.filter((file) => savedNames.includes(readString(file, 'name')));
+  const emails = new Set(saved.map(emailOf).filter(Boolean));
+  return files.filter((file) => {
+    const name = readString(file, 'name');
+    return name && !savedNames.includes(name) && authFileProvider(file) === expectedProvider
+      && emails.has(emailOf(file)) && !isRuntimeOnlyAuthFile(file);
+  });
+};
