@@ -71,6 +71,8 @@ const PROVIDER_SECTIONS = [
 ] as const;
 type ProviderSection = (typeof PROVIDER_SECTIONS)[number];
 // Compression (Headroom) in the browser mock: installed, off, with a little saved history.
+/** Microsoft 365's Claude Desktop sign-in IDs, set by Save or by the fake automatic setup. */
+const mockMicrosoft = { configured: false, desktop: false };
 const mockCompression = {
   enabled: false,
   routeClaudeCode: true,
@@ -1374,9 +1376,23 @@ export function createBrowserMockRuntime(
         if (!mockCompression.enabled) throw new Error('Browser Mock: compression is off');
         return mockCompressionStats();
       }
+      case 'microsoft_auto_setup': {
+        // Tests pick the outcome; the default is a successful setup with consent granted.
+        const preset = (globalThis as { mockMicrosoftSetup?: Record<string, unknown> }).mockMicrosoftSetup;
+        await new Promise(resolve => setTimeout(resolve, 50));
+        return preset ?? { status: 'ok', tenantId: '11111111-2222-3333-4444-555555555555', clientId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', created: true, consent: 'granted',
+          consentUrl: 'https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555/adminconsent?client_id=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' };
+      }
       case 'get_connector_overview':
       case 'apply_connector_change':
       case 'undo_connector_change': {
+        if (command === 'apply_connector_change') {
+          const request = (payload as { request?: { id?: string; claudeDesktop?: boolean; secrets?: Record<string, string> } } | undefined)?.request;
+          if (request?.id === 'microsoft365') {
+            mockMicrosoft.desktop = Boolean(request.claudeDesktop);
+            if (request.secrets?.MICROSOFT_TENANT_ID && request.secrets.MICROSOFT_CLIENT_ID) mockMicrosoft.configured = true;
+          }
+        }
         const off = { enabled: false, access: null, builtIn: false, signedIn: null };
         return {
           desktopProfile: 'EasyCLIProxyAPI',
@@ -1384,7 +1400,8 @@ export function createBrowserMockRuntime(
           lastChange: null,
           connectors: [
             { id: 'google', accessLevels: ['readonly', 'drafts', 'full'], serviceOptions: ['gmail', 'calendar', 'drive', 'docs', 'sheets'], secretNames: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: false }, claudeDesktop: { enabled: true, access: 'full', builtIn: false, signedIn: false } },
-            { id: 'microsoft365', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'microsoft365', accessLevels: [], serviceOptions: [], secretNames: ['MICROSOFT_TENANT_ID', 'MICROSOFT_CLIENT_ID'], secretsConfigured: mockMicrosoft.configured, secretsDesktopOnly: true, unavailableReason: null, claudeCode: off,
+              claudeDesktop: mockMicrosoft.desktop ? { enabled: true, access: null, builtIn: true, signedIn: null } : off },
             { id: 'github', accessLevels: ['readonly', 'full'], serviceOptions: [], secretNames: ['GITHUB_TOKEN'], secretsConfigured: false, unavailableReason: null, claudeCode: off, claudeDesktop: off },
             { id: 'playwright', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
             { id: 'windows', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },

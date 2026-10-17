@@ -8,6 +8,7 @@ mod codex_catalog;
 mod codex_sessions;
 mod configuration_watcher;
 mod connectors;
+mod microsoft_setup;
 mod core_config;
 mod core_runtime;
 mod desktop_theme;
@@ -2797,6 +2798,7 @@ fn main() {
             connectors::undo_connector_change,
             connectors::test_connector,
             connectors::ai_test_connector,
+            microsoft_setup::microsoft_auto_setup,
             plugins::get_plugin_support,
             plugins::get_plugin_resource_url,
             provider_health::provider_health_probe,

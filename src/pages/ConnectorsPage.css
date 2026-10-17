@@ -113,3 +113,14 @@
 .connector-steps ul { display: grid; gap: var(--space-1); margin: var(--space-1) 0 0; padding-left: var(--space-4); font-size: var(--font-size-caption); color: var(--text-secondary); line-height: 1.6; }
 .connector-step-number { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; border-radius: var(--radius-full); background: var(--bg-tertiary); color: var(--text-secondary); font-size: var(--font-size-caption); font-weight: 700; }
 .connector-steps li.done .connector-step-number { background: var(--ui-accent, var(--primary-color)); color: var(--p-neutral-0); }
+
+/* One-click Microsoft 365 setup sits above the manual steps it replaces. */
+.connector-auto-setup { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--accent, #0f766e); border-radius: 10px; margin-bottom: 10px; }
+.connector-auto-setup > div:first-child { display: grid; gap: 4px; }
+.connector-auto-setup > button { justify-self: start; }
+.connector-auto-setup-result p { margin: 0; }
+.connector-auto-setup-result .ok { color: var(--success, #15803d); }
+.connector-auto-setup-result .warn { color: var(--warning-text, #b45309); }
+.connector-auto-setup-result code { user-select: all; }
+.connector-auto-setup-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.connector-manual-steps > summary { cursor: pointer; margin: 4px 0; }

@@ -26,6 +26,7 @@ import {
   type ConnectorTarget,
   type ConnectorTestResult,
 } from '../services/connectors';
+import { draftWithSetupIds, GRAPH_MODULE_INSTALL, runMicrosoftSetup, type MicrosoftSetupResult } from '../services/microsoftSetup';
 import './ConnectorsPage.css';
 
 type TestState = { running: boolean; result?: ConnectorTestResult; error?: string };
@@ -375,6 +376,9 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       {item.id === 'microsoft365' ? (
         <section className="connector-steps" aria-labelledby={`connector-${item.id}-steps`}>
           <h3 id={`connector-${item.id}-steps`}>{ct('microsoftDesktopGuideTitle')}</h3>
+          <MicrosoftAutoSetup item={item} onSaved={(next) => { justSaved.current = true; onSaved(next); }} />
+          <details className="connector-manual-steps">
+          <summary>{ct('msManualTitle')}</summary>
           <ol>
             <li className={item.secretsConfigured ? 'done' : undefined}>
               <span className="connector-step-number" aria-hidden="true">{item.secretsConfigured ? <Check size={12} /> : 1}</span>
@@ -405,6 +409,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
               </div>
             </li>
           </ol>
+          </details>
         </section>
       ) : null}
 
@@ -515,6 +520,69 @@ function TestLine({ test }: { test: TestState }) {
   if (result.status === 'needsSignIn') return <p className="connector-test warn">{ct('testNeedsSignIn')}</p>;
   if (result.status === 'builtIn') return <p className="connector-test">{ct('testBuiltIn')}</p>;
   return <p className="connector-test failed">{ct('testFailed')} {result.message}</p>;
+}
+
+const CONSENT_PREFIX = 'https://login.microsoftonline.com/';
+
+/** One click instead of the three manual steps: the only thing left to the user is the Microsoft sign-in. */
+function MicrosoftAutoSetup({ item, onSaved }: { item: ConnectorOverviewItem; onSaved: (overview: ConnectorOverview) => void }) {
+  const { locale } = useI18n();
+  const ct = (key: ConnectorTextKey) => connectorText(key, locale);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<MicrosoftSetupResult | null>(null);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [restart, setRestart] = useState<'idle' | 'busy' | 'done' | string>('idle');
+  const run = async () => {
+    setRunning(true); setResult(null); setError(''); setCopied(false); setRestart('idle');
+    try {
+      const outcome = await runMicrosoftSetup();
+      setResult(outcome);
+      const draft = draftWithSetupIds(item, outcome);
+      if (draft) {
+        try { onSaved(await connectorsApi.apply(item.id, draft)); }
+        catch (saveError) { setError(`${ct('msSetupSaveFailed')} ${errorText(saveError)}`); }
+      }
+    } catch (runError) { setError(`${ct('msSetupFailed')} ${errorText(runError)}`); }
+    finally { setRunning(false); }
+  };
+  const restartDesktop = async () => {
+    setRestart('busy');
+    try { await invoke('restart_agent_app', { client: 'claude-desktop' }); setRestart('done'); }
+    catch (restartError) { setRestart(errorText(restartError)); }
+  };
+  const consentUrl = result?.consentUrl?.startsWith(CONSENT_PREFIX) ? result.consentUrl : null;
+  const saved = result?.status === 'ok' && !error;
+  return (
+    <div className="connector-auto-setup">
+      <div>
+        <strong>{ct('msSetupTitle')}</strong>
+        <small>{ct('msSetupBody')}</small>
+      </div>
+      <button type="button" className="primary-button compact-button" disabled={running} aria-busy={running} onClick={() => void run()}>
+        <Sparkles size={14} aria-hidden="true" />{running ? ct('msSetupRunning') : item.secretsConfigured ? ct('msSetupRunAgain') : ct('msSetupRun')}
+      </button>
+      <div role="status" className="connector-auto-setup-result">
+        {saved && result?.consent === 'granted' ? <p className="ok">{ct('msSetupDone')}</p> : null}
+        {saved && result?.consent === 'needsAdmin' ? <>
+          <p className="warn">{ct('msSetupNeedsAdmin')}</p>
+          {consentUrl ? <span className="connector-auto-setup-actions">
+            <button type="button" className="secondary-button compact-button" onClick={() => void navigator.clipboard.writeText(consentUrl).then(() => setCopied(true))}>{copied ? ct('msSetupCopied') : ct('msSetupCopyLink')}</button>
+            <GuideLink url={consentUrl} label={ct('msSetupOpenLink')} />
+          </span> : null}
+        </> : null}
+        {saved ? <span className="connector-auto-setup-actions">
+          <button type="button" className="secondary-button compact-button" disabled={restart === 'busy'} onClick={() => void restartDesktop()}><RefreshCw size={14} aria-hidden="true" />{ct('msSetupRestart')}</button>
+          {restart === 'done' ? <small>{ct('msSetupRestarted')}</small> : restart !== 'idle' && restart !== 'busy' ? <small className="warn">{restart}</small> : null}
+        </span> : null}
+        {result?.status === 'missingModule' ? <p className="warn">{ct('msSetupMissingModule')} <code>{GRAPH_MODULE_INSTALL}</code></p> : null}
+        {result?.status === 'needsAdminToSetUp' ? <p className="warn">{ct('msSetupAdminToSetUp')}</p> : null}
+        {result?.status === 'signInFailed' ? <p className="warn">{ct('msSetupSignInFailed')} {result.message}</p> : null}
+        {result?.status === 'failed' ? <p className="warn">{ct('msSetupFailed')} {result.message}</p> : null}
+        {error ? <p className="warn">{error}</p> : null}
+      </div>
+    </div>
+  );
 }
 
 function GuideLink({ url, label }: { url: string; label: string }) {
