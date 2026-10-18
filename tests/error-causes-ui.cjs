@@ -2,7 +2,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
-// Against the browser mock: Activity → Request Details groups failed requests by cause, worst first; expanding a fixable
+// Against the browser mock: Activity → Requests groups failed requests by cause, worst first; expanding a fixable
 // cause shows the provider's message and an Accounts button that navigates there, while a canceled request isn't counted.
 (async () => {
   const { createServer } = await import('vite');

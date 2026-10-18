@@ -238,7 +238,7 @@ const viewports = [
       await tab('usage-tab-overview', '.usage-overview-layout');
       await assertNoPageOverflow(`${label} usage overview`);
       for (const [id, ready] of [
-        ['analysis', '.usage-analysis-grid'],
+        ['overview', '.usage-analysis-grid'], // Analysis lives on Overview now
         ['events', '.usage-events-table tbody tr'],
         ['pricing', '.usage-pricing-table-wrap tbody tr'],
         ['data-management', '.usage-data-management-panel'],

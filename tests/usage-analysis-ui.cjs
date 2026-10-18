@@ -57,7 +57,8 @@ fs.mkdirSync(screenshots, { recursive: true });
     };
 
     await open();
-    assert.equal(await page.locator('#usage-tab-analysis').getAttribute('aria-selected'), 'true');
+    // The fixture saves the old 'analysis' tab: it now opens Overview, where the analysis charts live.
+    assert.equal(await page.locator('#usage-tab-overview').getAttribute('aria-selected'), 'true');
     const filterTriggers = page.locator('.usage-filter-panel .select-menu-trigger');
     const moreFilters = page.locator('.usage-filter-panel .usage-filter-more');
     assert.deepEqual(await filterTriggers.evaluateAll(items => items.map(item => item.getAttribute('aria-label'))), ['Time range', 'Model'], 'Analysis shows the two primary shared filters');

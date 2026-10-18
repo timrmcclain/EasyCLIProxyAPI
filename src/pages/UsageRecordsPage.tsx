@@ -49,10 +49,11 @@ import { takePendingUsageJump } from '../usageNavigation';
 import { UsageAnalysisView, type UsageAnalysis, type UsageCategory } from './UsageAnalysisView';
 import { readableError } from '../services/readableError';
 
-type UsageTab = 'overview' | 'analysis' | 'events' | 'projects' | 'pricing' | 'data-management';
+type UsageTab = 'overview' | 'events' | 'projects' | 'pricing' | 'data-management';
 type UsageRange = '4h' | '24h' | 'today' | '7d' | '30d' | 'all' | 'custom';
 
-const USAGE_TABS: readonly UsageTab[] = ['overview', 'analysis', 'events', 'projects', 'pricing', 'data-management'];
+// Data management is housekeeping, opened from its own button rather than as one of the tabs.
+const USAGE_TABS: readonly UsageTab[] = ['overview', 'events', 'projects', 'pricing'];
 
 type CollectorStatus = {
   state: 'waiting-core' | 'collecting' | 'error';
@@ -191,7 +192,8 @@ const emptyAnalysis: UsageAnalysis = { models: [], providers: [], sources: [], a
 const loadTab = (): UsageTab => {
   try {
     const saved = usagePreferences.getItem(TAB_KEY);
-    return saved === 'analysis' || saved === 'events' || saved === 'projects' || saved === 'pricing' || saved === 'data-management'
+    // Analysis now lives on the Overview tab, so an old saved 'analysis' opens Overview.
+    return saved === 'events' || saved === 'projects' || saved === 'pricing' || saved === 'data-management'
       ? saved
       : 'overview';
   } catch {
@@ -359,18 +361,8 @@ export function UsageRecordsPage() {
         const optionsRequest = filtersChanged
           ? invoke<UsageAnalysis>('get_usage_analysis', { query: timeQuery })
           : Promise.resolve(null);
+        // Overview carries the analysis charts too, so it loads both.
         if (activeTab === 'overview') {
-          const [nextStatus, nextOptions, nextOverview] = await Promise.all([
-            statusRequest,
-            optionsRequest,
-            invoke<UsageOverview>('get_usage_overview', { query }),
-          ]);
-          if (requestId !== requestIdRef.current) return;
-          setStatus(nextStatus);
-          if (nextOptions) setOptionsAnalysis(nextOptions);
-          setOverview(nextOverview);
-          setOverviewRange(timeQuery);
-        } else if (activeTab === 'analysis') {
           const [nextStatus, nextOptions, nextOverview, nextAnalysis] = await Promise.all([
             statusRequest,
             optionsRequest,
@@ -502,7 +494,6 @@ export function UsageRecordsPage() {
     !error &&
     loading &&
     ((activeTab === 'overview' && !overview) ||
-      (activeTab === 'analysis' && !overview) ||
       (activeTab === 'events' && !events) ||
       (activeTab === 'pricing' && !pricing));
 
@@ -510,7 +501,7 @@ export function UsageRecordsPage() {
   const showUnavailable =
     !showInitialLoading &&
     (!loading || Boolean(error)) &&
-    (((activeTab === 'overview' || activeTab === 'analysis') && !overview) ||
+    ((activeTab === 'overview' && !overview) ||
       (activeTab === 'pricing' && !pricing));
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tab: UsageTab) => {
@@ -653,19 +644,6 @@ export function UsageRecordsPage() {
           </button>
           <button
             type="button"
-            id="usage-tab-analysis"
-            role="tab"
-            className={activeTab === 'analysis' ? 'active' : ''}
-            aria-selected={activeTab === 'analysis'}
-            aria-controls="usage-tab-panel"
-            tabIndex={activeTab === 'analysis' ? 0 : -1}
-            onClick={() => setActiveTab('analysis')}
-            onKeyDown={(event) => handleTabKeyDown(event, 'analysis')}
-          >
-            <span>{t('usage.tab.analysis')}</span>
-          </button>
-          <button
-            type="button"
             id="usage-tab-events"
             role="tab"
             className={activeTab === 'events' ? 'active' : ''}
@@ -703,20 +681,17 @@ export function UsageRecordsPage() {
           >
             <span>{t('usage.tab.pricing')}</span>
           </button>
+          </div>
           <button
             type="button"
             id="usage-tab-data-management"
-            role="tab"
-            className={activeTab === 'data-management' ? 'active' : ''}
-            aria-selected={activeTab === 'data-management'}
+            className={`secondary-button compact-button usage-manage-data${activeTab === 'data-management' ? ' active' : ''}`}
+            aria-pressed={activeTab === 'data-management'}
             aria-controls="usage-tab-panel"
-            tabIndex={activeTab === 'data-management' ? 0 : -1}
-            onClick={() => setActiveTab('data-management')}
-            onKeyDown={(event) => handleTabKeyDown(event, 'data-management')}
+            onClick={() => setActiveTab(activeTab === 'data-management' ? 'overview' : 'data-management')}
           >
-            <span>{t('usage.tab.dataManagement')}</span>
+            {t('usage.tab.dataManagement')}
           </button>
-          </div>
         </div>
 
         <div className="usage-topbar-actions">
@@ -761,8 +736,8 @@ export function UsageRecordsPage() {
       ) : null}
 
       {showUnavailable ? <UsageUnavailable failed={Boolean(error)} retrying={loading} onRetry={() => void loadData(false)} /> : null}
-      {activeTab === 'overview' && overview ? <OverviewView overview={overview} range={overviewRange} /> : null}
-      {activeTab === 'analysis' && overview ? <UsageAnalysisView analysis={analysis} overview={overview} range={overviewRange} /> : null}
+      {/* Overview fills the panel; the analysis charts follow it when you scroll. */}
+      {activeTab === 'overview' && overview ? <div className="usage-overview-stack"><OverviewView overview={overview} range={overviewRange} /><UsageAnalysisView analysis={analysis} overview={overview} range={overviewRange} /></div> : null}
       {activeTab === 'events' && failures ? <ErrorCausesCard failures={failures.items} truncated={failures.truncated} /> : null}
       {activeTab === 'events' && timed ? <ResponseTimesCard requests={timed} /> : null}
       {activeTab === 'events' ? (

@@ -30,7 +30,7 @@ const path = require('node:path');
 
     await page.locator('.nav-section').getByRole('button', { name: '使用记录' }).click();
     const tabs = page.getByRole('tab');
-    assert.equal(await tabs.count(), 6);
+    assert.equal(await tabs.count(), 4, 'Overview, Requests, By project, Costs; data management is a separate button');
     assert.equal(await page.getByRole('tab', { name: '按项目' }).count(), 1);
     assert.deepEqual(await tabs.evaluateAll((elements) => elements
       .map((element) => element.getAttribute('aria-controls'))
@@ -38,7 +38,7 @@ const path = require('node:path');
     await tabs.first().focus();
     await page.keyboard.press('ArrowRight');
     assert.equal(await tabs.nth(1).getAttribute('aria-selected'), 'true');
-    await page.getByRole('tab', { name: /请求明细/ }).click();
+    await page.getByRole('tab', { name: /^请求$/ }).click();
     await page.locator('.usage-events-table tbody tr').first().waitFor();
     const usageSurfaces = await page.locator('.usage-records-page .usage-events-table tbody tr').first().evaluate(row => {
       const cell = row.querySelector('td');
@@ -69,7 +69,7 @@ const path = require('node:path');
     assert.ok([shellSurfaces.pageToken, 'rgba(0, 0, 0, 0)'].includes(shellSurfaces.content),
       `light content shows the grey page surface, got ${shellSurfaces.content}`);
     assert.notEqual(usageSurfaces.row, shellSurfaces.shell, 'white cards stand out from the grey page');
-    await page.getByRole('tab', { name: /数据管理/ }).click();
+    await page.getByRole('button', { name: /数据管理/ }).click();
     assert.equal(await page.locator('.usage-filter-panel').count(), 0);
 
     await page.locator('.nav-section').getByRole('button', { name: '高级功能' }).click();

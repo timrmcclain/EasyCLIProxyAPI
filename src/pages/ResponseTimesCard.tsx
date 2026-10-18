@@ -2,7 +2,7 @@ import { useI18n } from '../i18n';
 import { formatDuration, modelTimings, type TimedRequest } from '../services/responseTimes';
 import './ResponseTimesCard.css';
 
-/** Activity → Request Details: how long each busy model takes, from successful requests matching the filters. */
+/** Activity → Requests: how long each busy model takes, from successful requests matching the filters. */
 export function ResponseTimesCard({ requests }: { requests: TimedRequest[] }) {
   const { t } = useI18n();
   const timings = modelTimings(requests);

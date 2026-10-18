@@ -157,7 +157,7 @@ function parseCsv(text) {
       await page.locator('.usage-refresh-btn:not(:disabled)').waitFor();
       const baseline = await readSharedGeometry();
       const size = `${viewport.width}x${viewport.height}`;
-      for (const tab of ['overview', 'analysis', 'events', 'pricing', 'data-management']) {
+      for (const tab of ['overview', 'events', 'pricing', 'data-management']) {
         await page.locator(`#usage-tab-${tab}`).click();
         const hasFilters = tab !== 'data-management';
         assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} loading`, hasFilters);
