@@ -11,6 +11,9 @@ import './HealthCheckPage.css';
 import './JevPage.css';
 import './ClaudeExtensionsPage.css';
 
+type ExtensionsView = 'installed' | 'discover';
+const VIEW_KEY = 'personal.extensionsView';
+
 const AVAILABLE_LIMIT = 8;
 type Review = { id: string; scope: string; details: string };
 
@@ -27,6 +30,9 @@ export function ClaudeExtensionsPage() {
   const [review, setReview] = useState<Review | null>(null);
   const [pluginQuery, setPluginQuery] = useState('');
   const [skillQuery, setSkillQuery] = useState('');
+  // Installed: what you have. Discover: finding and adding more.
+  const [view, setView] = useState<ExtensionsView>(() => localStorage.getItem(VIEW_KEY) === 'discover' ? 'discover' : 'installed');
+  const changeView = (next: ExtensionsView) => { setView(next); localStorage.setItem(VIEW_KEY, next); document.getElementById(`ext-view-${next}`)?.focus(); };
   const [skillSource, setSkillSource] = useState('');
   const [preview, setPreview] = useState<SkillPreview | null>(null);
   const [installedFromPreview, setInstalledFromPreview] = useState<string[]>([]);
@@ -165,7 +171,16 @@ export function ClaudeExtensionsPage() {
       </div>
     </section>}
 
-    {overview?.claudeFound && <section className="jev-card" aria-labelledby="ext-plugins-title">
+    {overview && <div className="ext-views" role="tablist" aria-label={t('ext.view.label')}>
+      {(['installed', 'discover'] as const).map(id => <button key={id} type="button" role="tab" id={`ext-view-${id}`} aria-selected={view === id} aria-controls="ext-view-panel"
+        tabIndex={view === id ? 0 : -1} className={view === id ? 'active' : ''} onClick={() => changeView(id)}
+        onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); changeView(id === 'installed' ? 'discover' : 'installed'); } }}>
+        {t(`ext.view.${id}`)}
+      </button>)}
+    </div>}
+
+    <div id="ext-view-panel" role="tabpanel" aria-labelledby={`ext-view-${view}`} className="ext-view-panel">
+    {view === 'installed' && overview?.claudeFound && <section className="jev-card" aria-labelledby="ext-plugins-title">
       <header className="jev-card-heading">
         <h2 id="ext-plugins-title" className="jev-section-title">{t('ext.plugins.title')}</h2>
         <p className="jev-counts">{t('ext.plugins.count', { on: plugins.filter(plugin => plugin.enabled || isSessionPlugin(plugin)).length, total: plugins.length })}</p>
@@ -202,7 +217,7 @@ export function ClaudeExtensionsPage() {
         </ul>}
     </section>}
 
-    {overview?.claudeFound && <section className="jev-card" aria-labelledby="ext-add-title">
+    {view === 'discover' && overview?.claudeFound && <section className="jev-card" aria-labelledby="ext-add-title">
       <header className="jev-card-heading">
         <h2 id="ext-add-title" className="jev-section-title">{t('ext.add.title')}</h2>
       </header>
@@ -235,7 +250,7 @@ export function ClaudeExtensionsPage() {
         </>}
     </section>}
 
-    {overview && <section className="jev-card" aria-labelledby="ext-skills-title">
+    {view === 'installed' && overview && <section className="jev-card" aria-labelledby="ext-skills-title">
       <header className="jev-card-heading">
         <h2 id="ext-skills-title" className="jev-section-title">{t('ext.skills.title')}</h2>
         <p className="jev-counts">{t('ext.skills.count', { count: overview.skills.filter(skill => !skill.notASkill).length, dir: overview.skillsDir })}{overview.skills.some(skill => skill.notASkill) ? ` ${t('ext.skills.otherFolders', { count: overview.skills.filter(skill => skill.notASkill).length })}` : ''}</p>
@@ -266,7 +281,12 @@ export function ClaudeExtensionsPage() {
           </li>)}
         </ul>}
 
-      <h3 className="ext-subheading">{t('ext.skills.add.title')}</h3>
+    </section>}
+
+    {view === 'discover' && overview && <section className="jev-card" aria-labelledby="ext-add-skill-title">
+      <header className="jev-card-heading">
+        <h2 id="ext-add-skill-title" className="jev-section-title">{t('ext.skills.add.title')}</h2>
+      </header>
       <form className="ext-add-skill" onSubmit={event => { event.preventDefault(); void previewSkill(); }}>
         <input type="text" value={skillSource} onChange={event => setSkillSource(event.currentTarget.value)}
           placeholder={t('ext.skills.add.placeholder')} aria-label={t('ext.skills.add.title')} />
@@ -301,6 +321,7 @@ export function ClaudeExtensionsPage() {
         <div className="jev-actions"><button type="button" className="secondary-button compact-button" onClick={closePreview}>{t('ext.skills.add.discard')}</button></div>
       </div>}
     </section>}
+    </div>
     {confirmationDialog}
   </div>;
 }

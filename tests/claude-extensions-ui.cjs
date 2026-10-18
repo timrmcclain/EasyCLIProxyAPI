@@ -59,7 +59,12 @@ const path = require('node:path');
     await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('3 on'));
 
     // Searching the marketplace leaves installed plugins out.
-    // The marketplace has its own card, below the installed plugins.
+    // Finding and adding plugins is on Discover; what's installed is on Installed.
+    const view = async (name) => { await page.getByRole('tab', { name, exact: true }).click(); await page.waitForFunction((n) => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() === n, name); };
+    assert.equal(await page.getByRole('tab', { name: 'Installed', exact: true }).getAttribute('aria-selected'), 'true', 'Installed is the default view');
+    assert.equal(await page.locator('section[aria-labelledby="ext-add-title"]').count(), 0, 'the catalogue is not on Installed');
+    await view('Discover');
+    assert.equal(await plugins.count(), 0, 'installed plugins are not on Discover');
     const market = page.locator('section[aria-labelledby="ext-add-title"]');
     const search = page.getByRole('searchbox', { name: /Search 3 plugins/ });
     await search.fill('docs');
@@ -73,10 +78,14 @@ const path = require('node:path');
     const review = page.locator('.ext-review');
     await review.waitFor();
     assert.match(await review.innerText(), /Review code-review.*switched off.*Component inventory/s);
+    // It installed switched off; the review stays above both views, so it can be turned on from either.
+    await view('Installed');
     assert.match(await plugins.locator('.ext-row', { hasText: 'code-review' }).first().innerText(), /Off/);
     await review.getByRole('button', { name: 'Turn on' }).click();
     await review.waitFor({ state: 'detached' });
     await page.waitForFunction(() => document.querySelector('section[aria-labelledby="ext-plugins-title"] .jev-counts')?.textContent?.includes('4 on'));
+    assert.match(await plugins.locator('.ext-row', { hasText: 'code-review' }).first().innerText(), /On/);
+    await view('Discover');
 
     // A marketplace that installs by running a command shows the command; declining installs nothing.
     await market.locator('.ext-row', { hasText: 'npx-tool' }).getByRole('button', { name: 'Install' }).click();
@@ -88,6 +97,7 @@ const path = require('node:path');
     await dialog().getByRole('button', { name: 'Cancel' }).click();
     await dialog().waitFor({ state: 'detached' });
     assert.equal(await page.locator('.ext-review').count(), 0);
+    await view('Installed');
     assert.match(await plugins.locator('.jev-counts').innerText(), /5 installed/);
 
     // Removing a plugin asks first.
@@ -104,13 +114,15 @@ const path = require('node:path');
       assert.equal(await skills.locator('.ext-skills .ext-row', { hasText: folder }).getByRole('button').count(), 0, folder);
     }
 
-    // Adding a skill: a bad source is refused; a preview shows scripts and existing skills before installing.
+    // Adding a skill (on Discover): a bad source is refused; a preview shows scripts and existing skills before installing.
+    await view('Discover');
+    const addSkill = page.locator('section[aria-labelledby="ext-add-skill-title"]');
     const source = page.getByRole('textbox', { name: 'Add a skill from GitHub' });
     await source.fill('not a repo');
-    await skills.getByRole('button', { name: 'Preview' }).click();
+    await addSkill.getByRole('button', { name: 'Preview' }).click();
     assert.match(await page.locator('.ext-page [role="alert"]').innerText(), /Enter a GitHub repository/);
     await source.fill('anthropics/skills');
-    await skills.getByRole('button', { name: 'Preview' }).click();
+    await addSkill.getByRole('button', { name: 'Preview' }).click();
     const preview = page.locator('.ext-preview');
     await preview.waitFor();
     assert.match(await preview.innerText(), /anthropics\/skills contains 2 skill.*Only install skills from sources you trust/s);
@@ -119,6 +131,7 @@ const path = require('node:path');
     await preview.locator('.ext-row', { hasText: 'slides' }).getByRole('button', { name: 'Install' }).click();
     await preview.locator('.ext-row', { hasText: 'slides' }).getByRole('button', { name: 'Installed' }).waitFor();
     await preview.getByRole('button', { name: 'Done' }).click();
+    await view('Installed');
     assert.match(await skills.locator('.jev-counts').innerText(), /4 skills in/);
 
     // Removing a skill goes to the Recycle Bin after confirmation.
