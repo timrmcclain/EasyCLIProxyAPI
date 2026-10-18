@@ -1120,3 +1120,7 @@ body, html, #root {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
+
+/* A setting edited on another page: its summary and a link there. */
+.owned-setting { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.owned-setting-summary { color: var(--text-secondary); font-size: 13px; }

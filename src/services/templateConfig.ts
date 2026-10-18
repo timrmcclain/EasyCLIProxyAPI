@@ -16,6 +16,8 @@ export type TemplateConfigField = {
   directory?: boolean;
   rows?: number;
   restart?: boolean;
+  /** Edited elsewhere: shown here read-only, with no reset button that could clear another editor's value. */
+  owned?: boolean;
   render?: (props: { value: unknown; onChange: (value: unknown) => void; disabled: boolean; id: string }) => ReactNode;
   validate?: (value: unknown) => TemplateText | null;
 };

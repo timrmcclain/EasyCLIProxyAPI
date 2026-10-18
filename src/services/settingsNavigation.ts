@@ -51,6 +51,13 @@ export function requestSettingField(path: string) {
   window.dispatchEvent(new CustomEvent(SETTING_FIELD_EVENT));
 }
 
+/** Opens one Settings category, e.g. from a link inside another category. */
+export const SETTINGS_CATEGORY_EVENT = 'app:settings-category';
+export function requestSettingsCategory(category: SettingsCategory) {
+  window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'config' }));
+  window.dispatchEvent(new CustomEvent(SETTINGS_CATEGORY_EVENT, { detail: category }));
+}
+
 export function takePendingSettingField(): string | null {
   const path = pendingSettingField;
   pendingSettingField = null;

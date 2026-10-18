@@ -1,5 +1,6 @@
 import type { TemplateConfigField, TemplateConfigGroup, TemplateText } from './templateConfig';
 import { structuredField } from './payloadTemplateFields';
+import { ownedField } from '../components/OwnedSettingField';
 import { boolShape, configRecord, nonemptyText, textShape, type ConfigShape } from './structuredConfig';
 
 const T = (zh: string, en: string, ja?: string): TemplateText => ({ zh, en, ja });
@@ -31,14 +32,20 @@ const duration = (block: string, key: string, label: TemplateText, placeholder: 
 });
 const limit = (block: string, key: string, label: TemplateText, placeholder: string): TemplateConfigField => ({ path: ['credentials', block, key], type: 'number', min: 0, label, placeholder });
 
+/** "On · 3 plugins configured" from the plugins block, without showing any plugin's settings. */
+function pluginSummary(value: unknown): TemplateText {
+  const plugins = value && typeof value === 'object' ? value as { enabled?: unknown; configs?: unknown } : {};
+  const count = plugins.configs && typeof plugins.configs === 'object' ? Object.keys(plugins.configs).length : 0;
+  const on = plugins.enabled === true;
+  return T(`${on ? '已开启' : '已关闭'} · ${count} 个插件已配置`, `${on ? 'On' : 'Off'} · ${count} plugin${count === 1 ? '' : 's'} configured`, `${on ? 'オン' : 'オフ'} · ${count} 件のプラグインを設定済み`);
+}
+
 export const extensionTemplateGroups: TemplateConfigGroup[] = [
   { id: 'extensions-plugins', title: T('原生插件', 'Native plugins', 'ネイティブプラグイン'),
     description: T('插件在内核进程中运行。仓库认证只引用环境变量；单个插件的 enabled 不会隐式开启全局开关。插件配置可按实际插件字段添加，Home 管理的版本号不会被修改。', 'Plugins run inside the core process. Store authentication references environment variables. A plugin’s enabled setting does not enable the global switch. Configure fields supported by each plugin; Home-owned revisions remain unchanged.', 'プラグインはコア内で動作します。認証は環境変数を参照。個別の enabled は全体のスイッチを変更しません。Home の管理番号は維持します。'), fields: [
-      { path: ['plugins', 'enabled'], type: 'boolean', defaultValue: false, label: T('启用原生插件', 'Enable native plugins', 'ネイティブプラグインを有効化') },
-      { path: ['plugins', 'dir'], type: 'string', placeholder: 'plugins', label: T('插件目录', 'Plugin directory', 'プラグインディレクトリ') },
-      { path: ['plugins', 'store-sources'], type: 'string-list', label: T('附加插件仓库', 'Additional plugin registries', '追加のプラグインレジストリ'), description: T('每行一个 registry.json URL；内置官方仓库始终保留。', 'One registry.json URL per line. The built-in official registry is always included.', '1 行に registry.json の URL を入力。公式レジストリは常に含まれます。') },
-      structuredField(['plugins', 'store-auth'], T('仓库认证规则', 'Registry authentication', 'レジストリ認証'), pluginStoreAuthShape),
-      structuredField(['plugins', 'configs'], T('各插件配置', 'Per-plugin configuration', 'プラグインごとの設定'), { type: 'map', item: { type: 'map', item: { type: 'any' } } }),
+      // The Plugins page owns every plugin setting; Settings shows a summary so they aren't saved two different ways.
+      ownedField(['plugins'], T('原生插件', 'Native plugins', 'ネイティブプラグイン'), T('插件页面', 'Plugins', 'プラグイン'),
+        () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'plugins' })), { summary: pluginSummary }),
     ] },
   { id: 'extensions-concurrency', title: T('凭据并发策略（独立模式）', 'Credential concurrency (standalone mode)', '認証情報の同時実行（単独モード）'),
     description: T('只用于独立运行的内核。Home 模式使用 Home 下发的策略，本地配置不生效；系统维护的生命周期和观察版本号不在此编辑。', 'Applies only to standalone cores. In Home mode, Home owns the policy and local values are ignored. System-owned lifecycle and observation revisions are not editable here.', '単独モード専用です。Home モードでは Home のポリシーが優先され、ローカル値は無視されます。システム管理のリビジョンは編集しません。'), fields: [

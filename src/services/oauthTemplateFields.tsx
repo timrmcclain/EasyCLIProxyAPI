@@ -1,6 +1,9 @@
 import type { TemplateConfigField, TemplateConfigGroup, TemplateText } from './templateConfig';
 import { structuredField } from './payloadTemplateFields';
-import { boolShape, configRecord, errorRulesShape, nonemptyText, stringsShape, textShape, type ConfigShape } from './structuredConfig';
+import { ownedField } from '../components/OwnedSettingField';
+import { requestOAuthSubpage } from '../oauthNavigation';
+import { requestSettingsCategory } from './settingsNavigation';
+import { boolShape, configRecord, errorRulesShape, nonemptyText, textShape, type ConfigShape } from './structuredConfig';
 
 const T = (zh: string, en: string, ja?: string): TemplateText => ({ zh, en, ja });
 const providerPath = (provider: string, key: string) => ['oauth', 'providers', provider, ...key.split('.')];
@@ -44,9 +47,10 @@ export const oauthTemplateGroups: TemplateConfigGroup[] = [
   ] },
   { id: 'oauth-models', title: T('OAuth 模型与通道', 'OAuth models and channels', 'OAuth モデルとチャンネル'),
     description: T('按通道管理，例如 codex、claude、aistudio、vertex、antigravity、kimi、xai、meta；别名也支持插件通道。单凭据中的规则优先。', 'Manage channels such as codex, claude, aistudio, vertex, antigravity, kimi, xai and meta. Aliases also support plugin channels. Credential-specific rules take precedence.', '通道ごとに設定します。別名はプラグインのチャンネルにも対応し、認証情報ごとのルールが優先されます。'), fields: [
-      structuredField(['oauth', 'model-alias'], T('模型别名', 'Model aliases', 'モデル別名'), { type: 'map', item: oauthAliasShape }),
+      // Edited on Settings → Model aliases and Accounts; shown here so the same value isn't saved two different ways.
+      ownedField(['oauth', 'model-alias'], T('模型别名', 'Model aliases', 'モデル別名'), T('模型别名', 'Model aliases', 'モデル別名'), () => requestSettingsCategory('aliases')),
       structuredField(['oauth', 'settings'], T('模型能力覆盖', 'Model capabilities', 'モデル機能の上書き'), { type: 'map', item: modelSettingsShape }),
-      structuredField(['oauth', 'excluded-models'], T('排除模型', 'Excluded models', '除外するモデル'), { type: 'map', item: stringsShape() }),
+      ownedField(['oauth', 'excluded-models'], T('排除模型', 'Excluded models', '除外するモデル'), T('账号', 'Accounts', 'アカウント'), () => requestOAuthSubpage('authFiles')),
       structuredField(['oauth', 'request-scoped-errors'], T('上游错误处理', 'Upstream error rules', '上流エラールール'), { type: 'map', item: errorRulesShape }),
     ] },
   { id: 'oauth-codex', title: T('Codex OAuth 行为', 'Codex OAuth behavior', 'Codex OAuth の動作'), fields: [

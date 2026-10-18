@@ -57,7 +57,7 @@ import { readableError } from '../services/readableError';
 import {
   settingsCategories, settingsTemplateGroups,
   allSettingsTemplateGroups, settingsMessages, type SettingsCategory,
-  SETTING_FIELD_EVENT, settingFieldLocation, takePendingSettingField,
+  SETTING_FIELD_EVENT, SETTINGS_CATEGORY_EVENT, settingFieldLocation, takePendingSettingField,
 } from '../services/settingsNavigation';
 
 type CoreConfigSettings = {
@@ -1248,6 +1248,17 @@ export function ConfigPanelPage() {
     open();
     window.addEventListener(SETTING_FIELD_EVENT, open);
     return () => window.removeEventListener(SETTING_FIELD_EVENT, open);
+  }, []);
+  // A link inside Settings (e.g. "Edit in Model aliases") opens another category.
+  const activateRef = useRef(activateConfigSubpage);
+  activateRef.current = activateConfigSubpage;
+  useEffect(() => {
+    const open = (event: Event) => {
+      const category = (event as CustomEvent<unknown>).detail;
+      if (CONFIG_SUBPAGES.includes(category as ConfigSubpage)) activateRef.current(category as ConfigSubpage);
+    };
+    window.addEventListener(SETTINGS_CATEGORY_EVENT, open);
+    return () => window.removeEventListener(SETTINGS_CATEGORY_EVENT, open);
   }, []);
   const nativeDirty = {
     keys: false, management: Boolean(managementSecretDraft || managementSecretConfirm),
