@@ -1587,6 +1587,118 @@ fn locations_for(app: &tauri::AppHandle) -> Result<Locations, String> {
     Ok(Locations::resolve(home))
 }
 
+/// What reading the GitHub CLI's sign-in found. The token itself never leaves Rust: it goes
+/// straight into the connector entries, the same place a pasted token goes.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct GitHubCliSetup {
+    /// ok, missingCli, notSignedIn or failed.
+    status: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    overview: Option<ConnectorOverview>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct GitHubCliSetupRequest {
+    claude_code: bool,
+    claude_desktop: bool,
+    access: Option<String>,
+}
+
+/// GitHub's token formats: OAuth (what `gh` stores), classic and fine-grained personal tokens, app user tokens.
+fn valid_github_token(token: &str) -> bool {
+    ["gho_", "ghp_", "ghu_", "github_pat_"].iter().any(|prefix| token.starts_with(prefix))
+        && (20..=255).contains(&token.len())
+        && token.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+/// The token from `gh auth token`'s result, or which outcome to report instead.
+fn token_from_gh(output: std::io::Result<std::process::Output>) -> Result<String, (&'static str, Option<String>)> {
+    let output = match output {
+        Ok(output) => output,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Err(("missingCli", None)),
+        Err(error) => return Err(("failed", Some(error.to_string()))),
+    };
+    if !output.status.success() {
+        return Err(("notSignedIn", None));
+    }
+    let token = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if valid_github_token(&token) {
+        Ok(token)
+    } else {
+        Err(("failed", Some("The GitHub CLI answered with something that isn't a GitHub token.".to_string())))
+    }
+}
+
+/// Runs `gh auth token` without a window, giving up after `timeout` (a locked keyring can wait forever).
+fn run_gh_auth_token(timeout: Duration) -> std::io::Result<std::process::Output> {
+    let spawn = |program: &str| {
+        let mut command = Command::new(program);
+        command.args(["auth", "token", "--hostname", "github.com"]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
+        command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn()
+    };
+    // The hub may have started before gh was added to PATH; its installer's default folder still finds it.
+    let mut child = match spawn("gh") {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound && cfg!(windows) => spawn(r"C:\Program Files\GitHub CLI\gh.exe")?,
+        other => other?,
+    };
+    let started = Instant::now();
+    while child.try_wait()?.is_none() {
+        if started.elapsed() > timeout {
+            let _ = child.kill();
+            return Err(std::io::Error::new(std::io::ErrorKind::TimedOut, "The GitHub CLI didn't answer in time."));
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    child.wait_with_output()
+}
+
+/// Saves the GitHub CLI's token for the chosen apps. With neither chosen, Claude Code gets it.
+fn github_cli_setup_with(
+    locations: &Locations,
+    runtimes: &Runtimes,
+    request: GitHubCliSetupRequest,
+    output: std::io::Result<std::process::Output>,
+) -> GitHubCliSetup {
+    let failed = |status, message| GitHubCliSetup { status, message, overview: None };
+    let token = match token_from_gh(output) {
+        Ok(token) => token,
+        Err((status, message)) => return failed(status, message),
+    };
+    let change = ConnectorChangeRequest {
+        id: "github".to_string(),
+        claude_code: request.claude_code || !request.claude_desktop,
+        claude_desktop: request.claude_desktop,
+        access: request.access,
+        services: None,
+        secrets: BTreeMap::from([("GITHUB_TOKEN".to_string(), token)]),
+    };
+    match apply_change(locations, runtimes, change).and_then(|()| overview(locations, runtimes)) {
+        Ok(overview) => GitHubCliSetup { status: "ok", message: None, overview: Some(overview) },
+        Err(error) => failed("failed", Some(error)),
+    }
+}
+
+#[tauri::command]
+pub(crate) async fn github_cli_setup(app: tauri::AppHandle, request: GitHubCliSetupRequest) -> Result<GitHubCliSetup, String> {
+    let locations = locations_for(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let runtimes = Runtimes::detect(&locations.home, &locations.local_app_data);
+        github_cli_setup_with(&locations, &runtimes, request, run_gh_auth_token(Duration::from_secs(20)))
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 pub(crate) async fn get_connector_overview(app: tauri::AppHandle) -> Result<ConnectorOverview, String> {
     let locations = locations_for(&app)?;

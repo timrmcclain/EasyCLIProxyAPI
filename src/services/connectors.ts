@@ -47,6 +47,12 @@ export type ConnectorDraft = {
   secrets: Record<string, string>;
 };
 
+export type GitHubCliSetup = {
+  status: 'ok' | 'missingCli' | 'notSignedIn' | 'failed';
+  message?: string;
+  overview?: ConnectorOverview;
+};
+
 export const connectorTargets: readonly ConnectorTarget[] = ['claudeCode', 'claudeDesktop'];
 
 export function draftFromItem(item: ConnectorOverviewItem): ConnectorDraft {
@@ -115,6 +121,10 @@ export const connectorsApi = {
     },
   }),
   undo: () => invoke<ConnectorOverview>('undo_connector_change'),
+  /** Saves the GitHub CLI's own token for the chosen apps; the token never comes back here. */
+  githubCliSetup: (draft: ConnectorDraft) => invoke<GitHubCliSetup>('github_cli_setup', {
+    request: { claudeCode: draft.claudeCode, claudeDesktop: draft.claudeDesktop, access: draft.access },
+  }),
   test: (id: ConnectorId, target: ConnectorTarget) => invoke<ConnectorTestResult>('test_connector', { id, target }),
   aiTest: (id: ConnectorId, today: string) => invoke<ConnectorTestResult>('ai_test_connector', { id, today }),
 };

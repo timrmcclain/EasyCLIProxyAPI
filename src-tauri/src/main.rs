@@ -2799,6 +2799,7 @@ fn main() {
             connectors::test_connector,
             connectors::ai_test_connector,
             microsoft_setup::microsoft_auto_setup,
+            connectors::github_cli_setup,
             plugins::get_plugin_support,
             plugins::get_plugin_resource_url,
             provider_health::provider_health_probe,

@@ -39,7 +39,7 @@ const path = require('node:path');
       const row = page.getByRole('button', { name: /Microsoft 365 \(work\)/ });
       await row.waitFor();
       if (await row.getAttribute('aria-expanded') !== 'true') await row.click();
-      const card = page.locator('.connector-auto-setup');
+      const card = page.locator('.connector-auto-setup:not(.connector-github-setup)');
       await card.waitFor();
       return { page, card };
     };
@@ -89,6 +89,31 @@ const path = require('node:path');
       await googleCard.getByRole('button', { name: 'Check connection' }).first().click();
       await googleCard.getByText(/Claude Code signs in separately, once: open Claude Code, type \/mcp, choose google-workspace/).waitFor();
       await googleCard.getByRole('button', { name: 'Open Claude Code' }).waitFor();
+      await page.close();
+    }
+
+    // Claude Code without its own Microsoft 365 sign-in: the row says so before any test, the card explains /mcp,
+    // and coming back to the window after signing in shows the new state.
+    {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      page.setDefaultTimeout(15000);
+      page.on('pageerror', error => errors.push(String(error)));
+      await page.route('**/*', route => route.request().url().startsWith(`${base}/`) ? route.continue() : route.abort());
+      await page.addInitScript(() => {
+        localStorage.setItem('easy-cli-proxy-api.locale', 'en'); localStorage.setItem('personal.lastPage', 'connectors');
+        globalThis.mockMicrosoftCodeSignedIn = false;
+      });
+      await page.goto(`${base}/?mock=running&mockDelay=5`);
+      const row = page.getByRole('button', { name: /Microsoft 365 \(work\)/ });
+      await row.waitFor();
+      assert.match(await row.innerText(), /Claude Code · Needs sign-in/);
+      await row.click();
+      const hint = page.locator('.connector-code-sign-in');
+      await hint.getByText(/Claude Code isn't signed in yet\. It signs in separately, once: open Claude Code, type \/mcp, choose microsoft-365/).waitFor();
+      await hint.getByRole('button', { name: 'Open Claude Code' }).waitFor();
+      await page.evaluate(() => { globalThis.mockMicrosoftCodeSignedIn = true; window.dispatchEvent(new Event('focus')); });
+      await page.waitForFunction(() => /Claude Code · On/.test([...document.querySelectorAll('.connector-row-toggle')].find(node => /Microsoft 365/.test(node.textContent))?.textContent ?? ''));
+      assert.equal(await hint.count(), 0, 'the hint goes once Claude Code is signed in');
       await page.close();
     }
 

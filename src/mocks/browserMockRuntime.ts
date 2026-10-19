@@ -73,6 +73,7 @@ type ProviderSection = (typeof PROVIDER_SECTIONS)[number];
 // Compression (Headroom) in the browser mock: installed, off, with a little saved history.
 /** Microsoft 365's Claude Desktop sign-in IDs, set by Save or by the fake automatic setup. */
 const mockMicrosoft = { configured: false, desktop: false };
+const mockGitHub = { configured: false, code: false, desktop: false, access: 'readonly' };
 const mockCompression = {
   enabled: false,
   routeClaudeCode: true,
@@ -1384,6 +1385,15 @@ export function createBrowserMockRuntime(
         return preset ?? { status: 'ok', tenantId: '11111111-2222-3333-4444-555555555555', clientId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', created: true, consent: 'granted',
           consentUrl: 'https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555/adminconsent?client_id=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' };
       }
+      case 'github_cli_setup': {
+        // Tests pick the outcome; the default reads a signed-in GitHub CLI.
+        const preset = (globalThis as { mockGitHubCliSetup?: { status: string; message?: string } }).mockGitHubCliSetup;
+        await new Promise(resolve => setTimeout(resolve, 50));
+        if (preset && preset.status !== 'ok') return preset;
+        const request = (payload as { request?: { claudeCode?: boolean; claudeDesktop?: boolean; access?: string | null } } | undefined)?.request ?? {};
+        Object.assign(mockGitHub, { configured: true, code: Boolean(request.claudeCode || !request.claudeDesktop), desktop: Boolean(request.claudeDesktop), access: request.access ?? mockGitHub.access });
+        return { status: 'ok', overview: await invoke('get_connector_overview', {}) };
+      }
       case 'get_connector_overview':
       case 'apply_connector_change':
       case 'undo_connector_change': {
@@ -1401,9 +1411,14 @@ export function createBrowserMockRuntime(
           lastChange: null,
           connectors: [
             { id: 'google', accessLevels: ['readonly', 'drafts', 'full'], serviceOptions: ['gmail', 'calendar', 'drive', 'docs', 'sheets'], secretNames: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: 'full', builtIn: false, signedIn: false }, claudeDesktop: { enabled: true, access: 'full', builtIn: false, signedIn: false } },
-            { id: 'microsoft365', accessLevels: [], serviceOptions: [], secretNames: ['MICROSOFT_TENANT_ID', 'MICROSOFT_CLIENT_ID'], secretsConfigured: mockMicrosoft.configured, secretsDesktopOnly: true, unavailableReason: null, claudeCode: off,
+            { id: 'microsoft365', accessLevels: [], serviceOptions: [], secretNames: ['MICROSOFT_TENANT_ID', 'MICROSOFT_CLIENT_ID'], secretsConfigured: mockMicrosoft.configured, secretsDesktopOnly: true, unavailableReason: null,
+              // Tests can turn on the Claude Code entry and choose whether Claude Code has signed in to it.
+              claudeCode: typeof (globalThis as { mockMicrosoftCodeSignedIn?: boolean }).mockMicrosoftCodeSignedIn === 'boolean'
+                ? { enabled: true, access: null, builtIn: false, signedIn: (globalThis as { mockMicrosoftCodeSignedIn?: boolean }).mockMicrosoftCodeSignedIn ?? null } : off,
               claudeDesktop: mockMicrosoft.desktop ? { enabled: true, access: null, builtIn: true, signedIn: null } : off },
-            { id: 'github', accessLevels: ['readonly', 'full'], serviceOptions: [], secretNames: ['GITHUB_TOKEN'], secretsConfigured: false, unavailableReason: null, claudeCode: off, claudeDesktop: off },
+            { id: 'github', accessLevels: ['readonly', 'full'], serviceOptions: [], secretNames: ['GITHUB_TOKEN'], secretsConfigured: mockGitHub.configured, unavailableReason: null,
+              claudeCode: mockGitHub.code ? { enabled: true, access: mockGitHub.access, builtIn: false, signedIn: null } : off,
+              claudeDesktop: mockGitHub.desktop ? { enabled: true, access: mockGitHub.access, builtIn: false, signedIn: null } : off },
             { id: 'playwright', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
             { id: 'windows', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: off, claudeDesktop: { enabled: true, access: null, builtIn: false, signedIn: null } },
             { id: 'firecrawl', accessLevels: [], serviceOptions: [], secretNames: [], secretsConfigured: true, unavailableReason: null, claudeCode: { enabled: true, access: null, builtIn: false, signedIn: null }, claudeDesktop: off },

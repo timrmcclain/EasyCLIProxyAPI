@@ -25,6 +25,7 @@ import {
   type ConnectorOverviewItem,
   type ConnectorTarget,
   type ConnectorTestResult,
+  type GitHubCliSetup,
 } from '../services/connectors';
 import { draftWithSetupIds, GRAPH_MODULE_INSTALL, runMicrosoftSetup, type MicrosoftSetupResult } from '../services/microsoftSetup';
 import './ConnectorsPage.css';
@@ -108,6 +109,16 @@ export function ConnectorsPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  // Back from signing in elsewhere (Claude Code's /mcp, a browser): show the new state without a manual refresh.
+  // Skipped while a card has unsaved edits, so nothing typed is replaced.
+  useEffect(() => {
+    const quietRefresh = () => {
+      if (unsavedCards.current.size > 0) return;
+      void connectorsApi.overview().then(next => { setOverview(next); setCheckedAt(new Date()); }).catch(() => undefined);
+    };
+    window.addEventListener('focus', quietRefresh);
+    return () => window.removeEventListener('focus', quietRefresh);
+  }, []);
 
   const refresh = async () => {
     if (unsavedCards.current.size > 0) {
@@ -321,7 +332,9 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           <h2 id={`connector-${item.id}-title`}>{dt(`${item.id}_name`)}</h2>
           <span className="connector-row-states">
             {connectorTargets.map(target => (
-              <span key={target} className={`connector-row-state${item[target].enabled ? ' on' : ''}`}>{ct(target)} · {item[target].enabled ? ct('on') : ct('off')}</span>
+              codeSignInMissing(item, target)
+                ? <span key={target} className="connector-row-state on warn">{ct(target)} · {ct('needsSignInShort')}</span>
+                : <span key={target} className={`connector-row-state${item[target].enabled ? ' on' : ''}`}>{ct(target)} · {item[target].enabled ? ct('on') : ct('off')}</span>
             ))}
             {needsSetup ? <span className="connector-row-state warn">{ct('notConfigured')}</span> : null}
             {unavailable ? <span className="connector-row-state warn">{ct('unavailableShort')}</span> : null}
@@ -348,7 +361,9 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
               ? ct('builtInShort')
               : state.signedIn === true
                 ? `${ct('on')} · ${ct('signedIn')}`
-                : state.signedIn === false
+                : codeSignInMissing(item, target)
+                  ? `${ct('on')} · ${ct('needsSignInShort')}`
+                  : state.signedIn === false
                   ? `${ct('on')} · ${ct('notSignedIn')}`
                   : ct('on')
             : ct('off');
@@ -373,6 +388,8 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
                 </button>
               ) : null}
               {test && !test.running ? <TestLine test={test} target={target} name={CODE_ENTRY_NAMES[item.id] ?? dt(`${item.id}_name`)} /> : null}
+              {codeSignInMissing(item, target) && !(test && !test.running && test.result?.status === 'needsSignIn')
+                ? <CodeSignInHint text={ct('codeSignInPending').replace('{name}', CODE_ENTRY_NAMES[item.id] ?? dt(`${item.id}_name`))} /> : null}
             </div>
           );
         })}
@@ -491,6 +508,9 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
         </fieldset>
       ) : null}
 
+      {item.id === 'github' ? (
+        <GitHubSignInSetup draft={draft} configured={item.secretsConfigured} onSaved={(next) => { justSaved.current = true; setEditingSecrets(false); onSaved(next); }} />
+      ) : null}
       {item.secretNames.length > 0 ? (
         <div className="connector-secrets">
           <div className="connector-secrets-status">
@@ -542,7 +562,15 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
   );
 }
 
-function TestLine({ test, target, name }: { test: TestState; target: ConnectorTarget; name: string }) {
+/**
+ * Claude Code holds its own sign-in for remote connectors (Microsoft 365) and has none yet. Setting the connector up
+ * for Claude Desktop doesn't sign Claude Code in, so this shows before any test is run.
+ */
+function codeSignInMissing(item: ConnectorOverviewItem, target: ConnectorTarget) {
+  return target === 'claudeCode' && item.id === 'microsoft365' && item.claudeCode.enabled && !item.claudeCode.builtIn && item.claudeCode.signedIn === false;
+}
+
+function CodeSignInHint({ text }: { text: string }) {
   const { locale } = useI18n();
   const ct = (key: ConnectorTextKey) => connectorText(key, locale);
   const [launch, setLaunch] = useState<'idle' | 'busy' | 'done' | string>('idle');
@@ -551,16 +579,22 @@ function TestLine({ test, target, name }: { test: TestState; target: ConnectorTa
     try { await invoke('launch_agent', { client: 'claude-code' }); setLaunch('done'); }
     catch (error) { setLaunch(errorText(error)); }
   };
-  // Claude Code signs in to a remote connector by itself, once; setting it up for Claude Desktop doesn't do that.
-  if (target === 'claudeCode' && !test.error && test.result?.status === 'needsSignIn') return (
-    <div className="connector-test warn">
-      <p>{ct('codeSignInNeeded').replace('{name}', name)}</p>
+  return (
+    <div className="connector-test warn connector-code-sign-in">
+      <p>{text}</p>
       <span className="connector-auto-setup-actions">
         <button type="button" className="secondary-button compact-button" disabled={launch === 'busy'} onClick={() => void openClaudeCode()}>{ct('openClaudeCode')}</button>
         {launch === 'done' ? <small>{ct('openClaudeCodeDone')}</small> : launch !== 'idle' && launch !== 'busy' ? <small>{launch}</small> : null}
       </span>
     </div>
   );
+}
+
+function TestLine({ test, target, name }: { test: TestState; target: ConnectorTarget; name: string }) {
+  const { locale } = useI18n();
+  const ct = (key: ConnectorTextKey) => connectorText(key, locale);
+  // Claude Code signs in to a remote connector by itself, once; setting it up for Claude Desktop doesn't do that.
+  if (target === 'claudeCode' && !test.error && test.result?.status === 'needsSignIn') return <CodeSignInHint text={ct('codeSignInNeeded').replace('{name}', name)} />;
   if (test.error) return <p className="connector-test failed">{ct('testFailed')} {test.error}</p>;
   const result = test.result;
   if (!result) return null;
@@ -628,6 +662,39 @@ function MicrosoftAutoSetup({ item, onSaved }: { item: ConnectorOverviewItem; on
         {result?.status === 'signInFailed' ? <p className="warn">{ct('msSetupSignInFailed')} {result.message}</p> : null}
         {result?.status === 'failed' ? <p className="warn">{ct('msSetupFailed')} {result.message}</p> : null}
         {error ? <p className="warn">{error}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function GitHubSignInSetup({ draft, configured, onSaved }: { draft: ConnectorDraft; configured: boolean; onSaved: (overview: ConnectorOverview) => void }) {
+  const { locale } = useI18n();
+  const ct = (key: ConnectorTextKey) => connectorText(key, locale);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<GitHubCliSetup | null>(null);
+  const run = async () => {
+    setRunning(true); setResult(null);
+    try {
+      const outcome = await connectorsApi.githubCliSetup(draft);
+      setResult(outcome);
+      if (outcome.status === 'ok' && outcome.overview) onSaved(outcome.overview);
+    } catch (runError) { setResult({ status: 'failed', message: errorText(runError) }); }
+    finally { setRunning(false); }
+  };
+  return (
+    <div className="connector-auto-setup connector-github-setup">
+      <div>
+        <strong>{ct('ghSetupTitle')}</strong>
+        <small>{ct('ghSetupBody')}</small>
+      </div>
+      <button type="button" className={`${configured ? 'secondary' : 'primary'}-button compact-button`} disabled={running} aria-busy={running} onClick={() => void run()}>
+        <Sparkles size={14} aria-hidden="true" />{running ? ct('ghSetupRunning') : ct('ghSetupRun')}
+      </button>
+      <div role="status" className="connector-auto-setup-result">
+        {result?.status === 'ok' ? <p className="ok">{ct('ghSetupDone')}</p> : null}
+        {result?.status === 'missingCli' ? <p className="warn">{ct('ghSetupMissingCli')}</p> : null}
+        {result?.status === 'notSignedIn' ? <p className="warn">{ct('ghSetupNotSignedIn')}</p> : null}
+        {result?.status === 'failed' ? <p className="warn">{ct('ghSetupFailed')} {result.message}</p> : null}
       </div>
     </div>
   );

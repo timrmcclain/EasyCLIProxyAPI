@@ -298,6 +298,73 @@ fn changing_access_keeps_the_stored_token() {
     assert_eq!(entry["headers"]["Authorization"], "Bearer ghp_test");
 }
 
+fn gh_output(code: u32, stdout: &str) -> std::io::Result<std::process::Output> {
+    #[cfg(windows)]
+    use std::os::windows::process::ExitStatusExt;
+    #[cfg(unix)]
+    use std::os::unix::process::ExitStatusExt;
+    #[cfg(windows)]
+    let status = std::process::ExitStatus::from_raw(code);
+    #[cfg(unix)]
+    let status = std::process::ExitStatus::from_raw((code as i32) << 8);
+    Ok(std::process::Output { status, stdout: stdout.as_bytes().to_vec(), stderr: Vec::new() })
+}
+
+const GH_TOKEN: &str = "gho_abcdefghijklmnopqrstuvwxyz0123456789";
+
+#[test]
+fn github_cli_sign_in_saves_its_token_for_the_chosen_apps() {
+    let temp = TempDir::new("github-cli");
+    let locations = locations(&temp.0);
+    let request = GitHubCliSetupRequest { claude_code: true, claude_desktop: true, access: None };
+    let result = github_cli_setup_with(&locations, &runtimes(&temp.0), request, gh_output(0, &format!("{GH_TOKEN}\r\n")));
+    assert_eq!(result.status, "ok");
+    for target in [Target::Code, Target::Desktop] {
+        let entry = current_entry(&locations, ConnectorId::GitHub, target).unwrap().unwrap();
+        assert_eq!(entry["url"], GITHUB_READONLY_URL, "read-only unless chosen otherwise");
+        assert_eq!(entry["headers"]["Authorization"], format!("Bearer {GH_TOKEN}"));
+    }
+    // What goes back to the page never carries the token.
+    let text = serde_json::to_string(&result).unwrap();
+    assert!(!text.contains(GH_TOKEN));
+}
+
+#[test]
+fn github_cli_sign_in_with_no_app_chosen_sets_up_claude_code() {
+    let temp = TempDir::new("github-cli-default");
+    let locations = locations(&temp.0);
+    let request = GitHubCliSetupRequest { claude_code: false, claude_desktop: false, access: Some("full".to_string()) };
+    assert_eq!(github_cli_setup_with(&locations, &runtimes(&temp.0), request, gh_output(0, GH_TOKEN)).status, "ok");
+    assert_eq!(current_entry(&locations, ConnectorId::GitHub, Target::Code).unwrap().unwrap()["url"], GITHUB_URL);
+    assert!(current_entry(&locations, ConnectorId::GitHub, Target::Desktop).unwrap().is_none());
+}
+
+#[test]
+fn github_cli_problems_say_what_happened_and_save_nothing() {
+    let temp = TempDir::new("github-cli-problems");
+    let locations = locations(&temp.0);
+    let cases = [
+        (Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no gh")), "missingCli"),
+        (gh_output(1, ""), "notSignedIn"),
+        (gh_output(0, "not a token; rm -rf /"), "failed"),
+        (gh_output(0, ""), "failed"),
+    ];
+    for (output, status) in cases {
+        let request = GitHubCliSetupRequest { claude_code: true, claude_desktop: false, access: None };
+        assert_eq!(github_cli_setup_with(&locations, &runtimes(&temp.0), request, output).status, status);
+        assert!(current_entry(&locations, ConnectorId::GitHub, Target::Code).unwrap().is_none());
+    }
+}
+
+#[test]
+fn github_tokens_are_recognised_by_their_formats() {
+    assert!(valid_github_token(GH_TOKEN));
+    assert!(valid_github_token("github_pat_11ABCDEFG0123456789_abcdefghijklmnop"));
+    assert!(!valid_github_token("gho_short"));
+    assert!(!valid_github_token("xyz_abcdefghijklmnopqrstuvwxyz0123456789"));
+    assert!(!valid_github_token("gho_abcdefghijklmnopqrstuvwxyz 0123456789"));
+}
+
 #[test]
 fn microsoft_365_uses_the_built_in_desktop_connector() {
     const TENANT: &str = "11111111-2222-3333-4444-555555555555";
