@@ -1,4 +1,4 @@
-.plugins-page { display: flex; flex-direction: column; gap: 20px; min-width: 0; max-width: 1500px; margin: 0 auto; padding: 8px 0 32px; }
+.plugins-page { display: flex; flex-direction: column; gap: 20px; min-width: 0; margin: 0 auto; padding: 8px 0 32px; }
 .plugins-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .plugins-page .plugins-heading > button { width: auto; flex: none; }
 .plugins-heading h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.4px; }

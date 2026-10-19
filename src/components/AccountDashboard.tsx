@@ -356,7 +356,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     </div>
     {/* The ledger comes first so accounts are visible without scrolling; activity and provider pace follow it.
         Each row carries its own recovery time, so there's no separate recovery list. */}
-    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} now={now} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} nameFor={(provider) => providerNames[provider] ?? provider} />
+    <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} now={now} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} nameFor={(provider) => providerNames[provider] ?? provider} labelFor={labelFor} />
     <OverviewAlerts key={String(hideEmails)} files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} items={activity?.items} activityStale={activityError || stale} />
     <p className="ad-footnote">{updatedAt ? t('accountDashboard.checked', { time: new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t(ready ? 'accountDashboard.loading' : 'accountDashboard.waitingForProxy')} · {t('accountDashboard.cadence')}</p>
   </section>;

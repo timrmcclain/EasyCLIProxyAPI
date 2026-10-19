@@ -523,9 +523,11 @@ body, html, #root {
 .usage-trend-chart { height: auto; grid-template-rows: minmax(140px, 1fr) 22px; }
 .usage-trend-x-axis { height: 22px; }
 
-/* Usage records follow the same shell surface as the home page. */
+/* Usage records follow the same shell surface as the home page: tighter top and bottom so the request list
+   fits one screen, and the same side margins as every other page. */
 .app-shell:has(.usage-records-page) .content {
-  padding: clamp(12px, 1.5vw, 20px) clamp(12px, 1.5vw, 20px) 16px;
+  padding-top: clamp(12px, 1.5vw, 20px);
+  padding-bottom: 16px;
 }
 
 .usage-records-page {

@@ -1,7 +1,7 @@
 import { quotaAvailability } from './quotaAvailability';
 import { orderedQuotaRows, primaryQuotaRow, quotaPercentLeft } from './quotaLedger';
 import { providerForFile, quotaKey, type AuthFile, type QuotaState } from './quotaService';
-import { requestClient, type DashboardRequest } from './dashboardActivity';
+import { accountRequests, requestClient, type DashboardRequest } from './dashboardActivity';
 
 export type AttentionSeverity = 'blocked' | 'low' | 'unconfirmed';
 // `unavailable`: blocked for a reason other than quota (signed out, rejected, plan doesn't cover it), with no reset to wait for.
@@ -63,6 +63,15 @@ export function hourlyActivity(timeline: readonly TimelinePoint[], now: number):
 }
 
 /** The app that sent the most of the given requests, if any are recognised. */
+/** The accounts that served the most of these requests, busiest first; accounts with none are left out. */
+export function busiestAccounts(files: readonly AuthFile[], items: DashboardRequest[], limit = 3): { file: AuthFile; count: number }[] {
+  return files
+    .map((file) => ({ file, count: accountRequests(file, items).length }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
 export function busiestClient(items: readonly DashboardRequest[]): { client: string; count: number } | null {
   const counts = new Map<string, number>();
   for (const item of items) {

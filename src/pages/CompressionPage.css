@@ -1,4 +1,4 @@
-.compression-page { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; max-width: 1500px; margin: 0 auto; padding: var(--space-2) 0 var(--space-8); }
+.compression-page { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; margin: 0 auto; padding: var(--space-2) 0 var(--space-8); }
 .compression-heading h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.4px; }
 .compression-heading p { margin: 0; max-width: 760px; color: var(--text-tertiary); line-height: 1.6; }
 .compression-hint { margin-top: var(--space-1); }

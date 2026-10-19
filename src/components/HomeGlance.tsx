@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Activity, ArrowRight, Hourglass, Shrink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { compressionService, lifetimeSavingsPercent, type CompressionStats, type CompressionStatus } from '../services/compression';
-import { busiestClient, canRecheck, hourlyActivity, type AttentionItem, type UnknownReason } from '../services/homeGlance';
+import { busiestAccounts, busiestClient, canRecheck, hourlyActivity, type AttentionItem, type UnknownReason } from '../services/homeGlance';
 import type { HomeUsageSummary } from '../services/homeOverview';
 import { requestClient, type DashboardActivity } from '../services/dashboardActivity';
 import { resetCountdown } from '../services/accountDashboard';
@@ -25,6 +25,8 @@ type GlanceProps = {
   /** The account that served the latest successful request, if it could be matched. */
   latestAccount?: string;
   files: AuthFile[]; quotas: Record<string, QuotaState>; stale: boolean; nameFor: (provider: string) => string;
+  /** How Overview names an account (your name for it, or a private label when emails are hidden). */
+  labelFor?: (file: AuthFile) => string;
 };
 
 /**
@@ -40,13 +42,14 @@ export function attentionEmptyState(proxyReady: boolean, accountCount: number, a
 /** The summary row under the account ledger: what the proxy is doing, what compression saves, and how long each provider lasts. */
 export function HomeGlance(props: GlanceProps) {
   return <div className="home-glance">
-    <ActivityTile usage={props.usage} loading={props.usageLoading} activity={props.activity} now={props.now} latestAccount={props.latestAccount} />
+    <ActivityTile usage={props.usage} loading={props.usageLoading} activity={props.activity} now={props.now} latestAccount={props.latestAccount}
+      accounts={props.activity && props.labelFor ? busiestAccounts(props.files, props.activity.items).map(({ file, count }) => ({ key: String(file.name ?? ''), label: props.labelFor!(file), count })) : []} />
     <CompressionTile />
     <RunwayTile {...props} />
   </div>;
 }
 
-function ActivityTile({ usage, loading, activity, now, latestAccount }: { usage: HomeUsageSummary | null; loading: boolean; activity: DashboardActivity | null; now: number; latestAccount?: string }) {
+function ActivityTile({ usage, loading, activity, now, latestAccount, accounts }: { usage: HomeUsageSummary | null; loading: boolean; activity: DashboardActivity | null; now: number; latestAccount?: string; accounts: { key: string; label: string; count: number }[] }) {
   const { t, formatNumber, locale } = useI18n();
   const buckets = hourlyActivity(usage?.timeline ?? [], now);
   const peak = Math.max(1, ...buckets.map(bucket => bucket.requests));
@@ -74,6 +77,17 @@ function ActivityTile({ usage, loading, activity, now, latestAccount }: { usage:
           {usage.failureCount > 0 && <button type="button" className="glance-bad glance-link" onClick={requestFailedRequests} title={t('glance.activity.failedLink')}>{t('glance.activity.failed', { count: formatNumber(usage.failureCount) })}</button>}
           {busiest && <span>{t('glance.activity.busiest', { client: busiest.client })}</span>}
         </p>
+        {/* Which accounts are carrying the load, so the tile answers "who did this?" without opening Activity. */}
+        {accounts.length > 0 && activity && <div className="glance-accounts">
+          <h4>{t('glance.activity.busiestAccounts', { count: formatNumber(activity.items.length) })}</h4>
+          <ul>
+            {accounts.map((account) => <li key={account.key}>
+              <span title={account.label}>{account.label}</span>
+              <i aria-hidden="true"><b style={{ width: `${(account.count / accounts[0].count) * 100}%` }} /></i>
+              <strong>{formatNumber(account.count)}</strong>
+            </li>)}
+          </ul>
+        </div>}
       </>}
     {activity?.latest && <p className="glance-latest" title={`${activity.latest.model} · ${new Date(activity.latest.timestamp).toLocaleString()}`}>
       {t('glance.activity.latest', { client: requestClient(activity.latest) ?? t('ledger.unknownClient'), account: latestAccount ?? t('ledger.unmatched') })}</p>}

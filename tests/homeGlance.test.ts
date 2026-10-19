@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { attentionItems, busiestClient, canRecheck, hourlyActivity, parseHourKey } from '../src/services/homeGlance';
+import { attentionItems, busiestAccounts, busiestClient, canRecheck, hourlyActivity, parseHourKey } from '../src/services/homeGlance';
 import { quotaKey, type QuotaState } from '../src/services/quotaService';
 
 const now = Date.parse('2026-10-09T12:30:00Z');
@@ -59,6 +59,16 @@ describe('hourly activity', () => {
   });
   it('ignores malformed points', () => {
     expect(hourlyActivity([{ hour: 'nope', requests: 3, failure: 0 }, null as never], now).every(bucket => bucket.requests === 0)).toBe(true);
+  });
+});
+
+describe('busiest accounts', () => {
+  it('ranks accounts by the requests they served and leaves out idle ones', () => {
+    const served = (index: string) => ({ timestamp: '', model: 'm', auth_index: index, failed: false, canceled: false });
+    const a = file('a'), b = file('b'), c = file('c'), d = file('d'), idle = file('idle');
+    const items = [served('b'), served('a'), served('b'), served('c'), served('b'), served('a'), served('d')];
+    expect(busiestAccounts([a, b, c, d, idle], items).map(entry => [entry.file.name, entry.count])).toEqual([['b.json', 3], ['a.json', 2], ['c.json', 1]]);
+    expect(busiestAccounts([idle], items)).toEqual([]);
   });
 });
 
