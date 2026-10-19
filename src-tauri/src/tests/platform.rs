@@ -246,6 +246,30 @@ fn the_tray_dot_shows_the_worst_state() {
 }
 
 #[test]
+fn a_stopped_proxy_shows_its_dot_and_quota_shows_the_gauge_once_checked() {
+    assert_eq!(tray_icon_mark(TrayBadge::Stopped, TrayBadge::Low, Some(50)), TrayIconMark::Dot(TrayBadge::Stopped));
+    assert_eq!(tray_icon_mark(TrayBadge::None, TrayBadge::Low, Some(50)), TrayIconMark::Gauge(TrayBadge::Low, 50));
+    assert_eq!(tray_icon_mark(TrayBadge::None, TrayBadge::Out, None), TrayIconMark::Dot(TrayBadge::Out));
+    assert_eq!(tray_icon_mark(TrayBadge::None, TrayBadge::None, None), TrayIconMark::Plain);
+    assert_eq!(TrayBadge::None.gauge_color(), [22, 163, 74]);
+}
+
+#[test]
+fn the_tray_gauge_fills_the_bottom_bar_from_the_left() {
+    let (width, height) = (32u32, 32u32);
+    let plain = vec![10u8; (width * height * 4) as usize];
+    let gauged = gauged_rgba(&plain, width, height, 0.5, [22, 163, 74]);
+    assert_eq!(gauged.len(), plain.len());
+    let pixel = |x: u32, y: u32| &gauged[((y * width + x) * 4) as usize..((y * width + x) * 4 + 4) as usize];
+    // Above the bar is untouched; the left half of the bar is filled, the right half is the empty grey.
+    assert_eq!(pixel(16, 4), &[10, 10, 10, 10]);
+    assert_eq!(pixel(6, 28), &[22, 163, 74, 255]);
+    assert_eq!(pixel(26, 28), &[70, 70, 70, 255]);
+    // A white ring frames the bar.
+    assert_eq!(pixel(16, 31), &[255, 255, 255, 255]);
+}
+
+#[test]
 fn the_tray_dot_is_drawn_in_the_bottom_right_corner_only() {
     let (width, height) = (32u32, 32u32);
     let plain = vec![10u8; (width * height * 4) as usize];

@@ -69,7 +69,8 @@ async function updateTray(files: AuthFile[], attention: ReturnType<typeof attent
     return translate(locale, 'tray.ok', { provider });
   });
   const menuText = parts.length ? translate(locale, 'tray.quota', { summary: parts.join(' · ') }) : translate(locale, 'tray.none');
-  await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · '), level: trayQuotaLevel(providerTallies(files, attention, providerOf)) }).catch(() => undefined);
+  const tallies = providerTallies(files, attention, providerOf);
+  await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · '), level: trayQuotaLevel(tallies), gauge: trayQuotaGauge(tallies) }).catch(() => undefined);
   // Read by the Claude Code status line wrapper, when switched on in Settings.
   await invoke('write_claude_quota_line', { text: menuText }).catch(() => undefined);
 }
@@ -80,6 +81,13 @@ export function trayQuotaLevel(tallies: ReturnType<typeof providerTallies>): 'ok
   return tallies.some(tally => tally.blocked > 0 || tally.low > 0) ? 'low' : 'ok';
 }
 
+/** The tray icon's gauge: the share of accounts that can still take requests, or null with no accounts. */
+export function trayQuotaGauge(tallies: ReturnType<typeof providerTallies>): number | null {
+  const total = tallies.reduce((sum, tally) => sum + tally.total, 0);
+  if (!total) return null;
+  const usable = tallies.reduce((sum, tally) => sum + tally.total - tally.blocked, 0);
+  return Math.round((usable / total) * 100) / 100;
+}
 
 const TRAY_NOTICE_KEY = 'personal.trayNoticeShown';
 

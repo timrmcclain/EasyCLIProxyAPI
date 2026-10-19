@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { batchNotifications, inQuietHours } from '../src/services/notifications';
-import { trayQuotaLevel } from '../src/services/quotaWatcher';
+import { trayQuotaGauge, trayQuotaLevel } from '../src/services/quotaWatcher';
 
 const tally = (total: number, low: number, blocked: number) => ({ provider: 'claude', total, low, blocked });
 const message = (n: number) => ({ title: `Alert ${n}`, body: '' });
@@ -17,6 +17,17 @@ describe('tray dot', () => {
   it('is "ok" otherwise', () => {
     expect(trayQuotaLevel([tally(2, 0, 0)])).toBe('ok');
     expect(trayQuotaLevel([])).toBe('ok');
+  });
+});
+
+describe('tray gauge', () => {
+  it('is the share of accounts not out, across providers', () => {
+    expect(trayQuotaGauge([tally(2, 0, 1), tally(2, 1, 0)])).toBe(0.75);
+    expect(trayQuotaGauge([tally(3, 0, 3)])).toBe(0);
+    expect(trayQuotaGauge([tally(3, 2, 0)])).toBe(1);
+  });
+  it('is null with no accounts, so the icon stays plain', () => {
+    expect(trayQuotaGauge([])).toBeNull();
   });
 });
 

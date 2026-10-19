@@ -298,10 +298,12 @@ pub(crate) struct WindowsTrayState {
     base_tooltip: Mutex<String>,
     /// One-line quota summary from the window's background watcher, e.g. "Claude 1 low · Codex ok".
     quota_tooltip: Mutex<String>,
-    /// What the proxy and the quotas say the icon's dot should be, and which dot is showing now.
+    /// What the proxy and the quotas say the icon should show, and what it shows now.
     core_badge: Mutex<TrayBadge>,
     quota_badge: Mutex<TrayBadge>,
-    shown_badge: Mutex<TrayBadge>,
+    /// Share of accounts that can still take requests, in whole percent; None until the first quota check.
+    quota_gauge: Mutex<Option<u8>>,
+    shown_icon: Mutex<TrayIconMark>,
     /// The plain icon as RGBA, width and height, to draw dots on.
     base_icon: Option<(Vec<u8>, u32, u32)>,
 }
@@ -417,19 +419,27 @@ impl WindowsTrayState {
         }
     }
 
-    /// Redraws the icon when the worst state changed; does nothing otherwise.
+    fn set_quota_gauge(&self, gauge: Option<f64>) {
+        if let Ok(mut current) = self.quota_gauge.lock() {
+            *current = gauge.filter(|value| value.is_finite()).map(|value| (value.clamp(0.0, 1.0) * 100.0).round() as u8);
+        }
+    }
+
+    /// Redraws the icon when what it should show changed; does nothing otherwise.
     fn refresh_icon(&self, app_handle: &tauri::AppHandle) {
         let core = self.core_badge.lock().map(|badge| *badge).unwrap_or(TrayBadge::None);
         let quota = self.quota_badge.lock().map(|badge| *badge).unwrap_or(TrayBadge::None);
-        let wanted = core.max(quota);
-        let Ok(mut shown) = self.shown_badge.lock() else { return };
+        let gauge = self.quota_gauge.lock().map(|gauge| *gauge).unwrap_or(None);
+        let wanted = tray_icon_mark(core, quota, gauge);
+        let Ok(mut shown) = self.shown_icon.lock() else { return };
         if *shown == wanted {
             return;
         }
         let Some((rgba, width, height)) = self.base_icon.as_ref() else { return };
-        let pixels = match wanted.color() {
-            Some(color) => badged_rgba(rgba, *width, *height, color),
-            None => rgba.clone(),
+        let pixels = match wanted {
+            TrayIconMark::Plain => rgba.clone(),
+            TrayIconMark::Dot(badge) => badge.color().map_or_else(|| rgba.clone(), |color| badged_rgba(rgba, *width, *height, color)),
+            TrayIconMark::Gauge(badge, percent) => gauged_rgba(rgba, *width, *height, f64::from(percent) / 100.0, badge.gauge_color()),
         };
         if let Some(tray) = app_handle.tray_by_id(WINDOWS_TRAY_ID) {
             match tray.set_icon(Some(tauri::image::Image::new_owned(pixels, *width, *height))) {
@@ -486,6 +496,64 @@ impl TrayBadge {
             TrayBadge::Error => Some([220, 38, 38]),
         }
     }
+
+    /// The gauge's fill: green when every provider is fine, otherwise the quota dot's colour.
+    pub(crate) fn gauge_color(self) -> [u8; 3] {
+        self.color().unwrap_or([22, 163, 74])
+    }
+}
+
+/// What the tray icon shows on top of the plain icon.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TrayIconMark {
+    Plain,
+    Dot(TrayBadge),
+    /// Quota state and the share of accounts still usable, in whole percent.
+    Gauge(TrayBadge, u8),
+}
+
+/// A stopped or failed proxy shows its dot, since quota means nothing then; otherwise the quota gauge once
+/// a check has run, or the quota dot before that.
+pub(crate) fn tray_icon_mark(core: TrayBadge, quota: TrayBadge, gauge: Option<u8>) -> TrayIconMark {
+    if core != TrayBadge::None {
+        return TrayIconMark::Dot(core.max(quota));
+    }
+    match (gauge, quota) {
+        (Some(percent), _) => TrayIconMark::Gauge(quota, percent.min(100)),
+        (None, TrayBadge::None) => TrayIconMark::Plain,
+        (None, badge) => TrayIconMark::Dot(badge),
+    }
+}
+
+/// The icon with a bar along its bottom edge, filled from the left to `fraction`, inside a white ring so it reads on
+/// light and dark taskbars.
+pub(crate) fn gauged_rgba(rgba: &[u8], width: u32, height: u32, fraction: f64, color: [u8; 3]) -> Vec<u8> {
+    let mut out = rgba.to_vec();
+    let size = f64::from(width.min(height));
+    let ring = (size * 0.06).max(1.0).round() as u32;
+    let bar = (size * 0.2).max(3.0).round() as u32;
+    let (left, right) = (ring, width.saturating_sub(ring));
+    let bottom = height.saturating_sub(ring);
+    let top = bottom.saturating_sub(bar);
+    let filled = f64::from(left) + f64::from(right.saturating_sub(left)) * fraction.clamp(0.0, 1.0);
+    for y in top.saturating_sub(ring)..height.min(bottom + ring) {
+        for x in left.saturating_sub(ring)..width.min(right + ring) {
+            let index = ((y * width + x) * 4) as usize;
+            let Some(pixel) = out.get_mut(index..index + 4) else { continue };
+            let inside = x >= left && x < right && y >= top && y < bottom;
+            let shade = if !inside {
+                [255, 255, 255]
+            } else {
+                // How much of this pixel the fill covers, so a part-filled pixel blends instead of jumping.
+                let cover = (filled - f64::from(x)).clamp(0.0, 1.0);
+                let empty = [70.0, 70.0, 70.0];
+                [0, 1, 2].map(|channel| (empty[channel] + (f64::from(color[channel]) - empty[channel]) * cover).round() as u8)
+            };
+            pixel[..3].copy_from_slice(&shade);
+            pixel[3] = 255;
+        }
+    }
+    out
 }
 
 /// The icon with a filled dot and a white ring in its bottom-right corner, big enough to read at tray size.
@@ -536,7 +604,7 @@ pub(crate) fn windows_tray_tooltip(base: &str, quota: &str) -> String {
 
 /// Called by the window's quota watcher with a localized summary for the tray menu and tooltip.
 #[tauri::command]
-pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String, level: Option<String>) {
+pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String, level: Option<String>, gauge: Option<f64>) {
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         let Some(tray_state) = app.try_state::<WindowsTrayState>() else {
@@ -546,6 +614,7 @@ pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, t
             *quota = tooltip_text;
         }
         tray_state.set_quota_badge(TrayBadge::from_quota_level(level.as_deref()));
+        tray_state.set_quota_gauge(gauge);
         tray_state.refresh_icon(&app);
         if let Err(error) = tray_state.quota_item.set_text(menu_text) {
             eprintln!("Failed to update desktop tray quota line: {error}");
@@ -827,7 +896,8 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         quota_tooltip: Mutex::new(String::new()),
         core_badge: Mutex::new(TrayBadge::None),
         quota_badge: Mutex::new(TrayBadge::None),
-        shown_badge: Mutex::new(TrayBadge::None),
+        quota_gauge: Mutex::new(None),
+        shown_icon: Mutex::new(TrayIconMark::Plain),
         base_icon,
     });
 
