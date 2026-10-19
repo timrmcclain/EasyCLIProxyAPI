@@ -249,6 +249,10 @@ function AppContent() {
   const { info: appUpdateInfo, hasUpdate, processing: appUpdateProcessing } = useAppUpdate();
   const { latest: coreLatest, hasUpdate: coreHasUpdate } = useCoreUpdate();
   const [active, setActive] = useState<PageId>(initialPage);
+  // Pages visited, for Alt+Left / Alt+Right and the mouse's back and forward buttons.
+  const history = useRef<{ back: PageId[]; forward: PageId[]; previous: PageId | null; travelling: boolean }>({ back: [], forward: [], previous: null, travelling: false });
+  // Advanced tools stays open or closed as you left it; it also opens when you're on one of its pages.
+  const [advancedOpen, setAdvancedOpen] = useState(() => localStorage.getItem('personal.advancedNavOpen') === 'true');
   // The prototype navigation from the UI review, switched on in Settings → App preferences.
   const [newNav, setNewNav] = useState(readNewNavigationPreference);
   useEffect(() => {
@@ -311,6 +315,62 @@ function AppContent() {
     const timer = window.setInterval(() => void check(), 30_000);
     return () => window.clearInterval(timer);
   }, [coreReady]);
+  // Page changes: remember the way back, name the page in the window title, and move keyboard focus to the
+  // page's heading when the change came from the sidebar, the palette or a shortcut (not while typing in a field).
+  useEffect(() => {
+    const record = history.current;
+    if (record.previous !== active) {
+      const first = record.previous === null;
+      if (!record.travelling && record.previous !== null) {
+        record.back = [...record.back, record.previous].slice(-50);
+        record.forward = [];
+      }
+      record.travelling = false;
+      record.previous = active;
+      const focused = document.activeElement;
+      const fromNavigation = !first && (!focused || focused === document.body || Boolean(focused.closest('.sidebar, .command-palette-backdrop, .glossary-dialog')));
+      if (fromNavigation) {
+        window.requestAnimationFrame(() => {
+          const heading = document.querySelector<HTMLElement>('#main-content h1, #main-content h2');
+          if (!heading) return;
+          if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+          heading.focus({ preventScroll: true });
+        });
+      }
+    }
+    const page = pages.find(item => item.id === active);
+    document.title = page ? `${t(page.labelKey)} · ${PERSONAL_APP_NAME}` : PERSONAL_APP_NAME;
+  }, [active, t]);
+  useEffect(() => {
+    const travel = (direction: 'back' | 'forward') => {
+      const record = history.current;
+      const from = direction === 'back' ? record.back : record.forward;
+      // Skip pages that can't be opened right now (the proxy is stopped).
+      while (from.length && !canOpenAppPage(from[from.length - 1], coreReady)) from.pop();
+      const target = from.pop();
+      if (!target || target === active || !confirmLeave()) { if (target) from.push(target); return; }
+      (direction === 'back' ? record.forward : record.back).push(active);
+      record.travelling = true;
+      setActive(target);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      // Alt+arrows inside a text field belong to the field.
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      event.preventDefault();
+      travel(event.key === 'ArrowLeft' ? 'back' : 'forward');
+    };
+    const onMouse = (event: MouseEvent) => {
+      if (event.button !== 3 && event.button !== 4) return;
+      event.preventDefault();
+      travel(event.button === 3 ? 'back' : 'forward');
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mouseup', onMouse);
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('mouseup', onMouse); };
+  }, [active, coreReady]);
   // A new hub or proxy engine version: one alert per version, not one per check.
   useEffect(() => {
     const announce = (key: string, version: string | undefined, title: 'notify.update.app.title' | 'notify.update.core.title') => {
@@ -504,10 +564,16 @@ function AppContent() {
     return () => { observer.disconnect(); nav.removeEventListener('toggle', updateNavMoreBelow, true); };
   }, [updateNavMoreBelow]);
 
-  // Advanced tools can sit below the sidebar's fold: keep the open page's entry in view.
+  // Advanced tools can sit below the sidebar's fold: keep the open page's entry in view. Only when it's out of
+  // view: Chromium starts the next Tab from wherever scrollIntoView ran, which made Tab skip the skip link.
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>('.nav-section [aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
+      const entry = document.querySelector<HTMLElement>('.nav-section [aria-current="page"]');
+      const nav = navSectionRef.current;
+      if (!entry || !nav) return;
+      const box = entry.getBoundingClientRect();
+      const area = nav.getBoundingClientRect();
+      if (box.top < area.top || box.bottom > area.bottom) entry.scrollIntoView({ block: 'nearest' });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [active]);
@@ -677,6 +743,8 @@ function AppContent() {
   return (
     <>
       <div className="app-shell">
+        {/* First thing a keyboard reaches: past the sidebar, straight to the page. */}
+        <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>{t('app.skipToContent')}</a>
         {(
           <aside className="sidebar">
           <div className="sidebar-brand" title={t('app.desktopConsole')}>
@@ -696,7 +764,13 @@ function AppContent() {
               <div className="nav-utility-groups" role="group" aria-label={t('navGroup.utility')}>{utilityNavGroups.map(renderNavigationGroup)}</div>
             </> : <>
             {primaryNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
-            <details className="personal-advanced" open={advancedNav.includes(active) || undefined}>
+            <details className="personal-advanced" open={advancedOpen || advancedNav.includes(active)}
+              onToggle={(event) => {
+                const open = event.currentTarget.open;
+                if (open === (advancedOpen || advancedNav.includes(active))) return;
+                setAdvancedOpen(open);
+                localStorage.setItem('personal.advancedNavOpen', String(open));
+              }}>
               <summary>{t('personal.advanced')}</summary>
               <div>{advancedGroups.map((group) => <div key={group.labelKey} className="personal-advanced-group" role="group" aria-label={t(group.labelKey)}>
                 <span className="personal-advanced-heading" aria-hidden="true">{t(group.labelKey)}</span>
@@ -826,7 +900,7 @@ function AppContent() {
         )}
 
         <div className="workspace">
-          <main className="content">
+          <main className="content" id="main-content" tabIndex={-1}>
             {activeGroup && activeGroup.pages.length > 1 ? (
               <nav className="nav-group-sections" aria-label={t(activeGroup.labelKey as Parameters<typeof t>[0])}>
                 {activeGroup.pages.map((id) => {

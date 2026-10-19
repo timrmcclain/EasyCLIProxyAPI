@@ -572,6 +572,7 @@ export const jaOverrides = {
   'app.theme.switchToDark': 'ダークモードに切り替え',
   'app.desktopConsole': 'デスクトップコンソール',
   'app.navigation': 'メインナビゲーション',
+  'app.skipToContent': 'メインコンテンツへスキップ',
   'app.nav.home': 'ホーム',
   'app.nav.proxy': 'プロキシ',
   'home.proxyStatus.running': 'プロキシ稼働中 · ポート {port}',

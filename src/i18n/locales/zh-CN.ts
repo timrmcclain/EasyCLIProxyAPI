@@ -558,6 +558,7 @@ export const zhCN = {
   'app.theme.switchToDark': '切换到暗色',
   'app.desktopConsole': '桌面控制台',
   'app.navigation': '主导航',
+  'app.skipToContent': '跳到主要内容',
   'app.nav.home': '首页',
   'app.nav.proxy': '代理',
   'home.proxyStatus.running': '代理运行中 · 端口 {port}',

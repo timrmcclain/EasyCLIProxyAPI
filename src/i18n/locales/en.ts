@@ -559,6 +559,7 @@ export const en: Record<MessageKey, string> = {
   'app.theme.switchToDark': 'Switch to dark mode',
   'app.desktopConsole': 'Desktop Console',
   'app.navigation': 'Main navigation',
+  'app.skipToContent': 'Skip to content',
   'app.nav.home': 'Overview',
   'app.nav.proxy': 'Proxy',
   'home.proxyStatus.running': 'Proxy running · port {port}',

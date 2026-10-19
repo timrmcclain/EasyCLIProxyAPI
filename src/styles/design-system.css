@@ -621,3 +621,29 @@ svg.lucide {
 .alert-quiet-hours small {
   color: var(--text-muted);
 }
+
+/* Hidden until it has keyboard focus. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 8px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--ui-accent-strong, #0f766e);
+  color: #fff;
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+#main-content:focus,
+#main-content h1:focus,
+#main-content h2:focus {
+  outline: none;
+}
