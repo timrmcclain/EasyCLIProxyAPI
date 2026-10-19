@@ -5,6 +5,9 @@ import { classifyFailure, failureMessage, groupFailures, type ErrorCauseGroup, t
 import { useAccountLabelBySource } from '../services/accountLabelBySource';
 import './ErrorCausesCard.css';
 
+const CARD_OPEN_KEY = 'personal.failuresCardOpen';
+const mostCommon = (groups: ErrorCauseGroup[]) => groups.reduce((best, group) => (group.count > best.count ? group : best));
+
 const ago = (iso: string) => {
   const minutes = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
   if (minutes < 60) return `${minutes}m`;
@@ -16,6 +19,8 @@ const ago = (iso: string) => {
 export function ErrorCausesCard({ failures, truncated }: { failures: FailedRequest[]; truncated: boolean }) {
   const { t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
+  // Closed by default so the request list below gets the room; left open, it stays open.
+  const [cardOpen, setCardOpen] = useState(() => localStorage.getItem(CARD_OPEN_KEY) === 'true');
   const groups = groupFailures(failures);
   const accountLabel = useAccountLabelBySource();
   const SHOWN = 8;
@@ -25,10 +30,17 @@ export function ErrorCausesCard({ failures, truncated }: { failures: FailedReque
 
   return (
     <section className="panel error-causes" aria-labelledby="error-causes-title">
-      <header>
+      <details open={cardOpen} onToggle={(event) => {
+        const next = event.currentTarget.open;
+        setCardOpen(next);
+        localStorage.setItem(CARD_OPEN_KEY, String(next));
+      }}>
+      <summary>
         <h3 id="error-causes-title">{t('errors.title')}</h3>
-        <p>{groups.length ? t('errors.subtitle') : t('errors.none')}</p>
-      </header>
+        <span>{groups.length ? t('errors.summary', { count: groups.reduce((sum, group) => sum + group.count, 0), cause: t(`errors.cause.${mostCommon(groups).cause}`) }) : t('errors.none')}</span>
+        <ChevronDown size={14} className="error-causes-chevron" aria-hidden="true" />
+      </summary>
+      {groups.length > 0 && <p className="error-causes-subtitle">{t('errors.subtitle')}</p>}
       {groups.length > 0 && (
         <ul>
           {groups.map(group => {
@@ -68,6 +80,7 @@ export function ErrorCausesCard({ failures, truncated }: { failures: FailedReque
         </ul>
       )}
       {truncated && <p className="error-causes-note">{t('errors.truncated', { count: failures.length })}</p>}
+      </details>
     </section>
   );
 }

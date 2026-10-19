@@ -1587,6 +1587,7 @@ export function ApiAccessPage() {
 
   return (
     <section className="page management-page api-access-page">
+      <h1 className="sr-only">{t('app.nav.api')}</h1>
       {confirmationDialog}
       {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
       <div className="provider-workbench real-provider-workbench">

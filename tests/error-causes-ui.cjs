@@ -25,6 +25,11 @@ const path = require('node:path');
 
     const card = page.getByRole('region', { name: 'Failures by cause' });
     await card.waitFor();
+    // Starts folded, naming how many failed and the worst cause; opening it is remembered.
+    assert.equal(await card.locator('details').evaluate(node => node.open), false);
+    assert.match(await card.locator('summary').innerText(), /2 failed requests/);
+    await card.locator('summary').click();
+    await page.waitForFunction(() => localStorage.getItem('personal.failuresCardOpen') === 'true');
     const rows = card.locator('.error-cause-row');
     assert.equal(await rows.count(), 2, 'one rate limit and one revoked sign-in; the canceled request is left out');
     const labels = (await rows.locator('strong').allInnerTexts()).sort();

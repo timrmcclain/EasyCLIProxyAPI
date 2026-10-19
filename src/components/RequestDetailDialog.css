@@ -9,3 +9,6 @@
 .usage-event-row-clickable { cursor: pointer; }
 .usage-event-row-clickable:hover td { background: var(--bg-hover); }
 @media (max-width: 720px) { .request-detail .request-detail-grid { grid-template-columns: 1fr; } }
+.request-detail-actions { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border-color); }
+.request-detail-step { display: flex; align-items: center; gap: var(--space-2); color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.request-detail-step button { display: inline-flex; align-items: center; gap: 6px; }

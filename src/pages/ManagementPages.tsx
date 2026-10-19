@@ -149,6 +149,7 @@ function OAuthManagementTabs() {
 
   return (
     <section className="page oauth-management-page">
+      <h1 className="sr-only">{t('app.nav.oauth')}</h1>
       <div className="oauth-subpage-panel" id="oauth-subpage-panel">
         {activeSubpage === 'login' ? (
           <>

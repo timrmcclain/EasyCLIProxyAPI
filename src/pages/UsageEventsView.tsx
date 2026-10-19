@@ -810,7 +810,13 @@ export function EventsView({
       )}
 
       {events.items.length > 0 ? <TableTopScrollbar tableWrapRef={tableWrapRef} /> : null}
-      <RequestDetailDialog record={inspected} onClose={() => setInspected(null)} />
+      {(() => {
+        const index = inspected ? events.items.findIndex(item => item.row_id === inspected.row_id) : -1;
+        return <RequestDetailDialog record={inspected} onClose={() => setInspected(null)}
+          onPrevious={index > 0 ? () => setInspected(events.items[index - 1]) : null}
+          onNext={index >= 0 && index < events.items.length - 1 ? () => setInspected(events.items[index + 1]) : null}
+          position={index >= 0 ? { index, total: events.items.length } : undefined} />;
+      })()}
 
       <div className="usage-events-footer">
         <div className="usage-events-footer-left">

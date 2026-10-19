@@ -254,8 +254,9 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const visible = sorted.filter((file) => {
     const state = quotaAvailability(file, quotas[quotaKey(file)], now, !ready || Boolean(error));
     const query = search.trim().toLowerCase();
+    const exact = query !== '' && [readString(file, 'email'), readString(file, 'label'), fileName(file)].some(value => value.toLowerCase() === query);
     return (filter === 'all' || dashboardProvider(file) === filter)
-      && (!query || (hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : `${names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} ${fileName(file)} ${accountSummary(file).label} ${dashboardProvider(file)}`).toLowerCase().includes(query))
+      && (!query || exact || (hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : `${names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} ${fileName(file)} ${accountSummary(file).label} ${dashboardProvider(file)}`).toLowerCase().includes(query))
       // "Need attention" is the same set the status line counts: problems that can stop work, not unconfirmed quota.
       && (stateFilter === 'all' || (stateFilter === 'available' ? state.kind === 'available' : urgentKeys.has(quotaKey(file))));
   });
@@ -326,7 +327,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       <select aria-label={t('accountDashboard.sort')} value={sort} onChange={(event) => { setSort(event.target.value as typeof sort); saveDashboardPreference('quotaSort', event.target.value); }}><option value="priority">{t('accountDashboard.prioritySort')}</option><option value="reset">{t('accountDashboard.resetSort')}</option><option value="recovery">{t('availability.recovery')}</option></select>
       {/* Rarely changed display choices stay out of the way. */}
       <details className="ad-display-options">
-        <summary>{t('glance.list.display')}</summary>
+        <summary>{t('glance.list.display')}<ChevronDown size={14} aria-hidden="true" /></summary>
         <div>
           <select className="quota-layout-select" aria-label={t('quotaLedger.layout')} value={layout} onChange={event => { const value = event.target.value as 'ledger' | 'compact'; setLayout(value); saveDashboardPreference('quotaLayout', value); }}>
             <option value="ledger">{t('quotaLedger.ledger')}</option><option value="compact">{t('quotaLedger.compact')}</option>

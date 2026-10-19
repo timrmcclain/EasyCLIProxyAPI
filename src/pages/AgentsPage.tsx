@@ -1830,7 +1830,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
             <p>{t('agents.embedded.subtitle')}</p>
           </div>
         </header>
-      ) : null}
+      ) : <h1 className="sr-only">{t('app.nav.agents')}</h1>}
       {!embedded && selected === 'claude-desktop' ? (
         <details className="personal-context personal-context-compact">
           <summary>{t('personal.connectionTitle')} <span className="personal-context-more">{t('personal.learnMore')}</span></summary>

@@ -44,8 +44,34 @@ const path = require('node:path');
     await dialog.waitFor();
     assert.equal(await dialog.getByText('Error from the provider').count(), 0);
     assert.match(await dialog.innerText(), /App\s+(Codex|Claude Code|Claude Desktop)/);
-    await dialog.getByRole('button', { name: 'Close' }).click();
+
+    // Previous and Next step through the rows as listed; the arrow keys do the same.
+    const total = await rows.count();
+    assert.ok(await dialog.getByText(`1 of ${total}`).isVisible());
+    assert.equal(await dialog.getByRole('button', { name: 'Previous request' }).isDisabled(), true);
+    const firstTime = await dialog.locator('dd').first().innerText();
+    await dialog.getByRole('button', { name: 'Next request' }).click();
+    await dialog.getByText(`2 of ${total}`).waitFor();
+    await page.keyboard.press('ArrowRight');
+    await dialog.getByText(`3 of ${total}`).waitFor();
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    await dialog.getByText(`1 of ${total}`).waitFor();
+    assert.equal(await dialog.locator('dd').first().innerText(), firstTime);
+
+    // Copy puts every detail on the clipboard as "label: value" lines.
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+    await dialog.getByRole('button', { name: 'Copy' }).click();
+    await dialog.getByRole('button', { name: 'Copied' }).waitFor();
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    // Windows keeps clipboard text with CRLF line breaks.
+    assert.match(copied, /^Time: .+\r?\nResult: /);
+
+    // Open account closes the dialog and shows that account on Overview.
+    await dialog.getByRole('button', { name: 'Open account' }).click();
     await dialog.waitFor({ state: 'detached' });
+    await page.waitForFunction(() => document.title.startsWith('Overview'));
+    await page.waitForFunction(() => (document.querySelector('.quota-workflow-tools input[type="search"]')?.value ?? '') !== '');
 
     assert.deepEqual(errors, []);
     console.log('request details ok');
