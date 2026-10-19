@@ -28,7 +28,7 @@ import {
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
 import { useConfirmation } from './components/ConfirmationDialog';
-import { startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
+import { noticeStillInTray, startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
 import { endAccountFocus, readAccountFocus } from './services/accountFocus';
 import { applyQuotaRouting, readQuotaRoutingPreference } from './services/quotaRoutingControl';
 import { startSecretGuardWatcher } from './services/secretGuardWatcher';
@@ -539,6 +539,7 @@ function AppContent() {
     try {
       await invoke('resolve_windows_close_request', { action, remember });
       setWindowsClosePrompt(null);
+      if (action === 'minimize-to-tray') void noticeStillInTray().catch(() => undefined);
     } catch (error) {
       setWindowsClosePrompt((current) =>
         current

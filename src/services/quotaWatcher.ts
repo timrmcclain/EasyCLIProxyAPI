@@ -68,9 +68,20 @@ async function updateTray(files: AuthFile[], attention: ReturnType<typeof attent
     return translate(locale, 'tray.ok', { provider });
   });
   const menuText = parts.length ? translate(locale, 'tray.quota', { summary: parts.join(' · ') }) : translate(locale, 'tray.none');
-  await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · ') }).catch(() => undefined);
+  await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · '), level: trayQuotaLevel(providerTallies(files, attention, providerOf)) }).catch(() => undefined);
   // Read by the Claude Code status line wrapper, when switched on in Settings.
   await invoke('write_claude_quota_line', { text: menuText }).catch(() => undefined);
+}
+
+/** The tray icon's dot: "out" when every account of a provider is out, "low" when any is low or out. */
+export function trayQuotaLevel(tallies: ReturnType<typeof providerTallies>): 'ok' | 'low' | 'out' {
+  if (tallies.some(tally => tally.total > 0 && tally.blocked === tally.total)) return 'out';
+  return tallies.some(tally => tally.blocked > 0 || tally.low > 0) ? 'low' : 'ok';
+}
+
+/** At most three notifications at once; past that, the third says how many more there are instead of dropping them. */
+export function batchNotifications(messages: { title: string; body: string }[], more: (count: number) => { title: string; body: string }) {
+  return messages.length <= 3 ? messages : [...messages.slice(0, 2), more(messages.length - 2)];
 }
 
 async function send(messages: { title: string; body: string }[]) {
@@ -78,8 +89,24 @@ async function send(messages: { title: string; body: string }[]) {
   let granted = await isPermissionGranted();
   if (!granted) granted = (await requestPermission()) === 'granted';
   if (!granted) return;
-  // More than three at once reads as noise; the hub's Overview has the full list.
-  for (const message of messages.slice(0, 3)) sendNotification(message);
+  const locale = getCurrentLocale();
+  for (const message of batchNotifications(messages, count => ({
+    title: translate(locale, 'notify.more.title', { count }),
+    body: translate(locale, 'notify.more.body'),
+  }))) sendNotification(message);
+}
+
+const TRAY_NOTICE_KEY = 'personal.trayNoticeShown';
+
+/** The first time the window goes to the tray, say the hub is still running; never again after that. */
+export async function noticeStillInTray() {
+  if (localStorage.getItem(TRAY_NOTICE_KEY)) return;
+  localStorage.setItem(TRAY_NOTICE_KEY, String(Date.now()));
+  let granted = await isPermissionGranted();
+  if (!granted) granted = (await requestPermission()) === 'granted';
+  if (!granted) return;
+  const locale = getCurrentLocale();
+  sendNotification({ title: translate(locale, 'notify.tray.title'), body: translate(locale, 'notify.tray.body') });
 }
 
 /** "Claude (work) will run out in about 1h 20m" with when it resets, for the pace warning. */

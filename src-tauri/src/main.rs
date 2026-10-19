@@ -44,6 +44,7 @@ mod deleted_accounts;
 mod provider_status;
 mod offline_accounts;
 mod tray;
+mod window_place;
 mod usage;
 mod model_preset;
 mod global_hotkey;
@@ -2470,11 +2471,15 @@ fn main() {
         .manage(usage::UsageCollectorState::default())
         .manage(GuiConfigState::new(gui_config))
         .manage(MainWindowSizeState::new(initial_window_size))
+        .manage(window_place::WindowPlaceState::default())
         .manage(AgentConfigStatusCache::default());
 
     let app = app.on_window_event(|window, event| {
         if window.label() != "main" {
             return;
+        }
+        if matches!(event, tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_)) {
+            window_place::observe(window);
         }
 
         let observed_size = match event {
@@ -2548,6 +2553,9 @@ fn main() {
             });
             if let Err(error) = restore_main_window_size(app.handle()) {
                 eprintln!("{error}");
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                window_place::restore(&window);
             }
 
             #[cfg(target_os = "macos")]

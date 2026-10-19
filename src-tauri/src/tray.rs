@@ -298,6 +298,12 @@ pub(crate) struct WindowsTrayState {
     base_tooltip: Mutex<String>,
     /// One-line quota summary from the window's background watcher, e.g. "Claude 1 low · Codex ok".
     quota_tooltip: Mutex<String>,
+    /// What the proxy and the quotas say the icon's dot should be, and which dot is showing now.
+    core_badge: Mutex<TrayBadge>,
+    quota_badge: Mutex<TrayBadge>,
+    shown_badge: Mutex<TrayBadge>,
+    /// The plain icon as RGBA, width and height, to draw dots on.
+    base_icon: Option<(Vec<u8>, u32, u32)>,
 }
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
@@ -393,7 +399,44 @@ impl WindowsTrayState {
         if let Ok(mut base) = self.base_tooltip.lock() {
             *base = presentation.tooltip;
         }
+        if !self.busy.load(Ordering::Acquire) {
+            self.set_core_badge(if status.installed && status.running { TrayBadge::None } else { TrayBadge::Stopped });
+        }
         self.tooltip()
+    }
+
+    fn set_core_badge(&self, badge: TrayBadge) {
+        if let Ok(mut current) = self.core_badge.lock() {
+            *current = badge;
+        }
+    }
+
+    fn set_quota_badge(&self, badge: TrayBadge) {
+        if let Ok(mut current) = self.quota_badge.lock() {
+            *current = badge;
+        }
+    }
+
+    /// Redraws the icon when the worst state changed; does nothing otherwise.
+    fn refresh_icon(&self, app_handle: &tauri::AppHandle) {
+        let core = self.core_badge.lock().map(|badge| *badge).unwrap_or(TrayBadge::None);
+        let quota = self.quota_badge.lock().map(|badge| *badge).unwrap_or(TrayBadge::None);
+        let wanted = core.max(quota);
+        let Ok(mut shown) = self.shown_badge.lock() else { return };
+        if *shown == wanted {
+            return;
+        }
+        let Some((rgba, width, height)) = self.base_icon.as_ref() else { return };
+        let pixels = match wanted.color() {
+            Some(color) => badged_rgba(rgba, *width, *height, color),
+            None => rgba.clone(),
+        };
+        if let Some(tray) = app_handle.tray_by_id(WINDOWS_TRAY_ID) {
+            match tray.set_icon(Some(tauri::image::Image::new_owned(pixels, *width, *height))) {
+                Ok(()) => *shown = wanted,
+                Err(error) => eprintln!("Failed to update desktop tray icon: {error}"),
+            }
+        }
     }
 
     fn tooltip(&self) -> String {
@@ -407,11 +450,71 @@ impl WindowsTrayState {
         if error.chars().count() > 48 {
             summary.push('…');
         }
+        self.set_core_badge(TrayBadge::Error);
         let text = native_operation_failed(&self.locale(), &summary);
         if let Err(update_error) = self.status_item.set_text(text) {
             eprintln!("Failed to update desktop tray error state: {update_error}");
         }
     }
+}
+
+/// The dot on the tray icon. Worst first: a failed action, a stopped proxy, then quota.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum TrayBadge {
+    None,
+    Low,
+    Out,
+    Stopped,
+    Error,
+}
+
+impl TrayBadge {
+    pub(crate) fn from_quota_level(level: Option<&str>) -> Self {
+        match level {
+            Some("out") => TrayBadge::Out,
+            Some("low") => TrayBadge::Low,
+            _ => TrayBadge::None,
+        }
+    }
+
+    pub(crate) fn color(self) -> Option<[u8; 3]> {
+        match self {
+            TrayBadge::None => None,
+            TrayBadge::Low => Some([245, 158, 11]),
+            TrayBadge::Out => Some([234, 88, 12]),
+            TrayBadge::Stopped => Some([120, 120, 120]),
+            TrayBadge::Error => Some([220, 38, 38]),
+        }
+    }
+}
+
+/// The icon with a filled dot and a white ring in its bottom-right corner, big enough to read at tray size.
+pub(crate) fn badged_rgba(rgba: &[u8], width: u32, height: u32, color: [u8; 3]) -> Vec<u8> {
+    let mut out = rgba.to_vec();
+    let size = width.min(height) as f64;
+    let radius = size * 0.26;
+    let ring = (size * 0.06).max(1.0);
+    let (cx, cy) = (width as f64 - radius - ring, height as f64 - radius - ring);
+    for y in 0..height {
+        for x in 0..width {
+            let distance = ((x as f64 + 0.5 - cx).powi(2) + (y as f64 + 0.5 - cy).powi(2)).sqrt();
+            // How much of this pixel the dot and the ring around it cover, softened over one pixel.
+            let dot = (radius - distance + 0.5).clamp(0.0, 1.0);
+            let outer = (radius + ring - distance + 0.5).clamp(0.0, 1.0);
+            if outer <= 0.0 {
+                continue;
+            }
+            let index = ((y * width + x) * 4) as usize;
+            let Some(pixel) = out.get_mut(index..index + 4) else { continue };
+            for channel in 0..3 {
+                let base = f64::from(pixel[channel]);
+                let ringed = base + (255.0 - base) * outer;
+                pixel[channel] = (ringed + (f64::from(color[channel]) - ringed) * dot).round() as u8;
+            }
+            pixel[3] = pixel[3].max((outer * 255.0).round() as u8);
+        }
+    }
+    out
 }
 
 /// Windows truncates tray tooltips at 127 characters, so the quota line is cut to fit.
@@ -433,7 +536,7 @@ pub(crate) fn windows_tray_tooltip(base: &str, quota: &str) -> String {
 
 /// Called by the window's quota watcher with a localized summary for the tray menu and tooltip.
 #[tauri::command]
-pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String) {
+pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String, level: Option<String>) {
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         let Some(tray_state) = app.try_state::<WindowsTrayState>() else {
@@ -442,6 +545,8 @@ pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, t
         if let Ok(mut quota) = tray_state.quota_tooltip.lock() {
             *quota = tooltip_text;
         }
+        tray_state.set_quota_badge(TrayBadge::from_quota_level(level.as_deref()));
+        tray_state.refresh_icon(&app);
         if let Err(error) = tray_state.quota_item.set_text(menu_text) {
             eprintln!("Failed to update desktop tray quota line: {error}");
         }
@@ -453,7 +558,7 @@ pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, t
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     {
-        let _ = (app, menu_text, tooltip_text);
+        let _ = (app, menu_text, tooltip_text, level);
     }
 }
 
@@ -480,7 +585,11 @@ pub(crate) fn show_windows_main_window(app_handle: &tauri::AppHandle) {
 pub(crate) fn update_windows_tray_status(app_handle: &tauri::AppHandle, status: &CoreStatus) {
     let tooltip = app_handle
         .try_state::<WindowsTrayState>()
-        .map(|tray_state| tray_state.update(status))
+        .map(|tray_state| {
+            let tooltip = tray_state.update(status);
+            tray_state.refresh_icon(app_handle);
+            tooltip
+        })
         .unwrap_or_else(|| windows_tray_presentation(status, false, "en").tooltip);
 
     if let Some(tray) = app_handle.tray_by_id(WINDOWS_TRAY_ID) {
@@ -511,6 +620,7 @@ pub(crate) fn show_windows_tray_action_error(app_handle: &tauri::AppHandle, erro
         .unwrap_or_else(|| "en".to_string());
     if let Some(tray_state) = app_handle.try_state::<WindowsTrayState>() {
         tray_state.show_error(error);
+        tray_state.refresh_icon(app_handle);
     }
     // Keep the quota line under the status, as the normal tooltip does.
     let quota = app_handle
@@ -672,7 +782,7 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
                 .cloned()
                 .expect("application icon is required for the tray"),
         )
-        .tooltip("EasyCLIProxyAPI")
+        .tooltip("Tim’s AI Hub")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(move |app_handle, event| match event.id().as_ref() {
@@ -687,10 +797,12 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
             _ => {}
         })
         .on_tray_icon_event(move |tray, event| {
+            // One left click opens the window, as on most Windows tray apps; the menu stays on right-click.
             if matches!(
                 event,
-                TrayIconEvent::DoubleClick {
+                TrayIconEvent::Click {
                     button: MouseButton::Left,
+                    button_state: tauri::tray::MouseButtonState::Up,
                     ..
                 }
             ) {
@@ -699,6 +811,9 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         })
         .build(app)?;
 
+    let base_icon = app
+        .default_window_icon()
+        .map(|icon| (icon.rgba().to_vec(), icon.width(), icon.height()));
     let _ = app.manage(WindowsTrayState {
         open_main_window,
         status_item,
@@ -710,6 +825,10 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         busy: AtomicBool::new(false),
         base_tooltip: Mutex::new(String::new()),
         quota_tooltip: Mutex::new(String::new()),
+        core_badge: Mutex::new(TrayBadge::None),
+        quota_badge: Mutex::new(TrayBadge::None),
+        shown_badge: Mutex::new(TrayBadge::None),
+        base_icon,
     });
 
     Ok(())

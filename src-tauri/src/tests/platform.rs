@@ -234,3 +234,26 @@ Claude 1 low · Codex ok"
     assert_eq!(tooltip.chars().count(), 127);
     assert!(tooltip.ends_with('…'));
 }
+
+#[test]
+fn the_tray_dot_shows_the_worst_state() {
+    assert!(TrayBadge::Error > TrayBadge::Stopped && TrayBadge::Stopped > TrayBadge::Out && TrayBadge::Out > TrayBadge::Low && TrayBadge::Low > TrayBadge::None);
+    assert_eq!(TrayBadge::from_quota_level(Some("out")), TrayBadge::Out);
+    assert_eq!(TrayBadge::from_quota_level(Some("low")), TrayBadge::Low);
+    assert_eq!(TrayBadge::from_quota_level(Some("ok")), TrayBadge::None);
+    assert_eq!(TrayBadge::from_quota_level(None), TrayBadge::None);
+    assert!(TrayBadge::None.color().is_none());
+}
+
+#[test]
+fn the_tray_dot_is_drawn_in_the_bottom_right_corner_only() {
+    let (width, height) = (32u32, 32u32);
+    let plain = vec![10u8; (width * height * 4) as usize];
+    let badged = badged_rgba(&plain, width, height, [220, 38, 38]);
+    assert_eq!(badged.len(), plain.len());
+    let pixel = |x: u32, y: u32| &badged[((y * width + x) * 4) as usize..((y * width + x) * 4 + 4) as usize];
+    // Top-left is untouched; the dot's centre takes the colour, fully opaque.
+    assert_eq!(pixel(2, 2), &[10, 10, 10, 10]);
+    let centre = pixel(22, 22);
+    assert!(centre[0] > 200 && centre[1] < 60 && centre[2] < 60 && centre[3] == 255, "{centre:?}");
+}
