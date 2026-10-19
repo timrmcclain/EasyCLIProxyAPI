@@ -5,7 +5,8 @@ import { useDialogFocusTrap } from './useDialogFocusTrap';
 import { rankPalette } from './paletteSearch';
 import './CommandPalette.css';
 
-export type PaletteCommand = { id: string; label: string; group: string; hint?: string; keywords?: readonly string[]; disabled?: boolean; run: () => void };
+// searchOnly entries (single settings, accounts) appear once you type, so the opening list stays short.
+export type PaletteCommand = { id: string; label: string; group: string; hint?: string; keywords?: readonly string[]; disabled?: boolean; searchOnly?: boolean; run: () => void };
 
 /** Ctrl+K launcher: jump to any page or run a global action without hunting through menus. */
 export function CommandPalette({ open, commands, onClose }: { open: boolean; commands: PaletteCommand[]; onClose: () => void }) {
@@ -23,7 +24,8 @@ export function CommandPalette({ open, commands, onClose }: { open: boolean; com
   }, [open]);
 
   const matches = useMemo(() => {
-    return rankPalette(commands.filter((command) => !command.disabled), query);
+    const typed = query.trim() !== '';
+    return rankPalette(commands.filter((command) => !command.disabled && (typed || !command.searchOnly)), query).slice(0, 60);
   }, [commands, query]);
 
   useEffect(() => { setIndex(0); }, [query]);

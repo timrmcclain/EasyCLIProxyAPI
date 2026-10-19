@@ -29,6 +29,7 @@ import type { HomeUsageSummary } from '../services/homeOverview';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
 import { readAccountNames, saveAccountNames } from '../services/accountNames';
 import { accountDisplayName, privateAccountLabel } from '../services/accountPrivacy';
+import { ACCOUNT_SEARCH_EVENT, takePendingAccountSearch } from '../accountNavigation';
 import { ProviderLogo, SignInAgainButton, needsSignIn, openSignIn } from './AuthFileProviderIcon';
 import { requestAccountRequests } from '../usageNavigation';
 import { loadPlanBlocks, withPlanBlocks, type PlanBlock } from '../services/planBlock';
@@ -38,7 +39,7 @@ import './AccountDashboard.css';
 
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 const providers = ['claude', 'antigravity', 'codex', 'xai', 'kimi'];
-const dashboardProvider = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
+export const dashboardProvider = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
 // Problems sort first so the accounts that need a decision are at the top of each provider.
 const attentionRank: Record<string, number> = { exhausted: 0, unavailable: 0, limited: 0, resetDue: 0, unknown: 1, creditBacked: 2, available: 3, disabled: 4 };
 export type AccountStatusSummary = {
@@ -63,7 +64,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const [sort, setSort] = useState(() => readDashboardPreference('quotaSort', ['priority', 'reset', 'recovery'] as const, 'priority'));
   const [filter, setFilter] = useState(() => readDashboardPreference('quotaProvider', ['all', ...providers, 'devin', 'gemini', 'other'], 'all'));
   const [layout, setLayout] = useState(() => readDashboardPreference('quotaLayout', ['ledger', 'compact'] as const, 'compact'));
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => takePendingAccountSearch() ?? '');
   const [stateFilter, setStateFilter] = useState(() => readDashboardPreference('quotaState', ['all', 'available', 'attention'] as const, 'all'));
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null);
   const [hideEmails, setHideEmails] = useState(() => readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true');
@@ -114,6 +115,17 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       setLoading(false);
     }
   }, [ready, t]);
+
+  // The command palette can open this list searched for one account, with other filters cleared so it shows.
+  useEffect(() => {
+    const onSearch = () => {
+      const next = takePendingAccountSearch();
+      if (next === null) return;
+      setSearch(next); setFilter('all'); setStateFilter('all');
+    };
+    window.addEventListener(ACCOUNT_SEARCH_EVENT, onSearch);
+    return () => window.removeEventListener(ACCOUNT_SEARCH_EVENT, onSearch);
+  }, []);
 
   useEffect(() => {
     mounted.current = true;

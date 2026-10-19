@@ -27,12 +27,21 @@ import {
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
+import { allSettingsTemplateGroups, requestSettingField, requestSettingsCategory, settingsCategories, settingsTemplateGroups } from './services/settingsNavigation';
+import { templateText } from './i18n/templateConfig';
+import { requestFailedRequests } from './usageNavigation';
+import { requestAccountSearch } from './accountNavigation';
+import { managementApi, responseList } from './services/managementApi';
+import { dedupeAuthFiles } from './services/authFiles';
+import { accountDisplayName, privateAccountLabel } from './services/accountPrivacy';
+import { readAccountNames } from './services/accountNames';
+import { dashboardProvider } from './components/AccountDashboard';
 import { useConfirmation } from './components/ConfirmationDialog';
 import { noticeStillInTray, startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
 import { endAccountFocus, readAccountFocus } from './services/accountFocus';
 import { applyQuotaRouting, readQuotaRoutingPreference } from './services/quotaRoutingControl';
 import { startSecretGuardWatcher } from './services/secretGuardWatcher';
-import { readGlobalHotkeyPreference, saveGlobalHotkeyPreference } from './services/dashboardPreferences';
+import { readDashboardPreference, readGlobalHotkeyPreference, saveGlobalHotkeyPreference } from './services/dashboardPreferences';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
 import { ApiAccessPage } from './pages/ApiAccessPage';
@@ -270,6 +279,8 @@ function AppContent() {
     ? [...mainNavGroups, utilityNavGroups[0]].map((group) => pageForGroup(group, lastInGroup.current) as PageId)
     : primaryNav;
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Accounts the palette can find, read fresh each time it opens.
+  const [paletteAccounts, setPaletteAccounts] = useState<{ id: string; label: string; provider: string; search: string }[]>([]);
   const [homeProblems, setHomeProblems] = useState(0);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
@@ -637,6 +648,53 @@ function AppContent() {
     }
   };
 
+  useEffect(() => {
+    if (!paletteOpen || !coreReady) return;
+    let current = true;
+    void managementApi.get('/credentials').then((payload) => {
+      if (!current) return;
+      const names = readAccountNames();
+      const hideEmails = readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true';
+      setPaletteAccounts(dedupeAuthFiles(responseList(payload, 'files')).map((file) => {
+        const provider = dashboardProvider(file);
+        const id = String(file.name ?? privateAccountLabel(file, provider));
+        // Overview's search matches the file name, or only the private label while emails are hidden.
+        return { id, provider, label: accountDisplayName(file, provider, names, hideEmails), search: hideEmails ? privateAccountLabel(file, provider) : id };
+      }));
+    }).catch(() => undefined);
+    return () => { current = false; };
+  }, [paletteOpen, coreReady]);
+
+  const runProxyCommand = (command: 'start_core_process' | 'stop_core_process') => void (async () => {
+    if (restartingRef.current) return;
+    if (command === 'stop_core_process' && !(await askConfirmation({ title: t('kernel.stopConfirm.title'), message: t('kernel.stopConfirm.message'), confirmText: t('kernel.action.stop'), variant: 'danger' }))) return;
+    restartingRef.current = true;
+    try {
+      publishStatus(await invoke<CoreStatus>(command));
+    } catch (error) {
+      paletteFeedback.showNotice({ key: 'palette.action.proxyFailed', variables: { error: readableError(error) } }, 'error');
+    } finally {
+      restartingRef.current = false;
+    }
+  })();
+
+  const settingsGroup = t('palette.settings');
+  const settingsCommands: PaletteCommand[] = [
+    ...settingsCategories.map((category) => ({
+      id: `settings-${category.id}`, label: templateText(category.title, locale), group: settingsGroup, searchOnly: true,
+      disabled: !canOpenAppPage('config', coreReady), run: () => requestSettingsCategory(category.id),
+    })),
+    ...(Object.entries(settingsTemplateGroups) as [keyof typeof settingsTemplateGroups, typeof allSettingsTemplateGroups][])
+      .flatMap(([category, groups]) => groups.flatMap((group) => group.fields.map((field) => ({
+        id: `setting-${field.path.join('.')}`, label: templateText(field.label, locale), group: settingsGroup, searchOnly: true,
+        hint: templateText(settingsCategories.find((item) => item.id === category)!.title, locale),
+        keywords: [field.path.join('.'), templateText(group.title, locale)],
+        disabled: !canOpenAppPage('config', coreReady), run: () => requestSettingField(field.path.join('.')),
+      })))),
+  ];
+  // A field can be listed under more than one group; keep the first.
+  const uniqueSettings = settingsCommands.filter((command, position) => settingsCommands.findIndex((item) => item.id === command.id) === position);
+
   const paletteCommands: PaletteCommand[] = [
     ...[...primaryNav, ...advancedNav].map((id, position) => {
       const page = pages.find((item) => item.id === id)!;
@@ -671,6 +729,19 @@ function AppContent() {
           restartingRef.current = false;
         }
       })() },
+    { id: 'start-proxy', label: t('kernel.action.start'), group: t('palette.actions'), keywords: ['run', 'proxy', 'start'],
+      disabled: !status?.installed || status.running, run: () => runProxyCommand('start_core_process') },
+    { id: 'stop-proxy', label: t('kernel.action.stop'), group: t('palette.actions'), keywords: ['proxy', 'stop', 'shut down'],
+      disabled: !status?.running, run: () => runProxyCommand('stop_core_process') },
+    { id: 'failed-requests', label: t('palette.action.failedRequests'), group: t('palette.actions'), keywords: ['errors', 'failed', 'activity', 'requests'],
+      disabled: !canOpenAppPage('usage-records', coreReady), run: () => requestFailedRequests() },
+    { id: 'restore-config', label: t('palette.action.restoreConfig'), group: t('palette.actions'), keywords: ['config', 'history', 'undo', 'restore', 'backup'],
+      disabled: !canOpenAppPage('config', coreReady), run: () => requestSettingsCategory('diagnostics') },
+    ...uniqueSettings,
+    ...paletteAccounts.map((account) => ({
+      id: `account-${account.id}`, label: account.label, group: t('palette.accounts'), hint: `${t('palette.accounts')} · ${account.provider}`,
+      keywords: [account.provider, account.id], searchOnly: true, disabled: !coreReady, run: () => requestAccountSearch(account.search),
+    })),
   ];
 
   const renderNavigationPage = (page: (typeof pages)[number]) => {
