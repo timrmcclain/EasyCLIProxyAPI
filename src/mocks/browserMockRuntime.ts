@@ -602,7 +602,8 @@ function createState(scenario: BrowserMockScenario) {
     providerConfig: Object.fromEntries(PROVIDER_SECTIONS.map((section) => [
       section, scenario === 'empty' ? [] : groupProviderRecords(section, legacyProviderConfig[section]),
     ])) as Record<ProviderSection, JsonObject[]>,
-    authFiles: scenario === 'empty' ? [] : authFiles,
+    // Tests can add accounts and failed requests of their own.
+    authFiles: scenario === 'empty' ? [] : [...authFiles, ...clone(((globalThis as { mockExtraAuthFiles?: JsonObject[] }).mockExtraAuthFiles ?? []))],
     quotaApiCall: createQuotaMock(),
     oauthExcludedModels: { codex: [], claude: ['claude-legacy-*'], gemini: [] } as Record<string, string[]>,
     oauthSessions: new Map<string, string>(),
@@ -629,7 +630,7 @@ function createState(scenario: BrowserMockScenario) {
       pricedRequests: 296,
       timeline,
     },
-    usageEvents: events,
+    usageEvents: [...clone(((globalThis as { mockExtraUsageEvents?: typeof events }).mockExtraUsageEvents ?? [])), ...events],
     usagePrices: [
       {
         model: 'gpt-5.2-codex', prompt: 1.25, completion: 10, cacheRead: 0.125, cacheCreation: 0,

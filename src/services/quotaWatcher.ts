@@ -16,6 +16,8 @@ import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaFor
 import { getQuotaTrends, recordQuotaTrends, setQuotaTrends } from './quotaTrend';
 import { getResetHistory, recordResetHistory, setResetHistory } from './resetHistory';
 import { applyQuotaRouting } from './quotaRoutingControl';
+import { syncBlockedRouting } from './blockedRouting';
+import { loadPlanBlocks } from './planBlock';
 import { initialProxyWatch, nextProxyWatch } from './proxyWatch';
 import { getProxyUptime, recordProxyCheck, setProxyUptime } from './proxyUptime';
 import { providerForFile, type AuthFile } from './quotaService';
@@ -114,7 +116,11 @@ export function startQuotaWatcher(): () => void {
       setQuotaTrends(recordQuotaTrends(getQuotaTrends(), files, quotas, now));
       setResetHistory(recordResetHistory(getResetHistory(), files, quotas, now));
       // Soonest-reset-first routing, when switched on in Settings → Routing.
-      await applyQuotaRouting(files).catch(() => undefined);
+      const rerouted = await applyQuotaRouting(files).catch(() => 0);
+      // Accounts the provider refuses outright (terms, plan) move below the rest so requests go elsewhere.
+      // Work from the priorities routing just wrote, not the ones read before it.
+      const current = rerouted ? dedupeAuthFiles(responseList(await managementApi.get('/credentials'), 'files')) : files;
+      await loadPlanBlocks(current).then(blocks => syncBlockedRouting(current, blocks)).catch(() => undefined);
       const attention = attentionItems(files, quotas, now, false);
       await updateTray(files, attention);
       const result = quotaAlerts(memory, files, attention, providerOf, labelFor);

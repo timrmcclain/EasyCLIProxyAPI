@@ -12,10 +12,10 @@ const TERMS_STATUSES = new Set([400, 403]);
 const TERMS_WORDS = /(terms|privacy policy)/i;
 const TERMS_ACTION = /(accept|agree|updated)/i;
 
-type Failure = { failure_status?: number; failure_body?: string };
+type Failure = { failure_status?: number; failure_body?: string; timestamp?: string };
 type Counted = { success?: unknown; failed?: unknown; recent_requests?: unknown; recentRequests?: unknown };
 /** What blocks an account that looks fine otherwise: a plan that doesn't cover the service, or terms to accept. */
-export type PlanBlock = { kind: 'plan' | 'terms'; message: string };
+export type PlanBlock = { kind: 'plan' | 'terms'; message: string; /** When the refusal happened (ms), if known. */ at?: number };
 
 function providerMessage(body: string): string {
   try {
@@ -86,7 +86,8 @@ export async function loadPlanBlocks(files: Record<string, unknown>[]): Promise<
       const index = normalizeAuthIndex(file.auth_index ?? file.authIndex);
       const latest = page.items.find((item) => normalizeAuthIndex(item.auth_index) === index);
       const block = latest ? blockFromFailure(latest) : null;
-      if (index && block) blocks[index] = block;
+      const at = latest?.timestamp ? Date.parse(latest.timestamp) : NaN;
+      if (index && block) blocks[index] = Number.isFinite(at) ? { ...block, at } : block;
     }
   }));
   return blocks;

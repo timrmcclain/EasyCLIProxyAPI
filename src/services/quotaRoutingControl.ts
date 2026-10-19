@@ -1,5 +1,6 @@
 import { dedupeAuthFiles, parseAuthFilePriority } from './authFiles';
 import { focusHoldsProvider, providerOf, readAccountFocus } from './accountFocus';
+import { demotedNames } from './blockedRouting';
 import { readDashboardPreference, saveDashboardPreference } from './dashboardPreferences';
 import { managementApi, responseList } from './managementApi';
 import { getQuotaCacheSnapshot } from './quotaCache';
@@ -37,9 +38,12 @@ export function applyQuotaRouting(files?: AuthFile[]): Promise<number> {
     if (!readQuotaRoutingPreference()) return 0;
     const now = Date.now();
     const focus = readAccountFocus();
+    const demoted = demotedNames();
     // An account in use for the hour keeps its raised priority: leave its provider alone until the hour ends.
     const changes = priorityChanges(routingPlan(files ?? await loadFiles(), getQuotaCacheSnapshot(), now))
-      .filter(change => !focusHoldsProvider(focus, providerOf(change.file), now));
+      .filter(change => !focusHoldsProvider(focus, providerOf(change.file), now))
+      // An account the provider refuses stays at the bottom until that clears.
+      .filter(change => !demoted.has(fileName(change.file)));
     let written = 0;
     for (const change of changes) {
       // Switched off mid-pass: stop, and leave the priorities to the restore.

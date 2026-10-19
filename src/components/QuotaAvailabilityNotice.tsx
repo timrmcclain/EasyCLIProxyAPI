@@ -1,14 +1,41 @@
 import { invoke } from '@tauri-apps/api/core';
+import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
 import { resetCountdown } from '../services/accountDashboard';
+import { readBlockedRouting, releaseBlockedAccount } from '../services/blockedRouting';
 import type { Availability } from '../services/quotaAvailability';
+import { fileName, type AuthFile } from '../services/quotaService';
 
 const blockedKinds = new Set<Availability['kind']>(['exhausted', 'limited', 'creditBacked']);
 const stateMark = (kind: Availability['kind']) => kind === 'exhausted' || kind === 'unavailable' ? '⊘' : kind === 'available' ? '✓' : '•';
 
-/** `onAccounts`: shown on the Accounts page, so the text names the control beside it instead of sending you to Accounts. */
-export function QuotaAvailabilityNotice({ state, now, compact = false, onAccounts = false }: { state: Availability; now: number; compact?: boolean; onAccounts?: boolean }) {
+/** Whether the hub has moved this account below the others because the provider refuses it; follows changes live. */
+function useRoutedAway(name: string | undefined) {
+  const read = () => Boolean(name && readBlockedRouting().demoted[name]);
+  const [routedAway, setRoutedAway] = useState(read);
+  useEffect(() => {
+    const sync = () => setRoutedAway(read());
+    sync();
+    window.addEventListener('app:blocked-routing', sync);
+    return () => window.removeEventListener('app:blocked-routing', sync);
+  }, [name]); // eslint-disable-line react-hooks/exhaustive-deps
+  return routedAway;
+}
+
+/**
+ * `onAccounts`: shown on the Accounts page, so the text names the control beside it instead of sending you to Accounts.
+ * `file`: the account, so a refused one can say where requests go instead and be put back in use.
+ */
+export function QuotaAvailabilityNotice({ state, now, compact = false, onAccounts = false, file }: { state: Availability; now: number; compact?: boolean; onAccounts?: boolean; file?: AuthFile }) {
   const { t } = useI18n();
+  const name = file ? fileName(file) : undefined;
+  const routedAway = useRoutedAway(name);
+  const [released, setReleased] = useState(false);
+  const useAgain = async () => {
+    if (!file || !name) return;
+    await releaseBlockedAccount(name).catch(() => undefined);
+    setReleased(true);
+  };
   const label = state.reason === 'modelNotFound' ? t('availability.modelPaused') : state.reason === 'planBlocked' ? t('availability.planBlockedLabel') : state.reason === 'termsRequired' ? t('availability.termsRequiredLabel') : t(`availability.${state.kind}`);
   const reasonKey = state.reason === 'modelNotFound' && onAccounts ? 'availability.modelNotFoundHere' as const : state.reason ? `availability.${state.reason}` as const : null;
   const reasonText = reasonKey ? t(reasonKey, { model: state.pausedModel ?? '', message: state.planMessage ?? '' }) : '';
@@ -39,6 +66,11 @@ export function QuotaAvailabilityNotice({ state, now, compact = false, onAccount
     {reasonText && <small>{reasonText}</small>}
     {/* A fixed address, never a link taken from the provider's message. */}
     {state.reason === 'termsRequired' && <button type="button" className="secondary-button compact-button quota-availability-action" onClick={() => void invoke('open_external_url', { url: 'https://claude.ai/' }).catch(() => undefined)}>{t('availability.openClaude')}</button>}
+    {routedAway && !released && <>
+      <small className="quota-routed-away">{t('availability.routedAway')}</small>
+      <button type="button" className="secondary-button compact-button quota-availability-action" onClick={() => void useAgain()}>{t('availability.useAgain')}</button>
+    </>}
+    {released && <small role="status">{t('availability.usedAgain')}</small>}
     {state.updating && <small>{t('accountDashboard.refreshing')}</small>}
     {state.groups?.map(group => <small key={group.id} className={`quota-group-state quota-availability-${group.kind}`}>
       {group.label}: {t(`availability.${group.kind}`)}

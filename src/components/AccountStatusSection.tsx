@@ -28,7 +28,7 @@ export function AccountStatusSection({ file, quota, now, stale = false, hideEmai
   // A pace estimate, only for accounts that can still take requests; blocked ones say when they're back instead.
   const forecast = availability.kind === 'available' ? forecastQuota(history[quotaKey(file)], now) : undefined;
   return <div className="account-status-section">
-    {notice && <QuotaAvailabilityNotice state={availability} now={now} />}
+    {notice && <QuotaAvailabilityNotice state={availability} now={now} file={file} />}
     {/* A reset time is the provider's estimate, not a promise the account works again. */}
     {availability.recoveryAt && ['exhausted', 'limited', 'creditBacked'].includes(availability.kind) && <p className="ad-card-note ad-recovery-hint">{t('ux.recoveryHint')}</p>}
     {forecast?.kind === 'runsOut' && <p className="ad-card-note ad-forecast">{t('glance.forecast.runsOut', { time: resetCountdown(forecast.emptyAt, now) })}</p>}

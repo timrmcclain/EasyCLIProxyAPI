@@ -239,7 +239,7 @@ export function QuotaCard({ file, quota, onRefresh, onReset, stale = false }: { 
         </div>
       </div>
       <QuotaActionFeedback quota={quota} name={name} />
-      <QuotaAvailabilityNotice state={availability} now={clock} />
+      <QuotaAvailabilityNotice state={availability} now={clock} file={file} />
       {quota.status === 'idle' ? <div className="quota-card-message"><span>{disabled ? t('quota.fileDisabled') : t('quota.notFetched')}</span><button type="button" className="secondary-button compact-button" onClick={onRefresh} disabled={disabled}>{disabled ? t('quota.disabled') : t('quota.fetch')}</button></div> : null}
       {quota.status === 'loading' ? <div className="quota-card-message"><LoaderCircle size={18} className="spin" />{t(quota.pendingAction === 'reset' ? 'quota.resetting' : 'quota.querying')}</div> : null}
       {quota.status === 'error' ? <>

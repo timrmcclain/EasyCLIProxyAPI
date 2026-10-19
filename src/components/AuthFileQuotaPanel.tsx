@@ -85,7 +85,7 @@ export function AuthFileQuotaPanel({ quota, file, disabled, onRefresh, onReset, 
         {dense && quota.error ? <details className="credential-quota-error-details"><summary title={quota.error}>{t('authFiles.quota.failed')}</summary><small>{quota.error}</small></details>
           : <><span>{t('authFiles.quota.failed')}</span>{quota.error ? <small>{quota.error}</small> : null}</>}
       </div> : null}
-      <QuotaAvailabilityNotice state={showReset ? { ...availability, resetsAvailable: 0 } : availability} now={clock} onAccounts />
+      <QuotaAvailabilityNotice state={showReset ? { ...availability, resetsAvailable: 0 } : availability} now={clock} onAccounts file={file} />
       {quota.status === 'success' || (loading && rows.length > 0) ? <>
         {rows.length ? <>
           <div className="credential-quota-rows">{(compactLayout ? rows.slice(0, 2) : rows).map(renderRow)}</div>
