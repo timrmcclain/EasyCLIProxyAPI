@@ -9,6 +9,7 @@ import {
   type AuthFileCooldownSnapshot,
 } from '../services/authFileHealth';
 import './AuthFileHealthStatus.css';
+import { formatDate as formatDateTime } from '../services/managementApi';
 
 let clockNow = Date.now();
 let timer: ReturnType<typeof setInterval> | undefined;
@@ -60,7 +61,7 @@ function TimedHealthStatus(props: HealthProps) {
 }
 
 function HealthStatus({ file, snapshot, nowMs, resetting = false, resetDisabled = false, onReset, compact = false }: HealthProps & { nowMs: number }) {
-  const { t, formatNumber, formatDate } = useI18n();
+  const { t, formatNumber } = useI18n();
   const health = authFileHealth(file);
   const cooldown = summarizeAuthFileCooldowns(snapshot, nowMs);
   const hasTimers = cooldown.rows.length > 0;
@@ -93,9 +94,7 @@ function HealthStatus({ file, snapshot, nowMs, resetting = false, resetDisabled 
     : cooldown.elapsed ? t('authFiles.health.elapsed')
       : scope || (healthy ? t('authFiles.health.unknownCooldown') : t(health.label));
   const subtitle = health.disabled ? scope : reasons.map((key) => t(key)).join(' · ');
-  const formatTimestamp = (value: string) => formatDate(value, {
-    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  });
+  const formatTimestamp = (value: string) => formatDateTime(value);
   const summary = <>
     <Icon size={16} className="auth-health-icon" aria-hidden="true" />
     <span className="auth-health-summary-content">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ClipboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type MutableRefObject } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Check, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -97,7 +97,8 @@ function WordEditor({ provider, entries, composer, disabled, onAdd, onCompose, o
   );
 }
 
-export function SensitiveWordsPage({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void } = {}) {
+/** With saveRef, Settings' shared Save all bar saves these words and the card has no Save button of its own. */
+export function SensitiveWordsPage({ onDirtyChange, saveRef }: { onDirtyChange?: (dirty: boolean) => void; saveRef?: MutableRefObject<(() => Promise<void>) | null> } = {}) {
   const { t } = useI18n();
   const { askConfirmation, confirmationDialog } = useConfirmation();
   const nextEntryId = useRef(0);
@@ -210,6 +211,8 @@ export function SensitiveWordsPage({ onDirtyChange }: { onDirtyChange?: (dirty: 
     }
   };
 
+  if (saveRef) saveRef.current = save;
+
   const refresh = async () => {
     if (dirty && !await askConfirmation({
       title: t('config.sensitiveWords.discardTitle'),
@@ -233,11 +236,11 @@ export function SensitiveWordsPage({ onDirtyChange }: { onDirtyChange?: (dirty: 
             disabled={loading || saving} onClick={() => void refresh()}>
             <RefreshCw size={16} aria-hidden="true" />
           </button>
-          <button type="button" className="primary-button compact-button" disabled={loading || saving || !dirty}
+          {saveRef ? null : <button type="button" className="primary-button compact-button" disabled={loading || saving || !dirty}
             onClick={() => void save()}>
             <Check size={16} aria-hidden="true" />
             {saving ? t('common.saving') : t('common.save')}
-          </button>
+          </button>}
         </div>
       </div>
       {error ? <div className="config-form-message error" role="alert">{error}</div> : null}

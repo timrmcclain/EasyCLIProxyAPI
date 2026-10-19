@@ -5,6 +5,7 @@ import { resetCountdown } from '../services/accountDashboard';
 import { readBlockedRouting, releaseBlockedAccount } from '../services/blockedRouting';
 import type { Availability } from '../services/quotaAvailability';
 import { fileName, type AuthFile } from '../services/quotaService';
+import { formatDate as formatDateTime } from '../services/managementApi';
 
 const blockedKinds = new Set<Availability['kind']>(['exhausted', 'limited', 'creditBacked']);
 const stateMark = (kind: Availability['kind']) => kind === 'exhausted' || kind === 'unavailable' ? '⊘' : kind === 'available' ? '✓' : '•';
@@ -61,7 +62,7 @@ export function QuotaAvailabilityNotice({ state, now, compact = false, onAccount
     {state.kind === 'creditBacked' && <small>{state.creditBalance !== undefined ? t('credits.balance', { count: new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(state.creditBalance) }) : t('credits.reported')} · {t('credits.hint')}</small>}
     {!!state.resetsAvailable && <small>{t(onAccounts ? 'credits.resetsHere' : 'credits.resets', { count: state.resetsAvailable })}</small>}
     {!!state.blockers.length && <small>{state.blockers.map(row => row.label).join(' · ')}</small>}
-    {state.recoveryAt && !state.groups && <time dateTime={new Date(state.recoveryAt).toISOString()}>{new Date(state.recoveryAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time>}
+    {state.recoveryAt && !state.groups && <time dateTime={new Date(state.recoveryAt).toISOString()}>{formatDateTime(state.recoveryAt)}</time>}
     {state.uncertainty && <small>{t(`ux.${state.uncertainty}`)}</small>}
     {reasonText && <small>{reasonText}</small>}
     {/* A fixed address, never a link taken from the provider's message. */}

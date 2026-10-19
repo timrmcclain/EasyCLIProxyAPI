@@ -517,6 +517,9 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
           assert.equal(await hasDirtyMarker('requests'), true, `${label}: sensitive-word drafts mark their category`);
           await tab('requests');
           assert.equal(await sensitiveWord.inputValue(), 'settings-navigation-draft', `${label}: sensitive-word drafts survive category changes`);
+          // Sensitive words save through the tab's shared bar, not a button of their own.
+          assert.equal(await page.locator('.config-save-bar').isVisible(), true, `${label}: sensitive-word drafts show the shared save bar`);
+          assert.equal(await page.locator('#config-native-sensitive-words .config-heading-actions .primary-button').count(), 0);
         }
         await page.close();
       }

@@ -1488,7 +1488,8 @@ function TokenComposition({ overview }: { overview: UsageOverview }) {
                 );
               })}
             </svg>
-            <div className="usage-token-donut-label">
+            {/* Cache reads against every token; the Cache hit rate card counts them against input only. */}
+            <div className="usage-token-donut-label" title={t('usage.token.cacheShareNote')}>
               <strong>{composition.cacheShare.toFixed(1)}%</strong>
               <span>{t('usage.token.cacheShare')}</span>
             </div>
@@ -1514,7 +1515,6 @@ function TokenComposition({ overview }: { overview: UsageOverview }) {
           <span>{t('usage.token.input')} <b>{compactNumber(overview.inputTokens)}</b></span>
           <span>{t('usage.token.output')} <b>{compactNumber(overview.outputTokens)}</b></span>
           <span title={t('usage.token.reasoningNote')}>{t('usage.token.reasoning')} <b>{compactNumber(overview.reasoningTokens)}</b></span>
-          <span>{t('usage.stat.cacheHitRate')} <b>{(overview.cacheHitRate * 100).toFixed(1)}%</b></span>
         </div>
         <div className="usage-token-context">
           <section className="usage-token-context-group" aria-labelledby="usage-token-performance-title">

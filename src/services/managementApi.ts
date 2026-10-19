@@ -157,6 +157,7 @@ export function maskSecret(value: string): string {
   return `${normalized.slice(0, 4)}••••${normalized.slice(-4)}`;
 }
 
+/** The hub's one date-and-time style, e.g. "Oct 14, 3:40 PM"; the year shows only when it isn't this year. */
 export function formatDate(value: unknown): string {
   if (value === undefined || value === null || value === '') {
     return '—';
@@ -169,9 +170,10 @@ export function formatDate(value: unknown): string {
     return String(value);
   }
   return new Intl.DateTimeFormat(getCurrentLocale(), {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
+    year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
     minute: '2-digit',
   }).format(date);
 }

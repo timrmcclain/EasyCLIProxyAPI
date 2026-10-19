@@ -1289,8 +1289,9 @@ export function ConfigPanelPage() {
     extensions: false,
     software: softwareSettingsDirty,
   };
-  // One Save bar per tab. The management key form and Sensitive words keep their own Save.
+  // One Save bar per tab. The management key form keeps its own Save.
   const templateSaveAll = useRef<((groupIds: readonly string[]) => Promise<void>) | null>(null);
+  const sensitiveWordsSave = useRef<(() => Promise<void>) | null>(null);
   const [savingTab, setSavingTab] = useState(false);
   // The tab Save all last ran on. If that tab still has changes afterwards, a card failed or couldn't save yet
   // (each card shows why); the bar says so instead of quietly staying as it was.
@@ -1299,7 +1300,7 @@ export function ConfigPanelPage() {
     general: [[networkSettingsDirty, saveNetworkEndpointSettings], [tlsSettingsDirty, saveTlsSettings]],
     aliases: [],
     routing: [[sessionRoutingDirty, saveSessionRoutingSettings], [retrySettingsDirty, saveRetrySettings]],
-    requests: [],
+    requests: [[sensitiveWordsDirty, async () => { await sensitiveWordsSave.current?.(); }]],
     diagnostics: [[loggingSettingsDirty, saveCoreLoggingSettings]],
     oauth: [],
     extensions: [],
@@ -2608,11 +2609,16 @@ export function ConfigPanelPage() {
           </section> : null}
           <div id="config-template-panel" hidden={searching || templateGroups.length === 0}><TemplateConfigSection groups={allSettingsTemplateGroups} visibleGroups={templateGroups.map(group => group.id)} onDirtyGroupsChange={setDirtyTemplateGroups} saveAllRef={templateSaveAll} hideGroupSave /></div>
           <div id="config-native-aliases" tabIndex={-1} role="region" aria-label={t('app.nav.thinkingAliases')} hidden={searching || activeSubpage !== 'aliases'}>{aliasesVisited ? <ThinkingAliasesPage embedded /> : null}</div>
-          <div id="config-native-sensitive-words" tabIndex={-1} role="region" aria-label={t('config.sensitiveWords.title')} hidden={searching || activeSubpage !== 'requests'}>{sensitiveWordsVisited ? <SensitiveWordsPage onDirtyChange={setSensitiveWordsDirty} /> : null}</div>
+          <div id="config-native-sensitive-words" tabIndex={-1} role="region" aria-label={t('config.sensitiveWords.title')} hidden={searching || activeSubpage !== 'requests'}>{sensitiveWordsVisited ? <SensitiveWordsPage onDirtyChange={setSensitiveWordsDirty} saveRef={sensitiveWordsSave} /> : null}</div>
           {tabBarDirty ? <div className="config-save-bar" role="region" aria-label={t('config.saveBar.label')}>
             {saveIncomplete
               ? <span role="alert"><span className="config-nav-dirty" aria-hidden="true" />{t('config.saveBar.incomplete')}</span>
               : <span><span className="config-nav-dirty" aria-hidden="true" />{t('config.saveBar.unsaved')}</span>}
+            {/* Save all saves this tab only, so say when other tabs still hold changes. */}
+            {(() => {
+              const others = settingsCategories.filter(item => item.id !== activeSubpage && categoryDirty(item.id)).length;
+              return others ? <span className="config-save-bar-others">{t('config.saveBar.otherTabs', { count: others })}</span> : null;
+            })()}
             <button type="button" className="primary-button compact-button" disabled={savingTab || busyAction !== null} onClick={() => void saveTab()}>
               <Check size={16} aria-hidden="true" />{savingTab ? t('common.saving') : t('config.saveBar.saveAll')}
             </button>
