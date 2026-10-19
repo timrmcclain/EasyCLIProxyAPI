@@ -104,7 +104,13 @@ const os = require('node:os');
     await nav.getByRole('button', { name: /^Overview/ }).click();
     await page.getByRole('button', { name: 'Dark', exact: true }).click();
     await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
-    const colors = await nav.getByRole('button', { name: 'Accounts', exact: true }).evaluate((el) => ({ text: getComputedStyle(el).color, background: getComputedStyle(el.closest('.sidebar')).backgroundColor }));
+    // Measure the settled theme, not a frame where the new colours are still being applied (seen under load).
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.waitForFunction(() => {
+      const sidebar = document.querySelector('.sidebar');
+      return sidebar && [sidebar, ...sidebar.querySelectorAll('.nav-section button')].every(node => node.getAnimations().length === 0);
+    });
+    const colors =await nav.getByRole('button', { name: 'Accounts', exact: true }).evaluate((el) => ({ text: getComputedStyle(el).color, background: getComputedStyle(el.closest('.sidebar')).backgroundColor }));
     const channel = (value) => { const c = value / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
     const lum = (rgb) => { const [r, g, b] = rgb.match(/\d+/g).map(Number).map(channel); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
     const [hi, lo] = [lum(colors.text), lum(colors.background)].sort((a, b) => b - a);
