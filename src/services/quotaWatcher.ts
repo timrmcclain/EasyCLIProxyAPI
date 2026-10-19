@@ -5,7 +5,8 @@ import { refreshDashboardQuotas } from './accountDashboardRefresh';
 import { accountDisplayName } from './accountPrivacy';
 import { readAccountNames } from './accountNames';
 import { dedupeAuthFiles } from './authFiles';
-import { readDashboardPreference, readDesktopAlertsPreference } from './dashboardPreferences';
+import { readDashboardPreference } from './dashboardPreferences';
+import { notify } from './notifications';
 import { attentionItems } from './homeGlance';
 import { driftedApps, loadAppStatuses, newlyInstalledApps } from './connectedApps';
 import { managementApi, readString, responseList } from './managementApi';
@@ -79,22 +80,6 @@ export function trayQuotaLevel(tallies: ReturnType<typeof providerTallies>): 'ok
   return tallies.some(tally => tally.blocked > 0 || tally.low > 0) ? 'low' : 'ok';
 }
 
-/** At most three notifications at once; past that, the third says how many more there are instead of dropping them. */
-export function batchNotifications(messages: { title: string; body: string }[], more: (count: number) => { title: string; body: string }) {
-  return messages.length <= 3 ? messages : [...messages.slice(0, 2), more(messages.length - 2)];
-}
-
-async function send(messages: { title: string; body: string }[]) {
-  if (!messages.length || !readDesktopAlertsPreference()) return;
-  let granted = await isPermissionGranted();
-  if (!granted) granted = (await requestPermission()) === 'granted';
-  if (!granted) return;
-  const locale = getCurrentLocale();
-  for (const message of batchNotifications(messages, count => ({
-    title: translate(locale, 'notify.more.title', { count }),
-    body: translate(locale, 'notify.more.body'),
-  }))) sendNotification(message);
-}
 
 const TRAY_NOTICE_KEY = 'personal.trayNoticeShown';
 
@@ -154,7 +139,8 @@ export function startQuotaWatcher(): () => void {
       memory = result.memory;
       const pace = paceAlerts(paceMemory, files, getQuotaHistory(), attention, now, providerOf, labelFor);
       paceMemory = pace.memory;
-      await send([...result.alerts.map(alert => alertText(alert, now)), ...pace.alerts.map(alert => paceAlertText(alert, now))]);
+      await notify('quota', result.alerts.map(alert => alertText(alert, now)));
+      await notify('pace', pace.alerts.map(alert => paceAlertText(alert, now)));
     } catch {
       // The proxy may be restarting; try again on the next tick.
     }
@@ -169,7 +155,7 @@ export function startQuotaWatcher(): () => void {
       const installed = newlyInstalledApps(installedBaseline, statuses);
       installedBaseline = installed.seen;
       const locale = getCurrentLocale();
-      await send([
+      await notify('apps', [
         ...fresh.map(app => ({ title: translate(locale, 'notify.drift.title', { app: app.name }), body: translate(locale, 'notify.drift.body') })),
         ...installed.fresh.map(app => ({ title: translate(locale, 'notify.newApp.title', { app: app.name }), body: translate(locale, 'notify.newApp.body') })),
       ]);
@@ -212,7 +198,7 @@ export function startProxyWatcher(): () => void {
     proxyWatch = next.state;
     if (!next.alert) return;
     const locale = getCurrentLocale();
-    await send([{ title: translate(locale, `notify.proxy.${next.alert}.title`), body: translate(locale, `notify.proxy.${next.alert}.body`) }]);
+    await notify('proxy', [{ title: translate(locale, `notify.proxy.${next.alert}.title`), body: translate(locale, `notify.proxy.${next.alert}.body`) }]);
   };
   const timer = window.setInterval(() => { void checkProxy(); }, PROXY_CHECK_EVERY_MS);
   return () => { stopped = true; window.clearInterval(timer); };

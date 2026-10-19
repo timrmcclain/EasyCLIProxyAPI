@@ -113,6 +113,13 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   /* The stacked-sidebar spacing must not push the compact footer row taller. */
   .sidebar-command-button, .sidebar-bottom > .sidebar-density-selector, .sidebar-bottom > .sidebar-glossary-link { margin: 0; }
   .sidebar-language { flex: 1; }
+  /* The top bar has no room for the Alerts label: the bell alone, with a dot for new alerts. */
+  .sidebar-links { gap: 2px; }
+  .sidebar-alerts-label, .sidebar-links > .sidebar-glossary-link > span { display: none; }
+  .sidebar-links > .sidebar-alerts-link, .sidebar-links > .sidebar-glossary-link { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; min-height: 28px; padding: 6px; }
+  .sidebar-link-icon { display: inline; }
+  .sidebar-alerts-link { position: relative; padding: 6px; }
+  .sidebar-alerts-link.has-unread::after { content: ''; position: absolute; top: 4px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger, #dc2626); }
   .personal-runtime { display: none; }
   .content { padding: 20px 16px 32px; }
 }

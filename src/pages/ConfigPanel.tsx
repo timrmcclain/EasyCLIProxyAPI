@@ -1,6 +1,7 @@
 import { readOutageBadgesPreference, saveOutageBadgesPreference } from '../services/providerStatus';
 import { readNewNavigationPreference, saveNewNavigationPreference } from '../navigationGroups';
 import { loadAppStatuses, reapplyApps, rotateProxyKey, type ReapplyOutcome } from '../services/connectedApps';
+import { AlertKindSettings } from '../components/AlertKindSettings';
 import { readDesktopAlertsPreference, readGlobalHotkeyPreference, readOverviewAlertsPreference, saveDesktopAlertsPreference, saveGlobalHotkeyPreference, saveOverviewAlertsPreference } from '../services/dashboardPreferences';
 import { FormEvent, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -2449,6 +2450,7 @@ export function ConfigPanelPage() {
                     <span className="switch-track" />
                   </label>
                 </div>
+                {desktopAlerts && <AlertKindSettings />}
                 <div className="config-software-setting-row">
                   <div className="config-software-setting-copy">
                     <span className="config-software-setting-icon" aria-hidden="true">

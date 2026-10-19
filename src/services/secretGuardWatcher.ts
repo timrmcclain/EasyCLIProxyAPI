@@ -1,7 +1,6 @@
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { getCurrentLocale, translate } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
-import { readDesktopAlertsPreference } from './dashboardPreferences';
+import { notify } from './notifications';
 import { freshFindings, readPolicy, secretGuardApp, secretGuardKind, secretGuardService, SECRET_GUARD_PROVIDERS, type SecretGuardPolicy } from './secretGuard';
 import { pluginsApi } from './plugins';
 
@@ -44,13 +43,9 @@ export function startSecretGuardWatcher(): () => void {
       const result = freshFindings(seen, findings, policy);
       seen = result.seen;
       writeSeen(seen);
-      if (!result.fresh.length || !readDesktopAlertsPreference()) return;
-      let granted = await isPermissionGranted();
-      if (!granted) granted = (await requestPermission()) === 'granted';
-      if (!granted || stopped) return;
+      if (!result.fresh.length || stopped) return;
       const locale = getCurrentLocale();
-      // More than three at once reads as noise; the Secret Guard page has the full list.
-      for (const item of result.fresh.slice(0, 3)) {
+      await notify('secrets', result.fresh.map(item => {
         const provider = item.providers[0] ?? 'other';
         const providerKey = (SECRET_GUARD_PROVIDERS as readonly string[]).includes(provider) ? provider : 'other';
         const values = {
@@ -58,11 +53,11 @@ export function startSecretGuardWatcher(): () => void {
           kind: translate(locale, `sg.kind.${secretGuardKind(item.kind)}` as MessageKey),
           provider: translate(locale, `sg.provider.${providerKey}` as MessageKey),
         };
-        sendNotification({
+        return {
           title: translate(locale, 'sg.notify.title'),
           body: translate(locale, item.actions.includes('blocked') ? 'sg.notify.bodyBlocked' : 'sg.notify.body', values),
-        });
-      }
+        };
+      }));
     } catch {
       // The findings file isn't there until Secret Guard has run; try again next time.
     } finally {

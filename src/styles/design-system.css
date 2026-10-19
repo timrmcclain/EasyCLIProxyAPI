@@ -465,6 +465,83 @@ svg.lucide {
   color: var(--ui-accent-strong);
 }
 
+.sidebar-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* No outer margin: the old lone Glossary link had none, and short windows have no room to spare. */
+  margin: 0;
+}
+
+.sidebar-links > .sidebar-glossary-link {
+  width: auto;
+  margin: 0;
+}
+
+/* Shown only in the narrow top bar, where the Glossary label doesn't fit. */
+.sidebar-link-icon {
+  display: none;
+}
+
+.sidebar-alerts-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-meta);
+  white-space: nowrap;
+}
+
+.sidebar-alerts-link:hover {
+  color: var(--ui-accent-strong);
+}
+
+.alert-history-dialog header {
+  gap: var(--space-2);
+}
+
+.alert-history-dialog header h2 {
+  margin-right: auto;
+}
+
+.alert-history-empty {
+  color: var(--text-secondary);
+}
+
+.alert-history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+}
+
+.alert-history-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle, rgba(127, 127, 127, 0.2));
+}
+
+.alert-history-item > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.alert-history-item span {
+  color: var(--text-secondary);
+}
+
+.alert-history-item small {
+  color: var(--text-muted);
+}
+
 .sidebar-density-selector {
   margin-top: var(--space-2);
 }
@@ -493,4 +570,54 @@ svg.lucide {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.alert-kind-settings {
+  /* Its own full-width row under the switch, not a cell of the two-column settings grid. */
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6, 32px);
+  margin: 0 0 var(--space-3) 44px;
+  padding-bottom: var(--space-3);
+}
+
+.alert-kind-settings > fieldset:first-child {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, auto));
+  column-gap: var(--space-4, 16px);
+}
+
+.alert-kind-settings > fieldset:first-child legend {
+  grid-column: 1 / -1;
+}
+
+.alert-kind-settings fieldset {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.alert-kind-settings legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.alert-kind-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alert-quiet-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.alert-quiet-hours small {
+  color: var(--text-muted);
 }

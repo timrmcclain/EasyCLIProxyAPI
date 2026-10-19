@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { batchNotifications, trayQuotaLevel } from '../src/services/quotaWatcher';
+import { batchNotifications, inQuietHours } from '../src/services/notifications';
+import { trayQuotaLevel } from '../src/services/quotaWatcher';
 
 const tally = (total: number, low: number, blocked: number) => ({ provider: 'claude', total, low, blocked });
 const message = (n: number) => ({ title: `Alert ${n}`, body: '' });
@@ -25,5 +26,30 @@ describe('notification batches', () => {
   });
   it('says how many more instead of dropping the rest', () => {
     expect(batchNotifications([1, 2, 3, 4, 5].map(message), more)).toEqual([message(1), message(2), more(3)]);
+  });
+});
+
+
+const at = (hours: number, minutes = 0) => new Date(2026, 9, 19, hours, minutes);
+
+describe('quiet hours', () => {
+  it('runs past midnight when the start is later than the end', () => {
+    const quiet = { enabled: true, start: '22:00', end: '07:00' };
+    expect(inQuietHours(quiet, at(23, 30))).toBe(true);
+    expect(inQuietHours(quiet, at(3))).toBe(true);
+    expect(inQuietHours(quiet, at(7))).toBe(false);
+    expect(inQuietHours(quiet, at(12))).toBe(false);
+    expect(inQuietHours(quiet, at(22))).toBe(true);
+  });
+  it('works within one day', () => {
+    const quiet = { enabled: true, start: '12:00', end: '13:30' };
+    expect(inQuietHours(quiet, at(12, 45))).toBe(true);
+    expect(inQuietHours(quiet, at(13, 30))).toBe(false);
+  });
+  it('does nothing when off, empty or malformed', () => {
+    expect(inQuietHours({ enabled: false, start: '00:00', end: '23:59' }, at(12))).toBe(false);
+    expect(inQuietHours({ enabled: true, start: '09:00', end: '09:00' }, at(9))).toBe(false);
+    expect(inQuietHours({ enabled: true, start: '25:00', end: '07:00' }, at(3))).toBe(false);
+    expect(inQuietHours({ enabled: true, start: '', end: '07:00' }, at(3))).toBe(false);
   });
 });

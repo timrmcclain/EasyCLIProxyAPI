@@ -23,7 +23,7 @@ import {
   X,
   Search,
   Shrink,
-  Blocks, KeyRound, ShieldCheck, Stethoscope,
+  Blocks, KeyRound, ShieldCheck, Stethoscope, Bell, BookOpen,
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
@@ -44,6 +44,8 @@ import { requestAccountsView } from './oauthNavigation';
 import { NEW_NAVIGATION_EVENT, groupForPage, mainNavGroups, pageForGroup, readNewNavigationPreference, utilityNavGroups, type NavGroup } from './navigationGroups';
 import { AgentsPage } from './pages/AgentsPage';
 import { GlossaryDialog } from './components/GlossaryDialog';
+import { AlertHistoryDialog, useAlertHistory } from './components/AlertHistoryDialog';
+import { notify } from './services/notifications';
 import { UsageRecordsPage } from './pages/UsageRecordsPage';
 import { PluginsPage } from './pages/PluginsPage';
 import { ConnectorsPage } from './pages/ConnectorsPage';
@@ -266,6 +268,8 @@ function AppContent() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [homeProblems, setHomeProblems] = useState(0);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const unreadAlerts = useAlertHistory().filter(entry => !entry.read).length;
   const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
     try { return localStorage.getItem('personal.density') === 'compact' ? 'compact' : 'comfortable'; } catch { return 'comfortable'; }
   });
@@ -307,6 +311,16 @@ function AppContent() {
     const timer = window.setInterval(() => void check(), 30_000);
     return () => window.clearInterval(timer);
   }, [coreReady]);
+  // A new hub or proxy engine version: one alert per version, not one per check.
+  useEffect(() => {
+    const announce = (key: string, version: string | undefined, title: 'notify.update.app.title' | 'notify.update.core.title') => {
+      if (!version || localStorage.getItem(key) === version) return;
+      localStorage.setItem(key, version);
+      void notify('updates', [{ title: t(title, { version }), body: t('notify.update.body') }]);
+    };
+    if (hasUpdate) announce('personal.updateNotified.app', appUpdateInfo?.latestVersion, 'notify.update.app.title');
+    if (coreHasUpdate) announce('personal.updateNotified.core', coreLatest?.version, 'notify.update.core.title');
+  }, [hasUpdate, appUpdateInfo?.latestVersion, coreHasUpdate, coreLatest?.version]); // eslint-disable-line react-hooks/exhaustive-deps
   // Runs whether or not the proxy is up, so it can notice the proxy stopping and coming back.
   useEffect(() => startProxyWatcher(), []);
   useEffect(() => startSecretGuardWatcher(), []);
@@ -574,6 +588,7 @@ function AppContent() {
     { id: 'page-quota', label: t('app.nav.quota'), group: t('palette.pages'), keywords: paletteKeywords.quota,
       disabled: !canOpenAppPage('oauth', coreReady), run: () => select('quota') },
     { id: 'glossary', label: t('glossary.title'), group: t('palette.help'), run: () => setGlossaryOpen(true) },
+    { id: 'alerts', label: t('alerts.title'), group: t('palette.help'), keywords: ['notifications', 'history', 'alerts'], run: () => setAlertsOpen(true) },
     { id: 'check-quota', label: t('palette.action.checkQuota'), group: t('palette.actions'), disabled: !coreReady,
       run: () => window.dispatchEvent(new CustomEvent('app:check-quota')) },
     { id: 'restart-proxy', label: t('palette.action.restartProxy'), group: t('palette.actions'), disabled: !status?.installed,
@@ -730,7 +745,19 @@ function AppContent() {
               <button type="button" className={density === 'comfortable' ? 'active' : ''} aria-pressed={density === 'comfortable'} onClick={() => setDensity('comfortable')}>{t('density.comfortable')}</button>
               <button type="button" className={density === 'compact' ? 'active' : ''} aria-pressed={density === 'compact'} onClick={() => setDensity('compact')}>{t('density.compact')}</button>
             </div>
-            <button type="button" className="sidebar-glossary-link" onClick={() => setGlossaryOpen(true)}>{t('glossary.open')}</button>
+            {/* One row for both, so the sidebar keeps fitting without scrolling. */}
+            <div className="sidebar-links">
+              <button type="button" className={`sidebar-alerts-link${unreadAlerts ? ' has-unread' : ''}`} onClick={() => setAlertsOpen(true)}
+                aria-label={unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}
+                title={unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}>
+                <Bell size={13} aria-hidden="true" />
+                {/* Hidden in the narrow top bar, where only the bell (and its dot) fits. */}
+                <span className="sidebar-alerts-label" aria-hidden="true">{unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}</span>
+              </button>
+              <button type="button" className="sidebar-glossary-link" onClick={() => setGlossaryOpen(true)} title={t('glossary.open')}>
+                <BookOpen size={13} aria-hidden="true" className="sidebar-link-icon" /><span>{t('glossary.open')}</span>
+              </button>
+            </div>
             <div ref={languageMenuRef} className="sidebar-language">
               <button
                 ref={languageButtonRef}
@@ -895,6 +922,7 @@ function AppContent() {
 
       <AppUpdateDialog />
       <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <AlertHistoryDialog open={alertsOpen} onClose={() => setAlertsOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
       {confirmationDialog}
       <FloatingNotice key={paletteFeedback.revision} notice={paletteFeedback.notice} onDismiss={paletteFeedback.clearNotice} />
