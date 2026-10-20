@@ -709,6 +709,7 @@ export function UsageRecordsPage() {
           </div>
           <button
             type="button"
+            data-page-refresh
             className="icon-button usage-refresh-btn"
             onClick={() => void loadData(false)}
             disabled={loading}

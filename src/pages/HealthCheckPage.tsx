@@ -137,7 +137,7 @@ export function HealthCheckPage() {
           {copied === 'ok' ? <Check size={14} aria-hidden="true" /> : <ClipboardCopy size={14} aria-hidden="true" />}
           {copied === 'ok' ? t('health.copyReport.done') : copied === 'failed' ? t('health.copyReport.failed') : t('health.copyReport')}
         </button>
-        <button type="button" className="secondary-button compact-button" disabled={checking} onClick={() => void run()}>
+        <button type="button" data-page-refresh className="secondary-button compact-button" disabled={checking} onClick={() => void run()}>
           <RefreshCw size={14} className={checking ? 'spin' : undefined} aria-hidden="true" />{t('health.recheck')}
         </button>
       </div>

@@ -54,6 +54,7 @@ import { requestAccountsView } from './oauthNavigation';
 import { NEW_NAVIGATION_EVENT, groupForPage, mainNavGroups, pageForGroup, readNewNavigationPreference, utilityNavGroups, type NavGroup } from './navigationGroups';
 import { AgentsPage } from './pages/AgentsPage';
 import { GlossaryDialog } from './components/GlossaryDialog';
+import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { AlertHistoryDialog, useAlertHistory } from './components/AlertHistoryDialog';
 import { notify } from './services/notifications';
 import { UsageRecordsPage } from './pages/UsageRecordsPage';
@@ -291,6 +292,7 @@ function AppContent() {
     return () => window.removeEventListener(SECRET_GUARD_COUNT_EVENT, onCount);
   }, []);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const unreadAlerts = useAlertHistory().filter(entry => !entry.read).length;
   const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
@@ -470,9 +472,21 @@ function AppContent() {
         if (target && canOpenAppPage(target, coreReady) && (target === active || confirmLeave())) setActive(target);
         return;
       }
-      if (event.key === '/' && !mod && !event.altKey && !isTypingTarget(event.target)) {
-        const search = document.querySelector<HTMLInputElement>('main input[type="search"]');
-        if (search) { event.preventDefault(); search.focus(); }
+      // Single-key shortcuts: never while typing, and never behind an open dialog.
+      if (mod || event.altKey || isTypingTarget(event.target) || Array.from(document.querySelectorAll('[role="dialog"], dialog[open]')).some((element) => element.getClientRects().length > 0)) return;
+      if (event.key === '/') {
+        // The page's own search box: marked ones first, then any search field that is showing.
+        const search = Array.from(document.querySelectorAll<HTMLInputElement>('main [data-page-search], main input[type="search"]'))
+          .find((element) => !element.disabled && element.getClientRects().length > 0);
+        if (search) { event.preventDefault(); search.focus(); search.select(); }
+      } else if (event.key === '?') {
+        event.preventDefault();
+        setShortcutsOpen(true);
+      } else if (event.key.toLowerCase() === 'r' && !event.shiftKey) {
+        // The page's own Refresh button, so R does exactly what clicking it does (and nothing while it is busy).
+        const button = Array.from(document.querySelectorAll<HTMLButtonElement>('main [data-page-refresh]'))
+          .find((element) => !element.disabled && element.getClientRects().length > 0);
+        if (button) { event.preventDefault(); button.click(); }
       }
     };
     window.addEventListener('keydown', onKey);
@@ -723,6 +737,7 @@ function AppContent() {
     { id: 'page-quota', label: t('app.nav.quota'), group: t('palette.pages'), keywords: paletteKeywords.quota,
       disabled: !canOpenAppPage('oauth', coreReady), run: () => select('quota') },
     { id: 'glossary', label: t('glossary.title'), group: t('palette.help'), run: () => setGlossaryOpen(true) },
+    { id: 'shortcuts', label: t('shortcuts.title'), group: t('palette.help'), keywords: ['keyboard', 'keys', 'hotkeys'], run: () => setShortcutsOpen(true) },
     { id: 'alerts', label: t('alerts.title'), group: t('palette.help'), keywords: ['notifications', 'history', 'alerts'], run: () => setAlertsOpen(true) },
     { id: 'check-quota', label: t('palette.action.checkQuota'), group: t('palette.actions'), disabled: !coreReady,
       run: () => window.dispatchEvent(new CustomEvent('app:check-quota')) },
@@ -1083,6 +1098,7 @@ function AppContent() {
 
       <AppUpdateDialog />
       <GlossaryDialog open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <AlertHistoryDialog open={alertsOpen} onClose={() => setAlertsOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
       {confirmationDialog}

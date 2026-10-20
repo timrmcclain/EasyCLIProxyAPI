@@ -1620,10 +1620,10 @@ export function ApiAccessPage() {
             </div>
             <div className="management-toolbar compact-toolbar api-access-search">
               <Search size={16} aria-hidden="true" />
-              <input value={filter} onChange={(event) => setFilter(event.currentTarget.value)} placeholder={t('apiAccess.search')} aria-label={t('apiAccess.search')} />
+              <input data-page-search value={filter} onChange={(event) => setFilter(event.currentTarget.value)} placeholder={t('apiAccess.search')} aria-label={t('apiAccess.search')} />
             </div>
             <div className="api-access-heading-tools">
-              <button type="button" className="secondary-button compact-button" onClick={() => void loadProviders()} disabled={loading || busy}>
+              <button type="button" data-page-refresh className="secondary-button compact-button" onClick={() => void loadProviders()} disabled={loading || busy}>
                 <RefreshCw size={16} aria-hidden="true" />
                 {t('common.refresh')}
               </button>

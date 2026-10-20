@@ -117,7 +117,7 @@ export function AgentClientList<Id extends string>({
     <aside className="panel agent-client-list" aria-label={t('agents.localClients')}>
       <div className="agent-client-list-heading">
         <strong>{t('agents.localClients')}</strong>
-        <button type="button" className="icon-button quiet" onClick={onRefresh}
+        <button type="button" data-page-refresh className="icon-button quiet" onClick={onRefresh}
           disabled={loading || busy} title={t('agents.redetect')} aria-label={t('agents.redetect')}>
           <RefreshCw size={16} className={loading ? 'spin' : ''} aria-hidden="true" />
         </button>

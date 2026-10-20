@@ -545,7 +545,7 @@ export function AuthFileManagementPage() {
           if (provider) void openOauthModelSettings({ ...provider, scope: 'provider' });
         }}><Settings2 size={16} />{t('authFiles.models.toolbarButton')}</button>
         <button type="button" className="secondary-button compact-button auth-toolbar-quiet" disabled={busy} onClick={() => void openAuthFilesDirectory()}><FolderOpen size={16} />{t('authFiles.openDirectory')}</button>
-        <button type="button" className="secondary-button compact-button auth-toolbar-quiet" onClick={() => void refreshEverything()} disabled={loading || busy || quotaRefreshing}
+        <button type="button" data-page-refresh className="secondary-button compact-button auth-toolbar-quiet" onClick={() => void refreshEverything()} disabled={loading || busy || quotaRefreshing}
           title={t('authFiles.toolbar.refreshHint')}>
           <RefreshCw size={16} className={loading || quotaRefreshing ? 'spin' : ''} />{t(loading ? 'authFiles.toolbar.refreshingList' : quotaRefreshing ? 'authFiles.toolbar.refreshingQuota' : 'authFiles.toolbar.refresh')}
         </button>
@@ -566,7 +566,7 @@ export function AuthFileManagementPage() {
       <section className="panel auth-files-panel real-auth-files-panel">
         <div className="auth-files-toolbar">
           <div className="auth-files-search"><Search size={16} aria-hidden="true" />
-          <input value={filter} onChange={(event) => setFilter(event.currentTarget.value)} placeholder={t('authFiles.searchPlaceholder')} aria-label={t('authFiles.searchPlaceholder')} />
+          <input data-page-search value={filter} onChange={(event) => setFilter(event.currentTarget.value)} placeholder={t('authFiles.searchPlaceholder')} aria-label={t('authFiles.searchPlaceholder')} />
           </div>
           <div className="auth-files-filters">
           <select value={providerFilter} onChange={(event) => setProviderFilter(event.currentTarget.value)} aria-label={t('authFiles.filter.allProviders')}>

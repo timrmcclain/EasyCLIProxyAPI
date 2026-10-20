@@ -177,7 +177,7 @@ export function ConnectorsPage() {
               {ct('checkedAt')} {checkedAt.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
             </span>
           ) : null}
-          <button type="button" className="secondary-button" disabled={loading} aria-busy={loading} onClick={() => void refresh()}>
+          <button type="button" data-page-refresh className="secondary-button" disabled={loading} aria-busy={loading} onClick={() => void refresh()}>
             <RefreshCw size={16} aria-hidden="true" className={loading ? 'spin' : undefined} />{loading ? ct('refreshing') : ct('refresh')}
           </button>
         </div>

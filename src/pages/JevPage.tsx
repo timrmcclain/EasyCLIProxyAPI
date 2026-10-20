@@ -164,7 +164,7 @@ export function JevPage() {
           {overview?.reportPath && <button type="button" className="secondary-button compact-button" onClick={() => void jevService.openReport().catch(() => undefined)}>
             {t('jev.payoff.open')}<ExternalLink size={12} aria-hidden="true" />
           </button>}
-          <button type="button" className="secondary-button compact-button" disabled={refreshing} onClick={() => void refresh()}>
+          <button type="button" data-page-refresh className="secondary-button compact-button" disabled={refreshing} onClick={() => void refresh()}>
             <RefreshCw size={14} className={refreshing ? 'spin' : undefined} aria-hidden="true" />{refreshing ? t('jev.payoff.refreshing') : t('jev.payoff.refresh')}
           </button>
         </div>

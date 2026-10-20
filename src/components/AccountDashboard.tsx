@@ -286,7 +286,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     <div className="ad-heading">
       <h2 id="account-dashboard-title">{t('accountDashboard.title')}</h2>
       <div className="quota-heading-actions">{summaryCounts.problems > 0 && <button type="button" className="secondary-button quota-compare" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button>}
-      <button className="secondary-button quota-refresh" disabled={!ready || loading || saving || refreshingKey !== null} onClick={() => void refresh(true)}>
+      <button data-page-refresh className="secondary-button quota-refresh" disabled={!ready || loading || saving || refreshingKey !== null} onClick={() => void refresh(true)}>
         <RefreshCw size={16} aria-hidden="true" className={loading ? 'spin' : undefined} /> {loading ? t('accountDashboard.refreshing') : t('accountDashboard.refresh')}
       </button></div>
     </div>

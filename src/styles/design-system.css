@@ -449,6 +449,46 @@ svg.lucide {
   color: var(--text-secondary);
 }
 
+.shortcuts-dialog dl > div {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.shortcuts-dialog dt {
+  white-space: nowrap;
+}
+
+.shortcuts-dialog dd {
+  margin: 0;
+}
+
+.shortcuts-dialog kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 6px;
+  border: 1px solid var(--border-color);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg-secondary);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.shortcuts-or {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
+.shortcuts-note {
+  margin: var(--space-4) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-meta);
+}
+
+
 .sidebar-glossary-link {
   width: 100%;
   margin: var(--space-1) 0;

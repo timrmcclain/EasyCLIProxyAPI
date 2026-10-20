@@ -188,7 +188,7 @@ export function CoreHealthPanel({
       </div>
 
       <div className="core-health-toolbar">
-        <label className="core-health-search"><Search size={16} aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder={t('apiAccess.health.search')} aria-label={t('apiAccess.health.search')} /></label>
+        <label className="core-health-search"><Search size={16} aria-hidden="true" /><input data-page-search value={search} onChange={(event) => setSearch(event.currentTarget.value)} placeholder={t('apiAccess.health.search')} aria-label={t('apiAccess.health.search')} /></label>
         <label className="core-health-auto" title={autoTargets.map((model) => model.name).join(', ')}>
           <input type="checkbox" checked={autoEnabled} onChange={(event) => toggleAuto(event.currentTarget.checked)} />
           <span>{t('home.health.auto', { count: autoTargets.length, hours: CORE_HEALTH_AUTO_INTERVAL_MS / 3_600_000 })}</span>
