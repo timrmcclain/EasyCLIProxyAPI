@@ -157,17 +157,16 @@ function parseCsv(text) {
       await page.locator('.usage-refresh-btn:not(:disabled)').waitFor();
       const baseline = await readSharedGeometry();
       const size = `${viewport.width}x${viewport.height}`;
-      for (const tab of ['overview', 'events', 'pricing', 'data-management']) {
+      for (const tab of ['overview', 'events', 'pricing']) {
         await page.locator(`#usage-tab-${tab}`).click();
-        const hasFilters = tab !== 'data-management';
-        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} loading`, hasFilters);
+        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} loading`);
         await page.locator('.usage-refresh-btn:not(:disabled)').waitFor();
-        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} loaded`, hasFilters);
-        if (hasFilters) await assertSharedFilterLayout(`${size} ${tab}`, viewport.width >= 800);
+        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} loaded`);
+        await assertSharedFilterLayout(`${size} ${tab}`, viewport.width >= 800);
         await page.locator('.usage-refresh-btn').click();
-        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} refreshing`, hasFilters);
+        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} refreshing`);
         await page.locator('.usage-refresh-btn:not(:disabled)').waitFor();
-        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} refreshed`, hasFilters);
+        assertSharedGeometry(await readSharedGeometry(), baseline, `${size} ${tab} refreshed`);
       }
     }
 

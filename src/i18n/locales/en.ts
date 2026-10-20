@@ -752,7 +752,7 @@ export const en: Record<MessageKey, string> = {
   'usage.tab.analysis': 'Analysis',
   'usage.tab.events': 'Requests',
   'usage.tab.pricing': 'Costs',
-  'usage.tab.dataManagement': 'Data Management',
+  'usage.openStorageSettings': 'Storage settings',
   'usage.refresh': 'Refresh',
   'usage.filter.title': 'Filters',
   'usage.filter.more': 'More filters',

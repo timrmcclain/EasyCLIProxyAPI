@@ -69,7 +69,10 @@ const path = require('node:path');
     assert.ok([shellSurfaces.pageToken, 'rgba(0, 0, 0, 0)'].includes(shellSurfaces.content),
       `light content shows the grey page surface, got ${shellSurfaces.content}`);
     assert.notEqual(usageSurfaces.row, shellSurfaces.shell, 'white cards stand out from the grey page');
-    await page.getByRole('button', { name: /数据管理/ }).click();
+    // Data management lives in Settings → Storage; Activity links there.
+    await page.getByRole('button', { name: /存储设置/ }).click();
+    await page.locator('#config-native-storage .usage-data-management-panel').waitFor();
+    assert.equal(await page.locator('#config-subpage-tab-storage').getAttribute('aria-selected'), 'true');
     assert.equal(await page.locator('.usage-filter-panel').count(), 0);
 
     await page.locator('.nav-section').getByRole('button', { name: '高级功能' }).click();
@@ -80,7 +83,7 @@ const path = require('node:path');
     assert.equal(await page.locator('.config-settings-header p, .config-nav-save-hint, .config-category-heading, .config-section-index').count(), 0);
     assert.deepEqual(await configTabs.evaluateAll(elements => elements.map(element => element.id)), [
       'config-subpage-tab-general', 'config-subpage-tab-aliases', 'config-subpage-tab-routing', 'config-subpage-tab-requests',
-      'config-subpage-tab-oauth', 'config-subpage-tab-diagnostics', 'config-subpage-tab-extensions',
+      'config-subpage-tab-oauth', 'config-subpage-tab-diagnostics', 'config-subpage-tab-storage', 'config-subpage-tab-extensions',
       'config-subpage-tab-software',
     ]);
     assert.equal(await page.locator('.config-page [role="tabpanel"]').count(), 1);

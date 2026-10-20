@@ -377,7 +377,7 @@
 @media (min-width: 1240px) {
   .config-page .config-settings-content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* Plan complete rows rather than sizing cards by their number of fields. */
-  .config-page .config-settings-content :is(.config-settings-cards > section, .template-config-card, #config-native-aliases, #config-native-sensitive-words) { grid-column: 1 / -1; }
+  .config-page .config-settings-content :is(.config-settings-cards > section, .template-config-card, #config-native-aliases, #config-native-sensitive-words, #config-native-storage) { grid-column: 1 / -1; }
   .config-page .config-settings-content :is(#config-native-network, #config-native-tls, #config-native-routing, #config-native-retry, #config-group-codex-client, #config-group-multimedia, #config-group-oauth-codex, #config-group-oauth-others) { grid-column: auto; }
 }
 /* Equal-height peers keep their content at the top and actions on one baseline. */
@@ -566,3 +566,7 @@
 .config-save-bar { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); box-shadow: var(--shadow-md, 0 4px 14px rgba(0, 0, 0, 0.12)); }
 .config-save-bar > span { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
 .config-save-bar .config-nav-dirty { margin: 0; }
+
+/* Settings → Storage: data management spans the row, like the other embedded pages. */
+.config-page .config-settings-content > #config-native-storage { grid-column: 1 / -1; min-width: 0; }
+.config-page #config-native-storage > .usage-data-management-panel { width: 100%; margin: 0; }

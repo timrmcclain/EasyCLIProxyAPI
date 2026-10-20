@@ -12,6 +12,7 @@ export const settingsCategories = [
   { id: 'requests', title: text('模型与请求', 'Models & requests', 'モデルとリクエスト') },
   { id: 'oauth', title: text('上游与凭据', 'Upstreams & credentials', '上流と認証情報') },
   { id: 'diagnostics', title: text('日志与诊断', 'Logs & diagnostics', 'ログと診断') },
+  { id: 'storage', title: text('存储', 'Storage', 'ストレージ') },
   { id: 'extensions', title: text('扩展与集成', 'Extensions & integrations', '拡張と連携') },
   { id: 'software', title: text('应用偏好', 'App preferences', 'アプリの設定') },
 ] as const;
@@ -24,6 +25,7 @@ export const settingsTemplateGroups = {
   oauth: ['oauth-common', 'oauth-codex', 'oauth-others', 'oauth-claude', 'oauth-models', 'oauth-media']
     .map(id => oauthTemplateGroups.find(group => group.id === id)!),
   diagnostics: [...generalTemplateGroups.filter(group => group.id === 'diagnostics'), ...extensionTemplateGroups.filter(group => group.id === 'extensions-inflight')],
+  storage: [],
   extensions: extensionTemplateGroups.filter(group => group.id === 'extensions-plugins'),
   software: [],
 };
@@ -51,11 +53,20 @@ export function requestSettingField(path: string) {
   window.dispatchEvent(new CustomEvent(SETTING_FIELD_EVENT));
 }
 
-/** Opens one Settings category, e.g. from a link inside another category. */
+/** Opens one Settings category, e.g. from a link inside another category or from another page. */
 export const SETTINGS_CATEGORY_EVENT = 'app:settings-category';
+// Like a pending field: from another page the event fires before Settings has mounted to hear it.
+let pendingSettingsCategory: SettingsCategory | null = null;
 export function requestSettingsCategory(category: SettingsCategory) {
+  pendingSettingsCategory = category;
   window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'config' }));
   window.dispatchEvent(new CustomEvent(SETTINGS_CATEGORY_EVENT, { detail: category }));
+}
+
+export function takePendingSettingsCategory(): SettingsCategory | null {
+  const category = pendingSettingsCategory;
+  pendingSettingsCategory = null;
+  return category;
 }
 
 export function takePendingSettingField(): string | null {

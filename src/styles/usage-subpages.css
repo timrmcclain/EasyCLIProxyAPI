@@ -467,7 +467,7 @@ body.table-col-resizing .usage-records-page .usage-request-log .usage-events-tab
 }
 
 /* Short descriptions keep their detail in a tooltip. */
-.usage-records-page .usage-data-management-action span[title],
+.usage-data-management-action span[title],
 .usage-records-page .usage-price-sync-note[title] {
   cursor: help;
 }
@@ -500,17 +500,17 @@ body.table-col-resizing .usage-records-page .usage-request-log .usage-events-tab
 }
 
 /* Data management: one primary action; destructive ones stay secondary. */
-.usage-records-page .usage-data-management-action :is(.secondary-button, .danger-button) {
+.usage-data-management-action :is(.secondary-button, .danger-button) {
   flex: none;
   white-space: nowrap;
 }
 
 @container workspace (max-width: 540px) {
-  .usage-records-page .usage-data-management-action :is(.secondary-button, .danger-button) {
+  .usage-data-management-action :is(.secondary-button, .danger-button) {
     width: 100%;
   }
 
-  .usage-records-page .usage-storage-limit-editor :is(.secondary-button, .danger-button) {
+  .usage-storage-limit-editor :is(.secondary-button, .danger-button) {
     width: auto;
   }
 }

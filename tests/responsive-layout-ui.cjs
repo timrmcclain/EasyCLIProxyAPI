@@ -241,7 +241,6 @@ const viewports = [
         ['overview', '.usage-analysis-grid'], // Analysis lives on Overview now
         ['events', '.usage-events-table tbody tr'],
         ['pricing', '.usage-pricing-table-wrap tbody tr'],
-        ['data-management', '.usage-data-management-panel'],
       ]) {
         await tab(`usage-tab-${id}`, ready);
         await assertNoPageOverflow(`${label} usage ${id}`);
@@ -250,7 +249,7 @@ const viewports = [
       }
 
       await open('高级功能', '#config-subpage-panel');
-      for (const id of ['general', 'aliases', 'routing', 'requests', 'oauth', 'diagnostics', 'extensions', 'software']) {
+      for (const id of ['general', 'aliases', 'routing', 'requests', 'oauth', 'diagnostics', 'storage', 'extensions', 'software']) {
         await tab(`config-subpage-tab-${id}`, `#config-subpage-panel[aria-labelledby="config-subpage-tab-${id}"]`);
         await assertNoPageOverflow(`${label} settings ${id}`);
       }
@@ -275,7 +274,7 @@ const viewports = [
     await page.locator('.home-page').waitFor();
     await page.addStyleTag({ content: '#browser-mock-toolbar { display: none; }' });
     await open('Settings', '.config-subpage-tabs');
-    for (const id of ['general', 'aliases', 'routing', 'requests', 'oauth', 'diagnostics', 'extensions', 'software']) {
+    for (const id of ['general', 'aliases', 'routing', 'requests', 'oauth', 'diagnostics', 'storage', 'extensions', 'software']) {
       await tab(`config-subpage-tab-${id}`, `#config-subpage-panel[aria-labelledby="config-subpage-tab-${id}"]`);
       await assertNoPageOverflow(`640x600 English settings ${id}`);
       const button = page.locator(`#config-subpage-tab-${id}`);

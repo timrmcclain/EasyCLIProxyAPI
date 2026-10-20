@@ -751,7 +751,7 @@ export const zhCN = {
   'usage.tab.analysis': '分析',
   'usage.tab.events': '请求',
   'usage.tab.pricing': '费用',
-  'usage.tab.dataManagement': '数据管理',
+  'usage.openStorageSettings': '存储设置',
   'usage.refresh': '刷新数据',
   'usage.filter.title': '筛选条件',
   'usage.filter.more': '更多筛选',

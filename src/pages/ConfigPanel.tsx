@@ -45,6 +45,7 @@ import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 import { webUiManagementUrl } from '../services/clientAccess';
 import { ThinkingAliasesPage } from './ThinkingAliasesPage';
 import { SensitiveWordsPage } from './SensitiveWordsPage';
+import { UsageDataManagement } from './UsageDataManagement';
 import { handleHorizontalTabKey } from '../components/tabKeyboardNavigation';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { useConfirmation } from '../components/ConfirmationDialog';
@@ -58,7 +59,7 @@ import { readableError } from '../services/readableError';
 import {
   settingsCategories, settingsTemplateGroups,
   allSettingsTemplateGroups, settingsMessages, type SettingsCategory,
-  SETTING_FIELD_EVENT, SETTINGS_CATEGORY_EVENT, settingFieldLocation, takePendingSettingField,
+  SETTING_FIELD_EVENT, SETTINGS_CATEGORY_EVENT, settingFieldLocation, takePendingSettingField, takePendingSettingsCategory,
 } from '../services/settingsNavigation';
 
 type CoreConfigSettings = {
@@ -107,7 +108,7 @@ type ConfigAction =
   | null;
 type ConfigSubpage = SettingsCategory;
 const CONFIG_SUBPAGES = settingsCategories.map(category => category.id);
-const CATEGORY_ICONS = { general: ShieldCheck, aliases: Link2, routing: Route, requests: SlidersHorizontal, oauth: KeyRound, diagnostics: FileText, extensions: Puzzle, software: Settings2 };
+const CATEGORY_ICONS = { general: ShieldCheck, aliases: Link2, routing: Route, requests: SlidersHorizontal, oauth: KeyRound, diagnostics: FileText, storage: HardDrive, extensions: Puzzle, software: Settings2 };
 type SettingDestination = { category: ConfigSubpage; target: string; field?: string };
 type SettingSearchEntry = SettingDestination & { title: string; context: string; keywords: string };
 
@@ -282,6 +283,9 @@ export function ConfigPanelPage() {
   const [sensitiveWordsDirty, setSensitiveWordsDirty] = useState(false);
   const [sensitiveWordsVisited, setSensitiveWordsVisited] = useState(false);
   const [aliasesVisited, setAliasesVisited] = useState(false);
+  // Storage reads the database size when first opened, not every time Settings opens.
+  const [storageVisited, setStorageVisited] = useState(false);
+  useEffect(() => { if (activeSubpage === 'storage') setStorageVisited(true); }, [activeSubpage]);
   const [pendingDestination, setPendingDestination] = useState<SettingDestination | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const categoryNavigationRef = useRef<HTMLDivElement>(null);
@@ -1254,10 +1258,12 @@ export function ConfigPanelPage() {
   const activateRef = useRef(activateConfigSubpage);
   activateRef.current = activateConfigSubpage;
   useEffect(() => {
-    const open = (event: Event) => {
-      const category = (event as CustomEvent<unknown>).detail;
+    const open = (event?: Event) => {
+      const pending = takePendingSettingsCategory();
+      const category = event ? (event as CustomEvent<unknown>).detail : pending;
       if (CONFIG_SUBPAGES.includes(category as ConfigSubpage)) activateRef.current(category as ConfigSubpage);
     };
+    open();
     window.addEventListener(SETTINGS_CATEGORY_EVENT, open);
     return () => window.removeEventListener(SETTINGS_CATEGORY_EVENT, open);
   }, []);
@@ -1273,6 +1279,7 @@ export function ConfigPanelPage() {
     { category: 'general', target: 'config-native-tls', title: t('config.tls.enable'), context: '', keywords: [t('config.tls.cert'), t('config.tls.key'), 'TLS HTTPS cert key certificate 证书 私钥 加密'].join(' ') },
     { category: 'routing', target: 'config-native-routing', title: st('nativeRouting'), context: '', keywords: [t('config.network.sessionAffinity'), t('config.network.sessionTtl'), t('config.routing.title'), 'session affinity ttl routing strategy round-robin 会话 粘性 加权 轮询'].join(' ') },
     { category: 'routing', target: 'config-native-retry', title: st('nativeRetry'), context: '', keywords: [t('config.network.disableCooling'), t('config.network.requestRetry'), t('config.network.maxRetryCredentials'), t('config.network.maxRetryInterval'), t('config.network.streamingBootstrapRetries'), 'retry retries cooldown 重试 冷却 流式 失败 fallback'].join(' ') },
+    { category: 'storage', target: 'config-native-storage', title: t('usage.dataManagement.storageTitle'), context: '', keywords: [t('usage.dataManagement.storageDescription'), t('usage.dataManagement.shrinkTitle'), t('usage.dataManagement.actionTitle'), 'storage database size limit shrink repair activity history disk 存储 数据库 容量 压缩 修复 ストレージ データベース 容量 縮小 修復'].join(' ') },
     { category: 'diagnostics', target: 'config-native-history', title: t('configHistory.title'), context: '', keywords: [t('configHistory.intro'), 'config history versions restore undo backup yaml 配置 历史 版本 恢复 撤销 備份 設定 履歴 復元'].join(' ') },
     { category: 'diagnostics', target: 'config-native-logging', title: t('config.diagnostics.title'), context: '', keywords: [t('config.diagnostics.debug.title'), t('config.diagnostics.commercial.title'), t('config.diagnostics.fileLogging.title'), t('config.diagnostics.usage.title'), t('config.diagnostics.maxSize.title'), t('config.diagnostics.errorFiles.title'), t('config.diagnostics.redisRetention.title'), 'debug commercial-mode logging logs usage statistics redis retention 日志 调试 商业模式 用量 统计 留存 文件 容量'].join(' ') },
     { category: 'software', target: 'config-native-software', title: t('config.software.title'), context: '', keywords: [t('config.software.autostart'), t('config.software.startCoreOnLaunch'), t('config.software.silentStart'), t('config.software.closeBehavior'), t('config.software.defaultTerminal'), t('ux.alerts'), 'startup autostart silent tray close terminal alerts notify 软件 自启动 启动 静默 托盘 关闭 终端'].join(' ') },
@@ -1285,6 +1292,8 @@ export function ConfigPanelPage() {
     routing: sessionRoutingDirty || retrySettingsDirty,
     requests: sensitiveWordsDirty,
     diagnostics: loggingSettingsDirty,
+    // Storage's size limit keeps its own Save, so it never adds a second primary button.
+    storage: false,
     oauth: false,
     extensions: false,
     software: softwareSettingsDirty,
@@ -1302,6 +1311,7 @@ export function ConfigPanelPage() {
     routing: [[sessionRoutingDirty, saveSessionRoutingSettings], [retrySettingsDirty, saveRetrySettings]],
     requests: [[sensitiveWordsDirty, async () => { await sensitiveWordsSave.current?.(); }]],
     diagnostics: [[loggingSettingsDirty, saveCoreLoggingSettings]],
+    storage: [],
     oauth: [],
     extensions: [],
     software: [[softwareSettingsDirty, saveSoftwareSettings]],
@@ -2606,6 +2616,7 @@ export function ConfigPanelPage() {
             </div>
           </section> : null}
           <div id="config-template-panel" hidden={searching || templateGroups.length === 0}><TemplateConfigSection groups={allSettingsTemplateGroups} visibleGroups={templateGroups.map(group => group.id)} onDirtyGroupsChange={setDirtyTemplateGroups} saveAllRef={templateSaveAll} hideGroupSave /></div>
+          <div id="config-native-storage" tabIndex={-1} role="region" aria-label={t('usage.dataManagement.title')} hidden={searching || activeSubpage !== 'storage'}>{storageVisited ? <UsageDataManagement /> : null}</div>
           <div id="config-native-aliases" tabIndex={-1} role="region" aria-label={t('app.nav.thinkingAliases')} hidden={searching || activeSubpage !== 'aliases'}>{aliasesVisited ? <ThinkingAliasesPage embedded /> : null}</div>
           <div id="config-native-sensitive-words" tabIndex={-1} role="region" aria-label={t('config.sensitiveWords.title')} hidden={searching || activeSubpage !== 'requests'}>{sensitiveWordsVisited ? <SensitiveWordsPage onDirtyChange={setSensitiveWordsDirty} saveRef={sensitiveWordsSave} /> : null}</div>
           {tabBarDirty ? <div className="config-save-bar" role="region" aria-label={t('config.saveBar.label')}>

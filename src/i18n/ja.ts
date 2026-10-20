@@ -765,7 +765,7 @@ export const jaOverrides = {
   'usage.tab.analysis': '分析',
   'usage.tab.events': 'リクエスト',
   'usage.tab.pricing': 'コスト',
-  'usage.tab.dataManagement': 'データ管理',
+  'usage.openStorageSettings': 'ストレージ設定',
   'usage.refresh': '更新',
   'usage.filter.title': '絞り込み',
   'usage.filter.more': 'その他の絞り込み',
