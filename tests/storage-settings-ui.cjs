@@ -31,7 +31,8 @@ const path = require('node:path');
     await page.goto(`${base}/?mock=running&mockDelay=5`, { timeout: 60000 });
 
     // Activity no longer has the tab, only a link to Settings → Storage.
-    await page.getByRole('tab', { name: 'Overview', selected: true }).waitFor();
+    // The first page compiles cold while other tests run, so allow it as long as the page load.
+    await page.getByRole('tab', { name: 'Overview', selected: true }).waitFor({ timeout: 60000 });
     assert.equal(await page.locator('.usage-records-page .usage-data-management-panel').count(), 0);
     await page.getByRole('button', { name: 'Storage settings' }).click();
     const panel = page.locator('#config-native-storage .usage-data-management-panel');
