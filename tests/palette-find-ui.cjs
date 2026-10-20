@@ -45,7 +45,8 @@ const path = require('node:path');
     await palette.locator('input').fill('remote management');
     await option(palette, 'setting-management.allow-remote').click();
     await titleIs('Settings · Tim’s AI Hub');
-    await page.waitForFunction(() => (document.activeElement?.closest('[id]')?.textContent ?? '').includes('Allow remote management'));
+    // Focus is on the field: its input when enabled, else the field itself (e.g. while Settings is still loading).
+    await page.waitForFunction(() => (document.activeElement?.closest('.template-config-field')?.textContent ?? '').includes('Allow remote management'));
 
     // An account opens Overview's list searched for it.
     palette = await openPalette();
