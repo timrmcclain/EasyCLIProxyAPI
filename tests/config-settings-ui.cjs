@@ -22,7 +22,7 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
         root: path.resolve(__dirname, '..'),
         plugins: [react()],
         logLevel: 'error',
-        server: { host: '127.0.0.1', port: 1421, strictPort: false },
+        server: { host: '127.0.0.1', port: 1421, strictPort: false, watch: null },
       });
       await server.listen();
       base = `http://127.0.0.1:${server.httpServer.address().port}/`;

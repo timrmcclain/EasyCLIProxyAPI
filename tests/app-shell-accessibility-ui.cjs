@@ -12,7 +12,7 @@ const path = require('node:path');
     const { createServer } = await import('vite');
     const react = (await import('@vitejs/plugin-react')).default;
     const root = path.resolve(__dirname, '..');
-    server = await createServer({ configFile: false, root, plugins: [react()], logLevel: 'error', server: { host: '127.0.0.1', port: 1421, strictPort: false } });
+    server = await createServer({ configFile: false, root, plugins: [react()], logLevel: 'error', server: { host: '127.0.0.1', port: 1421, strictPort: false, watch: null } });
     await server.listen();
     const address = server.httpServer.address();
     base = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 1421}/`;
