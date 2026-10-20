@@ -67,7 +67,7 @@ function HarnessFields({ group, draft, defaults = {}, prefix = '', api, contextD
     }
     if (field.kind === 'reasoning') {
       let mapping: HarnessProfile = {};
-      try { const parsed: unknown = JSON.parse(value || '{}'); if (isHarnessRecord(parsed)) mapping = parsed; } catch {}
+      try { const parsed: unknown = JSON.parse(value || '{}'); if (isHarnessRecord(parsed)) mapping = parsed; } catch { /* Not JSON: a preset such as "false", so no custom mapping. */ }
       return <div className="harness-reasoning wide" key={key}>
         <label><span title={t('agents.harness.hint.reasoningEfforts')}>{label(field.name)}</span><select aria-label={label(field.name)} aria-description={t('agents.harness.hint.reasoningEfforts')} value={!value ? '' : value === 'false' ? 'false' : 'custom'}
           onChange={e => set(e.currentTarget.value === 'custom' ? JSON.stringify({ off: null, low: 'low', medium: 'medium', high: 'high' }) : e.currentTarget.value)}>

@@ -1497,7 +1497,7 @@ function PricingView({
 
   const changeSyncSource = (source: 'models-dev' | 'litellm') => {
     setSyncSource(source);
-    try { usagePreferences.setItem('cpa-gui.pricing-sync-source.v1', source); } catch {}
+    usagePreferences.setItem('cpa-gui.pricing-sync-source.v1', source);
   };
 
   return (

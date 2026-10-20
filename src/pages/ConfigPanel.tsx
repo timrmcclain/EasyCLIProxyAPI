@@ -1278,7 +1278,7 @@ export function ConfigPanelPage() {
     { category: 'general', target: 'config-native-network', title: st('nativeNetwork'), context: '', keywords: [t('config.network.port'), t('config.network.listenHost'), t('config.network.proxyUrl'), t('config.network.systemProxy'), 'server host port proxy URL 8317 127.0.0.1 0.0.0.0 监听 地址 系统代理'].join(' ') },
     { category: 'general', target: 'config-native-tls', title: t('config.tls.enable'), context: '', keywords: [t('config.tls.cert'), t('config.tls.key'), 'TLS HTTPS cert key certificate 证书 私钥 加密'].join(' ') },
     { category: 'routing', target: 'config-native-routing', title: st('nativeRouting'), context: '', keywords: [t('config.network.sessionAffinity'), t('config.network.sessionTtl'), t('config.routing.title'), 'session affinity ttl routing strategy round-robin 会话 粘性 加权 轮询'].join(' ') },
-    { category: 'routing', target: 'config-native-retry', title: st('nativeRetry'), context: '', keywords: [t('config.network.disableCooling'), t('config.network.requestRetry'), t('config.network.maxRetryCredentials'), t('config.network.maxRetryInterval'), t('config.network.streamingBootstrapRetries'), 'retry retries cooldown 重试 冷却 流式 失败 fallback'].join(' ') },
+    { category: 'routing', target: 'config-native-retry', title: st('nativeRetry'), context: '', keywords: [t('config.network.cooling'), t('config.network.requestRetry'), t('config.network.maxRetryCredentials'), t('config.network.maxRetryInterval'), t('config.network.streamingBootstrapRetries'), 'retry retries cooldown 重试 冷却 流式 失败 fallback'].join(' ') },
     { category: 'storage', target: 'config-native-storage', title: t('usage.dataManagement.storageTitle'), context: '', keywords: [t('usage.dataManagement.storageDescription'), t('usage.dataManagement.shrinkTitle'), t('usage.dataManagement.actionTitle'), 'storage database size limit shrink repair activity history disk 存储 数据库 容量 压缩 修复 ストレージ データベース 容量 縮小 修復'].join(' ') },
     { category: 'diagnostics', target: 'config-native-history', title: t('configHistory.title'), context: '', keywords: [t('configHistory.intro'), 'config history versions restore undo backup yaml 配置 历史 版本 恢复 撤销 備份 設定 履歴 復元'].join(' ') },
     { category: 'diagnostics', target: 'config-native-logging', title: t('config.diagnostics.title'), context: '', keywords: [t('config.diagnostics.debug.title'), t('config.diagnostics.commercial.title'), t('config.diagnostics.fileLogging.title'), t('config.diagnostics.usage.title'), t('config.diagnostics.maxSize.title'), t('config.diagnostics.errorFiles.title'), t('config.diagnostics.redisRetention.title'), 'debug commercial-mode logging logs usage statistics redis retention 日志 调试 商业模式 用量 统计 留存 文件 容量'].join(' ') },
@@ -2041,19 +2041,20 @@ export function ConfigPanelPage() {
               <div className="config-network-grid">
               <div className="config-network-field config-network-toggle">
                 <div>
-                  <span className="config-field-label"><span>{t('config.network.disableCooling')}</span><SettingsHelp label={t('config.network.disableCooling')}>{t('config.network.disableCoolingHint')}</SettingsHelp></span>
+                  <span className="config-field-label"><span>{t('config.network.cooling')}</span><SettingsHelp label={t('config.network.cooling')}>{t('config.network.coolingHint')}</SettingsHelp></span>
 
                 </div>
-                <label className="switch-control" title={t('config.network.disableCooling')}>
+                {/* On means cooldown runs; the saved setting is its opposite, disable-cooling. */}
+                <label className="switch-control" title={t('config.network.cooling')}>
                   <input
                     type="checkbox"
                     role="switch"
-                    aria-label={t('config.network.disableCooling')}
-                    checked={disableCoolingDraft}
+                    aria-label={t('config.network.cooling')}
+                    checked={!disableCoolingDraft}
                     disabled={controlsDisabled}
                     onChange={(event) => {
                       markDraftDirty('disableCooling');
-                      setDisableCoolingDraft(event.currentTarget.checked);
+                      setDisableCoolingDraft(!event.currentTarget.checked);
                     }}
                   />
                   <span className="switch-track" />

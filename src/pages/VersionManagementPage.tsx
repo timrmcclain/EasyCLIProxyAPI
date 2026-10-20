@@ -177,7 +177,10 @@ export function VersionManagementPage() {
     try {
       const task = await invoke<CoreInstallTask>('get_core_install_task');
       applyInstallTask(task, false, false);
-    } catch {}
+    } catch (error) {
+      // No running install to show; installing still works and reports its own errors.
+      console.warn('Could not read the install task:', readableError(error));
+    }
   };
 
   // The download source applies instantly, so confirm the switch and offer Undo to the previous source.

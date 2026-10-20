@@ -27,7 +27,7 @@ export class UsagePreferences {
           if (value !== null) legacy[key] = value;
         }
       }
-    } catch {}
+    } catch { /* Browser storage unavailable: nothing old to migrate. */ }
     this.values = { ...legacy, ...saved };
     this.backend = backend;
     if (Object.keys(legacy).some((key) => !(key in saved))) await this.persist();
@@ -42,7 +42,7 @@ export class UsagePreferences {
     if (!isUsageKey(key)) throw new Error('Unsupported usage preference');
     const changed = this.values[key] !== value;
     this.values[key] = value;
-    try { this.storage().setItem(key, value); } catch {}
+    try { this.storage().setItem(key, value); } catch { /* Browser storage unavailable: the value is still kept here and saved to file below. */ }
     if (changed && this.backend) void this.persist();
   }
 
