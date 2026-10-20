@@ -369,14 +369,17 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
             : ct('off');
           return (
             <div key={target} className={`connector-target${draft[target] ? ' checked' : ''}`}>
-              <label className="connector-switch">
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={draft[target]}
-                  disabled={saving || (Boolean(unavailable) && !state.enabled)}
-                  onChange={event => setDraft(current => ({ ...current, [target]: event.target.checked }))}
-                />
+              <label className="switch-field connector-switch">
+                <span className="switch-control">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={draft[target]}
+                    disabled={saving || (Boolean(unavailable) && !state.enabled)}
+                    onChange={event => setDraft(current => ({ ...current, [target]: event.target.checked }))}
+                  />
+                  <span className="switch-track" />
+                </span>
                 <span>{ct(target)}</span>
               </label>
               <span className={`connector-status ${state.enabled ? 'on' : 'off'}`} title={state.enabled && state.builtIn ? ct('builtIn') : undefined}>

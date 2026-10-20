@@ -201,9 +201,12 @@ export function ClaudeExtensionsPage() {
                 {details[plugin.id] !== undefined && <pre className="ext-details">{details[plugin.id]}</pre>}
               </div>
               {!session && <div className="ext-actions">
-                <label className="ext-switch" title={t('ext.plugins.toggle', { name })}>
-                  <input type="checkbox" role="switch" checked={plugin.enabled} disabled={busy !== null} aria-label={t('ext.plugins.toggle', { name })}
-                    onChange={event => void run(`toggle:${plugin.id}`, () => service.setPluginEnabled(plugin.id, plugin.scope, event.currentTarget.checked))} />
+                <label className="switch-field ext-switch" title={t('ext.plugins.toggle', { name })}>
+                  <span className="switch-control">
+                    <input type="checkbox" role="switch" checked={plugin.enabled} disabled={busy !== null} aria-label={t('ext.plugins.toggle', { name })}
+                      onChange={event => void run(`toggle:${plugin.id}`, () => service.setPluginEnabled(plugin.id, plugin.scope, event.currentTarget.checked))} />
+                    <span className="switch-track" />
+                  </span>
                   <span>{plugin.enabled ? t('ext.plugins.on') : t('ext.plugins.off')}</span>
                 </label>
                 <button type="button" className="secondary-button compact-button" onClick={() => void toggleDetails(plugin.id)} aria-expanded={details[plugin.id] !== undefined}>

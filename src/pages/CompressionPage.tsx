@@ -151,14 +151,17 @@ export default function CompressionPage() {
         </section>
       ) : (
         <section className="compression-card compression-control" aria-busy={busy || !status}>
-          <label className="compression-switch">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={Boolean(status?.enabled)}
-              disabled={busy || !status}
-              onChange={(event) => void toggle(event.target.checked)}
-            />
+          <label className="switch-field compression-switch">
+            <span className="switch-control">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={Boolean(status?.enabled)}
+                disabled={busy || !status}
+                onChange={(event) => void toggle(event.target.checked)}
+              />
+              <span className="switch-track" />
+            </span>
             <span>{t('switchLabel')}</span>
           </label>
           <p className={`compression-state${fallback ? ' warn' : status?.enabled ? ' on' : ''}`} role="status">

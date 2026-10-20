@@ -18,9 +18,8 @@
 
 .ext-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px; white-space: nowrap; }
 
-.ext-switch { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 12px; cursor: pointer; }
-.ext-switch input { width: 16px; height: 16px; margin: 0; accent-color: var(--c-accent-solid); cursor: pointer; }
-.ext-switch span { min-width: 22px; }
+.ext-switch { color: var(--text-secondary); font-size: 12px; }
+.ext-switch > span:last-child { min-width: 22px; }
 
 .ext-details { margin: 6px 0 0; padding: 10px 12px; max-height: 280px; overflow: auto; border-radius: var(--radius-md, 6px); background: var(--bg-tertiary); color: var(--text-primary); font-family: var(--font-mono, ui-monospace, monospace); font-size: 11.5px; line-height: 1.5; white-space: pre; }
 .ext-review { border-color: var(--c-accent); }

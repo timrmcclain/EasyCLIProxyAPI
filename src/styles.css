@@ -2162,6 +2162,31 @@ textarea:focus-visible {
   transform: translateX(20px);
 }
 
+.switch-control input:focus-visible + .switch-track {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+/* A switch with its text label beside it; the whole row toggles it. */
+.switch-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  cursor: pointer;
+}
+
+.switch-field:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-track,
+  .switch-track::after {
+    transition: none;
+  }
+}
+
 .config-general-subpage {
   display: grid;
   gap: 18px;
