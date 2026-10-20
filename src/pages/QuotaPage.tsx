@@ -43,6 +43,7 @@ import { dedupeAuthFiles, parseAuthFilePriority, sortAuthFilesByPriority } from 
 import { useI18n } from '../i18n';
 import { readableError } from '../services/readableError';
 import './QuotaPage.css';
+import { StateMessage } from '../components/StateMessage';
 
 const providerMeta: Record<QuotaProvider, { label: string; icon: string }> = {
   claude: { label: 'Claude', icon: claudeIcon },
@@ -187,9 +188,9 @@ export function QuotaPage() {
         </button>
       </OAuthPageToolbar>
       {loading ? (
-        <div className="management-loading"><LoaderCircle size={20} className="spin" />{t('quota.loadingFiles')}</div>
+        <StateMessage kind="loading" title={t('quota.loadingFiles')} />
       ) : grouped.length === 0 ? (
-        <div className="management-empty"><AlertCircle size={24} /><strong>{t('quota.empty.title')}</strong><span>{t('quota.empty.description')}</span></div>
+        <StateMessage kind="empty" icon={AlertCircle} title={t('quota.empty.title')} detail={t('quota.empty.description')} />
       ) : (
         <>
           <div className="quota-category-filter" role="radiogroup" aria-label={t('quota.filter.label')} onKeyDown={moveCategory}>

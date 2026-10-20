@@ -18,6 +18,7 @@ import {
 import { useI18n } from '../i18n';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { readableError } from '../services/readableError';
+import { StateMessage } from '../components/StateMessage';
 import {
   codexSessionPageCounts,
   retainVisibleCodexSessionIds,
@@ -432,9 +433,9 @@ export function CodexSessionsPanel() {
         </div>
 
         {loading ? (
-          <div className="codex-session-empty"><LoaderCircle size={22} className="spin" /><span>{t('agents.sessions.loading')}</span></div>
+          <StateMessage kind="loading" size="panel" title={t('agents.sessions.loading')} />
         ) : sessions.length === 0 ? (
-          <div className="codex-session-empty"><Archive size={22} /><span>{t('agents.sessions.empty')}</span></div>
+          <StateMessage kind="empty" size="panel" icon={Archive} title={t('agents.sessions.empty')} />
         ) : (
           <div className="codex-session-list">
             {sessions.map((session) => (

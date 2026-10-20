@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { LoaderCircle, PowerOff } from 'lucide-react';
+import { PowerOff } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { navigateHelp } from '../services/uxNavigation';
 import { labelFor } from '../services/quotaWatcher';
 import { readableError } from '../services/readableError';
 import './OfflineAccounts.css';
+import { StateMessage } from './StateMessage';
 
 type OfflineAccount = { name: string; provider: string; email: string; disabled: boolean; priority: number; modifiedMs: number };
 
@@ -33,7 +34,7 @@ export function OfflineAccounts() {
         <button type="button" className="secondary-button compact-button" onClick={() => navigateHelp('home')}>{t('offlineAccounts.openOverview')}</button>
       </div>
       {error ? <p className="offline-accounts-error">{error}</p> : null}
-      {accounts === null ? <div className="management-loading"><LoaderCircle size={20} className="spin" />{t('authFiles.loading')}</div>
+      {accounts === null ? <StateMessage kind="loading" size="section" title={t('authFiles.loading')} />
         : accounts.length === 0 ? <p className="offline-accounts-empty">{t('offlineAccounts.empty')}</p>
         : <table className="offline-accounts-table">
           <thead><tr>

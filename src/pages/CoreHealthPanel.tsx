@@ -23,6 +23,7 @@ import {
   type StoredHealthResult,
 } from '../services/coreHealthAuto';
 import './CoreHealthPanel.css';
+import { StateMessage } from '../components/StateMessage';
 
 type CheckedResult = StoredHealthResult;
 type CheckMode = 'manual' | 'auto';
@@ -200,10 +201,10 @@ export function CoreHealthPanel({
       </div>
       {running && !stopped && <div className="core-health-progress" role="progressbar" aria-label={t('home.health.title')} aria-valuenow={progress.done} aria-valuemax={progress.total}><span style={{ width: `${progress.total ? progress.done / progress.total * 100 : 0}%` }} /></div>}
 
-      {!coreReady ? <div className="core-health-empty"><Activity size={22} aria-hidden="true" /><p>{t('home.health.offline')}</p></div>
-        : modelsLoading && models.length === 0 ? <div className="core-health-empty"><LoaderCircle size={22} className="spin" aria-hidden="true" /><p>{t('apiAccess.health.loadingModels')}</p></div>
-          : modelsError ? <div className="core-health-empty core-health-error" role="alert"><p>{t('home.health.loadError', { error: modelsError })}</p></div>
-            : filtered.length === 0 ? <div className="core-health-empty"><p>{t(models.length ? 'apiAccess.health.noMatch' : 'home.health.empty')}</p></div>
+      {!coreReady ? <StateMessage kind="empty" size="section" className="core-health-empty" icon={Activity} title={t('home.health.offline')} />
+        : modelsLoading && models.length === 0 ? <StateMessage kind="loading" size="section" className="core-health-empty" title={t('apiAccess.health.loadingModels')} />
+          : modelsError ? <StateMessage kind="error" size="section" className="core-health-empty core-health-error" title={t('home.health.loadError', { error: modelsError })} />
+            : filtered.length === 0 ? <StateMessage kind="empty" size="section" className="core-health-empty" title={t(models.length ? 'apiAccess.health.noMatch' : 'home.health.empty')} />
               : <div className="core-health-table-wrap">
                 <table className="core-health-table">
                   <thead><tr><th>{t('home.health.model')}</th><th>{t('home.health.status')}</th><th>{t('home.health.latency')}</th><th>{t('home.health.checkedAt')}</th><th><span className="core-health-sr-only">{t('home.health.checkAll')}</span></th></tr></thead>

@@ -104,6 +104,7 @@ import {
 } from '../services/oauthModelSettings';
 import { getCurrentLocale, translate, useI18n } from '../i18n';
 import { readableError } from '../services/readableError';
+import { StateMessage } from '../components/StateMessage';
 
 type AuthFile = Record<string, unknown>;
 
@@ -591,9 +592,10 @@ export function AuthFileManagementPage() {
         </div>
 
         {loading ? (
-          <div className="management-loading"><LoaderCircle size={20} className="spin" />{t('authFiles.loading')}</div>
+          <StateMessage kind="loading" title={t('authFiles.loading')} />
         ) : visibleFiles.length === 0 ? (
-          <div className="management-empty"><FileDown size={24} /><strong>{files.length ? t('authFiles.empty.filtered') : t('authFiles.empty.none')}</strong><span>{files.length ? t('authFiles.empty.tryFilter') : t('authFiles.empty.upload')}</span></div>
+          <StateMessage kind="empty" icon={FileDown} title={files.length ? t('authFiles.empty.filtered') : t('authFiles.empty.none')}
+            detail={files.length ? t('authFiles.empty.tryFilter') : t('authFiles.empty.upload')} />
         ) : view === 'quotas' ? (
           <div className="quota-page accounts-quota-view">
             <div className="real-quota-grid">

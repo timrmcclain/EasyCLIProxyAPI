@@ -16,6 +16,7 @@ import { useAccountLabelBySource } from '../services/accountLabelBySource';
 import { classifyFailure, failureMessage } from '../services/errorCauses';
 import { readableError } from '../services/readableError';
 import { clearPendingRequestDetail, peekPendingRequestDetail } from '../usageNavigation';
+import { StateMessage } from '../components/StateMessage';
 
 const compactNumber = (value: number) => formatUsageNumber(value, getCurrentLocale());
 const compactDuration = (value: number) => formatDuration(value, getCurrentLocale());
@@ -756,7 +757,7 @@ export function EventsView({
   return (
     <section className={`panel usage-events-panel usage-request-log${isCompactDefault ? ' usage-events-compact' : ''}${fixedRowHeight ? ' usage-row-height-fixed' : ' usage-row-height-auto'}`} aria-label={t('usage.events.title')} aria-busy={loading}>
       <FeedbackNotice feedback={eventsFeedback} />
-      {loading && events.items.length === 0 ? <div className="usage-empty" role="status"><Database size={20} aria-hidden="true" /><span>{t('usage.loading')}</span></div> : events.items.length ? (
+      {loading && events.items.length === 0 ? <StateMessage kind="loading" size="section" title={t('usage.loading')} /> : events.items.length ? (
         <div ref={tableWrapRef} className="usage-table-wrap" tabIndex={0} role="region" aria-label={t('usage.events.title')}>
           <table
             className="usage-events-table"
@@ -1011,5 +1012,5 @@ export function EventsView({
 
 function UsageEmpty() {
   const { t } = useI18n();
-  return <div className="usage-empty"><TriangleAlert size={18} /><span>{t('usage.empty')}</span></div>;
+  return <StateMessage kind="empty" size="section" icon={TriangleAlert} title={t('usage.empty')} />;
 }

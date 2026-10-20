@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { ArrowLeft, Download, ExternalLink, Folder, LoaderCircle, LogIn, Puzzle, RefreshCw, Search, Settings2, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Download, ExternalLink, Folder, LogIn, Puzzle, RefreshCw, Search, Settings2, Sparkles, Trash2, X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { pluginText } from '../i18n/plugins';
 import { FloatingNotice, useAppNotice } from '../appNotice';
@@ -19,6 +19,7 @@ import { PluginOAuthDialog } from './PluginOAuthDialog';
 import { PluginSettingsPanel } from './PluginSettingsPanel';
 import { readableError } from '../services/readableError';
 import './PluginsPage.css';
+import { StateMessage } from '../components/StateMessage';
 
 type Tab = 'installed' | 'store' | 'settings';
 /** Directory name shown when the core does not report one (a path, not prose). */
@@ -169,9 +170,7 @@ export function PluginsPage() {
     <header className="plugins-heading"><div><h1>{t('app.nav.plugins')}</h1><p>{pt('description')}</p></div><button className="secondary-button" disabled={locked} onClick={() => void load()}><RefreshCw size={16} aria-hidden="true" />{t('common.refresh')}</button></header>
     {error && <div className="plugin-error plugin-banner" role="alert"><span>{error}</span><button className="secondary-button" disabled={busy || loading} onClick={() => void load()}>{pt('retry')}</button></div>}
     {supported === false ? <section className="plugin-empty"><Puzzle size={36} /><p>{pt('unsupported')}</p></section> : supported === null ? (
-      <section className="plugin-empty" role="status" aria-live="polite">
-        {loading ? <><LoaderCircle size={20} className="spin" aria-hidden="true" />{pt('loadingPlugins')}</> : pt('retry')}
-      </section>
+      loading ? <StateMessage kind="loading" title={pt('loadingPlugins')} /> : <section className="plugin-empty">{pt('retry')}</section>
     ) : <>
       <div className="plugin-summary"><label className="plugin-global-toggle"><input type="checkbox" checked={data?.pluginsEnabled ?? false} disabled={locked || !data} onChange={e => { const enabled = e.target.checked; void mutate(() => pluginsApi.updateSettings({ enabled }), pt('saved')); }} />{pt('global')}</label><span><Folder size={16} aria-hidden="true" />{data?.pluginsDir || DEFAULT_PLUGINS_DIR}</span><span>{pt('installed')} <strong>{installedCount}</strong>{configOnlyCount > 0 && <> · {pt('configOnly')} <strong>{configOnlyCount}</strong></>}</span></div>
       {data && !data.pluginsEnabled && <p className="plugin-banner">{pt('disabledHint')}</p>}
@@ -192,10 +191,7 @@ export function PluginsPage() {
         </div>
         {tab === 'settings' ? <PluginSettingsPanel onSaved={() => { notice.showNotice(pt('saved')); void load(); }} /> : <>
           {loading && (
-            <p className="plugin-loading" role="status" aria-live="polite">
-              <LoaderCircle size={14} className="spin" aria-hidden="true" />
-              {pt('loadingPlugins')}
-            </p>
+            <StateMessage kind="loading" size="inline" title={pt('loadingPlugins')} />
           )}
           {tab === 'installed' ? <div className="plugin-grid">{plugins.map(plugin => {
             const status = getPluginStatus(plugin, data?.pluginsEnabled ?? false);

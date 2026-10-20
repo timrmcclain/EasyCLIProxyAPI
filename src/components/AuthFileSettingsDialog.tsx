@@ -9,6 +9,7 @@ import './AuthFileSettingsDialog.css';
 import { CredentialAdvancedFields, CredentialHeadersEditor, credentialProviderKey } from './CredentialAdvancedFields';
 import { modelSearchText, type ModelOption } from '../services/modelService';
 import { readableError } from '../services/readableError';
+import { StateMessage } from './StateMessage';
 
 export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }: {
   name: string;
@@ -141,7 +142,7 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
           <button type="button" className="icon-button quiet" disabled={saving} onClick={close} aria-label={t('common.close')}><X size={18} /></button>
         </header>
         <div className="credential-settings-body" aria-busy={loading}>
-          {loading ? <div className="credential-settings-loading"><LoaderCircle size={20} className="spin" />{t('common.loading')}</div> : draft ? (
+          {loading ? <StateMessage kind="loading" size="section" title={t('common.loading')} /> : draft ? (
             <fieldset disabled={saving}>
               <section className="credential-settings-section">
                 <h3>{t('authFiles.settings.routing')}</h3>

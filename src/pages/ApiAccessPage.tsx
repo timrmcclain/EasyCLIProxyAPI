@@ -96,6 +96,7 @@ import type { MessageKey } from '../i18n/resources';
 import { MessageNotice, FeedbackNotice, useAppNotice, type NoticeMessage, type NoticeTone } from '../appNotice';
 import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 import { readableError } from '../services/readableError';
+import { StateMessage } from '../components/StateMessage';
 
 export type ProviderSection =
   | 'gemini-api-key'
@@ -1634,15 +1635,13 @@ export function ApiAccessPage() {
           </div>
 
           {loading ? (
-            <div className="management-loading"><LoaderCircle size={20} className="spin" />{t('apiAccess.loading')}</div>
+            <StateMessage kind="loading" title={t('apiAccess.loading')} />
           ) : rows.length === 0 ? (
-            <div className="management-empty">
-              <Filter size={24} aria-hidden="true" />
-              <strong>{filter ? t('apiAccess.empty.filtered') : t('apiAccess.empty.none')}</strong>
-              <span>{filter ? t('apiAccess.empty.tryKeyword') : t('apiAccess.empty.addFirst', {
+            <StateMessage kind="empty" icon={Filter}
+              title={filter ? t('apiAccess.empty.filtered') : t('apiAccess.empty.none')}
+              detail={filter ? t('apiAccess.empty.tryKeyword') : t('apiAccess.empty.addFirst', {
                 action: t(activeDefinition.openAi ? 'apiAccess.entries.addProvider' : 'apiAccess.entries.addKey'),
-              })}</span>
-            </div>
+              })} />
           ) : (
             <DndContext
               sensors={dragSensors}

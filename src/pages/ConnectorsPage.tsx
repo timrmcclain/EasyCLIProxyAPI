@@ -29,6 +29,7 @@ import {
 } from '../services/connectors';
 import { draftWithSetupIds, GRAPH_MODULE_INSTALL, runMicrosoftSetup, type MicrosoftSetupResult } from '../services/microsoftSetup';
 import './ConnectorsPage.css';
+import { StateMessage } from '../components/StateMessage';
 
 type TestState = { running: boolean; result?: ConnectorTestResult; error?: string };
 
@@ -188,10 +189,7 @@ export function ConnectorsPage() {
       {notice ? <p className="connectors-notice" role="status">{notice}</p> : null}
       {error ? <p className="connectors-error" role="alert">{ct('loadFailed')}: {error}</p> : null}
       {loading && !overview ? (
-        <p className="connectors-loading" role="status" aria-live="polite">
-          <RefreshCw size={14} aria-hidden="true" className="spin" />
-          {ct('loadingConnectors')}
-        </p>
+        <StateMessage kind="loading" size="inline" title={ct('loadingConnectors')} />
       ) : null}
       <div className="connectors-grid">
         {overview?.connectors.map(item => (

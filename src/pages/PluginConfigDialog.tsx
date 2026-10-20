@@ -13,6 +13,7 @@ import {
   type PluginConfigDraft, type PluginDraftValue,
 } from '../services/pluginConfigDraft';
 import './PluginConfigDialog.css';
+import { StateMessage } from '../components/StateMessage';
 
 /** Literal config key shown next to the localized label (technical identifier, not prose). */
 const PRIORITY_CONFIG_KEY = 'priority';
@@ -170,7 +171,7 @@ export function PluginConfigDialog({ plugin, onClose, onSaved }: {
       </header>
       <form onSubmit={event => { event.preventDefault(); void save(); }} noValidate>
         <div className="plugin-config-body">
-          {loading ? <p className="plugin-config-loading" role="status"><LoaderCircle size={20} className="spin" />{t('common.loading')}</p> : draft ? <fieldset disabled={saving}>
+          {loading ? <StateMessage kind="loading" size="section" title={t('common.loading')} /> : draft ? <fieldset disabled={saving}>
             <div className="plugin-config-common">
               <label className="plugin-config-toggle"><input type="checkbox" checked={draft.enabled} onChange={event => { const checked = event.currentTarget.checked; changeDraft(current => ({ ...current, enabled: checked, enabledTouched: true })); }} /><span>{pt('enabled')}</span></label>
               <small>{pt('enabledHint')}</small>
