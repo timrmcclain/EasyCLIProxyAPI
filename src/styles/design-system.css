@@ -586,9 +586,67 @@ svg.lucide {
   margin-top: var(--space-2);
 }
 
-/* Compact density: tighter type and spacing across the workspace. */
+/* Compact density: more on screen by tightening spacing and row heights. Text stays the same size,
+   so nothing gets harder to read or to click. */
 :root[data-density='compact'] .workspace .content {
-  zoom: 0.9;
+  --space-2: 6px;
+  --space-3: 9px;
+  --space-4: 12px;
+  --space-5: 15px;
+  --space-6: 18px;
+  --space-8: 24px;
+  padding: 18px 22px 28px;
+}
+
+:root[data-density='compact'] .workspace .panel {
+  padding: 16px;
+}
+
+/* Overview: summary numbers and account rows. */
+:root[data-density='compact'] .ad-metrics > div {
+  padding: 12px 16px;
+}
+
+:root[data-density='compact'] .ad-card {
+  padding: 14px;
+}
+
+:root[data-density='compact'] .account-dashboard.quota-ledger .ad-row-card {
+  min-height: 44px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* Accounts list. */
+:root[data-density='compact'] .auth-credential-row {
+  min-height: 54px;
+  padding: 6px 0;
+}
+
+:root[data-density='compact'] .auth-file-card-grid {
+  gap: 4px;
+}
+
+/* Activity: request rows. */
+:root[data-density='compact'] .usage-events-table th,
+:root[data-density='compact'] .usage-events-table td {
+  height: 34px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* Connectors, Secret Guard, JEV and other card lists. */
+:root[data-density='compact'] .connector-row-toggle {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+:root[data-density='compact'] .jev-card {
+  padding: 12px 14px;
+}
+
+:root[data-density='compact'] .sg-finding {
+  padding: 7px 0;
 }
 
 /* A status that changes pulses once instead of silently jumping. */
