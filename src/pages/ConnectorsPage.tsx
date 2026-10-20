@@ -30,6 +30,7 @@ import {
 import { draftWithSetupIds, GRAPH_MODULE_INSTALL, runMicrosoftSetup, type MicrosoftSetupResult } from '../services/microsoftSetup';
 import './ConnectorsPage.css';
 import { StateMessage } from '../components/StateMessage';
+import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 
 type TestState = { running: boolean; result?: ConnectorTestResult; error?: string };
 
@@ -252,6 +253,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
   }, [item, reloadCount]);
 
   const changed = draftChanged(item, draft);
+  useUnsavedChangesGuard(`connector:${item.id}`, changed);
 
   useEffect(() => {
     onUnsavedChange(item.id, changed);

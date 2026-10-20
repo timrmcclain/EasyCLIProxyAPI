@@ -10,6 +10,7 @@ import { CredentialAdvancedFields, CredentialHeadersEditor, credentialProviderKe
 import { modelSearchText, type ModelOption } from '../services/modelService';
 import { readableError } from '../services/readableError';
 import { StateMessage } from './StateMessage';
+import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 
 export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }: {
   name: string;
@@ -33,6 +34,10 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const dirty = draft !== null && (Boolean(draft.normalizeCloakMetadata?.length) || JSON.stringify(draft) !== JSON.stringify(original));
+  // What the user changed themselves; a pending metadata clean-up alone is not worth a "discard?" question.
+  const edited = draft !== null && original !== null && JSON.stringify(draft) !== JSON.stringify(original);
+  const [discard, setDiscard] = useState(false);
+  useUnsavedChangesGuard(`account-settings:${name}`, edited);
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -71,7 +76,9 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
 
   const close = () => {
     if (savingRef.current) return;
-    onClose();
+    if (discard) setDiscard(false);
+    else if (edited) setDiscard(true);
+    else onClose();
   };
   const update = <K extends keyof AuthFileSettingsDraft>(key: K, value: AuthFileSettingsDraft[K]) => {
     setDraft((current) => current ? { ...current, [key]: value } : current);
@@ -123,6 +130,13 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
   const content = (
     <dialog ref={dialogRef} className="credential-settings-dialog" aria-labelledby={`${id}-title`}
       onCancel={(event) => { event.preventDefault(); close(); }} onKeyDown={(event) => {
+        // Handled here rather than by the native dialog: browsers close a modal outright on a repeated Escape,
+        // which would drop the edits behind the "discard?" question.
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          close();
+          return;
+        }
         if (event.key !== 'Tab') return;
         const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button, input, select, textarea, summary'))
           .filter((element) => !element.matches(':disabled') && element.getClientRects().length > 0);
@@ -186,6 +200,13 @@ export function AuthFileSettingsDialog({ name, provider = '', onClose, onSaved }
           ) : null}
         </div>
         <footer className="credential-settings-footer">
+          {discard ? <div className="credential-settings-discard" role="alert">
+            <span>{t('common.discardTitle')}</span>
+            <div>
+              <button type="button" className="secondary-button" onClick={() => setDiscard(false)}>{t('agents.catalog.keepEditing')}</button>
+              <button type="button" className="danger-button" onClick={onClose}>{t('apiAccess.discard.confirm')}</button>
+            </div>
+          </div> : null}
           {error ? <p className="credential-settings-error" role="alert">{error}</p> : null}
           <div className="credential-settings-actions">
             <button type="button" className="secondary-button" disabled={saving} onClick={close}>{t('common.cancel')}</button>

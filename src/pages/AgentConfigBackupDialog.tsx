@@ -64,7 +64,9 @@ export function AgentConfigBackupDialog({ client, onClose, onRestored, initialId
   };
   const date = (version: Version) => version.createdAt
     ? formatDate(version.createdAt, { dateStyle: 'short', timeStyle: 'medium' }) : version.id;
-  return <dialog className="agent-backup-modal" ref={dialog} aria-labelledby="agent-backup-title" onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }}>
+  return <dialog className="agent-backup-modal" ref={dialog} aria-labelledby="agent-backup-title" onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }}
+    // Escape is handled here too: a repeated Escape makes the browser close a modal without asking, even mid-restore.
+    onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); if (!busy) onClose(); } }}>
     <header><h2 id="agent-backup-title"><ArchiveRestore size={20} />{t('agents.backup.button')}</h2>
       <button type="button" className="secondary-button" onClick={onClose} disabled={busy} aria-label={t('common.cancel')}><X size={18} /></button></header>
     <p>{t('agents.backup.description')}</p>

@@ -14,6 +14,7 @@ import {
 } from '../services/pluginConfigDraft';
 import './PluginConfigDialog.css';
 import { StateMessage } from '../components/StateMessage';
+import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 
 /** Literal config key shown next to the localized label (technical identifier, not prose). */
 const PRIORITY_CONFIG_KEY = 'priority';
@@ -67,6 +68,7 @@ export function PluginConfigDialog({ plugin, onClose, onSaved }: {
   }, [plugin.id, plugin.enabled, fields, attempt]);
 
   const dirty = Boolean(draft && (draft.enabledTouched || draft.priorityTouched || Object.values(draft.touchedFields).some(Boolean) || rawTouched));
+  useUnsavedChangesGuard(`plugin-config:${plugin.id}`, dirty);
   const close = () => {
     if (pending.current) return;
     if (dirty) setDiscard(true);

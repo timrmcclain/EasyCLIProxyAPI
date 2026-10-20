@@ -5,7 +5,7 @@ import { I18nProvider } from '../../src/i18n';
 import { AuthFileSettingsDialog } from '../../src/components/AuthFileSettingsDialog';
 import '../../src/styles/index.css';
 
-localStorage.setItem('easy-cli-proxy-api.locale', 'zh-CN');
+localStorage.setItem('easy-cli-proxy-api.locale', new URLSearchParams(location.search).get('locale') ?? 'zh-CN');
 const models = Array.from({ length: 20 }, (_, index) => ({ id: `gpt-${index + 1}`, display_name: `GPT ${index + 1}` }));
 mockIPC(async (cmd, rawArgs) => {
   if (cmd === 'set_app_locale') return null;
@@ -19,6 +19,6 @@ mockIPC(async (cmd, rawArgs) => {
 });
 createRoot(document.getElementById('root')!).render(
   <I18nProvider>
-    <AuthFileSettingsDialog name="codex-cbb7bd85-lzt404rum@gmail.com-team.json" provider="codex" onClose={() => {}} onSaved={() => {}} />
+    <AuthFileSettingsDialog name="codex-cbb7bd85-lzt404rum@gmail.com-team.json" provider="codex" onClose={() => { const target = window as unknown as { closedCount?: number }; target.closedCount = (target.closedCount ?? 0) + 1; }} onSaved={() => {}} />
   </I18nProvider>,
 );

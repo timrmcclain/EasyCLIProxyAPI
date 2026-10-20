@@ -46,6 +46,8 @@
 .credential-settings-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .credential-settings-error { color: var(--failure-badge-text); margin: 0 0 12px; font-size: var(--font-size-caption); overflow-wrap: anywhere; max-height: 90px; overflow-y: auto; }
 .credential-settings-warning { color: var(--amber-text); }
+.credential-settings-discard { display: grid; gap: 10px; margin-bottom: 12px; padding: 12px; border: 1px solid var(--line-9); border-radius: 6px; font-size: var(--font-size-meta); }
+.credential-settings-discard > div { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
 .credential-settings-loading { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 150px; }
 @media (max-width: 560px) {
   .credential-settings-grid { grid-template-columns: minmax(0, 1fr); }

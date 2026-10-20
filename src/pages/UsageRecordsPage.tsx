@@ -48,6 +48,7 @@ import { SelectMenu } from '../components/SelectMenu';
 import { takePendingUsageJump } from '../usageNavigation';
 import { UsageAnalysisView, type UsageAnalysis, type UsageCategory } from './UsageAnalysisView';
 import { readableError } from '../services/readableError';
+import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 
 type UsageTab = 'overview' | 'events' | 'projects' | 'pricing' | 'data-management';
 type UsageRange = '4h' | '24h' | 'today' | '7d' | '30d' | 'all' | 'custom';
@@ -777,6 +778,7 @@ function UsageDataManagementView() {
   const feedback = useAppNotice();
   const { showNotice, clearNotice } = feedback;
   const limitDirty = storage !== null && limitDraft.trim() !== String(storage.maxDatabaseSizeMb);
+  useUnsavedChangesGuard('usage-storage-limit', limitDirty);
 
   useEffect(() => {
     let disposed = false;
