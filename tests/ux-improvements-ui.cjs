@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 (async()=>{
  const {createServer}=await import('vite'); const react=(await import('@vitejs/plugin-react')).default;
- const server=await createServer({configFile:false,root:path.resolve(__dirname,'..'),plugins:[react()],logLevel:'error',server:{host:'127.0.0.1',port:1437,strictPort:true}});let browser;
+ const server=await createServer({configFile:false,root:path.resolve(__dirname,'..'),plugins:[react()],logLevel:'error',server:{host:'127.0.0.1',port:1437,strictPort:true,watch:null}});let browser;
  try{
   await server.listen();browser=await chromium.launch({channel:'msedge',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});page.setDefaultTimeout(10000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));

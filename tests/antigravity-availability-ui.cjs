@@ -4,7 +4,7 @@ const path = require('node:path');
 (async () => {
   const { createServer } = await import('vite');
   const react = (await import('@vitejs/plugin-react')).default;
-  const server = await createServer({ root:path.resolve(__dirname,'..'), configFile:false, plugins:[react()], logLevel:'error', server:{host:'127.0.0.1',port:1428,strictPort:true} });
+  const server = await createServer({ root:path.resolve(__dirname,'..'), configFile:false, plugins:[react()], logLevel:'error', server:{host:'127.0.0.1',port:1428,strictPort:true,watch:null} });
   let browser;
   try {
     await server.listen();
