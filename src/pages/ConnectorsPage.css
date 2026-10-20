@@ -132,6 +132,15 @@
 .connector-row-chevron { flex: none; transition: transform .15s; }
 .connector-card.is-open .connector-row-chevron { transform: rotate(180deg); }
 .connector-card-body { display: flex; flex-direction: column; gap: 14px; padding: 0 20px 20px; max-width: 900px; }
+
+/* Browsing: a grid of cards. With one open, the page goes back to one-line rows so nothing leaves gaps or jumps. */
+.connectors-grid:not(:has(.connector-card.is-open)) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--space-3); align-items: stretch; }
+.connectors-grid:not(:has(.connector-card.is-open)) .connector-row-toggle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; row-gap: 10px; padding: 14px 16px 8px; }
+.connectors-grid:not(:has(.connector-card.is-open)) .connector-row-toggle h2 { grid-column: 2; grid-row: 1; }
+.connectors-grid:not(:has(.connector-card.is-open)) .connector-row-chevron { grid-column: 3; grid-row: 1; }
+.connectors-grid:not(:has(.connector-card.is-open)) .connector-row-states { grid-column: 1 / -1; grid-row: 2; margin-left: 0; justify-content: flex-start; }
+.connector-card-teaser { display: none; }
+.connectors-grid:not(:has(.connector-card.is-open)) .connector-card-teaser { display: -webkit-box; margin: 0 16px 14px; padding: 0; overflow: hidden; color: var(--text-secondary); font-size: var(--font-size-meta); line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .connector-card-body[hidden] { display: none; }
 .connector-card-description { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) { .connector-row-chevron { transition: none; } }

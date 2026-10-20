@@ -341,6 +341,8 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           </span>
           <ChevronDown size={16} aria-hidden="true" className="connector-row-chevron" />
         </button>
+        {/* Closed cards say what the connector is for; open ones show the full text in the body. */}
+        {open ? null : <p className="connector-card-teaser">{dt(`${item.id}_body`)}</p>}
       </header>
       <div id={bodyId} className="connector-card-body" hidden={!open}>
       <p className="connector-card-description">{dt(`${item.id}_body`)}</p>

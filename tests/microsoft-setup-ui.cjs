@@ -78,12 +78,21 @@ const path = require('node:path');
       assert.equal(await page.locator('.connector-card-body:visible').count(), 0, 'all rows start collapsed');
       const google = page.getByRole('button', { name: /Google/ }).first();
       assert.match(await google.innerText(), /Claude Code · On[\s\S]*Claude Desktop · On/);
-      const rowHeight = (await google.boundingBox()).height;
-      assert.ok(rowHeight < 70, `a collapsed row is one line (${rowHeight}px)`);
+      // All closed: a grid of cards, several per row, each with a short description.
+      const cards = page.locator('.connector-card');
+      const [first, second] = [await cards.nth(0).boundingBox(), await cards.nth(1).boundingBox()];
+      assert.ok(Math.abs(first.y - second.y) < 2 && second.x > first.x + first.width / 2, 'closed connectors sit side by side in a grid');
+      assert.ok(first.height < 220, `a closed card stays compact (${first.height}px)`);
+      assert.equal(await page.locator('.connector-card-teaser:visible').count(), 8);
       await google.click();
       await page.reload();
       await page.locator('.connector-row-toggle').first().waitFor();
       assert.equal(await page.getByRole('button', { name: /Google/ }).first().getAttribute('aria-expanded'), 'true', 'opened row remembered');
+      // With one open, every connector is a full-width row again and closed rows drop their description.
+      const rows = page.locator('.connector-card');
+      const [openBox, nextBox] = [await rows.nth(0).boundingBox(), await rows.nth(1).boundingBox()];
+      assert.ok(nextBox.y > openBox.y + openBox.height - 2 && Math.abs(nextBox.width - openBox.width) < 2, 'rows stack full width while one is open');
+      assert.equal(await page.locator('.connector-card-teaser:visible').count(), 0);
       // A Claude Code check that needs sign-in explains the separate sign-in and offers to open Claude Code.
       const googleCard = page.locator('.connector-card.is-open').first();
       await googleCard.getByRole('button', { name: 'Check connection' }).first().click();
