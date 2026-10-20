@@ -1,3 +1,4 @@
+import { MessageNotice } from '../appNotice';
 import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type MutableRefObject } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Check, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
@@ -230,8 +231,7 @@ export function SensitiveWordsPage({ onDirtyChange, saveRef }: { onDirtyChange?:
           <h2>{t('config.sensitiveWords.title')}</h2>
         </div>
         <div className="config-heading-actions">
-          {dirty ? <span className="state-pill">{t('config.network.unsaved')}</span>
-            : savedNotice ? <span className="state-pill success">{t('config.network.saved')}</span> : null}
+          {dirty ? <span className="state-pill">{t('config.network.unsaved')}</span> : null}
           <button type="button" className="icon-button quiet" title={t('common.refresh')} aria-label={t('common.refresh')}
             disabled={loading || saving} onClick={() => void refresh()}>
             <RefreshCw size={16} aria-hidden="true" />
@@ -243,7 +243,9 @@ export function SensitiveWordsPage({ onDirtyChange, saveRef }: { onDirtyChange?:
           </button>}
         </div>
       </div>
-      {error ? <div className="config-form-message error" role="alert">{error}</div> : null}
+      {error ? <MessageNotice inline message={error} onDismiss={() => setError('')} /> : null}
+      {/* Saved: the same floating, self-dismissing confirmation as every other save. */}
+      <MessageNotice tone="success" message={savedNotice ? { key: 'config.network.saved' } : null} onDismiss={() => setSavedNotice(false)} />
       {loading ? <p>{t('common.loading')}</p> : saved === null ? (
         <button type="button" className="secondary-button compact-button" onClick={() => void load()}>{t('common.retry')}</button>
       ) : (

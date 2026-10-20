@@ -2289,9 +2289,7 @@ export function ConfigPanelPage() {
           ) : null}
 
           <div className="config-diagnostics-footer">
-            <span className={`config-form-message ${loggingError ? 'error' : ''}`} role="alert">
-              {loggingError || ' '}
-            </span>
+            {loggingError ? <MessageNotice inline message={loggingError} onDismiss={() => setLoggingError('')} /> : <span />}
             <div className="config-diagnostics-actions"><span className="config-card-status" role="status">{loggingSettingsDirty ? st('dirty') : ''}</span>
               <button
                 type="button"
@@ -2705,9 +2703,7 @@ export function ConfigPanelPage() {
               />
             </label>
 
-            <div className={`config-form-message ${formError ? 'error' : ''}`}>
-              {formError || ' '}
-            </div>
+            {formError ? <MessageNotice inline message={formError} onDismiss={() => setFormError('')} /> : null}
             {renderFeedback(keyFeedback)}
 
             <div className="config-dialog-actions">

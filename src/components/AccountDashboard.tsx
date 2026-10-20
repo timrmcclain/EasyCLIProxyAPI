@@ -1,3 +1,4 @@
+import { MessageNotice } from '../appNotice';
 import { outageFor, useProviderStatus } from '../services/providerStatus';
 import { QuotaTrendChart } from './QuotaTrendChart';
 import { useQuotaTrends } from '../services/quotaTrend';
@@ -290,7 +291,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       </button></div>
     </div>
     {!ready ? <p className="ad-notice">{t('accountDashboard.start')}</p> : null}
-    {error ? <p role="alert" className="ad-notice ad-error">{error} {t('accountDashboard.staleWarning')}</p> : null}
+    {error ? <MessageNotice inline className="ad-notice" message={`${error} ${t('accountDashboard.staleWarning')}`} /> : null}
     {/* Before the first list arrives, an empty list means "still loading", never "no accounts". */}
     {ready && !listLoaded && !error ? <p className="ad-notice" role="status">{t('glance.attention.loadingAccounts')}</p> : null}
     {ready && listLoaded && !error && !files.length ? <p className="ad-notice">{t('accountDashboard.empty')}</p> : null}
@@ -319,7 +320,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
         <button type="button" className="secondary-button compact-button" disabled={saving} onClick={() => void changeFocus(null)}>{t('accountFocus.stop')}</button>
       </p> : null;
     })()}
-    {focusError ? <p role="alert" className="ad-notice ad-error">{focusError}</p> : null}
+    {focusError ? <MessageNotice inline className="ad-notice" message={focusError} onDismiss={() => setFocusError('')} /> : null}
     {files.length > 0 && !stale && <UnconfirmedLines attention={attention} onCheck={() => void checkUnconfirmed()} checking={checkingUnconfirmed} />}
     {files.length > 0 && <div className="quota-workflow-tools">
       <input type="search" aria-label={t('availability.search')} placeholder={t('availability.search')} value={search} onChange={event => setSearch(event.target.value)} />

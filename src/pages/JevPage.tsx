@@ -1,3 +1,4 @@
+import { MessageNotice } from '../appNotice';
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CircleCheck, CircleX, ExternalLink, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -94,7 +95,7 @@ export function JevPage() {
   </button>;
   if (error) return <div className="health-page jev-page">
     <header className="health-heading"><div><h1>{t('jev.title')}</h1><p>{t('jev.subtitle')}</p></div>{retryButton}</header>
-    <p role="alert" className="ad-notice ad-error">{t('jev.loadError', { error })}</p>
+    <MessageNotice inline message={t('jev.loadError', { error })} />
   </div>;
   if (overview && !overview.installed) return <div className="health-page jev-page">
     <header className="health-heading"><div><h1>{t('jev.title')}</h1><p>{t('jev.notInstalled')}</p></div>{retryButton}</header>
@@ -153,7 +154,7 @@ export function JevPage() {
           </select>
         </li>
       </ul>
-      {guardError && <p role="alert" className="jev-error">{t('jev.guards.saveFailed', { error: guardError })}</p>}
+      {guardError && <MessageNotice inline message={t('jev.guards.saveFailed', { error: guardError })} onDismiss={() => setGuardError(null)} />}
     </section>}
 
     <section aria-labelledby="jev-payoff-title" className="jev-card">
@@ -168,7 +169,7 @@ export function JevPage() {
           </button>
         </div>
       </header>
-      {refreshError && <p role="alert" className="jev-error">{t('jev.payoff.refreshFailed', { error: refreshError })}</p>}
+      {refreshError && <MessageNotice inline message={t('jev.payoff.refreshFailed', { error: refreshError })} onDismiss={() => setRefreshError(null)} />}
       {!report?.answers?.length ? <p className="glance-muted">{t('jev.payoff.empty')}</p>
         : <ul className="jev-answers">
           {report.answers.map(answer => <li key={answer.question} className={`tone-${answer.tone}`}>

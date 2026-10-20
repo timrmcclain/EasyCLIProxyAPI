@@ -1,3 +1,4 @@
+import { MessageNotice } from '../appNotice';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, CircleCheck, CircleSlash, ExternalLink, FlaskConical, KeyRound, RefreshCw } from 'lucide-react';
 import { requestRequestDetail } from '../usageNavigation';
@@ -100,7 +101,7 @@ export function SecretGuardPage() {
     }
   });
 
-  if (loadError && !findings) return <div className="health-page sg-page"><p role="alert" className="ad-notice ad-error">{t('sg.loadError', { error: loadError })}</p></div>;
+  if (loadError && !findings) return <div className="health-page sg-page"><MessageNotice inline message={t('sg.loadError', { error: loadError })} /></div>;
 
   const policy = status?.policy ?? { defaultMode: 'report' as SecretGuardMode, modes: {}, allow: [] };
   const all = findings ?? [];
@@ -201,7 +202,7 @@ export function SecretGuardPage() {
           <AlertTriangle size={16} aria-hidden="true" />{t('sg.codexSteering')}
         </p>}
       </>}
-      {actionError && <p role="alert" className="jev-error">{actionError}</p>}
+      {actionError && <MessageNotice inline message={actionError} onDismiss={() => setActionError(null)} />}
     </section>
 
     <section aria-labelledby="sg-findings-title" className="jev-card">
@@ -253,7 +254,7 @@ export function SecretGuardPage() {
       {testHits && testHits.length > 0 && <ul className="sg-test-hits">
         {testHits.map((hit, index) => <li key={`${hit.kind}-${index}`}><strong>{t(`sg.kind.${kindKey(hit.kind)}` as MessageKey)}</strong><code>{hit.hint}</code></li>)}
       </ul>}
-      {testError && <p role="alert" className="jev-error">{t('sg.error', { error: testError })}</p>}
+      {testError && <MessageNotice inline message={t('sg.error', { error: testError })} onDismiss={() => setTestError(null)} />}
     </section>
   </div>;
 }

@@ -1,3 +1,4 @@
+import { MessageNotice } from '../appNotice';
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, ExternalLink, Link2, Search } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -135,7 +136,7 @@ export function ClaudeExtensionsPage() {
     ? t('ext.skills.fileOne', { size: formatBytes(bytes) })
     : t('ext.skills.files', { count: files, size: formatBytes(bytes) }));
 
-  if (loadError) return <div className="health-page ext-page"><p role="alert" className="ad-notice ad-error">{t('ext.loadError', { error: loadError })}</p></div>;
+  if (loadError) return <div className="health-page ext-page"><MessageNotice inline message={t('ext.loadError', { error: loadError })} /></div>;
 
   const plugins = overview?.plugins ?? [];
   const managed = plugins.filter(plugin => !isSessionPlugin(plugin));
@@ -151,8 +152,8 @@ export function ClaudeExtensionsPage() {
     </header>
 
     {overview && !overview.claudeFound && <p className="ad-notice">{t('ext.noClaude')}</p>}
-    {overview?.pluginError && <p role="alert" className="ad-notice ad-error">{t('ext.pluginError', { error: overview.pluginError })}</p>}
-    {error && <p role="alert" className="ad-notice ad-error">{error}</p>}
+    {overview?.pluginError && <MessageNotice inline message={t('ext.pluginError', { error: overview.pluginError })} />}
+    {error && <MessageNotice inline message={error} onDismiss={() => setError(null)} />}
     {notice && <p role="status" className="ad-notice ext-notice">{notice}</p>}
 
     {review && <section className="jev-card ext-review" aria-labelledby="ext-review-title">
