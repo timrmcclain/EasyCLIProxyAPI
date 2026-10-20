@@ -962,7 +962,10 @@ export function createBrowserMockRuntime(
       case 'check_codex_oauth_login':
       case 'restore_codex_official_config':
       case 'restore_agent_config_backup':
-      case 'launch_agent': return null;
+      case 'launch_agent':
+        // The cases above share this return. Tests read how a launch was asked for (e.g. Claude Code with --chrome).
+        if (command === 'launch_agent' && typeof window !== 'undefined') ((window as unknown as { __mockLaunches?: unknown[] }).__mockLaunches ??= []).push(clone(payload));
+        return null;
 
       case 'get_core_status': return clone(state.coreStatus);
       case 'start_core_process': {
@@ -1394,6 +1397,19 @@ export function createBrowserMockRuntime(
         const request = (payload as { request?: { claudeCode?: boolean; claudeDesktop?: boolean; access?: string | null } } | undefined)?.request ?? {};
         Object.assign(mockGitHub, { configured: true, code: Boolean(request.claudeCode || !request.claudeDesktop), desktop: Boolean(request.claudeDesktop), access: request.access ?? mockGitHub.access });
         return { status: 'ok', overview: await invoke('get_connector_overview', {}) };
+      }
+      case 'get_chrome_integration': {
+        const variant = localStorage.getItem('mock.chrome');
+        const extensionVersion = variant === 'none' ? null : '1.0.101';
+        return {
+          browsers: [
+            { id: 'chrome', name: 'Google Chrome', installed: true, extensionVersion, extensionTooOld: false, linked: variant === 'ready' },
+            { id: 'edge', name: 'Microsoft Edge', installed: true, extensionVersion, extensionTooOld: false, linked: false },
+          ],
+          tokenAuth: variant !== 'ready',
+          routedThroughLocalProxy: variant !== 'ready',
+          storeUrl: 'https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn',
+        };
       }
       case 'get_connector_overview':
       case 'apply_connector_change':

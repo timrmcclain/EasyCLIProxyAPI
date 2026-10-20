@@ -127,7 +127,13 @@ pub(crate) fn launch_agent(
     target: Option<String>,
     working_directory: Option<String>,
     deepseek_harness_options: Option<DeepSeekHarnessLaunchOptions>,
+    chrome: Option<bool>,
 ) -> Result<(), String> {
+    // `claude --chrome`: Claude Code connects to the Claude in Chrome extension (Connectors page).
+    let chrome = chrome.unwrap_or(false);
+    if chrome && AgentClient::parse(&client).ok() != Some(AgentClient::ClaudeCode) {
+        return Err("Only Claude Code can open with Chrome".to_string());
+    }
     let home = app
         .path()
         .home_dir()
@@ -232,7 +238,10 @@ pub(crate) fn launch_agent(
             } else {
                 &[]
             };
-            let arguments = agent_cli_launch_arguments(client, deepseek_harness_options.as_ref())?;
+            let mut arguments = agent_cli_launch_arguments(client, deepseek_harness_options.as_ref())?;
+            if chrome {
+                arguments.push("--chrome".to_string());
+            }
             launch_cli_agent(
                 &executable,
                 client.name(),

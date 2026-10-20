@@ -30,6 +30,7 @@ import {
 import { draftWithSetupIds, GRAPH_MODULE_INSTALL, runMicrosoftSetup, type MicrosoftSetupResult } from '../services/microsoftSetup';
 import './ConnectorsPage.css';
 import { StateMessage } from '../components/StateMessage';
+import { ChromeConnectorCard } from './ChromeConnectorCard';
 import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 
 type TestState = { running: boolean; result?: ConnectorTestResult; error?: string };
@@ -202,6 +203,7 @@ export function ConnectorsPage() {
             onSaved={(next) => { setOverview(next); setError(null); setNotice(ct('saved')); }}
           />
         ))}
+        {overview ? <ChromeConnectorCard reloadCount={reloadCount} /> : null}
       </div>
       {confirmationDialog}
     </div>
