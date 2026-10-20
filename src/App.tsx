@@ -352,6 +352,9 @@ function AppContent() {
         window.requestAnimationFrame(() => {
           const heading = document.querySelector<HTMLElement>('#main-content h1, #main-content h2');
           if (!heading) return;
+          // The new page may have placed focus itself (e.g. Settings opened at one field); don't take it back.
+          const now = document.activeElement;
+          if (now && now !== document.body && !now.closest('.sidebar, .command-palette-backdrop, .glossary-dialog')) return;
           if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
           heading.focus({ preventScroll: true });
         });
