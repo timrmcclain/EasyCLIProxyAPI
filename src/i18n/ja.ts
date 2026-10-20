@@ -755,6 +755,7 @@ export const jaOverrides = {
   'oauth.status.waiting': 'コールバック待ち',
   'oauth.status.signedOut': '未ログイン',
   'usage.title': '使用履歴',
+  'usage.events.requestMissing': 'そのリクエストは使用履歴にもうありません。',
   'usage.collector.collecting': 'ローカルで収集中',
   'usage.collector.error': '収集エラー',
   'usage.collector.waiting': 'コアを待機中',

@@ -741,6 +741,7 @@ export const zhCN = {
   'oauth.status.waiting': '等待回调',
   'oauth.status.signedOut': '未登录',
   'usage.title': '使用记录',
+  'usage.events.requestMissing': '该请求已不在使用记录中。',
   'usage.collector.collecting': '本地采集中',
   'usage.collector.error': '采集异常',
   'usage.collector.waiting': '等待内核',

@@ -316,6 +316,9 @@ pub(crate) struct UsageQuery {
     source: Option<String>,
     #[serde(default)]
     api_key_hash: Option<String>,
+    /// One request by the proxy's request ID, e.g. from a Secret Guard finding.
+    #[serde(default)]
+    request_id: Option<String>,
     #[serde(default)]
     failed: Option<bool>,
     #[serde(default)]
@@ -2893,6 +2896,7 @@ fn build_usage_filter(query: &UsageQuery) -> UsageSqlFilter {
         "api_key_hash",
         query.api_key_hash.as_deref(),
     );
+    add_text_filter(&mut clauses, &mut params, "request_id", query.request_id.as_deref());
     if let Some(canceled) = query.canceled {
         clauses.push("canceled = ?".to_string());
         params.push(SqlValue::Integer(i64::from(canceled)));
@@ -4887,6 +4891,21 @@ mod tests {
             assert_eq!(filtered.models[0].requests, expected);
             assert_eq!(load_usage_events(&connection, &query, &config).unwrap().total, expected as usize);
         }
+    }
+
+    #[test]
+    fn usage_events_can_be_looked_up_by_request_id() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        initialize_usage_schema(&connection).unwrap();
+        let records = ["req-a", "req-b", "req-c"].map(|id| sample_record(id, "2026-08-27T00:00:00Z", "model"));
+        insert_usage_records(&mut connection, &records).unwrap();
+        let config = GuiConfigFile::default();
+        let query = UsageQuery { request_id: Some("req-b".into()), ..UsageQuery::default() };
+        let page = load_usage_events(&connection, &query, &config).unwrap();
+        assert_eq!(page.total, 1);
+        assert_eq!(page.items[0].request_id, "req-b");
+        let missing = UsageQuery { request_id: Some("req-gone".into()), ..UsageQuery::default() };
+        assert_eq!(load_usage_events(&connection, &missing, &config).unwrap().total, 0);
     }
 
     #[test]

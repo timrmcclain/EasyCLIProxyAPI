@@ -12,6 +12,14 @@ use serde::{Deserialize, Serialize};
 use crate::{core_install_dir, CORE_CONFIG_FILE};
 
 const PLUGIN_ID: &str = "secret-guard";
+/// Request IDs kept per finding, newest first, so the page can open the request that carried the secret.
+const REQUEST_IDS_PER_FINDING: usize = 5;
+/// Text the local check scans at most; the plugin itself skips bodies over 4 MB.
+const MAX_CHECK_BYTES: usize = 1_000_000;
+
+// The plugin's own detectors, compiled into the hub so the Test box finds exactly what the plugin would.
+#[path = "../../secret-guard/src/detect.rs"]
+mod detect;
 /// Findings files over this size are trimmed to their newest lines.
 const MAX_FINDINGS_BYTES: u64 = 4 * 1024 * 1024;
 const KEEP_LINES: usize = 20_000;
@@ -62,6 +70,8 @@ struct FindingLine {
     client: String,
     #[serde(default)]
     action: String,
+    #[serde(default)]
+    request_id: String,
 }
 
 /// Everything known about one secret, across every request it appeared in.
@@ -78,8 +88,18 @@ pub(crate) struct SecretGuardFinding {
     models: Vec<String>,
     clients: Vec<String>,
     actions: Vec<String>,
+    /// The proxy's request IDs it was seen in, newest first (at most a few).
+    request_ids: Vec<String>,
     /// When the user said they rotated it. Hidden until it's seen again after that.
     dismissed_at: Option<u64>,
+}
+
+/// One credential the local check found: its kind and a masked hint, never the secret itself.
+#[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SecretGuardCheckHit {
+    kind: String,
+    hint: String,
 }
 
 fn guard_dir() -> Result<PathBuf, String> {
@@ -251,6 +271,7 @@ fn group_findings(text: &str, dismissed: &BTreeMap<String, u64>) -> Vec<SecretGu
         models: BTreeSet<String>,
         clients: BTreeSet<String>,
         actions: BTreeSet<String>,
+        requests: Vec<(u64, String)>,
     }
     let mut groups: BTreeMap<String, Group> = BTreeMap::new();
     for line in text.lines() {
@@ -265,6 +286,9 @@ fn group_findings(text: &str, dismissed: &BTreeMap<String, u64>) -> Vec<SecretGu
         group.last = group.last.max(entry.ts);
         group.sightings += 1;
         group.kind = entry.kind;
+        if !entry.request_id.is_empty() && !group.requests.iter().any(|(_, id)| *id == entry.request_id) {
+            group.requests.push((entry.ts, entry.request_id));
+        }
         for (set, value) in [(&mut group.providers, entry.provider), (&mut group.models, entry.model), (&mut group.clients, entry.client), (&mut group.actions, entry.action)] {
             if !value.is_empty() {
                 set.insert(value);
@@ -273,7 +297,11 @@ fn group_findings(text: &str, dismissed: &BTreeMap<String, u64>) -> Vec<SecretGu
     }
     let mut out: Vec<SecretGuardFinding> = groups
         .into_iter()
-        .map(|(fingerprint, g)| SecretGuardFinding {
+        .map(|(fingerprint, mut g)| SecretGuardFinding {
+            request_ids: {
+                g.requests.sort_by(|a, b| b.0.cmp(&a.0));
+                g.requests.iter().take(REQUEST_IDS_PER_FINDING).map(|(_, id)| id.clone()).collect()
+            },
             dismissed_at: dismissed.get(&fingerprint).copied().filter(|at| *at >= g.last),
             fingerprint,
             kind: g.kind,
@@ -297,6 +325,30 @@ pub(crate) fn secret_guard_findings() -> Result<Vec<SecretGuardFinding>, String>
     // Lossy, so one torn or corrupt line can't hide every finding.
     let text = fs::read(&path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned()).unwrap_or_default();
     Ok(group_findings(&text, &read_dismissed(&dismissed_path()?)))
+}
+
+/// "Kind, first four characters, length": enough to recognise which secret it is without showing it.
+fn masked_hint(secret: &str) -> String {
+    let head: String = secret.chars().take(4).collect();
+    format!("{head}… ({} characters)", secret.chars().count())
+}
+
+fn check_text(text: &str) -> Vec<SecretGuardCheckHit> {
+    let mut end = text.len().min(MAX_CHECK_BYTES);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    let text = &text[..end];
+    detect::scan(text)
+        .into_iter()
+        .map(|found| SecretGuardCheckHit { kind: found.kind.to_string(), hint: masked_hint(&text[found.start..found.end]) })
+        .collect()
+}
+
+/// The Test box: what Secret Guard would catch in this text. Runs in the hub only; nothing is sent anywhere.
+#[tauri::command]
+pub(crate) fn secret_guard_check(text: String) -> Vec<SecretGuardCheckHit> {
+    check_text(&text)
 }
 
 /// Marks a finding as handled ("I've rotated it"), or clears that mark.
@@ -378,6 +430,28 @@ mod tests {
         assert_eq!(groups[0].actions, vec!["redacted", "reported"]);
         assert_eq!(groups[0].dismissed_at, None);
         assert_eq!(groups[1].dismissed_at, Some(250));
+    }
+
+    #[test]
+    fn findings_keep_their_newest_request_ids() {
+        let line = |ts: u64, id: &str| format!(r#"{{"ts":{ts},"kind":"jwt","fingerprint":"cccc0003","provider":"anthropic","action":"reported","request_id":"{id}"}}"#);
+        let text = [line(100, "req-1"), line(400, "req-4"), line(200, "req-2"), line(300, "req-4"), line(250, ""),
+            line(500, "req-5"), line(600, "req-6"), line(700, "req-7")].join("\n");
+        let groups = group_findings(&text, &BTreeMap::new());
+        // Newest first, each ID once, empty IDs skipped, at most five.
+        assert_eq!(groups[0].request_ids, vec!["req-7", "req-6", "req-5", "req-4", "req-2"]);
+    }
+
+    #[test]
+    fn the_local_check_finds_what_the_plugin_would_and_masks_it() {
+        // Assembled at runtime so no token-shaped literal sits in the source.
+        let token = format!("{}{}", "gh", "p_aB3dE5fG7hJ9kL2mN4pQ6rS8tU0vW1xYz9Ab");
+        let hits = check_text(&format!("deploy with {token} please"));
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].kind, "github_token");
+        assert_eq!(hits[0].hint, format!("ghp_… ({} characters)", token.len()));
+        assert!(!hits[0].hint.contains(&token[4..]));
+        assert!(check_text("nothing secret here, just prose").is_empty());
     }
 
     #[test]

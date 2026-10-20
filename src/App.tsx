@@ -41,6 +41,7 @@ import { noticeStillInTray, startProxyWatcher, startQuotaWatcher } from './servi
 import { endAccountFocus, readAccountFocus } from './services/accountFocus';
 import { applyQuotaRouting, readQuotaRoutingPreference } from './services/quotaRoutingControl';
 import { startSecretGuardWatcher } from './services/secretGuardWatcher';
+import { readOpenCount, SECRET_GUARD_COUNT_EVENT } from './services/secretGuard';
 import { readDashboardPreference, readGlobalHotkeyPreference, saveGlobalHotkeyPreference } from './services/dashboardPreferences';
 import { CoreUpdateProvider, useCoreUpdate } from './coreUpdate';
 import { ConfigPanelPage } from './pages/ConfigPanel';
@@ -282,6 +283,13 @@ function AppContent() {
   // Accounts the palette can find, read fresh each time it opens.
   const [paletteAccounts, setPaletteAccounts] = useState<{ id: string; label: string; provider: string; search: string }[]>([]);
   const [homeProblems, setHomeProblems] = useState(0);
+  // Secret Guard findings still to review, shown as a count on its sidebar entry.
+  const [secretsOpen, setSecretsOpen] = useState(readOpenCount);
+  useEffect(() => {
+    const onCount = () => setSecretsOpen(readOpenCount());
+    window.addEventListener(SECRET_GUARD_COUNT_EVENT, onCount);
+    return () => window.removeEventListener(SECRET_GUARD_COUNT_EVENT, onCount);
+  }, []);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const unreadAlerts = useAlertHistory().filter(entry => !entry.read).length;
@@ -769,6 +777,11 @@ function AppContent() {
                   <span>{t(page.labelKey)}</span>
                   {page.id === 'home' && homeProblems > 0 ? (
                     <i className="nav-attention-dot" title={t('app.nav.attention', { count: homeProblems })} aria-label={t('app.nav.attention', { count: homeProblems })} />
+                  ) : null}
+                  {page.id === 'secret-guard' && secretsOpen > 0 ? (
+                    <span className="nav-count-badge" title={t('sg.findings.openCount', { count: secretsOpen })}>
+                      <span aria-hidden="true">{secretsOpen}</span><span className="sr-only">{t('sg.findings.openCount', { count: secretsOpen })}</span>
+                    </span>
                   ) : null}
                   {locked ? (
                     <Lock size={14} className="nav-lock-icon" aria-hidden="true" />

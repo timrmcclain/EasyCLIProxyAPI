@@ -15,6 +15,25 @@ export function requestAccountRequests(source: string) {
   window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'usage-records' }));
 }
 
+// One request to open in Activity's request details, e.g. from a Secret Guard finding.
+let pendingRequest: string | null = null;
+
+export function requestRequestDetail(requestId: string) {
+  pending = { range: '7d' };
+  pendingRequest = requestId;
+  window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'usage-records' }));
+}
+
+/** The request waiting to be opened. It stays pending until clearPendingRequestDetail, so a remount (React's
+ *  development double-run, or a reload of the list) still finds it. */
+export function peekPendingRequestDetail(): string | null {
+  return pendingRequest;
+}
+
+export function clearPendingRequestDetail(id: string) {
+  if (pendingRequest === id) pendingRequest = null;
+}
+
 export function takePendingUsageJump(): UsageJump | null {
   const jump = pending;
   pending = null;

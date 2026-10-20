@@ -2788,6 +2788,7 @@ fn main() {
             secret_guard::secret_guard_install,
             secret_guard::secret_guard_findings,
             secret_guard::secret_guard_dismiss,
+            secret_guard::secret_guard_check,
             claude_extensions::claude_extensions_overview,
             claude_extensions::claude_plugin_details,
             claude_extensions::claude_plugin_install,

@@ -742,6 +742,7 @@ export const en: Record<MessageKey, string> = {
   'oauth.status.waiting': 'Waiting for Callback',
   'oauth.status.signedOut': 'Not Signed In',
   'usage.title': 'Activity',
+  'usage.events.requestMissing': 'That request is no longer in Activity’s history.',
   'usage.collector.collecting': 'Collecting Locally',
   'usage.collector.error': 'Collection Error',
   'usage.collector.waiting': 'Waiting for the proxy',

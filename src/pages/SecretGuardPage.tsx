@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, CircleCheck, CircleSlash, KeyRound, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CircleCheck, CircleSlash, ExternalLink, FlaskConical, KeyRound, RefreshCw } from 'lucide-react';
+import { requestRequestDetail } from '../usageNavigation';
 import { useI18n } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
 import { resetCountdown } from '../services/accountDashboard';
 import { readableError } from '../services/readableError';
 import {
-  SECRET_GUARD_MODES, SECRET_GUARD_PROVIDERS, modeFor, openFindings, secretGuardApp, secretGuardKind, secretGuardService,
-  type SecretGuardFinding, type SecretGuardMode, type SecretGuardProvider, type SecretGuardStatus,
+  SECRET_GUARD_MODES, SECRET_GUARD_PROVIDERS, modeFor, openFindings, publishOpenCount, secretGuardApp, secretGuardKind, secretGuardService,
+  type SecretGuardCheckHit, type SecretGuardFinding, type SecretGuardMode, type SecretGuardProvider, type SecretGuardStatus,
 } from '../services/secretGuard';
 import './HealthCheckPage.css';
 import './JevPage.css';
@@ -29,6 +30,9 @@ export function SecretGuardPage() {
   const [showHandled, setShowHandled] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const busyRef = useRef(false);
+  const [testText, setTestText] = useState('');
+  const [testHits, setTestHits] = useState<SecretGuardCheckHit[] | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -53,6 +57,22 @@ export function SecretGuardPage() {
     const timer = window.setInterval(() => { if (!busyRef.current) void load(); }, POLL_MS);
     return () => window.clearInterval(timer);
   }, [load]);
+
+  // Keep the sidebar badge in step as soon as something is handled here, not at the watcher's next check.
+  useEffect(() => {
+    if (!findings || !status) return;
+    publishOpenCount(openFindings(findings, status.policy).length);
+  }, [findings, status]);
+
+  const runTest = async () => {
+    setTestError(null);
+    try {
+      setTestHits(await secretGuardService.check(testText));
+    } catch (cause) {
+      setTestHits(null);
+      setTestError(readableError(cause));
+    }
+  };
 
   /** One change at a time: a second click while one is running is ignored. */
   const run = async (id: string, action: () => Promise<unknown>) => {
@@ -129,6 +149,8 @@ export function SecretGuardPage() {
         {!isHandled && <p className="sg-rotate">{t(`sg.rotate.${kind}` as MessageKey)}</p>}
       </div>
       <div className="sg-finding-actions">
+        {item.requestIds?.length ? <button type="button" className="secondary-button compact-button" title={t('sg.finding.viewRequestHint')}
+          onClick={() => requestRequestDetail(item.requestIds![0])}><ExternalLink size={14} aria-hidden="true" />{t('sg.finding.viewRequest')}</button> : null}
         {isHandled
           ? <button type="button" className="secondary-button compact-button" disabled={busy !== null}
             onClick={() => void run(item.fingerprint, async () => {
@@ -207,12 +229,31 @@ export function SecretGuardPage() {
         <h2 id="sg-policy-title" className="jev-section-title">{t('sg.policy.title')}</h2>
         <p className="jev-subtitle">{t('sg.policy.subtitle')}</p>
       </div>
+      {/* The modes live in the plugin's settings in the proxy, so they can only change while it's on and reachable. */}
+      {(proxyDown || !status?.on) && <p className="sg-state sg-policy-locked" role="note">{t(proxyDown ? 'sg.policy.lockedProxy' : 'sg.policy.lockedOff')}</p>}
       <dl className="sg-policy">
         {SECRET_GUARD_PROVIDERS.map(provider => <div key={provider}>
           <dt>{providerLabel(provider)}</dt>
           <dd>{modeSelect(provider, modeFor(policy, provider), providerLabel(provider))}</dd>
         </div>)}
       </dl>
+    </section>
+
+    <section aria-labelledby="sg-test-title" className="jev-card sg-test">
+      <div>
+        <h2 id="sg-test-title" className="jev-section-title"><FlaskConical size={16} aria-hidden="true" />{t('sg.test.title')}</h2>
+        <p className="jev-subtitle">{t('sg.test.subtitle')}</p>
+      </div>
+      <textarea aria-label={t('sg.test.label')} placeholder={t('sg.test.placeholder')} value={testText} rows={4} spellCheck={false}
+        onChange={event => { setTestText(event.currentTarget.value); setTestHits(null); }} />
+      <div className="sg-test-actions">
+        <button type="button" className="secondary-button compact-button" disabled={!testText.trim()} onClick={() => void runTest()}>{t('sg.test.check')}</button>
+        {testHits && <span role="status">{testHits.length ? t('sg.test.found', { count: testHits.length }) : t('sg.test.none')}</span>}
+      </div>
+      {testHits && testHits.length > 0 && <ul className="sg-test-hits">
+        {testHits.map((hit, index) => <li key={`${hit.kind}-${index}`}><strong>{t(`sg.kind.${kindKey(hit.kind)}` as MessageKey)}</strong><code>{hit.hint}</code></li>)}
+      </ul>}
+      {testError && <p role="alert" className="jev-error">{t('sg.error', { error: testError })}</p>}
     </section>
   </div>;
 }

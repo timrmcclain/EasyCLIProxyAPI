@@ -259,6 +259,7 @@ function createUsageEvents() {
     return {
       id: `mock-event-${index + 1}`,
       row_id: String(index + 1),
+      request_id: `req-mock-${index + 1}`,
       timestamp: isoHoursAgo(index / 2),
       latency_ms: 620 + index * 47,
       ttft_ms: failed ? null : 180 + index * 9,
@@ -1253,7 +1254,7 @@ export function createBrowserMockRuntime(
         const page = Math.max(1, readNumber(query.page, 1));
         const pageSize = Math.max(1, readNumber(query.page_size, 50));
         const events = state.usageEvents.filter(event => {
-          for (const key of ['model', 'provider', 'source', 'api_key_hash'] as const) {
+          for (const key of ['model', 'provider', 'source', 'api_key_hash', 'request_id'] as const) {
             if (query[key] && event[key] !== query[key]) return false;
           }
           for (const key of ['failed', 'canceled'] as const) {
@@ -1628,14 +1629,19 @@ export function createBrowserMockRuntime(
         if (scenario === 'empty' || !mockSecretGuardInstalled) return [];
         const minutes = (count: number) => Date.now() - count * 60_000;
         const findings = [
-          { fingerprint: '3f9a2b1c', kind: 'github_token', firstSeen: minutes(42), lastSeen: minutes(3), sightings: 4, providers: ['anthropic'], models: ['claude-opus-5-5'], clients: ['claude-cli/2.1.280 (external, cli)'], actions: ['reported'] },
+          { fingerprint: '3f9a2b1c', kind: 'github_token', firstSeen: minutes(42), lastSeen: minutes(3), sightings: 4, providers: ['anthropic'], models: ['claude-opus-5-5'], clients: ['claude-cli/2.1.280 (external, cli)'], actions: ['reported'], requestIds: ['req-mock-2', 'req-mock-4'] },
           { fingerprint: '7c41d0e8', kind: 'connection_string_password', firstSeen: minutes(60 * 26), lastSeen: minutes(60 * 20), sightings: 2, providers: ['anthropic', 'openai'], models: ['sonnet', 'gpt-6-astra'], clients: ['claude-cli/2.1 (claude-desktop-3p)', 'codex/1.0'], actions: ['redacted', 'reported'] },
-          { fingerprint: 'a09b33f2', kind: 'aws_access_key', firstSeen: minutes(60 * 50), lastSeen: minutes(60 * 49), sightings: 1, providers: ['xai'], models: ['grok-5'], clients: ['opencode/0.9'], actions: ['blocked'] },
+          { fingerprint: 'a09b33f2', kind: 'aws_access_key', firstSeen: minutes(60 * 50), lastSeen: minutes(60 * 49), sightings: 1, providers: ['xai'], models: ['grok-5'], clients: ['opencode/0.9'], actions: ['blocked'], requestIds: ['req-mock-gone'] },
         ];
         return findings.map(item => {
           const at = mockSecretGuardDismissed.get(item.fingerprint);
           return { ...item, dismissedAt: at !== undefined && at >= item.lastSeen ? at : null };
         });
+      }
+      case 'secret_guard_check': {
+        // The browser mock knows one pattern, enough to exercise the Test box.
+        const text = String(payload.text ?? '');
+        return [...text.matchAll(/gh[pousr]_[A-Za-z0-9]{36,}/g)].map(match => ({ kind: 'github_token', hint: `${match[0].slice(0, 4)}… (${match[0].length} characters)` }));
       }
       case 'secret_guard_dismiss': {
         const fingerprint = String(payload.fingerprint ?? '');

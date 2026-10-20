@@ -15,6 +15,7 @@ import { usageModelDetails } from '../services/usageModel';
 import { useAccountLabelBySource } from '../services/accountLabelBySource';
 import { classifyFailure, failureMessage } from '../services/errorCauses';
 import { readableError } from '../services/readableError';
+import { clearPendingRequestDetail, peekPendingRequestDetail } from '../usageNavigation';
 
 const compactNumber = (value: number) => formatUsageNumber(value, getCurrentLocale());
 const compactDuration = (value: number) => formatDuration(value, getCurrentLocale());
@@ -518,6 +519,25 @@ export function EventsView({
   const [exporting, setExporting] = useState(false);
   const eventsFeedback = useAppNotice();
   const { showNotice, clearNotice } = eventsFeedback;
+  // Opened for one request (from Secret Guard): look it up by ID and show its details, whatever the filters.
+  useEffect(() => {
+    const requestId = peekPendingRequestDetail();
+    if (!requestId) return;
+    let active = true;
+    void invoke<UsageEventPage>('get_usage_events', { query: { request_id: requestId, page: 1, page_size: 1 } })
+      .then((page) => {
+        if (!active) return;
+        clearPendingRequestDetail(requestId);
+        if (page.items[0]) setInspected(page.items[0]);
+        else showNotice({ key: 'usage.events.requestMissing' }, 'info');
+      })
+      .catch(() => {
+        if (!active) return;
+        clearPendingRequestDetail(requestId);
+        showNotice({ key: 'usage.events.requestMissing' }, 'info');
+      });
+    return () => { active = false; };
+  }, [showNotice]);
   // Preference writes rarely fail, but when they do the user should know the
   // layout will not be remembered instead of the error being swallowed.
   const savePreference = (key: string, value: string) => {

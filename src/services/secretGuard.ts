@@ -21,7 +21,24 @@ export type SecretGuardInstall = { findingsFile: string; replacedLoadedCopy: boo
 export type SecretGuardFinding = {
   fingerprint: string; kind: string; firstSeen: number; lastSeen: number; sightings: number;
   providers: string[]; models: string[]; clients: string[]; actions: string[]; dismissedAt: number | null;
+  /** The proxy's request IDs it was seen in, newest first. */
+  requestIds?: string[];
 };
+/** What the local Test box found: the kind and a masked hint, never the secret. */
+export type SecretGuardCheckHit = { kind: string; hint: string };
+
+// Findings still to review, for the sidebar badge. Written by the background watcher and by the page itself.
+const OPEN_COUNT_KEY = 'personal.secretGuard.openCount';
+export const SECRET_GUARD_COUNT_EVENT = 'app:secret-guard-count';
+export function readOpenCount(): number {
+  const value = Number(localStorage.getItem(OPEN_COUNT_KEY));
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+export function publishOpenCount(count: number) {
+  if (readOpenCount() === count) return;
+  try { localStorage.setItem(OPEN_COUNT_KEY, String(count)); } catch { /* storage blocked */ }
+  window.dispatchEvent(new CustomEvent(SECRET_GUARD_COUNT_EVENT, { detail: count }));
+}
 export type SecretGuardPolicy = { defaultMode: SecretGuardMode; modes: Partial<Record<SecretGuardProvider, SecretGuardMode>>; allow: string[] };
 export type SecretGuardStatus = {
   info: SecretGuardInfo;
@@ -110,6 +127,8 @@ export const secretGuardService = {
   info: () => invoke<SecretGuardInfo>('secret_guard_info'),
   findings: () => invoke<SecretGuardFinding[]>('secret_guard_findings'),
   dismiss: (fingerprint: string, dismissed: boolean) => invoke<void>('secret_guard_dismiss', { fingerprint, dismissed }),
+  /** Runs Secret Guard's detectors on this text inside the hub; nothing is sent anywhere. */
+  check: (text: string) => invoke<SecretGuardCheckHit[]>('secret_guard_check', { text }),
 
   async status(): Promise<SecretGuardStatus> {
     const [info, list, config] = await Promise.all([this.info(), pluginsApi.list(), optionalConfig()]);

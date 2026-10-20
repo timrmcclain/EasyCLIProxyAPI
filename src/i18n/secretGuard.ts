@@ -106,6 +106,17 @@ export const secretGuardEn = {
   'sg.attentionOne': 'Secret Guard found a credential in a prompt',
   'sg.banner.detail': 'Rotate them, or mark test keys as safe.',
   'sg.review': 'Review',
+  'sg.finding.viewRequest': "View request",
+  'sg.finding.viewRequestHint': "Opens the most recent request this was found in, in Activity",
+  'sg.policy.lockedOff': "Switch Secret Guard on to change these. They live in its settings inside the proxy, which only take changes while it’s on.",
+  'sg.policy.lockedProxy': "The proxy isn’t running, so these can’t be changed right now. They live in Secret Guard’s settings inside the proxy.",
+  'sg.test.title': "Test",
+  'sg.test.subtitle': "Paste any text to see what Secret Guard would catch. The check runs inside the hub; nothing is sent anywhere.",
+  'sg.test.label': "Text to check",
+  'sg.test.placeholder': "Paste a prompt, a config file or a log here",
+  'sg.test.check': "Check text",
+  'sg.test.found': "Secret Guard would catch {count}",
+  'sg.test.none': "Nothing Secret Guard would catch.",
 } as const;
 
 export const secretGuardZhCN: Record<keyof typeof secretGuardEn, string> = {
@@ -216,6 +227,17 @@ export const secretGuardZhCN: Record<keyof typeof secretGuardEn, string> = {
   'sg.attentionOne': '密钥守卫在提示中发现了一个凭据',
   'sg.banner.detail': '请更换它们，或将测试密钥标记为安全。',
   'sg.review': '查看',
+  'sg.finding.viewRequest': "查看请求",
+  'sg.finding.viewRequestHint': "在“使用记录”中打开最近一次发现它的请求",
+  'sg.policy.lockedOff': "开启 Secret Guard 后才能修改。这些设置保存在代理中的插件配置里，只有开启时才能更改。",
+  'sg.policy.lockedProxy': "代理未运行，暂时无法修改。这些设置保存在代理中的 Secret Guard 配置里。",
+  'sg.test.title': "测试",
+  'sg.test.subtitle': "粘贴任意文本，查看 Secret Guard 会发现什么。检查在本应用内完成，不会发送到任何地方。",
+  'sg.test.label': "要检查的文本",
+  'sg.test.placeholder': "在此粘贴提示、配置文件或日志",
+  'sg.test.check': "检查文本",
+  'sg.test.found': "Secret Guard 会发现 {count} 项",
+  'sg.test.none': "没有 Secret Guard 会发现的内容。",
 };
 
 export const secretGuardJa: Record<keyof typeof secretGuardEn, string> = {
@@ -326,4 +348,15 @@ export const secretGuardJa: Record<keyof typeof secretGuardEn, string> = {
   'sg.attentionOne': 'シークレットガードがプロンプト内に認証情報を見つけました',
   'sg.banner.detail': '更新するか、テスト用のキーを安全としてマークしてください。',
   'sg.review': '確認',
+  'sg.finding.viewRequest': "リクエストを表示",
+  'sg.finding.viewRequestHint': "これが見つかった最新のリクエストを使用履歴で開きます",
+  'sg.policy.lockedOff': "変更するには Secret Guard をオンにしてください。設定はプロキシ内のプラグイン設定にあり、オンのときだけ変更できます。",
+  'sg.policy.lockedProxy': "プロキシが動いていないため、今は変更できません。設定はプロキシ内の Secret Guard の設定にあります。",
+  'sg.test.title': "テスト",
+  'sg.test.subtitle': "テキストを貼り付けると、Secret Guard が検出する内容を確認できます。チェックはアプリ内で行われ、どこにも送信されません。",
+  'sg.test.label': "チェックするテキスト",
+  'sg.test.placeholder': "プロンプト、設定ファイル、ログをここに貼り付け",
+  'sg.test.check': "テキストをチェック",
+  'sg.test.found': "Secret Guard が検出: {count} 件",
+  'sg.test.none': "Secret Guard が検出するものはありません。",
 };

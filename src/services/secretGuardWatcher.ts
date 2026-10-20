@@ -1,7 +1,7 @@
 import { getCurrentLocale, translate } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
 import { notify } from './notifications';
-import { freshFindings, readPolicy, secretGuardApp, secretGuardKind, secretGuardService, SECRET_GUARD_PROVIDERS, type SecretGuardPolicy } from './secretGuard';
+import { freshFindings, openFindings, publishOpenCount, readPolicy, secretGuardApp, secretGuardKind, secretGuardService, SECRET_GUARD_PROVIDERS, type SecretGuardPolicy } from './secretGuard';
 import { pluginsApi } from './plugins';
 
 const CHECK_EVERY_MS = 30_000;
@@ -40,6 +40,7 @@ export function startSecretGuardWatcher(): () => void {
       // for the next check rather than announce them (and without marking anything seen).
       let policy: SecretGuardPolicy;
       try { policy = readPolicy(await pluginsApi.getConfig('secret-guard')); } catch { return; }
+      publishOpenCount(openFindings(findings, policy).length);
       const result = freshFindings(seen, findings, policy);
       seen = result.seen;
       writeSeen(seen);

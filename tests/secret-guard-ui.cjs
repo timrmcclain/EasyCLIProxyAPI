@@ -55,12 +55,16 @@ const path = require('node:path');
     await page.getByText('Sent to Anthropic (Claude), OpenAI (GPT, Codex) by Claude Desktop, Codex').waitFor();
     await page.getByText(/Revoke it in GitHub/).waitFor();
     assert.equal(await page.locator('#sg-findings-title .sg-count').textContent(), '3');
+    // The sidebar entry counts the findings still to review.
+    const navBadge = page.locator('nav').getByRole('button', { name: /Secret Guard/ }).first().locator('.nav-count-badge');
+    await navBadge.filter({ hasText: '3' }).waitFor();
 
     // "I've rotated it" hides the finding until it's seen again; Undo brings it back.
     await items.first().getByRole('button', { name: "I've rotated it" }).click();
     await page.getByRole('button', { name: 'Show handled (1)' }).waitFor();
     assert.equal(await items.count(), 2);
     assert.equal(await page.locator('#sg-findings-title .sg-count').textContent(), '2');
+    await navBadge.filter({ hasText: '2' }).waitFor();
     await page.getByRole('button', { name: 'Show handled (1)' }).click();
     const handled = page.locator('.sg-finding.handled');
     await handled.getByText('Rotated').waitFor();
@@ -87,6 +91,20 @@ const path = require('node:path');
     assert.equal(modes.xai, 'block');
     assert.equal(await xai.inputValue(), 'block');
 
+    // Test: pasted text is checked inside the hub, and only a masked hint of what was found is shown.
+    const token = 'gh' + 'p_' + 'aB3dE5fG7hJ9kL2mN4pQ6rS8tU0vW1xYz9Ab';
+    const testBox = page.getByRole('textbox', { name: 'Text to check' });
+    await testBox.fill(`deploy with ${token} please`);
+    await page.getByRole('button', { name: 'Check text' }).click();
+    await page.getByText('Secret Guard would catch 1').waitFor();
+    const hits = page.locator('.sg-test-hits li');
+    assert.equal(await hits.count(), 1);
+    assert.match(await hits.innerText(), /GitHub token\s+ghp_… \(40 characters\)/);
+    assert.ok(!(await hits.innerText()).includes(token.slice(4)), 'the secret itself is never shown');
+    await testBox.fill('nothing secret here');
+    await page.getByRole('button', { name: 'Check text' }).click();
+    await page.getByText('Nothing Secret Guard would catch.').waitFor();
+
     if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT, fullPage: true });
 
     // Overview shows a banner while findings are open, and Review comes back here.
@@ -94,6 +112,20 @@ const path = require('node:path');
     const banner = page.locator('.sg-banner');
     await banner.getByText('Secret Guard found 2 credentials in prompts').waitFor();
     await banner.getByRole('button', { name: 'Review' }).click();
+    await page.getByRole('heading', { name: 'Secret Guard', level: 1 }).waitFor();
+
+    // View request opens the request the secret was found in; one no longer in history says so.
+    await items.filter({ hasText: 'GitHub token' }).getByRole('button', { name: 'View request' }).click();
+    const detail = page.getByRole('dialog', { name: 'Request details' });
+    await detail.waitFor();
+    await detail.getByText('req-mock-2').waitFor();
+    await page.keyboard.press('Escape');
+    await detail.waitFor({ state: 'detached' });
+    await page.locator('nav').getByRole('button', { name: /Secret Guard/ }).first().click();
+    await page.getByRole('button', { name: 'Show handled (1)' }).click();
+    await page.locator('.sg-finding').filter({ hasText: 'AWS access key' }).getByRole('button', { name: 'View request' }).click();
+    await page.getByText('That request is no longer in Activity’s history.').waitFor();
+    await page.locator('nav').getByRole('button', { name: /Secret Guard/ }).first().click();
     await page.getByRole('heading', { name: 'Secret Guard', level: 1 }).waitFor();
 
     // Codex response steering lets follow-up WebSocket messages skip the check, so the page warns while it's on.
@@ -125,6 +157,7 @@ const path = require('node:path');
     await toggle.uncheck();
     await page.getByText('Off. Prompts go out without being checked.').waitFor();
     assert.equal(await page.getByRole('combobox', { name: 'xAI (Grok)' }).isDisabled(), true, 'policy is read-only while off');
+    await page.getByText(/Switch Secret Guard on to change these/).waitFor();
 
     assert.deepEqual(errors, []);
     console.log('secret-guard: pass');
