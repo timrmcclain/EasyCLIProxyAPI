@@ -23,7 +23,7 @@ const path = require('node:path');
     await page.locator('#config-subpage-panel').waitFor();
 
     const tabs = await page.locator('[id^="config-subpage-tab-"]').evaluateAll(nodes => nodes.map(node => node.id.replace('config-subpage-tab-', '')));
-    assert.equal(tabs.length, 8, 'eight categories');
+    assert.equal(tabs.length, 9, 'nine categories');
     // Where the category's top sits relative to the visible area of whatever scrolls it.
     const panelTop = () => page.evaluate(() => {
       const panel = document.getElementById('config-subpage-panel');
