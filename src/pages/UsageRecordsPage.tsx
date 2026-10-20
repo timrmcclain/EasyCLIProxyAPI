@@ -697,7 +697,7 @@ export function UsageRecordsPage() {
 
         <div className="usage-topbar-actions">
           <div className={`usage-collector-state ${collectorTone}`} title={status?.message}>
-            <span className="status-dot" />
+            <span className="status-dot" aria-hidden="true" />
             <strong>
               {status?.state === 'collecting'
                 ? t('usage.collector.collecting')

@@ -334,7 +334,7 @@ function UsageResultCell({ record }: { record: UsageRecord }) {
   return (
     <td className="usage-result-cell align-left" title={detail || t(`usage.result.${state}`)}>
       <span className={`usage-result ${state}`}>
-        <span className="usage-result-dot" />
+        <span className="usage-result-dot" aria-hidden="true" />
         {t(`usage.result.${state}`)}
       </span>
       {summary ? <small title={detail}>{summary}</small> : null}

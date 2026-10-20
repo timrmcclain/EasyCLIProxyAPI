@@ -196,7 +196,7 @@ export function CoreHealthPanel({
       </div>
 
       <div className="core-health-overview" aria-live="polite">
-        <span className="core-health-summary"><span className="core-health-summary-dot" />{summary}</span>
+        <span className="core-health-summary"><span className="core-health-summary-dot" aria-hidden="true" />{summary}</span>
         <span>{stopped ? t('home.health.stopped') : progress.total ? t('home.health.progress', progress) : t('home.health.idle')}</span>
       </div>
       {running && !stopped && <div className="core-health-progress" role="progressbar" aria-label={t('home.health.title')} aria-valuenow={progress.done} aria-valuemax={progress.total}><span style={{ width: `${progress.total ? progress.done / progress.total * 100 : 0}%` }} /></div>}
