@@ -45,7 +45,7 @@ import { createRefreshScheduler } from '../services/refreshScheduler';
 import { usageViewScopeKey } from '../services/usageViewScope';
 import { EventsView, type UsageEventPage } from './UsageEventsView';
 import { SelectMenu } from '../components/SelectMenu';
-import { takePendingUsageJump } from '../usageNavigation';
+import { takePendingUsageJump, USAGE_JUMP_EVENT } from '../usageNavigation';
 import { UsageAnalysisView, type UsageAnalysis, type UsageCategory } from './UsageAnalysisView';
 import { readableError } from '../services/readableError';
 import { useUnsavedChangesGuard } from '../services/unsavedChanges';
@@ -178,6 +178,17 @@ const SUMMARY_REFRESH_MS = 30_000;
 const TAB_KEY = 'cpa-gui.usage-records-tab.v1';
 const RANGE_KEY = 'cpa-gui.usage-records-range.v1';
 const PAGE_SIZE_KEY = 'cpa-gui.usage-events-page-size.v1';
+// Only a result the user picks is remembered; links such as "Show failed requests" don't change it.
+const RESULT_KEY = 'cpa-gui.usage-events-result.v1';
+const RESULTS = ['all', 'success', 'failed', 'canceled'];
+const loadResult = (): string => {
+  try {
+    const saved = usagePreferences.getItem(RESULT_KEY) ?? '';
+    return RESULTS.includes(saved) ? saved : 'all';
+  } catch {
+    return 'all';
+  }
+};
 const EVENT_PAGE_SIZES = [20, 50, 100, 200] as const;
 
 const loadPageSize = (): number => {
@@ -277,7 +288,24 @@ export function UsageRecordsPage() {
   const [provider, setProvider] = useState('');
   const [source, setSource] = useState(jump?.source ?? '');
   const [apiKeyHash, setApiKeyHash] = useState('');
-  const [result, setResult] = useState<string>(jump?.result ?? 'all');
+  const [result, setResult] = useState<string>(() => jump?.result ?? loadResult());
+  // A link followed while Activity is already open (e.g. Ctrl+K > Show failed requests) applies here.
+  useEffect(() => {
+    const apply = () => {
+      const next = takePendingUsageJump();
+      if (!next) return;
+      setActiveTab('events');
+      setRange(next.range);
+      setModel('');
+      setProvider('');
+      setApiKeyHash('');
+      setSource(next.source ?? '');
+      setResult(next.result ?? 'all');
+      setPage(1);
+    };
+    window.addEventListener(USAGE_JUMP_EVENT, apply);
+    return () => window.removeEventListener(USAGE_JUMP_EVENT, apply);
+  }, []);
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(loadPageSize);
@@ -579,7 +607,10 @@ export function UsageRecordsPage() {
               <SelectMenu
                 value={result}
                 ariaLabel={t('usage.filter.result')}
-                onChange={(value) => changeFilter(setResult, value)}
+                onChange={(value) => {
+                  changeFilter(setResult, value);
+                  try { usagePreferences.setItem(RESULT_KEY, value); } catch { /* Filters still work without saving. */ }
+                }}
                 options={[
                   { value: 'all', label: t('usage.filter.allResults') },
                   { value: 'success', label: t('usage.result.success') },

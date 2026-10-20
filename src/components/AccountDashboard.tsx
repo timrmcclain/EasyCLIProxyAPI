@@ -37,6 +37,7 @@ import { loadPlanBlocks, withPlanBlocks, type PlanBlock } from '../services/plan
 import { accountRequests, loadDashboardActivity, requestClient, successfulRequest, privateText, type DashboardActivity, type DashboardRequest } from '../services/dashboardActivity';
 import { endAccountFocus, readAccountFocus, startAccountFocus, type AccountFocus } from '../services/accountFocus';
 import './AccountDashboard.css';
+import { PulseOnChange } from './PulseOnChange';
 
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 const providers = ['claude', 'antigravity', 'codex', 'xai', 'kimi'];
@@ -505,10 +506,10 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
       <ProviderLogo provider={provider} className="ad-row-logo" />
       <div className="ad-row-name"><h3 title={hideEmails ? displayLabel : `${displayLabel}\n${fileName(file)}`}>{displayLabel}</h3>
         <span className="ad-provider">{providerLabel}{quota.plan ? ` · ${quota.plan}` : ''}</span></div>
-      <div className="ad-row-status">
+      <PulseOnChange as="div" className="ad-row-status" value={availability.kind}>
         <QuotaAvailabilityNotice compact state={availability} now={now} />
         {stale && <span className="state-pill neutral">{t('accountDashboard.stale')}</span>}
-      </div>
+      </PulseOnChange>
       <div className={`ad-quota-list ad-row-quota ad-row-quota-${faceRows.length || 1}`} aria-busy={quota.status === 'loading'}>
         {quota.status === 'error' ? <p className="ad-card-note ad-error">{t('accountDashboard.quotaError')}{canRefresh && <button type="button" className="glance-open" disabled={refreshing} onClick={() => void onRefresh?.(file)}>{t(refreshing ? 'accountDashboard.refreshing' : 'common.retry')}</button>}</p> : null}
         {/* The availability notice already explains an incomplete success; don't repeat it. */}

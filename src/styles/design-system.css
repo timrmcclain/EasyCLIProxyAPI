@@ -660,6 +660,15 @@ svg.lucide {
   animation: status-pulse 600ms var(--ease-standard) 1;
 }
 
+/* Account statuses keep their own shape while they pulse. */
+.auth-status-badge.status-changed {
+  border-radius: 8px;
+}
+
+.ad-row-status.status-changed {
+  border-radius: var(--radius-md);
+}
+
 .sidebar-theme-selector.sidebar-density-selector {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

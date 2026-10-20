@@ -105,6 +105,7 @@ import {
 import { getCurrentLocale, translate, useI18n } from '../i18n';
 import { readableError } from '../services/readableError';
 import { StateMessage } from '../components/StateMessage';
+import { PulseOnChange } from '../components/PulseOnChange';
 
 type AuthFile = Record<string, unknown>;
 
@@ -152,8 +153,11 @@ export function AuthFileManagementPage() {
     window.addEventListener(ACCOUNTS_VIEW_EVENT, open);
     return () => window.removeEventListener(ACCOUNTS_VIEW_EVENT, open);
   }, []);
-  const [providerFilter, setProviderFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'enabled' | 'disabled' | 'runtime'>('all');
+  // Both filters are remembered between launches. A saved provider with no accounts left falls back to all (below).
+  const [providerFilter, setProviderFilter] = useState(() => {
+    try { return localStorage.getItem('personal.accountsProvider') || 'all'; } catch { return 'all'; }
+  });
+  const [statusFilter, setStatusFilter] = useState(() => readDashboardPreference('accountsStatus', ['all', 'enabled', 'disabled', 'runtime'] as const, 'all'));
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [quotaRefreshing, setQuotaRefreshing] = useState(false);
@@ -382,6 +386,10 @@ export function AuthFileManagementPage() {
     () => Array.from(new Set(files.map(providerName))).sort((left, right) => left.localeCompare(right)),
     [files],
   );
+  // A remembered provider whose accounts are all gone would leave an empty list with no obvious reason.
+  useEffect(() => {
+    if (!loading && providerFilter !== 'all' && !providers.includes(providerFilter)) setProviderFilter('all');
+  }, [loading, providerFilter, providers]);
 
   const visibleFiles = useMemo(() => {
     const query = filter.trim().toLowerCase();
@@ -569,11 +577,11 @@ export function AuthFileManagementPage() {
           <input data-page-search value={filter} onChange={(event) => setFilter(event.currentTarget.value)} placeholder={t('authFiles.searchPlaceholder')} aria-label={t('authFiles.searchPlaceholder')} />
           </div>
           <div className="auth-files-filters">
-          <select value={providerFilter} onChange={(event) => setProviderFilter(event.currentTarget.value)} aria-label={t('authFiles.filter.allProviders')}>
+          <select value={providerFilter} onChange={(event) => { const value = event.currentTarget.value; setProviderFilter(value); saveDashboardPreference('accountsProvider', value); }} aria-label={t('authFiles.filter.allProviders')}>
             <option value="all">{t('authFiles.filter.allProviders')}</option>
             {providers.map((provider) => <option key={provider} value={provider}>{provider}</option>)}
           </select>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.currentTarget.value as typeof statusFilter)} aria-label={t('authFiles.filter.allStatuses')}>
+          <select value={statusFilter} onChange={(event) => { const value = event.currentTarget.value as typeof statusFilter; setStatusFilter(value); saveDashboardPreference('accountsStatus', value); }} aria-label={t('authFiles.filter.allStatuses')}>
             <option value="all">{t('authFiles.filter.allStatuses')}</option>
             <option value="enabled">{t('authFiles.filter.enabled')}</option>
             <option value="disabled">{t('authFiles.filter.disabled')}</option>
@@ -660,7 +668,7 @@ export function AuthFileManagementPage() {
                     {expiryMs !== undefined ? <small title={`${t('authFiles.list.expiry', { time: formatDate(new Date(expiryMs).toISOString()) })}\n${t('authFiles.list.expiryHint')}`}>{expiryMs <= now ? t('authFiles.list.expired', { time: new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(expiryMs) }) : t('authFiles.list.daysRemaining', { count: Math.ceil((expiryMs - now) / 86_400_000) })}</small> : null}
                   </div>
                   <div className="auth-list-cell auth-list-status" data-label={t('authFiles.list.status')}>
-                    <span className={`auth-status-badge ${badgeTone}`} title={statusLabel}><BadgeIcon size={14} aria-hidden="true" /><span>{statusLabel}</span></span>
+                    <PulseOnChange className={`auth-status-badge ${badgeTone}`} title={statusLabel} value={statusLabel}><BadgeIcon size={14} aria-hidden="true" /><span>{statusLabel}</span></PulseOnChange>
                     <small>{t('authFiles.priority.button', { priority })}</small>
                     {needsSignIn(file) ? <SignInAgainButton account={identity || name} provider={String(file.provider ?? file.type ?? '')} /> : null}
                   </div>
