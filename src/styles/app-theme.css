@@ -487,7 +487,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 /* ---- from ux-improvements.css ---- */
 /* Keep the ledger dense; details expand only when requested. */
 .ux-insight,.ux-change-preview,.ux-models { border:1px solid var(--border-primary); border-radius:8px; padding:12px 16px; margin:12px 0; background:var(--bg-secondary); color:var(--text-primary); font-size:13px; }
-.ux-insight summary,.ux-change-preview summary,.ux-models summary { cursor:pointer; font-weight:600; min-height:28px; align-content:center; }
+.ux-insight summary,.ux-change-preview summary,.ux-models summary { cursor:pointer; font-weight:600; min-height:32px; align-content:center; }
 .ux-insight p,.ux-models p,.ux-change-preview p { color:var(--text-secondary); line-height:1.6; }
 .ux-insight header,.ux-overview-tools { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .ux-overview-tools > details { flex:1; }
@@ -529,7 +529,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .ux-request-help small { white-space:pre-wrap; overflow-wrap:anywhere; max-height:180px; overflow:auto; }
 .personal-advanced-group { display: grid; gap: 4px; }
 .personal-advanced-group + .personal-advanced-group { margin-top: 8px; }
-.personal-advanced-heading { padding: 4px 12px 0; color: var(--text-tertiary); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.personal-advanced-heading { padding: 4px 12px 0; color: var(--text-tertiary); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 /* A fade on the sidebar's bottom edge says more pages are below. */
 .nav-section.nav-more-below { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); }
 @media (forced-colors: active) { .nav-section.nav-more-below { -webkit-mask-image: none; mask-image: none; border-bottom: 1px dashed CanvasText; } }

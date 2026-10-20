@@ -754,3 +754,62 @@ svg.lucide {
 #main-content h2:focus {
   outline: none;
 }
+
+/* Every control is at least 32px to click (WCAG 2.5.8 asks for 24px; 32px leaves headroom).
+   Controls that look small keep their look and get a larger invisible hit area instead. */
+.sidebar-alerts-link,
+.sidebar-glossary-link,
+main .compact-button,
+.provider-row-actions .provider-health-button,
+.usage-analysis-metric > button,
+.jev-guards select,
+.sg-policy select {
+  min-height: 32px;
+}
+
+main details > summary:not([class]) {
+  min-height: 32px;
+  padding-block: 6px;
+  box-sizing: border-box;
+}
+
+/* Except the quota column's "Details (+N)" link, which sits inside dense account rows. */
+.credential-quota details > summary:not([class]) {
+  min-height: 0;
+  padding-block: 0;
+}
+
+.glance-open,
+.quota-summary-filter,
+.ad-paid-fallback,
+.usage-trend-legend-item,
+.auth-list-switch,
+.settings-help-trigger,
+.template-config-reset,
+.core-health-row-check,
+.plugin-search-clear,
+main .icon-button.quiet {
+  position: relative;
+}
+
+.glance-open::before,
+.quota-summary-filter::before,
+.ad-paid-fallback::before,
+.usage-trend-legend-item::before,
+.auth-list-switch::before,
+.settings-help-trigger::before,
+.template-config-reset::before,
+.core-health-row-check::before,
+.plugin-search-clear::before,
+main .icon-button.quiet::before {
+  position: absolute;
+  inset: -5px;
+  content: '';
+}
+
+/* The shared switch: its invisible input is what gets clicked, so it reaches past the 24px track. */
+.switch-control input {
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+}
