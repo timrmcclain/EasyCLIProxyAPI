@@ -39,6 +39,9 @@ pub(crate) struct ChromeIntegration {
     token_auth: bool,
     /// That token sends Claude Code through a proxy on this computer, such as the hub's.
     routed_through_local_proxy: bool,
+    /// A Chrome session (its own config folder, no token) has been signed in with /login.
+    session_signed_in: bool,
+    session_dir: String,
     store_url: &'static str,
 }
 
@@ -148,12 +151,41 @@ fn inspect(home: &Path, local_app_data: Option<&Path>) -> ChromeIntegration {
             }
         })
         .collect();
-    let settings = fs::read_to_string(home.join(".claude").join("settings.json"))
-        .ok()
-        .and_then(|text| serde_json::from_str::<Value>(&text).ok());
     let (token_auth, routed_through_local_proxy) =
-        claude_code_auth(settings.as_ref(), &|name| std::env::var(name).ok());
-    ChromeIntegration { browsers, token_auth, routed_through_local_proxy, store_url: STORE_URL }
+        claude_code_auth(read_settings(home).as_ref(), &|name| std::env::var(name).ok());
+    let session = chrome_session_dir(home);
+    ChromeIntegration {
+        browsers,
+        token_auth,
+        routed_through_local_proxy,
+        // Presence only: the sign-in file is never read.
+        session_signed_in: session.join(".credentials.json").is_file(),
+        session_dir: session.to_string_lossy().to_string(),
+        store_url: STORE_URL,
+    }
+}
+
+fn read_settings(home: &Path) -> Option<Value> {
+    fs::read_to_string(home.join(".claude").join("settings.json"))
+        .ok()
+        .and_then(|text| serde_json::from_str::<Value>(&text).ok())
+}
+
+/// Claude Code's own config folder for Chrome sessions. Kept apart from ~/.claude so the everyday setup, which may
+/// route through the hub with a token, is never touched; the Claude account sign-in lives here.
+pub(crate) fn chrome_session_dir(home: &Path) -> PathBuf {
+    home.join(".claude-chrome")
+}
+
+pub(crate) fn prepare_chrome_session_dir(home: &Path) -> Result<PathBuf, String> {
+    let folder = chrome_session_dir(home);
+    fs::create_dir_all(&folder).map_err(|error| format!("Couldn't create {}: {error}", folder.display()))?;
+    Ok(folder)
+}
+
+/// The everyday Claude Code setup signs in with a token or API key, which keeps Chrome off.
+pub(crate) fn claude_code_uses_token(home: &Path) -> bool {
+    claude_code_auth(read_settings(home).as_ref(), &|name| std::env::var(name).ok()).0
 }
 
 #[tauri::command]
@@ -234,6 +266,10 @@ mod tests {
         assert_eq!(chrome.extension_version, None);
         assert!(!result.browsers[1].installed);
         assert_eq!(result.browsers[1].extension_version, None);
+        assert!(!result.session_signed_in);
+        fs::create_dir_all(chrome_session_dir(&home)).unwrap();
+        fs::write(chrome_session_dir(&home).join(".credentials.json"), "{}").unwrap();
+        assert!(inspect(&home, Some(&local)).session_signed_in);
         fs::remove_dir_all(home).unwrap();
         fs::remove_dir_all(local).unwrap();
     }

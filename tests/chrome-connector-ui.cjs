@@ -3,8 +3,9 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 
 // Against the browser mock: the Connectors page's Claude in Chrome card draws the chain (extension, sign-in, browser
-// link), marks the first break, and offers the one step that mends it: Get the extension, an explanation with Open AI
-// apps and Why (no launch) when the hub's token blocks Chrome, and "Open Claude Code with Chrome" when it can work.
+// link), marks the first break, and offers the one step that mends it: Get the extension; "Start a Chrome session"
+// (its own config folder, signed in with /login) when the hub's token blocks Chrome; "Open Claude Code with Chrome"
+// when it already works.
 (async () => {
   const { createServer } = await import('vite');
   const react = (await import('@vitejs/plugin-react')).default;
@@ -45,12 +46,26 @@ const path = require('node:path');
       assert.equal(await card.locator('[data-link="link"] small').innerText(), 'Waiting on sign-in');
       const next = card.locator('.chrome-next');
       assert.equal(await next.locator('strong').innerText(), 'Claude Code signs in through this hub');
-      assert.match(await next.innerText(), /won't change it for you/);
-      assert.equal(await card.getByRole('button', { name: 'Open Claude Code with Chrome' }).count(), 0, 'no launch while a token blocks Chrome');
+      assert.match(await next.innerText(), /everyday Claude Code stays as it is[\s\S]*\.claude-chrome[\s\S]*\/login/);
+      assert.equal(await card.getByRole('button', { name: 'Open Claude Code with Chrome' }).count(), 0, 'with a token, the launch is a Chrome session');
       await next.getByRole('button', { name: 'Why' }).click();
       await page.waitForFunction(() => (window.__mockCalls ?? []).includes('open_external_url'));
-      await next.getByRole('button', { name: 'Open AI apps' }).click();
-      await page.locator('main h1', { hasText: 'AI apps' }).waitFor();
+      await next.getByRole('button', { name: 'Start a Chrome session' }).click();
+      await card.getByText('Opened in a terminal. Type /login, then come back.').waitFor();
+      assert.deepEqual(await page.evaluate(() => window.__mockLaunches), [{ client: 'claude-code', chrome: true }]);
+      await page.close();
+    }
+
+    // Token setup, but the Chrome session is signed in: sign-in is done and the link is the next step.
+    {
+      const { page, card, toggle } = await openCard('session');
+      await card.locator('.connector-row-state', { hasText: 'Not linked yet' }).waitFor();
+      await toggle.click();
+      assert.deepEqual(await chainStates(card), ['extension:done', 'signIn:done', 'link:broken']);
+      assert.equal(await card.locator('[data-link="signIn"] small').innerText(), 'Claude account (Chrome session)');
+      assert.equal(await card.locator('.chrome-next strong').innerText(), 'Link Claude Code to your browser');
+      await card.getByRole('button', { name: 'Start a Chrome session' }).click();
+      await card.getByText('Opened in a terminal.', { exact: true }).waitFor();
       await page.close();
     }
 

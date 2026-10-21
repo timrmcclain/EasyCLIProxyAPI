@@ -54,9 +54,11 @@ export function ChromeConnectorCard({ reloadCount }: { reloadCount: number }) {
   const progress = state ? chromeProgress(state) : null;
   const open = expanded || Boolean(error);
   const toggle = () => { const next = !open; setExpanded(next); saveOpen(next); };
+  // With a token, the button starts a Chrome session: Claude Code in its own config folder, signed in once with /login.
+  const usesSession = Boolean(state?.tokenAuth);
   const openClaudeCode = async () => {
     setLaunch('busy');
-    try { await chromeApi.openClaudeCode(); setLaunch('done'); }
+    try { await chromeApi.openClaudeCode(); setLaunch(usesSession && !state?.sessionSignedIn ? 'login' : 'done'); }
     catch (launchError) { setLaunch(readableError(launchError)); }
   };
 
@@ -72,9 +74,11 @@ export function ChromeConnectorCard({ reloadCount }: { reloadCount: number }) {
   const launchButton = (
     <>
       <button type="button" className="primary-button compact-button" disabled={launch === 'busy'} onClick={() => void openClaudeCode()}>
-        <Terminal size={14} aria-hidden="true" />{ct('chromeOpenClaudeCode')}
+        <Terminal size={14} aria-hidden="true" />{ct(usesSession ? 'chromeStartSession' : 'chromeOpenClaudeCode')}
       </button>
-      {launch === 'done' ? <small role="status">{ct('chromeOpened')}</small> : launch !== 'idle' && launch !== 'busy' ? <small role="alert">{launch}</small> : null}
+      {launch === 'done' ? <small role="status">{ct('chromeOpened')}</small>
+        : launch === 'login' ? <small role="status">{ct('chromeOpenedLogin')}</small>
+          : launch !== 'idle' && launch !== 'busy' ? <small role="alert">{launch}</small> : null}
     </>
   );
   const whyLink = (
@@ -93,12 +97,9 @@ export function ChromeConnectorCard({ reloadCount }: { reloadCount: number }) {
           </button>
         ) };
     } else if (broken === 'signIn') {
-      next = state.routedThroughLocalProxy
-        ? { tone: 'warn', title: ct('chromeNextHubTitle'), body: ct('chromeNextHubBody'), actions: <>
-            <button type="button" className="secondary-button compact-button" onClick={() => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'agents' }))}>{ct('chromeOpenAiApps')}</button>
-            {whyLink}
-          </> }
-        : { tone: 'warn', title: ct('chromeNextTokenTitle'), body: ct('chromeNextTokenBody'), actions: whyLink };
+      next = { tone: 'warn', title: ct(state.routedThroughLocalProxy ? 'chromeNextHubTitle' : 'chromeNextTokenTitle'),
+        body: `${ct(state.routedThroughLocalProxy ? 'chromeNextHubBody' : 'chromeNextTokenBody')} ${ct('chromeSessionBody').replace('{dir}', state.sessionDir)}`,
+        actions: <>{launchButton}{whyLink}</> };
     } else if (broken === 'link') {
       next = { tone: 'warn', title: ct('chromeNextLinkTitle'), body: ct('chromeNextLinkBody'), actions: launchButton };
     } else {
@@ -112,7 +113,7 @@ export function ChromeConnectorCard({ reloadCount }: { reloadCount: number }) {
   const linked = withExtension.filter(browser => browser.linked).map(browser => SHORT_NAMES[browser.id]);
   const chain: { key: string; label: string; detail: string; state: LinkState }[] = state && progress ? [
     { key: 'extension', label: ct('chromeLinkExtension'), detail: extensionDetail, state: linkState(progress.extension) },
-    { key: 'signIn', label: ct('chromeLinkSignIn'), detail: progress.signIn ? ct('chromeSignInAccount') : ct(state.routedThroughLocalProxy ? 'chromeSignInHub' : 'chromeSignInToken'), state: linkState(progress.signIn) },
+    { key: 'signIn', label: ct('chromeLinkSignIn'), detail: progress.signIn ? ct(state.tokenAuth ? 'chromeSignInSession' : 'chromeSignInAccount') : ct(state.routedThroughLocalProxy ? 'chromeSignInHub' : 'chromeSignInToken'), state: linkState(progress.signIn) },
     { key: 'link', label: ct('chromeLinkBrowser'), detail: linked.length ? linked.join(' · ') : progress.extension && progress.signIn ? ct('chromeNotLinked') : ct('chromeWaiting'),
       state: linkState(progress.link, !(progress.extension && progress.signIn)) },
   ] : [];

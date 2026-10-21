@@ -1408,6 +1408,8 @@ export function createBrowserMockRuntime(
           ],
           tokenAuth: variant !== 'ready',
           routedThroughLocalProxy: variant !== 'ready',
+          sessionSignedIn: variant === 'session',
+          sessionDir: 'C:\\Users\\me\\.claude-chrome',
           storeUrl: 'https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn',
         };
       }

@@ -17,6 +17,9 @@ export type ChromeIntegration = {
   tokenAuth: boolean;
   /** ...and that token sends it through a proxy on this computer (usually this hub). */
   routedThroughLocalProxy: boolean;
+  /** A Chrome session (its own config folder, no token) has been signed in with /login. */
+  sessionSignedIn: boolean;
+  sessionDir: string;
   storeUrl: string;
 };
 
@@ -26,7 +29,7 @@ export type ChromeStep = 'extension' | 'signIn' | 'link';
 export function chromeProgress(state: ChromeIntegration) {
   const present = state.browsers.filter(browser => browser.installed);
   const extension = present.some(browser => browser.extensionVersion && !browser.extensionTooOld);
-  const signIn = !state.tokenAuth;
+  const signIn = !state.tokenAuth || state.sessionSignedIn;
   const link = present.some(browser => browser.extensionVersion && browser.linked);
   return { extension, signIn, link, ready: extension && signIn && link, noBrowser: present.length === 0 };
 }

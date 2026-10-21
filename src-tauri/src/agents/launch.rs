@@ -167,6 +167,7 @@ pub(crate) fn launch_agent(
             &launch_directory,
             &[],
             &[],
+            &[],
             &terminal,
         );
     }
@@ -194,7 +195,7 @@ pub(crate) fn launch_agent(
             }
             let executable = env::current_exe().map_err(|_| "Unable to locate CPA launch adapter")?;
             let directory = resolve_launch_directory(working_directory.as_deref(), &home)?;
-            launch_cli_agent(&executable, client.name(), &directory, &antigravity_cli_helper_arguments(&home), &[], &terminal)
+            launch_cli_agent(&executable, client.name(), &directory, &antigravity_cli_helper_arguments(&home), &[], &[], &terminal)
         }
         (AgentClient::WorkBuddy, "app") => {
             let executable = find_workbuddy_desktop_executable(&home)
@@ -233,11 +234,17 @@ pub(crate) fn launch_agent(
                     deepseek_harness_options.as_ref(),
                 );
             }
-            let environment_to_remove = if client == AgentClient::ClaudeCode {
-                &["ANTHROPIC_API_KEY"][..]
+            // Claude Code keeps Chrome off while it signs in with a token, as the hub's routing does. A Chrome
+            // session then runs with its own config folder and no token, so it uses the Claude account signed in
+            // there (/login, once) and the everyday setup is left exactly as it is.
+            let chrome_session = chrome && crate::chrome_integration::claude_code_uses_token(&home);
+            let session_folder = if chrome_session {
+                Some(crate::chrome_integration::prepare_chrome_session_dir(&home)?)
             } else {
-                &[]
+                None
             };
+            let (environment_to_remove, environment_to_set) =
+                cli_launch_environment(client, session_folder.as_deref());
             let mut arguments = agent_cli_launch_arguments(client, deepseek_harness_options.as_ref())?;
             if chrome {
                 arguments.push("--chrome".to_string());
@@ -248,6 +255,7 @@ pub(crate) fn launch_agent(
                 &launch_directory,
                 &arguments,
                 environment_to_remove,
+                &environment_to_set,
                 &terminal,
             )
         }
@@ -1195,6 +1203,7 @@ fn launch_cli_agent(
     working_directory: &Path,
     arguments: &[String],
     environment_to_remove: &[&str],
+    environment_to_set: &[(&str, String)],
     terminal: &str,
 ) -> Result<(), String> {
     let removals = environment_to_remove
@@ -1210,10 +1219,16 @@ fn launch_cli_agent(
         )
         .collect::<Vec<_>>()
         .join(" ");
+    let assignments = environment_to_set
+        .iter()
+        .map(|(key, value)| format!("{key}={}", shell_single_quote(value)))
+        .collect::<Vec<_>>()
+        .join(" ");
     let command_line = format!(
-        "cd {} && exec env {} {}",
+        "cd {} && exec env {} {} {}",
         shell_single_quote(&path_to_string(working_directory)),
         removals,
+        assignments,
         invocation,
     );
     let script = if terminal == "iterm2" {
@@ -1254,6 +1269,7 @@ fn launch_cli_agent(
     working_directory: &Path,
     command_arguments: &[String],
     environment_to_remove: &[&str],
+    environment_to_set: &[(&str, String)],
     terminal: &str,
 ) -> Result<(), String> {
     let definitions = linux_terminal_definitions();
@@ -1277,6 +1293,9 @@ fn launch_cli_agent(
             .stderr(Stdio::null());
         for key in environment_to_remove {
             command.env_remove(key);
+        }
+        for (key, value) in environment_to_set {
+            command.env(key, value);
         }
         match command.spawn() {
             Ok(_) => return Ok(()),
@@ -1356,6 +1375,7 @@ fn launch_cli_agent(
     working_directory: &Path,
     arguments: &[String],
     environment_to_remove: &[&str],
+    environment_to_set: &[(&str, String)],
     terminal: &str,
 ) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
@@ -1368,6 +1388,7 @@ fn launch_cli_agent(
             extension.eq_ignore_ascii_case("cmd") || extension.eq_ignore_ascii_case("bat")
         });
 
+    let terminal = if !environment_to_set.is_empty() && terminal == "windows-terminal" { "auto" } else { terminal };
     let mut command = match terminal {
         "auto" => {
             let mut command = windows_command_for_executable(executable, true);
@@ -1422,6 +1443,9 @@ fn launch_cli_agent(
     for key in environment_to_remove {
         command.env_remove(key);
     }
+    for (key, value) in environment_to_set {
+        command.env(key, value);
+    }
     command
         .spawn()
         .map(|_| ())
@@ -1435,13 +1459,42 @@ fn launch_cli_agent(
     _working_directory: &Path,
     _arguments: &[String],
     _environment_to_remove: &[&str],
+    _environment_to_set: &[(&str, String)],
     _terminal: &str,
 ) -> Result<(), String> {
     Err(format!("The current platform does not support launching {label}"))
 }
 
+/// What a CLI launch strips from and adds to the inherited environment. A Chrome session (`session_folder`) drops
+/// every token and the hub's base URL, and points Claude Code at its own config folder.
+fn cli_launch_environment(
+    client: AgentClient,
+    session_folder: Option<&Path>,
+) -> (&'static [&'static str], Vec<(&'static str, String)>) {
+    match (client, session_folder) {
+        (AgentClient::ClaudeCode, Some(folder)) => (
+            &["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL"],
+            vec![("CLAUDE_CONFIG_DIR", path_to_string(folder))],
+        ),
+        (AgentClient::ClaudeCode, None) => (&["ANTHROPIC_API_KEY"], Vec::new()),
+        _ => (&[], Vec::new()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn chrome_session_drops_tokens_and_uses_its_own_config_folder() {
+        let folder = std::path::PathBuf::from("/home/me/.claude-chrome");
+        let (removed, set) = super::cli_launch_environment(super::AgentClient::ClaudeCode, Some(&folder));
+        assert_eq!(removed, &["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL"]);
+        assert_eq!(set, vec![("CLAUDE_CONFIG_DIR", super::path_to_string(&folder))]);
+
+        let (removed, set) = super::cli_launch_environment(super::AgentClient::ClaudeCode, None);
+        assert_eq!(removed, &["ANTHROPIC_API_KEY"]);
+        assert!(set.is_empty());
+    }
+
     use super::*;
 
     fn deepseek_harness_options(mode: &str) -> DeepSeekHarnessLaunchOptions {
