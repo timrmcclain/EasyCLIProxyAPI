@@ -2,9 +2,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
-// Against the browser mock: the Connectors page's Claude in Chrome card reports the extension, Claude Code's sign-in
-// and the browser link, and offers the right next step: Get the extension when it's missing, an explanation (and no
-// launch button) when Claude Code's proxy token blocks Chrome, and "Open Claude Code with Chrome" when it can work.
+// Against the browser mock: the Connectors page's Claude in Chrome card draws the chain (extension, sign-in, browser
+// link), marks the first break, and offers the one step that mends it: Get the extension, an explanation with Open AI
+// apps and Why (no launch) when the hub's token blocks Chrome, and "Open Claude Code with Chrome" when it can work.
 (async () => {
   const { createServer } = await import('vite');
   const react = (await import('@vitejs/plugin-react')).default;
@@ -33,28 +33,35 @@ const path = require('node:path');
       return { page, card, toggle };
     };
 
+    const chainStates = card => card.locator('.chrome-link').evaluateAll(links => links.map(link => `${link.dataset.link}:${link.className.replace('chrome-link is-', '')}`));
+
     // Like this computer: extension in both browsers, Claude Code routed through the hub with a token.
     {
       const { page, card, toggle } = await openCard(null);
-      await card.locator('.connector-row-state', { hasText: 'Blocked by token sign-in' }).waitFor();
+      await card.locator('.connector-row-state', { hasText: 'Off: token sign-in' }).waitFor();
       await toggle.click();
-      const steps = card.locator('.connector-steps ol > li');
-      assert.equal(await steps.count(), 3);
-      assert.match(await steps.nth(0).innerText(), /Google Chrome: 1\.0\.101[\s\S]*Microsoft Edge: 1\.0\.101/);
-      assert.equal(await steps.nth(0).getAttribute('class'), 'done');
-      assert.match(await steps.nth(1).innerText(), /through this hub using a token[\s\S]*doesn't change this for you/);
-      assert.equal(await steps.nth(1).getAttribute('class'), null);
+      assert.deepEqual(await chainStates(card), ['extension:done', 'signIn:broken', 'link:waiting'], 'the break is sign-in; the link waits on it');
+      assert.equal(await card.locator('[data-link="extension"] small').innerText(), 'Chrome 1.0.101 · Edge 1.0.101');
+      assert.equal(await card.locator('[data-link="link"] small').innerText(), 'Waiting on sign-in');
+      const next = card.locator('.chrome-next');
+      assert.equal(await next.locator('strong').innerText(), 'Claude Code signs in through this hub');
+      assert.match(await next.innerText(), /won't change it for you/);
       assert.equal(await card.getByRole('button', { name: 'Open Claude Code with Chrome' }).count(), 0, 'no launch while a token blocks Chrome');
-      assert.equal(await card.getByRole('button', { name: 'Get the extension' }).count(), 0);
+      await next.getByRole('button', { name: 'Why' }).click();
+      await page.waitForFunction(() => (window.__mockCalls ?? []).includes('open_external_url'));
+      await next.getByRole('button', { name: 'Open AI apps' }).click();
+      await page.locator('main h1', { hasText: 'AI apps' }).waitFor();
       await page.close();
     }
 
     // No extension: one next step, the store page.
     {
       const { page, card, toggle } = await openCard('none');
-      await card.locator('.connector-row-state', { hasText: 'Extension not installed' }).waitFor();
+      await card.locator('.connector-row-state', { hasText: 'Needs the extension' }).waitFor();
       await toggle.click();
-      assert.match(await card.locator('.connector-steps ol > li').nth(0).innerText(), /Google Chrome: not installed/);
+      assert.deepEqual(await chainStates(card), ['extension:broken', 'signIn:broken', 'link:waiting']);
+      assert.equal(await card.locator('[data-link="extension"] small').innerText(), 'Not installed');
+      assert.equal(await card.locator('.chrome-next strong').innerText(), 'Install the Claude extension');
       await card.getByRole('button', { name: 'Get the extension' }).click();
       await page.waitForFunction(() => (window.__mockCalls ?? []).includes('open_external_url'));
       await page.close();
@@ -65,9 +72,9 @@ const path = require('node:path');
       const { page, card, toggle } = await openCard('ready');
       await card.locator('.connector-row-state.on', { hasText: 'Ready' }).waitFor();
       await toggle.click();
-      const steps = card.locator('.connector-steps ol > li');
-      assert.deepEqual(await steps.evaluateAll(items => items.map(item => item.className)), ['done', 'done', 'done']);
-      assert.match(await steps.nth(2).innerText(), /Google Chrome: linked[\s\S]*Microsoft Edge: not linked yet[\s\S]*Enabled by default/);
+      assert.deepEqual(await chainStates(card), ['extension:done', 'signIn:done', 'link:done']);
+      assert.equal(await card.locator('[data-link="link"] small').innerText(), 'Chrome');
+      assert.match(await card.locator('.chrome-next').innerText(), /Ready to use[\s\S]*Enabled by default/);
       await card.getByRole('button', { name: 'Open Claude Code with Chrome' }).click();
       await card.getByText('Opened in a terminal.').waitFor();
       assert.deepEqual(await page.evaluate(() => window.__mockLaunches), [{ client: 'claude-code', chrome: true }]);

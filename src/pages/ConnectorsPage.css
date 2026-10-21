@@ -145,3 +145,32 @@
 .connector-card-description { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) { .connector-row-chevron { transition: none; } }
 div.connector-test p { margin: 0; }
+
+/* Claude in Chrome: the chain from Claude Code to the browser, then the one step that mends the first break. */
+.chrome-body { max-width: 780px; }
+.chrome-chain { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.chrome-link { position: relative; display: flex; gap: 10px; align-items: flex-start; min-width: 0; padding: 10px 12px; border: 1px solid var(--border-color); background: var(--bg-card); }
+.chrome-link + .chrome-link { margin-left: -1px; }
+.chrome-link:first-child { border-radius: 10px 0 0 10px; }
+.chrome-link:last-child { border-radius: 0 10px 10px 0; }
+.chrome-link-mark { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; margin-top: 1px; border-radius: var(--radius-full); background: var(--bg-tertiary); color: var(--text-tertiary); }
+.chrome-link-text { display: grid; gap: 2px; min-width: 0; }
+.chrome-link-text strong { font-size: var(--font-size-meta); color: var(--text-primary); }
+.chrome-link-text small { overflow-wrap: anywhere; font-size: var(--font-size-caption); color: var(--text-secondary); }
+.chrome-link.is-done .chrome-link-mark { background: var(--ui-accent, var(--primary-color)); color: var(--p-neutral-0); }
+.chrome-link.is-broken { z-index: 1; border-color: color-mix(in srgb, var(--warning-color) 55%, var(--border-color)); background: color-mix(in srgb, var(--warning-color) 8%, var(--bg-card)); }
+.chrome-link.is-broken .chrome-link-mark { background: color-mix(in srgb, var(--warning-color) 22%, var(--bg-card)); color: var(--p-orange-600); }
+.chrome-link.is-waiting .chrome-link-text { opacity: 0.7; }
+.chrome-link.is-waiting .chrome-link-mark::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.chrome-next { display: grid; gap: 4px; margin-top: 12px; padding: 12px 14px; border-left: 3px solid var(--warning-color); border-radius: 8px; background: var(--bg-tertiary); }
+.chrome-next.is-ready { border-left-color: var(--ui-accent, var(--primary-color)); }
+.chrome-next strong { font-size: var(--font-size-label); color: var(--text-primary); }
+.chrome-next p { margin: 0; max-width: 64ch; font-size: var(--font-size-meta); line-height: 1.55; color: var(--text-secondary); }
+.chrome-next-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+.chrome-next-actions small { font-size: var(--font-size-caption); color: var(--text-secondary); }
+@media (max-width: 720px) {
+  .chrome-chain { grid-template-columns: 1fr; }
+  .chrome-link + .chrome-link { margin-left: 0; margin-top: -1px; }
+  .chrome-link:first-child { border-radius: 10px 10px 0 0; }
+  .chrome-link:last-child { border-radius: 0 0 10px 10px; }
+}
