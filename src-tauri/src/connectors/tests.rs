@@ -385,6 +385,45 @@ fn microsoft_365_uses_the_built_in_desktop_connector() {
 }
 
 #[test]
+fn microsoft_365_write_access_lists_its_scopes_in_the_desktop_entry() {
+    const TENANT: &str = "11111111-2222-3333-4444-555555555555";
+    const CLIENT: &str = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    let temp = TempDir::new("m365-write");
+    let locations = locations(&temp.0);
+    let ids = [("MICROSOFT_TENANT_ID", TENANT), ("MICROSOFT_CLIENT_ID", CLIENT)];
+    let desktop_access = |locations: &Locations| {
+        overview(locations, &runtimes(&temp.0)).unwrap().connectors.into_iter().find(|item| item.id == "microsoft365").unwrap().claude_desktop.access
+    };
+
+    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", true, true, Some("drafts"), &ids)).unwrap();
+    let desktop = current_entry(&locations, ConnectorId::Microsoft365, Target::Desktop).unwrap().unwrap();
+    assert_eq!(desktop["scope"], "Mail.Read Calendars.Read Files.Read.All Sites.Read.All Chat.Read Mail.ReadWrite");
+    assert_eq!(desktop_access(&locations).as_deref(), Some("drafts"));
+    // Claude Code's entry is Anthropic's connector either way.
+    let code = current_entry(&locations, ConnectorId::Microsoft365, Target::Code).unwrap().unwrap();
+    assert_eq!(code, json!({ "type": "http", "url": MICROSOFT_365_URL }));
+
+    // A later change that doesn't name a level keeps the one in place.
+    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", false, true, None, &[])).unwrap();
+    assert_eq!(desktop_access(&locations).as_deref(), Some("drafts"));
+
+    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", false, true, Some("calendar"), &[])).unwrap();
+    let desktop = current_entry(&locations, ConnectorId::Microsoft365, Target::Desktop).unwrap().unwrap();
+    assert!(desktop["scope"].as_str().unwrap().ends_with("Mail.ReadWrite Calendars.ReadWrite"));
+    assert!(!desktop["scope"].as_str().unwrap().contains("Mail.Send"));
+    assert_eq!(desktop_access(&locations).as_deref(), Some("calendar"));
+
+    // Read only drops the list, so the connector asks for its default read set again.
+    apply_change(&locations, &runtimes(&temp.0), request("microsoft365", false, true, Some("readonly"), &[])).unwrap();
+    let desktop = current_entry(&locations, ConnectorId::Microsoft365, Target::Desktop).unwrap().unwrap();
+    assert_eq!(desktop, json!({ "name": "Microsoft-365", "server": "microsoft365", "tenantId": TENANT, "clientId": CLIENT }));
+    assert_eq!(desktop_access(&locations).as_deref(), Some("readonly"));
+
+    let error = apply_change(&locations, &runtimes(&temp.0), request("microsoft365", false, true, Some("send"), &[])).unwrap_err();
+    assert_eq!(error, "Unknown access level: send");
+}
+
+#[test]
 fn microsoft_365_needs_its_ids_only_for_claude_desktop() {
     let temp = TempDir::new("m365-ids");
     let locations = locations(&temp.0);

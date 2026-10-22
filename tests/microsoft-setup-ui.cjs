@@ -4,6 +4,7 @@ const path = require('node:path');
 
 // One-click Microsoft 365 setup on Connectors, against a fake Microsoft: success saves the IDs and offers a
 // Claude Desktop restart; the other outcomes explain what to do; a consent link outside Microsoft is never shown.
+// The "What Claude can do" choice is sent to setup and saved; write access Microsoft refuses saves read only.
 (async () => {
   const { createServer } = await import('vite');
   const react = (await import('@vitejs/plugin-react')).default;
@@ -59,6 +60,34 @@ const path = require('node:path');
       await card.getByText('Claude Desktop restarted.').waitFor();
       assert.deepEqual(await page.evaluate(() => window.invoked.find(call => call.command === 'restart_agent_app')?.args), { client: 'claude-desktop' });
       await card.getByRole('button', { name: 'Run setup again' }).waitFor();
+      assert.deepEqual(await page.evaluate(() => window.invoked.find(call => call.command === 'microsoft_auto_setup')?.args), { access: 'readonly' });
+      assert.equal(apply.access, 'readonly');
+      assert.equal(await page.locator('.connector-card.is-open select').count(), 0, 'no separate access dropdown for Microsoft 365');
+
+      // Choosing drafts: setup asks for it, the level is saved, and Claude Desktop is told to reconnect.
+      assert.equal(await card.getByRole('radio', { name: 'Read only' }).isChecked(), true);
+      await card.getByRole('radio', { name: 'Read, and write email drafts' }).check();
+      assert.match(await card.innerText(), /Claude can never send email/);
+      await card.getByRole('button', { name: 'Sign in and apply' }).click();
+      await card.getByText('Set up, with write access for your account only.', { exact: false }).waitFor();
+      await card.getByText(/Disconnect Microsoft 365, then Connect it again/).waitFor();
+      const calls = await page.evaluate(() => window.invoked.filter(call => call.command === 'microsoft_auto_setup').map(call => call.args.access));
+      assert.deepEqual(calls, ['readonly', 'drafts']);
+      const saves = await page.evaluate(() => window.invoked.filter(call => call.command === 'apply_connector_change').map(call => call.args.request.access));
+      assert.deepEqual(saves, ['readonly', 'drafts']);
+      await card.getByRole('button', { name: 'Run setup again' }).waitFor();
+      assert.equal(await card.getByRole('radio', { name: 'Read, and write email drafts' }).isChecked(), true, 'the saved level is shown');
+      await page.close();
+    }
+
+    // Write access refused (the account can't grant it): read only is saved and the card says why.
+    {
+      const { page, card } = await open({ status: 'ok', tenantId: '11111111-2222-3333-4444-555555555555', clientId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', consent: 'granted', writeConsent: 'needsAdmin' });
+      await card.getByRole('radio', { name: 'Read, write drafts and manage calendar events' }).check();
+      await card.getByRole('button', { name: 'Set up automatically' }).click();
+      await card.getByText(/can't grant write access, so Claude Desktop stays read only/).waitFor();
+      assert.deepEqual(await page.evaluate(() => window.invoked.find(call => call.command === 'microsoft_auto_setup')?.args), { access: 'calendar' });
+      assert.equal(await page.evaluate(() => window.invoked.find(call => call.command === 'apply_connector_change')?.args.request.access), 'readonly');
       await page.close();
     }
 

@@ -112,6 +112,7 @@
 .connector-auto-setup { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--accent, #0f766e); border-radius: 10px; margin-bottom: 10px; }
 .connector-auto-setup > div:first-child { display: grid; gap: 4px; }
 .connector-auto-setup > button { justify-self: start; }
+.connector-ms-access .connector-service input { width: auto; margin: 0; padding: 0; }
 .connector-auto-setup-result p { margin: 0; }
 .connector-auto-setup-result .ok { color: var(--success, #15803d); }
 .connector-auto-setup-result .warn { color: var(--warning-text, #b45309); }

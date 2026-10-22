@@ -27,7 +27,7 @@ import {
   type ConnectorTestResult,
   type GitHubCliSetup,
 } from '../services/connectors';
-import { draftWithSetupIds, GRAPH_MODULE_INSTALL, runMicrosoftSetup, type MicrosoftSetupResult } from '../services/microsoftSetup';
+import { draftWithSetupIds, GRAPH_MODULE_INSTALL, MICROSOFT_ACCESS_LEVELS, runMicrosoftSetup, savedMicrosoftAccess, type MicrosoftAccess, type MicrosoftSetupResult } from '../services/microsoftSetup';
 import './ConnectorsPage.css';
 import { StateMessage } from '../components/StateMessage';
 import { ChromeConnectorCard } from './ChromeConnectorCard';
@@ -474,7 +474,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           <p>{ct('microsoftGuideBody')} <GuideLink url={guideLinks.entra} label={ct('openEntra')} /></p>
         </details>
       ) : null}
-      {item.accessLevels.length > 0 ? (
+      {item.accessLevels.length > 0 && item.id !== 'microsoft365' ? (
         <label className="connector-field">
           <span>{ct('access')}</span>
           <select
@@ -622,12 +622,21 @@ function MicrosoftAutoSetup({ item, onSaved }: { item: ConnectorOverviewItem; on
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [restart, setRestart] = useState<'idle' | 'busy' | 'done' | string>('idle');
+  const current: MicrosoftAccess = item.claudeDesktop.enabled && MICROSOFT_ACCESS_LEVELS.includes(item.claudeDesktop.access as MicrosoftAccess)
+    ? item.claudeDesktop.access as MicrosoftAccess : 'readonly';
+  const [choice, setChoice] = useState<MicrosoftAccess>(current);
+  useEffect(() => { setChoice(current); }, [current]);
+  // Claude Desktop keeps the sign-in it has until it connects again, so a changed level needs a reconnect.
+  const [reconnect, setReconnect] = useState(false);
   const run = async () => {
-    setRunning(true); setResult(null); setError(''); setCopied(false); setRestart('idle');
+    setRunning(true); setResult(null); setError(''); setCopied(false); setRestart('idle'); setReconnect(false);
+    const before = item.secretsConfigured && item.claudeDesktop.enabled ? current : null;
     try {
-      const outcome = await runMicrosoftSetup();
+      const outcome = await runMicrosoftSetup(choice);
       setResult(outcome);
-      const draft = draftWithSetupIds(item, outcome);
+      const access = savedMicrosoftAccess(choice, outcome);
+      setReconnect(before !== null && before !== access);
+      const draft = draftWithSetupIds(item, outcome, access);
       if (draft) {
         try { onSaved(await connectorsApi.apply(item.id, draft)); }
         catch (saveError) { setError(`${ct('msSetupSaveFailed')} ${errorText(saveError)}`); }
@@ -642,17 +651,32 @@ function MicrosoftAutoSetup({ item, onSaved }: { item: ConnectorOverviewItem; on
   };
   const consentUrl = result?.consentUrl?.startsWith(CONSENT_PREFIX) ? result.consentUrl : null;
   const saved = result?.status === 'ok' && !error;
+  const levelLabels: Record<MicrosoftAccess, ConnectorTextKey> = { readonly: 'msAccessReadonly', drafts: 'msAccessDrafts', calendar: 'msAccessCalendar' };
+  const label = running ? ct('msSetupRunning') : !item.secretsConfigured ? ct('msSetupRun') : choice !== current ? ct('msSetupApply') : ct('msSetupRunAgain');
   return (
     <div className="connector-auto-setup">
       <div>
         <strong>{ct('msSetupTitle')}</strong>
         <small>{ct('msSetupBody')}</small>
       </div>
+      <fieldset className="connector-services connector-ms-access" disabled={running}>
+        <legend>{ct('msAccessLegend')}</legend>
+        {MICROSOFT_ACCESS_LEVELS.map(level => (
+          <label key={level} className="connector-service">
+            <input type="radio" name="microsoft365-access" value={level} checked={choice === level} onChange={() => setChoice(level)} />
+            <span>{ct(levelLabels[level])}</span>
+          </label>
+        ))}
+        <small>{ct('msAccessHint')}</small>
+      </fieldset>
       <button type="button" className="primary-button compact-button" disabled={running} aria-busy={running} onClick={() => void run()}>
-        <Sparkles size={14} aria-hidden="true" />{running ? ct('msSetupRunning') : item.secretsConfigured ? ct('msSetupRunAgain') : ct('msSetupRun')}
+        <Sparkles size={14} aria-hidden="true" />{label}
       </button>
       <div role="status" className="connector-auto-setup-result">
-        {saved && result?.consent === 'granted' ? <p className="ok">{ct('msSetupDone')}</p> : null}
+        {saved && result?.consent === 'granted' ? <p className="ok">{ct(result.writeConsent === 'granted' ? 'msSetupDoneWrite' : 'msSetupDone')}</p> : null}
+        {saved && result?.writeConsent === 'needsAdmin' ? <p className="warn">{ct('msSetupWriteNeedsAdmin')}</p> : null}
+        {saved && result?.writeConsent === 'notRemoved' ? <p className="warn">{ct('msSetupWriteNotRemoved')}</p> : null}
+        {saved && reconnect ? <p>{ct('msSetupReconnect')}</p> : null}
         {saved && result?.consent === 'needsAdmin' ? <>
           <p className="warn">{ct('msSetupNeedsAdmin')}</p>
           {consentUrl ? <span className="connector-auto-setup-actions">

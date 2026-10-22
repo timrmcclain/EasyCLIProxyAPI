@@ -107,6 +107,7 @@ impl ConnectorId {
         match self {
             ConnectorId::Google => &["readonly", "drafts", "full"],
             ConnectorId::GitHub => &["readonly", "full"],
+            ConnectorId::Microsoft365 => &crate::microsoft_setup::ACCESS_LEVELS,
             _ => &[],
         }
     }
@@ -360,13 +361,21 @@ fn build_entry(
         ConnectorId::Microsoft365 => match target {
             Target::Code => http_entry(target, name, MICROSOFT_365_URL, None),
             // Claude Desktop's built-in connector signs in through the user's own
-            // Entra app registration and asks for its default read set.
-            Target::Desktop => json!({
-                "name": name,
-                "server": "microsoft365",
-                "tenantId": secret("MICROSOFT_TENANT_ID")?,
-                "clientId": secret("MICROSOFT_CLIENT_ID")?,
-            }),
+            // Entra app registration and asks for its default read set. With write
+            // access the entry lists exactly what setup granted, since `scope`
+            // replaces that default and write tools appear only for listed scopes.
+            Target::Desktop => {
+                let mut entry = json!({
+                    "name": name,
+                    "server": "microsoft365",
+                    "tenantId": secret("MICROSOFT_TENANT_ID")?,
+                    "clientId": secret("MICROSOFT_CLIENT_ID")?,
+                });
+                if let Some(scope) = microsoft_desktop_scope(access) {
+                    entry["scope"] = Value::String(scope);
+                }
+                entry
+            }
         },
         ConnectorId::GitHub => {
             let url = if access == "full" { GITHUB_URL } else { GITHUB_READONLY_URL };
@@ -395,6 +404,14 @@ fn build_entry(
     })
 }
 
+/// The `scope` a Claude Desktop Microsoft 365 entry carries for an access level; none for read only.
+fn microsoft_desktop_scope(access: &str) -> Option<String> {
+    let writes = crate::microsoft_setup::write_scopes_for(access).filter(|writes| !writes.is_empty())?;
+    // User.Read is always requested by the connector; the rest matches what setup consents.
+    let reads = crate::microsoft_setup::GRAPH_SCOPES.iter().filter(|scope| **scope != "User.Read");
+    Some(reads.chain(writes.iter()).copied().collect::<Vec<_>>().join(" "))
+}
+
 fn entry_args(entry: &Value) -> Option<Vec<String>> {
     Some(entry.get("args").and_then(Value::as_array)?.iter().filter_map(|arg| arg.as_str().map(str::to_string)).collect())
 }
@@ -406,6 +423,11 @@ fn access_from_entry(id: ConnectorId, entry: &Value) -> Option<String> {
         ConnectorId::GitHub => {
             let url = entry.get("url").and_then(Value::as_str).unwrap_or_default();
             Some(if url.trim_end_matches('/').ends_with("/readonly") { "readonly" } else { "full" }.to_string())
+        }
+        // Only the Claude Desktop entry carries a level; Claude Code's goes through Anthropic's connector.
+        ConnectorId::Microsoft365 if entry.get("server").is_some() => {
+            let scopes: Vec<&str> = entry.get("scope").and_then(Value::as_str).unwrap_or_default().split_whitespace().collect();
+            Some(if scopes.contains(&"Calendars.ReadWrite") { "calendar" } else if scopes.contains(&"Mail.ReadWrite") { "drafts" } else { "readonly" }.to_string())
         }
         _ => None,
     }
