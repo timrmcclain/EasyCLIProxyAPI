@@ -64,6 +64,11 @@
 /* The account list opens on the accounts that need attention. */
 /* Account availability: the heading carries the attention count as a filter, and the way to Accounts. */
 .ad-list-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 12px; }
+/* In the title row the availability controls sit between the title and the refresh actions. */
+.ad-heading > .ad-list-heading { flex: 1; margin: 0; }
+.ad-more-fine { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 2px 2px; color: var(--text-secondary); }
+.quota-provider-summary-cell.is-clickable { cursor: pointer; }
+.quota-provider-summary-cell.is-clickable:hover { background: var(--bg-hover); }
 .ad-list-heading .ad-manage { margin-left: auto; }
 .ad-all-clear { color: var(--text-tertiary); font-size: calc(13px * var(--type-scale, 1)); }
 .ad-attention-filter.worst-blocked { border-color: color-mix(in srgb, var(--c-status-danger) 45%, var(--border-color)); color: var(--c-status-danger); }

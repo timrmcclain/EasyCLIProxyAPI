@@ -80,6 +80,24 @@ const path = require('node:path');
     }
     const trendHeight = await page.evaluate(() => document.querySelector('.usage-trend-panel').getBoundingClientRect().height);
     assert.ok(trendHeight <= 360, `trend panel sizes to its chart (${trendHeight}px)`);
+    // Requests: a success is its green dot alone, a failure keeps its word, and the row count goes while paging stays.
+    await page.locator('#usage-tab-events').click();
+    await page.locator('.usage-request-log .usage-result.failed').first().waitFor();
+    const results = await page.evaluate(() => ({
+      success: getComputedStyle(document.querySelector('.usage-request-log .usage-result.success')).fontSize,
+      dot: document.querySelector('.usage-request-log .usage-result.success .usage-result-dot').getBoundingClientRect().width,
+      failed: getComputedStyle(document.querySelector('.usage-request-log .usage-result.failed')).fontSize,
+    }));
+    assert.equal(results.success, '0px', 'a success shows only its dot in compact');
+    assert.ok(results.dot >= 6, `the success dot stays visible (${results.dot}px)`);
+    assert.ok(parseFloat(results.failed) >= 11, `a failure keeps its word (${results.failed})`);
+    assert.equal(await visible('.usage-pagination-summary'), false, 'the row count is hidden in compact');
+    // Costs: each model's requests, tokens and cost stay; the per-token prices go and Edit stays.
+    await page.locator('#usage-tab-pricing').click();
+    await page.locator('.usage-pricing-table tbody tr').first().waitFor();
+    const costColumns = await page.evaluate(() => [...document.querySelectorAll('.usage-pricing-table thead th')].filter(th => th.offsetParent).map(th => th.textContent.trim()));
+    assert.equal(costColumns.length, 5, `costs keep five columns in compact (${costColumns.join(', ')})`);
+    assert.equal(await visible('.usage-pricing-table .usage-price-row-actions button'), true, 'Edit stays in compact');
 
     // Accounts: neutral badges and runtime captions go; problem badges stay.
     await page.locator('.sidebar').getByRole('button', { name: /^Accounts/ }).click();
@@ -140,6 +158,26 @@ const path = require('node:path');
     await tabs.waitFor();
     const tabRows = await tabs.evaluate(nav => new Set([...nav.querySelectorAll('button')].map(b => Math.round(b.getBoundingClientRect().top))).size);
     assert.equal(tabRows, 1, 'settings tabs fit on one line');
+    // Logs & diagnostics: the log keeps its own folder button, the settings card's second one goes, and the log box
+    // sizes to its lines.
+    await tabs.locator('button', { hasText: 'Logs & diagnostics' }).click();
+    await page.locator('.proxy-log-panel .proxy-log-line').first().waitFor();
+    assert.equal(await visible('.config-diagnostics-actions > button'), false, 'the duplicate Open log folder is hidden in compact');
+    assert.equal(await visible('.proxy-log-toolbar button'), true, 'the log toolbar stays in compact');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.proxy-log-lines')).minHeight), '0px', 'the log box sizes to its lines');
+    // Storage: the routine badge and the limit's explanation go; current usage and what each cleanup deletes stay.
+    await tabs.locator('button', { hasText: /^Storage$/ }).click();
+    // Usage loads after the tab opens; waiting for it to be visible also proves compact keeps it.
+    await page.locator('.usage-storage-limit-action > div:first-child > small').waitFor({ state: 'visible' });
+    assert.equal(await visible('.usage-data-management-badge'), false, 'the Manual action badge is hidden in compact');
+    assert.equal(await visible('.usage-storage-limit-action > div:first-child > small'), true, 'current usage stays in compact');
+    assert.equal(await visible('.usage-data-management-action:not(.usage-storage-limit-action) > div:first-child > span'), true, 'what each cleanup deletes stays in compact');
+
+    // Sidebar: every page and control fits without scrolling, including with Advanced tools open.
+    await page.evaluate(() => { const fold = document.querySelector('.sidebar .personal-advanced'); if (fold) fold.open = true; });
+    const sidebar = await page.evaluate(() => { const bar = document.querySelector('.sidebar'); return { scroll: bar.scrollHeight, client: bar.clientHeight }; });
+    assert.ok(sidebar.scroll <= sidebar.client, `the sidebar fits without scrolling (${sidebar.scroll} > ${sidebar.client})`);
+    assert.equal(await visible('.sidebar-density-selector'), true, 'Roomy/Compact stays in compact');
 
     assert.deepEqual(errors, []);
     console.log('Compact density packs the screen while controls stay clickable.');

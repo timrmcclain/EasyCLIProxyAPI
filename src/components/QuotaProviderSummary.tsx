@@ -48,7 +48,8 @@ export function QuotaProviderSummary({ accounts, quotas, name, icon, now, stale,
     ...(['creditBacked', 'unknown', 'disabled'] as const).filter(kind => count(kind)).map(kind => `${count(kind)} ${kind === 'unknown' && summaryReason ? t(`availability.${summaryReason}Short`) : t(`availability.${kind}`)}`),
   ].filter(Boolean).join(' · ');
   // One compact line per provider: it filters the ledger, so the detail lives in the rows.
-  return <div className={`quota-provider-summary-cell${selected ? ' is-selected' : ''}`} style={accent} title={countText || undefined}>
+  return <div className={`quota-provider-summary-cell${selected ? ' is-selected' : ''}${onSelect ? ' is-clickable' : ''}`} style={accent} title={countText || undefined}
+    onClick={onSelect ? (event) => { if (!(event.target as HTMLElement).closest('button')) onSelect(); } : undefined}>
     <div className="quota-summary-heading">{onSelect
       ? <button type="button" className="quota-summary-filter" aria-pressed={selected} title={t('glance.runway.filter', { provider: name })} onClick={onSelect}>{icon}<strong>{name}</strong></button>
       : <>{icon}<strong>{name}</strong></>}{outage ? <button type="button" className={`provider-outage-badge outage-${outage.indicator}`}

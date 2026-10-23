@@ -863,6 +863,61 @@ svg.lucide {
 :root[data-density='compact'] .command-palette-list li { min-height: 28px; padding-top: 3px; padding-bottom: 3px; }
 :root[data-density='compact'] .agent-client-manager .agent-client-option { min-height: 0; padding-top: 6px; padding-bottom: 6px; }
 
+/* Sidebar: every page fits without scrolling. The search shortcut hint and the advanced group labels go (icons and
+   names carry them); the brand, the Advanced tools fold and the bottom controls tighten. Every control stays, including
+   Roomy/Compact and language, which have no other home. */
+:root[data-density='compact'] .sidebar-command-button kbd,
+:root[data-density='compact'] .personal-advanced-heading { display: none !important; }
+:root[data-density='compact'] .sidebar-brand { margin-bottom: 8px; }
+:root[data-density='compact'] .sidebar .personal-advanced { margin-top: 6px; padding-top: 4px; }
+:root[data-density='compact'] .sidebar .personal-advanced summary { padding: 4px 12px; }
+:root[data-density='compact'] .sidebar .personal-advanced > div,
+:root[data-density='compact'] .sidebar .personal-advanced-group { gap: 1px; padding-top: 0; }
+:root[data-density='compact'] .sidebar .personal-advanced-group button { min-height: 28px; padding-top: 3px; padding-bottom: 3px; }
+:root[data-density='compact'] .sidebar .sidebar-bottom { gap: 6px; padding-top: 8px; }
+:root[data-density='compact'] .sidebar .sidebar-theme-selector { padding: 2px; }
+:root[data-density='compact'] .sidebar .sidebar-theme-selector button { min-height: 24px; height: 24px; }
+:root[data-density='compact'] .sidebar .sidebar-density-selector { margin-top: 0; }
+:root[data-density='compact'] .sidebar .personal-runtime { padding-top: 6px; }
+
+/* Activity requests: a success is just its green dot (the word stays for screen readers and in the cell's hover text),
+   failures and cancellations keep their word, and a failure's cause stays on the row's one line with the rest on hover.
+   The "Showing 1-18 of 18" count goes; paging stays. */
+:root[data-density='compact'] .usage-records-page .usage-request-log .usage-result.success { font-size: 0; gap: 0; padding: 0; background: none; }
+:root[data-density='compact'] .usage-records-page .usage-request-log .usage-result.success .usage-result-dot { width: 8px; height: 8px; background: var(--success-color, #16a34a); }
+:root[data-density='compact'] .usage-records-page .usage-request-log .usage-result-cell { white-space: nowrap; }
+:root[data-density='compact'] .usage-records-page .usage-request-log .usage-result-cell .usage-result { display: inline-flex; vertical-align: middle; }
+:root[data-density='compact'] .usage-records-page .usage-request-log .usage-result-cell small { display: inline-block; max-width: 220px; margin-left: 6px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+:root[data-density='compact'] .usage-pagination-summary { display: none !important; }
+
+/* Activity costs: each model's requests, tokens and cost stay; the four per-token prices go (Edit still shows and
+   changes them), and the rows tighten. */
+:root[data-density='compact'] .usage-records-page .usage-tab-panel .usage-pricing-table :is(th, td):nth-child(n+5):nth-child(-n+8) { display: none; }
+:root[data-density='compact'] .usage-records-page .usage-tab-panel .usage-pricing-table :is(th, td) { padding-top: 4px; padding-bottom: 4px; }
+
+/* Logs & diagnostics: the switches, fields and the log itself stay. The settings card's second "Open log folder"
+   goes (the proxy log keeps its own), the log box sizes to the lines it has, and rows and card spacing tighten. */
+:root[data-density='compact'] .config-page .config-diagnostics-actions > button { display: none; }
+/* With no error and nothing unsaved, the emptied footer goes too. */
+:root[data-density='compact'] .config-page .config-diagnostics-footer:has(> span:first-child:empty):has(.config-card-status:empty) { display: none; }
+:root[data-density='compact'] .config-page .config-diagnostics-setting { min-height: 34px; padding-bottom: 4px; }
+:root[data-density='compact'] .config-page .config-diagnostics-field input { height: 30px; min-height: 28px; }
+:root[data-density='compact'] .config-page .config-advanced-details { margin-top: 4px; padding-top: 2px; }
+:root[data-density='compact'] .config-page .config-advanced-details summary { min-height: 28px; padding-top: 4px; padding-bottom: 4px; }
+:root[data-density='compact'] .proxy-log-panel .proxy-log-lines { min-height: 0; max-height: 16rem; padding: 4px 8px; }
+:root[data-density='compact'] .proxy-log-panel .proxy-log-toolbar { margin-bottom: 6px; }
+:root[data-density='compact'] .config-page #config-template-panel > .template-config-section > .template-config-card { padding-top: 10px; padding-bottom: 10px; }
+:root[data-density='compact'] .config-page #config-template-panel > .template-config-section > .template-config-card > .template-config-heading { min-height: 28px; margin-bottom: 6px; padding-bottom: 4px; }
+:root[data-density='compact'] .config-page #config-template-panel > .template-config-section > .template-config-card > .template-config-actions:empty { display: none; }
+:root[data-density='compact'] .config-page #config-template-panel > .template-config-section > .template-config-card > .template-config-actions { padding-top: 6px; }
+
+/* Storage: the "Manual action" badge and the size limit's "0 means no limit" note go; current usage stays, and so do
+   the lines saying what Clean up now and Scan and repair will delete. The action rows tighten. */
+:root[data-density='compact'] .usage-data-management-panel .usage-data-management-badge,
+:root[data-density='compact'] .usage-data-management-panel .usage-storage-limit-action > div:first-child > span { display: none !important; }
+:root[data-density='compact'] .usage-data-management-panel .usage-data-management-action { margin-top: 6px !important; padding: 8px 12px !important; gap: 12px; }
+:root[data-density='compact'] .usage-data-management-panel .usage-data-management-action > div:first-child > :is(span, small) { margin-top: 2px; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }

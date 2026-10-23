@@ -67,7 +67,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const [filter, setFilter] = useState(() => readDashboardPreference('quotaProvider', ['all', ...providers, 'devin', 'gemini', 'other'], 'all'));
   const [layout, setLayout] = useState(() => readDashboardPreference('quotaLayout', ['ledger', 'compact'] as const, 'compact'));
   const [search, setSearch] = useState(() => takePendingAccountSearch() ?? '');
-  const [stateFilter, setStateFilter] = useState(() => readDashboardPreference('quotaState', ['all', 'available', 'attention'] as const, 'all'));
+  const [stateFilter, setStateFilter] = useState(() => readDashboardPreference('quotaState', ['all', 'available', 'attention'] as const, 'attention'));
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null);
   const [hideEmails, setHideEmails] = useState(() => readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true');
   const [activity, setActivity] = useState<DashboardActivity | null>(null);
@@ -253,15 +253,20 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     return accountSummary(b).priority - accountSummary(a).priority
       || accountSummary(a).label.localeCompare(accountSummary(b).label);
   });
-  const visible = sorted.filter((file) => {
-    const state = quotaAvailability(file, quotas[quotaKey(file)], now, !ready || Boolean(error));
-    const query = search.trim().toLowerCase();
+  const query = search.trim().toLowerCase();
+  // The accounts in view before the state filter: the chosen provider and search.
+  const scoped = sorted.filter((file) => {
     const exact = query !== '' && [readString(file, 'email'), readString(file, 'label'), fileName(file)].some(value => value.toLowerCase() === query);
     return (filter === 'all' || dashboardProvider(file) === filter)
-      && (!query || exact || (hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : `${names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} ${fileName(file)} ${accountSummary(file).label} ${dashboardProvider(file)}`).toLowerCase().includes(query))
-      // "Need attention" is the same set the status line counts: problems that can stop work, not unconfirmed quota.
-      && (stateFilter === 'all' || (stateFilter === 'available' ? state.kind === 'available' : urgentKeys.has(quotaKey(file))));
+      && (!query || exact || (hideEmails ? privateAccountLabel(file, dashboardProvider(file)) : `${names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} ${fileName(file)} ${accountSummary(file).label} ${dashboardProvider(file)}`).toLowerCase().includes(query));
   });
+  const visible = scoped.filter((file) => {
+    const state = quotaAvailability(file, quotas[quotaKey(file)], now, !ready || Boolean(error));
+    // "Need attention" is the same set the status line counts: problems that can stop work, not unconfirmed quota.
+    return stateFilter === 'all' || (stateFilter === 'available' ? state.kind === 'available' : urgentKeys.has(quotaKey(file)));
+  });
+  // Showing only problems is the default view, so the accounts it leaves out are summed up below rather than filtered away.
+  const hiddenFine = stateFilter === 'attention' ? scoped.length - visible.length : 0;
   const saveName = (file: AuthFile, value: string) => {
     const key = privateAccountLabel(file, dashboardProvider(file));
     const next = { ...names };
@@ -271,21 +276,32 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   };
   const viewAlternatives = (_file: AuthFile) => { setAlternatives(true); };
   const providerList = [...providers, ...[...new Set(files.map(dashboardProvider))].filter((provider) => !providers.includes(provider))];
-  const filtered = filter !== 'all' || stateFilter !== 'all' || search.trim() !== '';
+  const filtered = filter !== 'all' || stateFilter === 'available' || search.trim() !== '';
   const changeState = (value: typeof stateFilter) => { setStateFilter(value); saveDashboardPreference('quotaState', value); };
   const clearFilters = () => {
     setAlternatives(false);
-    setFilter('all'); setStateFilter('all'); setSearch('');
-    saveDashboardPreference('quotaProvider', 'all'); saveDashboardPreference('quotaState', 'all');
+    setFilter('all'); setStateFilter('attention'); setSearch('');
+    saveDashboardPreference('quotaProvider', 'all'); saveDashboardPreference('quotaState', 'attention');
   };
   const selectProvider = (provider: string) => {
     const next = filter === provider ? 'all' : provider;
     setFilter(next); saveDashboardPreference('quotaProvider', next);
+    // Picking a provider means "show me its accounts"; letting it go returns to the problems-first view.
+    changeState(next === 'all' ? 'attention' : 'all');
   };
 
   return <section className={`account-dashboard quota-ledger quota-layout-${layout}`} aria-labelledby="account-dashboard-title">
     <div className="ad-heading">
       <h2 id="account-dashboard-title">{t('accountDashboard.title')}</h2>
+      {files.length > 0 && <div className="ad-list-heading">
+        <h3 className="sr-only">{t('glance.list.availability')}</h3>
+        {urgent.length > 0
+          ? <button type="button" className={`secondary-button compact-button ad-attention-filter worst-${urgent[0].severity}`} aria-pressed={stateFilter === 'attention'}
+            onClick={() => changeState(stateFilter === 'attention' ? 'all' : 'attention')}>{t('glance.list.needAttention', { count: urgent.length })}</button>
+          : !stale && <span className="ad-all-clear" role="status">{t('glance.attention.none')}</span>}
+        {filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}
+        <button type="button" className="secondary-button compact-button ad-manage" onClick={() => requestOAuthSubpage('authFiles')}>{t('glance.list.manage')}</button>
+      </div>}
       <div className="quota-heading-actions">{summaryCounts.problems > 0 && <button type="button" className="secondary-button quota-compare" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button>}
       <button data-page-refresh className="secondary-button quota-refresh" disabled={!ready || loading || saving || refreshingKey !== null} onClick={() => void refresh(true)}>
         <RefreshCw size={16} aria-hidden="true" className={loading ? 'spin' : undefined} /> {loading ? t('accountDashboard.refreshing') : t('accountDashboard.refresh')}
@@ -304,16 +320,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       })}
     </div>
     {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
-    {/* The ledger answers "can I work?": every account, with problems counted and filterable here rather than in a separate card. */}
-    {files.length > 0 && <div className="ad-list-heading">
-      <h3>{t('glance.list.availability')}</h3>
-      {urgent.length > 0
-        ? <button type="button" className={`secondary-button compact-button ad-attention-filter worst-${urgent[0].severity}`} aria-pressed={stateFilter === 'attention'}
-          onClick={() => changeState(stateFilter === 'attention' ? 'all' : 'attention')}>{t('glance.list.needAttention', { count: urgent.length })}</button>
-        : !stale && <span className="ad-all-clear" role="status">{t('glance.attention.none')}</span>}
-      {filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}
-      <button type="button" className="secondary-button compact-button ad-manage" onClick={() => requestOAuthSubpage('authFiles')}>{t('glance.list.manage')}</button>
-    </div>}
+    {/* The ledger answers "can I work?": problems first, every other account one click away. */}
     {(() => {
       const focused = focus && Date.now() < focus.until ? files.find(item => fileName(item) === focus.name) : undefined;
       return focused ? <p className="ad-notice ad-focus" role="status">
@@ -354,7 +361,11 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
         focused={Boolean(focus && Date.now() < focus.until && focus.name === fileName(file))} onFocus={(target, on) => void changeFocus(on ? target : null)}
         disabled={!ready || saving || loading || refreshingKey !== null || Boolean(error)} onSave={savePriority} onRefresh={refreshAccount} refreshing={refreshingKey === quotaKey(file)} stale={stale} />)}
       </section> : null; })}
-      {!visible.length && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
+      {hiddenFine > 0 && <div className="ad-more-fine" role="status">
+        <span>{t(visible.length ? 'glance.list.moreFine' : 'glance.list.healthy', { count: hiddenFine })}</span>
+        <button type="button" className="secondary-button compact-button" onClick={() => changeState('all')}>{t('glance.list.showAll', { count: scoped.length })}</button>
+      </div>}
+      {!visible.length && !hiddenFine && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
     </div>
     {/* The ledger comes first so accounts are visible without scrolling; activity and provider pace follow it.
         Each row carries its own recovery time, so there's no separate recovery list. */}

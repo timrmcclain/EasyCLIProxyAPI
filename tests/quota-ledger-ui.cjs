@@ -52,9 +52,16 @@ const path = require('node:path');
     });
     await page.getByRole('button', { name: 'Refresh accounts', exact: true }).click();
     await page.waitForFunction(() => !document.querySelector('.quota-refresh').disabled && document.querySelector('.ad-list-heading'));
-    // Account availability is Overview's main content: every account shows, with its controls.
-    assert.equal(await page.locator('.ad-list-heading h3').innerText(), 'Account availability');
+    // Account availability is Overview's main content. It opens on the accounts that need attention, with its
+    // controls in the title row, and counts the rest with a way to show every account.
+    assert.equal(await page.locator('.ad-heading .ad-list-heading h3').innerText(), 'Account availability');
+    await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 3);
+    assert.equal(await page.locator('.ad-attention-filter').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('.ad-more-fine > span').innerText(), '7 more accounts are fine');
+    await page.locator('.ad-more-fine').getByRole('button', { name: 'Show all 10', exact: true }).click();
     await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 10);
+    assert.equal(await page.locator('.ad-attention-filter').getAttribute('aria-pressed'), 'false');
+    assert.equal(await page.locator('.ad-more-fine').count(), 0, 'nothing is left out once every account shows');
     assert.equal(await page.locator('.quota-workflow-tools').count(), 1);
     // Rarely changed display choices sit behind Display.
     assert.equal(await page.locator('.ad-display-options').evaluate(node => node.open), false);
@@ -105,6 +112,15 @@ const path = require('node:path');
     assert.ok(await page.locator('.quota-provider-summary-cell.is-selected').count() === 1);
     await codexFilter.click();
     assert.equal(await codexFilter.getAttribute('aria-pressed'), 'false');
+    // Letting the provider go returns to the problems-first view.
+    await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 3);
+    assert.equal(await page.locator('.ad-attention-filter').getAttribute('aria-pressed'), 'true');
+    // The whole tile filters, not just its name.
+    await page.locator('.quota-provider-summary-cell').filter({ hasText: 'Codex' }).locator('.quota-summary-value').click();
+    assert.equal(await codexFilter.getAttribute('aria-pressed'), 'true');
+    await codexFilter.click();
+    await page.locator('.ad-more-fine').getByRole('button', { name: 'Show all 10', exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll('.ad-card').length === 10);
     // Tiles: compression mock is off, so activity and provider pace remain; activity reads the mock usage.
     assert.equal(await page.locator('.glance-tile').count(), 2);
     assert.doesNotMatch(await page.locator('.quota-provider-summary-cell').first().getAttribute('title') ?? '', /running low/);
@@ -218,6 +234,10 @@ const path = require('node:path');
     await page.getByText('No accounts match these filters', {exact:true}).waitFor();
     assert.equal(await page.locator('.quota-result-count').innerText(), 'Account list: 0 of 10');
     await page.locator('.quota-no-results').getByRole('button', {name:'Clear filters',exact:true}).click();
+    // Clearing returns to the problems-first default: the exhausted Claude account and the three low Codex ones.
+    assert.equal(await page.locator('.ad-card').count(), 4);
+    assert.equal(await page.locator('.ad-more-fine > span').innerText(), '6 more accounts are fine');
+    await page.locator('.ad-more-fine').getByRole('button', { name: 'Show all 10', exact: true }).click();
     assert.equal(await page.locator('.ad-card').count(), 10);
     assert.equal(await page.locator('.quota-result-count').innerText(), 'Account list: 10 of 10');
     await page.getByRole('searchbox', {name:'Search accounts'}).fill('  claude-account-01  ');
