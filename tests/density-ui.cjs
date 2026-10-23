@@ -172,6 +172,15 @@ const path = require('node:path');
     assert.equal(await visible('.usage-data-management-badge'), false, 'the Manual action badge is hidden in compact');
     assert.equal(await visible('.usage-storage-limit-action > div:first-child > small'), true, 'current usage stays in compact');
     assert.equal(await visible('.usage-data-management-action:not(.usage-storage-limit-action) > div:first-child > span'), true, 'what each cleanup deletes stays in compact');
+    // Extensions & integrations: the explanation goes; the title and both buttons stay, on one line.
+    await tabs.locator('button', { hasText: 'Extensions & integrations' }).click();
+    const guide = page.locator('.config-extension-guide');
+    await guide.waitFor();
+    assert.equal(await visible('.config-extension-guide > p'), false, 'the plugins explanation is hidden in compact');
+    assert.equal(await guide.locator('button').count(), 2, 'Open Plugins and advanced settings stay in compact');
+    const guideCenters = await guide.evaluate(card => [card.querySelector('h2'), ...card.querySelectorAll('button')].map(node => { const box = node.getBoundingClientRect(); return box.top + box.height / 2; }));
+    const guideRows = Math.max(...guideCenters) - Math.min(...guideCenters) <= 4 ? 1 : 2;
+    assert.equal(guideRows, 1, 'the plugins title and buttons share one line');
 
     // Sidebar: every page and control fits without scrolling, including with Advanced tools open.
     await page.evaluate(() => { const fold = document.querySelector('.sidebar .personal-advanced'); if (fold) fold.open = true; });

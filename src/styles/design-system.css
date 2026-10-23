@@ -918,6 +918,13 @@ svg.lucide {
 :root[data-density='compact'] .usage-data-management-panel .usage-data-management-action { margin-top: 6px !important; padding: 8px 12px !important; gap: 12px; }
 :root[data-density='compact'] .usage-data-management-panel .usage-data-management-action > div:first-child > :is(span, small) { margin-top: 2px; }
 
+/* Extensions & integrations (and the Upstreams guide): the paragraph explaining where plugins live goes; the title and
+   both buttons stay, on one line. */
+:root[data-density='compact'] .config-page .config-extension-guide > p { display: none; }
+:root[data-density='compact'] .config-page .config-extension-guide { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px; }
+:root[data-density='compact'] .config-page .config-extension-guide > h2 { margin: 0; }
+:root[data-density='compact'] .config-page .config-extension-guide-actions { margin: 0; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }
