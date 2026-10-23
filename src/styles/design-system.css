@@ -804,6 +804,29 @@ svg.lucide {
 :root[data-density='compact'] .config-page .config-software-setting-row { min-height: 0; padding-top: 2px; padding-bottom: 2px; }
 :root[data-density='compact'] .config-page :is(.config-network-input, .config-management-field input, .template-config-control input:not([type='checkbox']):not([type='radio']), .template-config-control select) { height: 30px; min-height: 0; }
 
+/* Secret Guard: the card explanations go (what's stored, the Report-first advice, where the test runs); the on/off state,
+   findings, and the note on why the policy menus are locked stay. Policy rows and the test box tighten. */
+:root[data-density='compact'] .sg-page .jev-subtitle { display: none !important; }
+:root[data-density='compact'] .sg-policy > div { padding: 3px 0; }
+:root[data-density='compact'] .sg-policy select { min-height: 26px; }
+:root[data-density='compact'] .sg-policy-locked { margin-bottom: 4px; }
+:root[data-density='compact'] .sg-test textarea { min-height: 56px; padding: 6px 8px; }
+
+/* AI apps: the desktop-vs-terminal explainer, the "at a glance" eyebrow, the next-step and evidence explanations, the
+   model-list scope note and the client count go. Each client keeps its status line, which is the only place connection
+   status shows; rows and the overview tighten. */
+:root[data-density='compact'] .agents-page > .personal-context,
+:root[data-density='compact'] .connection-overview-heading > div > span,
+:root[data-density='compact'] .connection-overview > p,
+:root[data-density='compact'] .connection-evidence > small,
+:root[data-density='compact'] .model-preset-toolbar > span,
+:root[data-density='compact'] .agent-client-list-footer > small,
+:root[data-density='compact'] .agent-desktop-model-notice { display: none !important; }
+:root[data-density='compact'] .agents-page .agent-client-list .agent-list-items button { min-height: 0; height: auto; padding-top: 4px; padding-bottom: 4px; }
+:root[data-density='compact'] .agents-page .agent-client-list .agent-list-items { grid-auto-rows: auto; grid-template-rows: none; min-height: 0; }
+:root[data-density='compact'] .agents-page .connection-overview { padding: 10px 12px; }
+:root[data-density='compact'] .agents-page .agent-core-setting-section { padding: 10px 12px; gap: 8px; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }

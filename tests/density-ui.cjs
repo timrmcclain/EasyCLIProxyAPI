@@ -98,6 +98,20 @@ const path = require('node:path');
     assert.equal(await visible('.connector-row-state.on'), true, 'On pills stay in compact');
     assert.equal(await visible('.connector-row-state.warn'), true, 'warnings stay in compact');
 
+    // Secret Guard: explanations go; the state and the reason the menus are locked stay.
+    await page.locator('.sidebar').getByRole('button', { name: /^Secret Guard/ }).click();
+    await page.locator('.sg-policy').waitFor();
+    assert.equal(await visible('.sg-page .jev-subtitle'), false, 'Secret Guard explanations are hidden in compact');
+    assert.equal(await visible('.sg-switch-card .sg-state'), true, 'Secret Guard state stays in compact');
+
+    // AI apps: explanations go; every client keeps its status line.
+    await page.locator('.sidebar').getByRole('button', { name: /^AI apps/ }).click();
+    await page.locator('.agent-list-items button').first().waitFor();
+    for (const hidden of ['.agents-page > .personal-context', '.connection-overview > p', '.agent-client-list-footer > small']) {
+      assert.equal(await visible(hidden), false, `${hidden} is hidden in compact`);
+    }
+    assert.equal(await visible('.agent-list-items button small'), true, 'client status lines stay in compact');
+
     // Settings: the section tabs fit on one line.
     await page.locator('.sidebar').getByRole('button', { name: /^Settings/ }).click();
     const tabs = page.locator('.config-settings-navigation');
