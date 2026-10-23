@@ -5,7 +5,7 @@ import { parseAuthFilePriority } from './authFiles';
 import { fileName, providerForFile, quotaKey, type AuthFile, type QuotaState } from './quotaService';
 
 export type RoutingTier = 'ready' | 'low' | 'out';
-export type RoutingEntry = { file: AuthFile; key: string; tier: RoutingTier; priority: number; current: number };
+export type RoutingEntry = { file: AuthFile; key: string; tier: RoutingTier; priority: number; current: number; last: boolean };
 export type RoutingPlan = { provider: string; order: RoutingEntry[] };
 
 const WEEKLY = /week|7.day|seven_day|7\s*天|7\s*日|週|周/i;
@@ -31,9 +31,11 @@ function rankAccount(file: AuthFile, quota: QuotaState | undefined, now: number)
 /**
  * The order the proxy should use each provider's accounts in under fill-first routing (larger priority goes first):
  * accounts with room before low ones before blocked ones, and within each group the one whose weekly window resets
- * soonest, so quota that would otherwise expire unused is spent first.
+ * soonest, so quota that would otherwise expire unused is spent first. Accounts saved for last (by quota key) go
+ * below all the others, whatever their reset time, so the account you want to keep is used only when the rest can't.
  */
-export function routingPlan(files: AuthFile[], quotas: Record<string, QuotaState>, now: number): RoutingPlan[] {
+export function routingPlan(files: AuthFile[], quotas: Record<string, QuotaState>, now: number,
+  last: ReadonlySet<string> = new Set()): RoutingPlan[] {
   const byProvider = new Map<string, AuthFile[]>();
   for (const file of files) {
     const provider = providerForFile(file);
@@ -43,13 +45,14 @@ export function routingPlan(files: AuthFile[], quotas: Record<string, QuotaState
   const plans: RoutingPlan[] = [];
   for (const [provider, accounts] of byProvider) {
     if (accounts.length < 2) continue;
-    const ranked = accounts.map(file => ({ file, rank: rankAccount(file, quotas[quotaKey(file)], now) }));
+    const ranked = accounts.map(file => ({ file, last: last.has(quotaKey(file)), rank: rankAccount(file, quotas[quotaKey(file)], now) }));
     if (ranked.some(entry => !entry.rank)) continue;
-    ranked.sort((a, b) => tierRank[a.rank!.tier] - tierRank[b.rank!.tier]
+    ranked.sort((a, b) => Number(a.last) - Number(b.last)
+      || tierRank[a.rank!.tier] - tierRank[b.rank!.tier]
       || a.rank!.resetAt - b.rank!.resetAt
       || fileName(a.file).localeCompare(fileName(b.file)));
-    plans.push({ provider, order: ranked.map(({ file, rank }, index) => ({
-      file, key: quotaKey(file), tier: rank!.tier,
+    plans.push({ provider, order: ranked.map(({ file, last: saved, rank }, index) => ({
+      file, key: quotaKey(file), tier: rank!.tier, last: saved,
       priority: (ranked.length - index) * 10,
       current: parseAuthFilePriority(file.priority) ?? 0,
     })) });

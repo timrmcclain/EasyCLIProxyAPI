@@ -7,7 +7,7 @@ import { dedupeAuthFiles } from '../services/authFiles';
 import { managementApi, responseList } from '../services/managementApi';
 import { useQuotaCache } from '../services/quotaCache';
 import { routingPlan } from '../services/quotaRouting';
-import { disableQuotaRouting, enableQuotaRouting, readQuotaRoutingPreference } from '../services/quotaRoutingControl';
+import { disableQuotaRouting, enableQuotaRouting, readQuotaRoutingPreference, readSavedForLast, setSavedForLast } from '../services/quotaRoutingControl';
 import type { AuthFile } from '../services/quotaService';
 import { labelFor } from '../services/quotaWatcher';
 import { SettingsHelp } from './SettingsHelp';
@@ -25,6 +25,7 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
   // Also read by Undo, whose click handler was made before the current change started.
   const busyRef = useRef(false);
   const [files, setFiles] = useState<AuthFile[]>([]);
+  const [savedLast, setSavedLast] = useState(readSavedForLast);
 
   useEffect(() => {
     let active = true;
@@ -34,7 +35,17 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
     return () => { active = false; };
   }, [enabled]);
 
-  const plans = useMemo(() => routingPlan(files, quotas, Date.now()), [files, quotas]);
+  const plans = useMemo(() => routingPlan(files, quotas, Date.now(), savedLast), [files, quotas, savedLast]);
+
+  const toggleLast = async (key: string, saved: boolean) => {
+    try {
+      setSavedLast(await setSavedForLast(key, saved));
+      notice.showNotice({ key: 'common.saved' }, 'success');
+    } catch (error) {
+      setSavedLast(readSavedForLast());
+      notice.showNotice(t('qrouting.error', { error: readableError(error) }), 'error');
+    }
+  };
 
   const change = async (next: boolean, offerUndo = true) => {
     if (busyRef.current) return;
@@ -82,6 +93,10 @@ export function QuotaRoutingSetting({ strategy, disabled }: { strategy?: string;
                     <li key={entry.key} className={`qrouting-tier-${entry.tier}`}>
                       {labelFor(entry.file)}
                       {entry.tier !== 'ready' && <span className="qrouting-tier">{t(`qrouting.tier.${entry.tier}`)}</span>}
+                      <button type="button" className="qrouting-last" aria-pressed={entry.last} disabled={disabled}
+                        title={t('qrouting.saveLastHint')} onClick={() => void toggleLast(entry.key, !entry.last)}>
+                        {t(entry.last ? 'qrouting.savedLast' : 'qrouting.saveLast')}
+                      </button>
                     </li>
                   ))}
                 </ol>

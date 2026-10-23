@@ -13,3 +13,6 @@
 .qrouting-tier { margin-left: 6px; padding: 0 6px; border-radius: 999px; font-size: 11px; }
 .qrouting-tier-low .qrouting-tier { color: var(--c-warning); background: var(--c-warning-soft); }
 .qrouting-tier-out .qrouting-tier { color: var(--c-danger); background: var(--c-danger-soft); }
+.qrouting-last { margin-left: 6px; padding: 0 6px; border: 1px solid var(--border-color); border-radius: 999px; background: none; color: var(--text-tertiary); font-size: 11px; cursor: pointer; }
+.qrouting-last[aria-pressed='true'] { color: var(--text-primary); border-color: var(--text-secondary); }
+.qrouting-last:disabled { cursor: default; opacity: 0.6; }

@@ -68,6 +68,16 @@ const path = require('node:path');
     assert.deepEqual(await page.evaluate(() => window.priorityWrites), [{ name: 'claude-account-02.json', priority: 20 }],
       'only the account whose priority changes is written');
     assert.equal(await toggle.isChecked(), true);
+    // Save for last: the soonest-reset account moves to the bottom, and the new order is written at once.
+    await page.evaluate(() => { window.priorityWrites = []; });
+    await setting.locator('.qrouting-preview ol li', { hasText: 'claude-account-02' }).getByRole('button', { name: 'Save for last' }).click();
+    await page.waitForFunction(() => window.priorityWrites.length === 2);
+    const saved = await setting.locator('.qrouting-preview ol li').allInnerTexts();
+    assert.match(saved[0], /claude-account-01/, `the account saved for last moves down: ${saved}`);
+    assert.match(saved[1], /claude-account-02.*Saved for last/s);
+    assert.deepEqual(await page.evaluate(() => window.priorityWrites),
+      [{ name: 'claude-account-01.json', priority: 20 }, { name: 'claude-account-02.json', priority: 10 }]);
+    assert.equal((await page.evaluate(() => JSON.parse(localStorage.getItem('personal.routingLast')))).length, 1, 'the mark is saved');
     await toggle.click();
     await page.getByText('Your own account priorities are back.').waitFor();
     assert.equal(await toggle.isChecked(), false);

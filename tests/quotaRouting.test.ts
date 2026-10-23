@@ -57,4 +57,17 @@ describe('quota-aware routing order', () => {
     expect(priorityChanges(routingPlan([first, second], quotas, now)).map(change => [change.file.name, change.priority]))
       .toEqual([['second.json', 10]]);
   });
+
+  it('keeps accounts saved for last at the bottom, whatever their reset time', () => {
+    const gmail = file('gmail', 30), work = file('work', 20), spare = file('spare', 10);
+    const quotas = {
+      [quotaKey(gmail)]: quota(80, 1 * D), [quotaKey(work)]: quota(40, 4 * D), [quotaKey(spare)]: quota(50, 3 * D),
+    };
+    const plans = routingPlan([gmail, work, spare], quotas, now, new Set([quotaKey(gmail)]));
+    expect(order(plans)).toEqual([['claude', ['spare.json', 'work.json', 'gmail.json']]]);
+    expect(plans[0].order.map(entry => entry.last)).toEqual([false, false, true]);
+    // Still last when the others are low or out: the proxy skips blocked accounts on its own.
+    const lowQuotas = { ...quotas, [quotaKey(work)]: quota(5, 4 * D), [quotaKey(spare)]: quota(0, 3 * D) };
+    expect(order(routingPlan([gmail, work, spare], lowQuotas, now, new Set([quotaKey(gmail)])))[0][1].at(-1)).toBe('gmail.json');
+  });
 });

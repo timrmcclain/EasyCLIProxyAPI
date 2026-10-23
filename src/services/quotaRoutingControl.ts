@@ -10,6 +10,25 @@ import { fileName, providerForFile, quotaKey, type AuthFile } from './quotaServi
 /** Your own priorities, saved when the switch goes on so switching it off can put them back. */
 const BACKUP_KEY = 'personal.manualPriorities';
 
+/** Accounts (by quota key) that soonest-reset routing keeps at the bottom, e.g. your primary account. */
+const LAST_KEY = 'personal.routingLast';
+
+export function readSavedForLast(): Set<string> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LAST_KEY) ?? '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : []);
+  } catch { return new Set(); }
+}
+
+/** Saves or clears one account's "save for last" mark and, when routing is on, applies the new order now. */
+export async function setSavedForLast(key: string, saved: boolean): Promise<Set<string>> {
+  const keys = readSavedForLast();
+  if (saved) keys.add(key); else keys.delete(key);
+  localStorage.setItem(LAST_KEY, JSON.stringify([...keys]));
+  await applyQuotaRouting();
+  return keys;
+}
+
 export const readQuotaRoutingPreference = () => readDashboardPreference('quotaRouting', ['true', 'false'], 'false') === 'true';
 
 const loadFiles = async () => dedupeAuthFiles(responseList(await managementApi.get('/credentials'), 'files'));
@@ -40,7 +59,7 @@ export function applyQuotaRouting(files?: AuthFile[]): Promise<number> {
     const focus = readAccountFocus();
     const demoted = demotedNames();
     // An account in use for the hour keeps its raised priority: leave its provider alone until the hour ends.
-    const changes = priorityChanges(routingPlan(files ?? await loadFiles(), getQuotaCacheSnapshot(), now))
+    const changes = priorityChanges(routingPlan(files ?? await loadFiles(), getQuotaCacheSnapshot(), now, readSavedForLast()))
       .filter(change => !focusHoldsProvider(focus, providerOf(change.file), now))
       // An account the provider refuses stays at the bottom until that clears.
       .filter(change => !demoted.has(fileName(change.file)));
