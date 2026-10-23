@@ -29,7 +29,9 @@ const path = require('node:path');
       };
     });
     await page.locator('.quota-refresh').click();
-    // Every account shows on Overview, including ones running on credits.
+    // Overview opens on accounts that need attention; one running on credits isn't one, so it's counted and every
+    // account shows after Show all.
+    await page.locator('.ad-more-fine').getByRole('button',{name:/^Show all \d+$/}).click();
     const codex=page.locator('.ad-card').filter({hasText:'codex-personal.json'});
     // The one-row card shows the state chip; the full notice (credit balance) lives in the card details.
     const chip=codex.locator('.quota-availability-chip').filter({hasText:'Included quota used · credits available'});

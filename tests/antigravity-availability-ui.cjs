@@ -27,6 +27,8 @@ const path = require('node:path');
     await page.getByRole('button',{name:'Refresh accounts',exact:true}).click();
     const summary=page.locator('.quota-provider-summary-cell');
     // The per-group breakdown lives in the account row's details; the provider filter only counts.
+    // Overview opens on accounts that need attention; this one is healthy, so it's counted and one click away.
+    await page.locator('.ad-more-fine').filter({hasText:'All 1 accounts are healthy'}).getByRole('button',{name:'Show all 1',exact:true}).click();
     const row=page.locator('.ad-card').first();
     await row.locator('.ad-account-details > summary').click();
     await row.locator('.quota-group-state').filter({hasText:'Claude/GPT'}).waitFor();
