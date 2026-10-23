@@ -181,6 +181,27 @@ const path = require('node:path');
     const guideCenters = await guide.evaluate(card => [card.querySelector('h2'), ...card.querySelectorAll('button')].map(node => { const box = node.getBoundingClientRect(); return box.top + box.height / 2; }));
     const guideRows = Math.max(...guideCenters) - Math.min(...guideCenters) <= 4 ? 1 : 2;
     assert.equal(guideRows, 1, 'the plugins title and buttons share one line');
+    // App preferences: Quiet hours' times show once it's ticked; the empty save row goes.
+    await tabs.locator('button', { hasText: 'App preferences' }).click();
+    const quiet = page.locator('.alert-quiet-hours');
+    await quiet.waitFor();
+    const quietOn = await quiet.locator('legend input').isChecked();
+    assert.equal(await visible('.alert-quiet-range'), quietOn, 'quiet hours times follow the Quiet hours box in compact');
+    assert.equal(await visible('.config-software-panel .config-settings-save-row'), false, 'the empty save row is hidden in compact');
+    // Service & access: each key is one line, its numbering goes, and every key action stays.
+    await tabs.locator('button', { hasText: 'Service & access' }).click();
+    const keyRow = page.locator('.config-keys-panel .config-key-row').first();
+    await keyRow.waitFor();
+    assert.equal(await visible('.config-keys-panel .config-key-index'), false, 'key numbering is hidden in compact');
+    assert.equal(await keyRow.locator('.config-key-actions button').count(), 3, 'copy, edit and delete stay in compact');
+    assert.ok((await keyRow.boundingBox()).height <= 40, `each key is one line (${(await keyRow.boundingBox()).height}px)`);
+    // Model aliases: each alias is one line; its kind stays and the source note goes.
+    await tabs.locator('button', { hasText: 'Model aliases' }).click();
+    const aliasRow = page.locator('.thinking-alias-row').first();
+    await aliasRow.waitFor();
+    assert.equal(await visible('.thinking-alias-route-source small > span'), false, 'the alias source note is hidden in compact');
+    assert.equal(await visible('.thinking-alias-route-source small > em'), true, 'the alias kind stays in compact');
+    assert.ok((await aliasRow.boundingBox()).height <= 44, `each alias is one line (${(await aliasRow.boundingBox()).height}px)`);
 
     // Sidebar: every page and control fits without scrolling, including with Advanced tools open.
     await page.evaluate(() => { const fold = document.querySelector('.sidebar .personal-advanced'); if (fold) fold.open = true; });

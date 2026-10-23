@@ -925,6 +925,28 @@ svg.lucide {
 :root[data-density='compact'] .config-page .config-extension-guide > h2 { margin: 0; }
 :root[data-density='compact'] .config-page .config-extension-guide-actions { margin: 0; }
 
+/* App preferences: every switch and choice stays. Quiet hours' From/To show once Quiet hours is ticked (until then
+   they're disabled), and the save row goes while there's nothing to save. */
+:root[data-density='compact'] .alert-quiet-hours:has(legend input:not(:checked)) .alert-quiet-range { display: none; }
+:root[data-density='compact'] .config-software-panel .config-settings-save-row:has(.config-card-status:empty):has(.config-card-save:disabled) { display: none; }
+
+/* Service & access: each key is one line (name, then its masked value), without the 01/02 numbering or the key count
+   beside Add, and every key action stays. The TLS card no longer stretches to match its neighbour's height. */
+:root[data-density='compact'] .config-keys-panel .config-count,
+:root[data-density='compact'] .config-keys-panel .config-key-index { display: none; }
+:root[data-density='compact'] .config-keys-panel .config-key-row { min-height: 36px; padding-top: 2px; padding-bottom: 2px; }
+:root[data-density='compact'] .config-keys-panel .config-key-details { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+:root[data-density='compact'] .config-page .config-settings-cards > #config-native-tls { align-self: start; }
+
+/* Model aliases: each alias is one line (source model and its kind, then the alias, its effort and actions). The
+   "Models currently available from the proxy" note and the count beside Add go; the heading tightens. */
+:root[data-density='compact'] .thinking-alias-page .thinking-alias-route-source small > span,
+:root[data-density='compact'] .config-page #config-native-aliases .management-heading-actions > .muted-summary { display: none; }
+:root[data-density='compact'] .config-page #config-native-aliases > .thinking-alias-page > .management-header { min-height: 28px; margin-bottom: 6px; padding-bottom: 6px; }
+:root[data-density='compact'] .config-page #config-native-aliases .management-header h2 { margin: 0; }
+:root[data-density='compact'] .thinking-alias-page .thinking-alias-row { min-height: 36px; padding-top: 3px; padding-bottom: 3px; }
+:root[data-density='compact'] .thinking-alias-page .thinking-alias-route-source { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }
