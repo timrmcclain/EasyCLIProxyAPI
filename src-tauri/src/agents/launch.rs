@@ -245,6 +245,13 @@ pub(crate) fn launch_agent(
             };
             let (environment_to_remove, environment_to_set) =
                 cli_launch_environment(client, session_folder.as_deref());
+            let inherited = if matches!(client, AgentClient::ClaudeCode) {
+                inherited_claude_session_variables(std::env::vars_os(), saved_environment_has)
+            } else {
+                Vec::new()
+            };
+            let environment_to_remove: Vec<&str> =
+                environment_to_remove.iter().copied().chain(inherited.iter().map(String::as_str)).collect();
             let mut arguments = agent_cli_launch_arguments(client, deepseek_harness_options.as_ref())?;
             if chrome {
                 arguments.push("--chrome".to_string());
@@ -254,7 +261,7 @@ pub(crate) fn launch_agent(
                 client.name(),
                 &launch_directory,
                 &arguments,
-                environment_to_remove,
+                &environment_to_remove,
                 &environment_to_set,
                 &terminal,
             )
@@ -1481,8 +1488,75 @@ fn cli_launch_environment(
     }
 }
 
+/// The Claude Code variables the hub inherited from a Claude Code session it was started inside (from a terminal
+/// running `claude`, say). Passed on, they make the new session act as that session's child: it reports "Not logged
+/// in" and keeps no transcript. Only applies when the hub itself carries the `CLAUDECODE` marker, and anything the
+/// user saved in their own environment is kept.
+fn inherited_claude_session_variables(
+    environment: impl IntoIterator<Item = (std::ffi::OsString, std::ffi::OsString)>,
+    saved: impl Fn(&str) -> bool,
+) -> Vec<String> {
+    let names: Vec<String> = environment.into_iter().filter_map(|(name, _)| name.into_string().ok()).collect();
+    if !names.iter().any(|name| name.eq_ignore_ascii_case("CLAUDECODE")) {
+        return Vec::new();
+    }
+    names
+        .into_iter()
+        .filter(|name| {
+            let upper = name.to_ascii_uppercase();
+            (upper == "CLAUDECODE" || upper.starts_with("CLAUDE_") || upper.starts_with("ANTHROPIC_")) && !saved(name)
+        })
+        .collect()
+}
+
+fn saved_environment_has(name: &str) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        super::windows_probe::windows_saved_environment_has(name)
+    }
+    // A new terminal elsewhere runs the user's shell profile, which sets their own variables again.
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = name;
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    fn environment(names: &[&str]) -> Vec<(std::ffi::OsString, std::ffi::OsString)> {
+        names.iter().map(|name| (name.into(), "value".into())).collect()
+    }
+
+    #[test]
+    fn a_hub_started_outside_claude_code_passes_its_environment_on() {
+        let removed = super::inherited_claude_session_variables(
+            environment(&["PATH", "CLAUDE_CODE_CHILD_SESSION", "ANTHROPIC_BASE_URL"]),
+            |_| false,
+        );
+        assert!(removed.is_empty());
+    }
+
+    #[test]
+    fn a_hub_started_inside_claude_code_drops_that_sessions_variables_but_keeps_saved_ones() {
+        let removed = super::inherited_claude_session_variables(
+            environment(&[
+                "PATH",
+                "CLAUDECODE",
+                "CLAUDE_CODE_CHILD_SESSION",
+                "CLAUDE_CODE_ENTRYPOINT",
+                "ANTHROPIC_DEFAULT_OPUS_MODEL",
+                "CLAUDE_CONFIG_DIR",
+                "CLAUDEISH",
+            ]),
+            |name| name == "CLAUDE_CONFIG_DIR",
+        );
+        assert_eq!(
+            removed,
+            ["CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "CLAUDE_CODE_ENTRYPOINT", "ANTHROPIC_DEFAULT_OPUS_MODEL"]
+        );
+    }
+
     #[test]
     fn chrome_session_drops_tokens_and_uses_its_own_config_folder() {
         let folder = std::path::PathBuf::from("/home/me/.claude-chrome");

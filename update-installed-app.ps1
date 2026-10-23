@@ -66,7 +66,10 @@ while ($true) {
 }
 
 Write-Host 'Relaunching...'
-Start-Process -FilePath $TargetExe -WorkingDirectory $InstallDir
+# Started through Explorer, the hub gets the desktop's environment rather than this script's. Run from inside a
+# Claude Code session, this script carries that session's variables, and the hub would pass them to every session
+# it opens.
+Start-Process -FilePath (Join-Path $env:WINDIR 'explorer.exe') -ArgumentList "`"$TargetExe`""
 
 Start-Sleep -Seconds 2
 $version = (Get-Item -LiteralPath $TargetExe).VersionInfo.FileVersion

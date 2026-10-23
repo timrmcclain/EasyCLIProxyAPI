@@ -229,6 +229,20 @@ pub(crate) fn windows_registered_path_directories() -> Vec<PathBuf> {
     paths
 }
 
+/// Whether `name` is saved in the user's or the machine's environment, rather than only inherited from whichever
+/// process started the hub.
+pub(crate) fn windows_saved_environment_has(name: &str) -> bool {
+    [
+        (HKEY_CURRENT_USER, r"Environment"),
+        (
+            HKEY_LOCAL_MACHINE,
+            r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+        ),
+    ]
+    .into_iter()
+    .any(|(hive, key)| RegistryKey::open(hive, key).and_then(|key| key.string(name)).is_some())
+}
+
 fn join_registry_path(prefix: &str, suffix: &str) -> String {
     format!("{prefix}\\{suffix}")
 }
