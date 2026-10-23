@@ -852,6 +852,17 @@ svg.lucide {
 :root[data-density='compact'] .health-uptime > p { display: none !important; }
 :root[data-density='compact'] .home-runtime-details .panel-detail-row { min-height: 0; padding-top: 4px; padding-bottom: 4px; }
 
+/* Dialogs and popups: instructions and hints go, and lists tighten. Anything that says what an action will do (confirm
+   text, which credentials a rule affects, warnings), required-field notes and states always stay. */
+:root[data-density='compact'] .command-palette-footer,
+:root[data-density='compact'] .agent-client-manager > p,
+:root[data-density='compact'] .agent-client-manager-defaults > small,
+:root[data-density='compact'] .agent-client-option-copy > small,
+:root[data-density='compact'] .model-config-heading > div > small,
+:root[data-density='compact'] .oauth-hint { display: none !important; }
+:root[data-density='compact'] .command-palette-list li { min-height: 28px; padding-top: 3px; padding-bottom: 3px; }
+:root[data-density='compact'] .agent-client-manager .agent-client-option { min-height: 0; padding-top: 6px; padding-bottom: 6px; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }

@@ -128,6 +128,12 @@ const path = require('node:path');
     assert.equal(await visible('.home-access-panel .home-field-label > span:first-child'), true, 'field labels stay in compact');
     await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'home'); });
 
+    // Command palette: the key hints go; the list stays.
+    await page.keyboard.press('Control+k');
+    await page.locator('.command-palette-list li').first().waitFor();
+    assert.equal(await visible('.command-palette-footer'), false, 'palette key hints are hidden in compact');
+    await page.keyboard.press('Escape');
+
     // Settings: the section tabs fit on one line.
     await page.locator('.sidebar').getByRole('button', { name: /^Settings/ }).click();
     const tabs = page.locator('.config-settings-navigation');
