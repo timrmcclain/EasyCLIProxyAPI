@@ -272,11 +272,11 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
                 </span>
               </dd>
             </div>
-            <div className="panel-detail-row">
+            <div className="panel-detail-row" data-runtime="app-version">
               <dt>{t('kernel.overview.appVersion')}</dt>
               <dd><span className="mono-tag">{currentAppVersion}</span></dd>
             </div>
-            <div className="panel-detail-row">
+            <div className="panel-detail-row" data-runtime="pid">
               <dt>{t('kernel.control.pid')}</dt>
               <dd><span className="mono-tag">{coreStatus?.processId || t('kernel.control.noPid')}</span></dd>
             </div>

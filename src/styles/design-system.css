@@ -752,7 +752,9 @@ svg.lucide {
 :root[data-density='compact'] .glance-latest,
 :root[data-density='compact'] .glance-runway-note,
 :root[data-density='compact'] .ad-footnote,
-:root[data-density='compact'] .home-proxy-details { display: none; }
+:root[data-density='compact'] .home-proxy-details,
+:root[data-density='compact'] .ad-quota.ad-unknown .ad-quota-reset > span,
+:root[data-density='compact'] .glance-activity .glance-meta > span:last-child:not(:first-child) { display: none; }
 
 /* Accounts list: neutral badges (disabled or status unknown; the switch already shows disabled), the duplicate
    "Disabled" in the quota column, the runtime caption and routine quota notes. Problem badges stay. */
@@ -826,6 +828,29 @@ svg.lucide {
 :root[data-density='compact'] .agents-page .agent-client-list .agent-list-items { grid-auto-rows: auto; grid-template-rows: none; min-height: 0; }
 :root[data-density='compact'] .agents-page .connection-overview { padding: 10px 12px; }
 :root[data-density='compact'] .agents-page .agent-core-setting-section { padding: 10px 12px; gap: 8px; }
+
+/* Advanced tools: explanations, file paths, sizes and diagnostic detail go; states, problems and controls stay.
+   Health check drops its passing rows only when something needs fixing, so an all-clear still shows. */
+:root[data-density='compact'] .home-access-panel .home-panel-heading p,
+:root[data-density='compact'] .home-access-panel .home-field-label > span + span,
+:root[data-density='compact'] .home-runtime-details [data-runtime='app-version'],
+:root[data-density='compact'] .home-runtime-details [data-runtime='pid'],
+:root[data-density='compact'] .plugin-card .plugin-path,
+:root[data-density='compact'] .version-item-content > .personal-context,
+:root[data-density='compact'] .ext-row .ext-description,
+:root[data-density='compact'] .ext-row .ext-scripts,
+:root[data-density='compact'] .ext-row .ext-meta.ext-path,
+:root[data-density='compact'] .ext-skills .ext-meta,
+:root[data-density='compact'] .compression-apps > p,
+:root[data-density='compact'] .compression-memory small,
+:root[data-density='compact'] .compression-learn-body,
+:root[data-density='compact'] .compression-learn-note,
+:root[data-density='compact'] .compression-footnote,
+:root[data-density='compact'] .jev-page .jev-subtitle,
+:root[data-density='compact'] .jev-guard-text > span,
+:root[data-density='compact'] .health-list:has(.health-item:not(.level-ok)) .health-item.level-ok,
+:root[data-density='compact'] .health-uptime > p { display: none !important; }
+:root[data-density='compact'] .home-runtime-details .panel-detail-row { min-height: 0; padding-top: 4px; padding-bottom: 4px; }
 
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {

@@ -101,6 +101,8 @@ const path = require('node:path');
     // Secret Guard: explanations go; the state and the reason the menus are locked stay.
     await page.locator('.sidebar').getByRole('button', { name: /^Secret Guard/ }).click();
     await page.locator('.sg-policy').waitFor();
+    // The state line appears once Secret Guard's status loads; waiting for it to be visible also proves compact keeps it.
+    await page.locator('.sg-switch-card .sg-state').first().waitFor({ state: 'visible' });
     assert.equal(await visible('.sg-page .jev-subtitle'), false, 'Secret Guard explanations are hidden in compact');
     assert.equal(await visible('.sg-switch-card .sg-state'), true, 'Secret Guard state stays in compact');
 
@@ -111,6 +113,20 @@ const path = require('node:path');
       assert.equal(await visible(hidden), false, `${hidden} is hidden in compact`);
     }
     assert.equal(await visible('.agent-list-items button small'), true, 'client status lines stay in compact');
+
+    // Advanced tools. Health check: with problems present, only the problems show.
+    await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'health'); });
+    await page.reload();
+    await page.locator('.health-item').first().waitFor();
+    assert.equal(await visible('.health-item.level-ok'), false, 'passing checks are hidden while something needs fixing');
+    assert.equal(await visible('.health-item.level-fail'), true, 'problems stay in compact');
+    // Proxy: field labels stay; the format note and process detail go.
+    await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'proxy'); });
+    await page.reload();
+    await page.locator('.home-runtime-details').waitFor();
+    assert.equal(await visible('.home-runtime-details [data-runtime="pid"]'), false, 'process ID is hidden in compact');
+    assert.equal(await visible('.home-access-panel .home-field-label > span:first-child'), true, 'field labels stay in compact');
+    await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'home'); });
 
     // Settings: the section tabs fit on one line.
     await page.locator('.sidebar').getByRole('button', { name: /^Settings/ }).click();
