@@ -54,6 +54,14 @@ const path = require('node:path');
     assert.ok(compact.contentHeight <= roomy.contentHeight * 0.8, `far more fits on screen (${roomy.contentHeight} -> ${compact.contentHeight})`);
     assert.ok(compact.sidebarWidth < roomy.sidebarWidth, `sidebar is narrower (${roomy.sidebarWidth} -> ${compact.sidebarWidth})`);
     assert.ok(compact.shortestControl >= 24, `controls stay clickable (${compact.shortestControl}px)`);
+    // Only what matters at a glance: explanations and routine labels go, problems stay.
+    const visible = selector => page.evaluate(sel => [...document.querySelectorAll(sel)].some(node => node.offsetParent !== null), selector);
+    for (const hidden of ['.glance-unconfirmed', '.ad-row-name .ad-provider', '.ad-row-status .quota-availability-available', '.ad-footnote', '.home-status-latest']) {
+      assert.equal(await visible(hidden), false, `${hidden} is hidden in compact`);
+    }
+    for (const kept of ['.ad-row-status .quota-availability-unavailable', '.ad-card-note.ad-error', '.ad-quota-reset']) {
+      assert.equal(await visible(kept), true, `${kept} stays in compact`);
+    }
     console.log(`roomy ${JSON.stringify(roomy)}\ncompact ${JSON.stringify(compact)}`);
 
     await page.reload();

@@ -679,6 +679,60 @@ svg.lucide {
 :root[data-density='compact'] .jev-card { padding: 6px 10px; }
 :root[data-density='compact'] .sg-finding { padding: 3px 0; }
 
+/* Compact shows only what matters at a glance: problems, numbers and controls. Explanations, labels the context
+   already gives, and detail for digging in are hidden; Roomy shows everything, and nothing hidden here is the only
+   way to reach a feature. */
+/* Page descriptions under titles, and the explanations folded beside them. */
+:root[data-density='compact'] .workspace .content header h1 ~ p,
+:root[data-density='compact'] .workspace .content header h1 ~ details,
+:root[data-density='compact'] .workspace .content header h1 ~ div > p,
+:root[data-density='compact'] .connectors-profile,
+:root[data-density='compact'] .connector-card-teaser,
+:root[data-density='compact'] .connector-card-description { display: none !important; }
+/* Sidebar captions. */
+:root[data-density='compact'] .sidebar-brand div > span,
+:root[data-density='compact'] .personal-runtime small,
+:root[data-density='compact'] .sidebar-glossary-link { display: none; }
+/* Overview status bar: the neutral count and the time of the last request. */
+:root[data-density='compact'] .home-status-chip.neutral,
+:root[data-density='compact'] .home-status-latest { display: none; }
+/* Overview accounts: the why-unconfirmed notes, the result count, the provider and plan under each name (the group
+   heading names the provider), "available"/"unconfirmed" badges (problems keep theirs), the notes under a quota bar,
+   and the paid-credits badge on a group heading. */
+:root[data-density='compact'] .glance-unconfirmed,
+:root[data-density='compact'] .quota-result-count,
+:root[data-density='compact'] .ad-row-name .ad-provider,
+:root[data-density='compact'] .ad-row-status .quota-availability-available,
+:root[data-density='compact'] .ad-row-status .quota-availability-unknown,
+:root[data-density='compact'] .ad-row-quota .ad-card-note:not(.ad-error),
+:root[data-density='compact'] .quota-group-heading .ad-paid-fallback { display: none; }
+/* Accounts list: the file name, plan and priority detail, "not fetched / unconfirmed" text and the routine
+   "Signed in" badge; problems, quota numbers and the controls stay. */
+:root[data-density='compact'] .auth-credential-row .auth-card-filename,
+:root[data-density='compact'] .auth-list-plan small,
+:root[data-density='compact'] .auth-list-status small,
+:root[data-density='compact'] .auth-list-status .auth-status-badge.success,
+:root[data-density='compact'] .auth-list-quota .credential-quota-empty,
+:root[data-density='compact'] .auth-list-quota .quota-availability-unknown,
+:root[data-density='compact'] .auth-files-heading p,
+:root[data-density='compact'] .page-footnote { display: none; }
+:root[data-density='compact'] .auth-credential-row { min-height: 34px; padding: 1px 0; }
+:root[data-density='compact'] .auth-list-main-actions { grid-template-rows: none; grid-auto-flow: column; gap: 6px; padding-left: 6px; }
+:root[data-density='compact'] .auth-card-actions { grid-template-columns: auto auto; gap: 6px; }
+:root[data-density='compact'] .auth-list-icon-actions { grid-template-columns: repeat(2, 28px); }
+:root[data-density='compact'] .auth-card-actions .auth-list-action { width: 28px; min-width: 28px; height: 28px; }
+:root[data-density='compact'] .auth-list-details-button { width: auto; min-height: 28px; padding: 2px 6px; }
+:root[data-density='compact'] .auth-card-header > :first-child:is(img, svg, span) { width: 22px; height: 22px; }
+/* Switches keep their own size; the 28px control height is for buttons with a label. */
+:root[data-density='compact'] [role='switch'] { min-height: 0; }
+
+/* Overview footer: activity detail, the runway explanation, the last-checked line and proxy details. */
+:root[data-density='compact'] .glance-accounts,
+:root[data-density='compact'] .glance-latest,
+:root[data-density='compact'] .glance-runway-note,
+:root[data-density='compact'] .ad-footnote,
+:root[data-density='compact'] .home-proxy-details { display: none; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }
