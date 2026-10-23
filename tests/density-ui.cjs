@@ -81,6 +81,30 @@ const path = require('node:path');
     const trendHeight = await page.evaluate(() => document.querySelector('.usage-trend-panel').getBoundingClientRect().height);
     assert.ok(trendHeight <= 360, `trend panel sizes to its chart (${trendHeight}px)`);
 
+    // Accounts: neutral badges and runtime captions go; problem badges stay.
+    await page.locator('.sidebar').getByRole('button', { name: /^Accounts/ }).click();
+    await page.locator('.auth-credential-row').first().waitFor();
+    for (const hidden of ['.auth-list-status .auth-status-badge.neutral', '.auth-card-provider', '.auth-list-quota .quota-availability-disabled']) {
+      assert.equal(await visible(hidden), false, `${hidden} is hidden in compact`);
+    }
+    for (const kept of ['.auth-list-status .auth-status-badge.error', '.auth-list-quota .quota-availability-unavailable']) {
+      assert.equal(await visible(kept), true, `${kept} stays in compact`);
+    }
+
+    // Connectors: only what's on and what needs attention.
+    await page.locator('.sidebar').getByRole('button', { name: /^Connectors/ }).click();
+    await page.locator('.connector-row-state').first().waitFor({ state: 'attached' });
+    assert.equal(await visible('.connector-row-state:not(.on):not(.warn)'), false, 'Off pills are hidden in compact');
+    assert.equal(await visible('.connector-row-state.on'), true, 'On pills stay in compact');
+    assert.equal(await visible('.connector-row-state.warn'), true, 'warnings stay in compact');
+
+    // Settings: the section tabs fit on one line.
+    await page.locator('.sidebar').getByRole('button', { name: /^Settings/ }).click();
+    const tabs = page.locator('.config-settings-navigation');
+    await tabs.waitFor();
+    const tabRows = await tabs.evaluate(nav => new Set([...nav.querySelectorAll('button')].map(b => Math.round(b.getBoundingClientRect().top))).size);
+    assert.equal(tabRows, 1, 'settings tabs fit on one line');
+
     assert.deepEqual(errors, []);
     console.log('Compact density packs the screen while controls stay clickable.');
   } finally {

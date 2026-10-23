@@ -410,7 +410,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           {aiTest && !aiTest.running ? (
             <AiTestLine test={aiTest} connectorId={item.id} />
           ) : (
-            <details className="connector-hint connector-hint-details">
+            <details className="connector-hint connector-hint-details connector-test-explainer">
               <summary>{ct('aiTestHowTitle')}</summary>
               <p>{ct('aiTestHint')}{aiTestDesktopOnly ? <> {ct('aiTestDesktopCopy')}</> : null}</p>
             </details>

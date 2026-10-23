@@ -754,6 +754,56 @@ svg.lucide {
 :root[data-density='compact'] .ad-footnote,
 :root[data-density='compact'] .home-proxy-details { display: none; }
 
+/* Accounts list: neutral badges (disabled or status unknown; the switch already shows disabled), the duplicate
+   "Disabled" in the quota column, the runtime caption and routine quota notes. Problem badges stay. */
+:root[data-density='compact'] .auth-list-status .auth-status-badge.neutral,
+:root[data-density='compact'] .auth-list-quota .quota-availability-disabled,
+:root[data-density='compact'] .auth-list-quota .auth-list-muted,
+:root[data-density='compact'] .auth-card-provider { display: none !important; }
+:root[data-density='compact'] .auth-list-quota .credential-quota .quota-availability { margin: 0; padding: 3px 8px; }
+/* Accounts quota cards: the icon names the provider, and the fetch button says the quota hasn't been fetched, so the
+   provider name, plan placeholder, status line, priority, routine availability notes and the footnote go. */
+:root[data-density='compact'] .accounts-quota-view .quota-identity div > span,
+:root[data-density='compact'] .accounts-quota-view .quota-plan,
+:root[data-density='compact'] .accounts-quota-view .quota-status,
+:root[data-density='compact'] .accounts-quota-view .quota-availability-unknown,
+:root[data-density='compact'] .accounts-quota-view .quota-availability-disabled,
+:root[data-density='compact'] .accounts-quota-view .quota-availability small,
+:root[data-density='compact'] .accounts-quota-view .quota-card-message > span,
+:root[data-density='compact'] .accounts-quota-unreported { display: none !important; }
+:root[data-density='compact'] .accounts-quota-view .real-quota-card { min-height: 0; height: auto; }
+:root[data-density='compact'] .accounts-quota-view .real-quota-card .quota-availability { margin: 6px 0; padding: 4px 8px; }
+
+/* Connectors: only what's on and what needs attention. "Off" pills (a card with none is simply not connected), the
+   last-checked time, and side explanations inside an open card go; setup steps and warnings stay. */
+:root[data-density='compact'] .connector-row-state:not(.on):not(.warn),
+:root[data-density='compact'] .connectors-checked,
+:root[data-density='compact'] .connector-test-explainer,
+:root[data-density='compact'] .connector-services > small { display: none !important; }
+
+/* Settings: section introductions, the log footnote, the quiet-hours note, the auto-save tag and the tab icons go (help
+   stays behind each ? icon, and validation errors stay); rows, inputs, tabs and panels tighten. */
+:root[data-density='compact'] .config-history-intro,
+:root[data-density='compact'] .proxy-log-intro,
+:root[data-density='compact'] .proxy-log-note,
+:root[data-density='compact'] .alert-quiet-hours > small,
+:root[data-density='compact'] .config-network-label .config-inline-status,
+:root[data-density='compact'] .config-settings-navigation button > svg { display: none !important; }
+:root[data-density='compact'] .config-page .config-settings-navigation.config-subpage-tabs button { min-height: 30px; padding: 4px 10px; }
+:root[data-density='compact'] .config-page .config-settings-content .template-config-card,
+:root[data-density='compact'] .config-page .config-settings-content .config-network-section { padding: 10px 12px; gap: 8px; }
+:root[data-density='compact'] .config-page .config-settings-content { gap: 10px; }
+:root[data-density='compact'] .config-page .template-config-heading { margin-bottom: 6px; }
+:root[data-density='compact'] .config-page .template-config-custom { padding: 2px 8px; }
+:root[data-density='compact'] .config-page .template-config-custom > summary { min-height: 26px; padding-top: 2px; padding-bottom: 2px; }
+:root[data-density='compact'] .config-page .template-config-heading,
+:root[data-density='compact'] .config-page .config-panel-heading { min-height: 0; padding-bottom: 6px; }
+:root[data-density='compact'] .config-page .config-settings-content :is(.config-network-grid, .config-diagnostics-toggle-grid, .config-diagnostics-fields, .config-management-form, .template-config-fields) { gap: 6px 16px; }
+:root[data-density='compact'] .config-page .config-settings-content :is(.config-network-field, .config-management-field, .config-diagnostics-field, .template-config-field) { min-height: 30px; gap: 4px 12px; padding-bottom: 4px; }
+:root[data-density='compact'] .config-page .template-config-toggle { min-height: 30px; }
+:root[data-density='compact'] .config-page .config-software-setting-row { min-height: 0; padding-top: 2px; padding-bottom: 2px; }
+:root[data-density='compact'] .config-page :is(.config-network-input, .config-management-field input, .template-config-control input:not([type='checkbox']):not([type='radio']), .template-config-control select) { height: 30px; min-height: 0; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }
