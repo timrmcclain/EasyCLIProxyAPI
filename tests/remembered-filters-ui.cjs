@@ -74,7 +74,10 @@ const path = require('node:path');
     assert.match(await page.getByRole('button', { name: 'Request result' }).innerText(), /Success/, 'result filter remembered');
 
     await page.keyboard.press('Control+k');
-    await page.keyboard.type('failed requests');
+    // Type only once the palette is open: keys pressed before it appears are lost on a busy machine.
+    const paletteInput = page.getByRole('dialog', { name: /command/i }).getByRole('combobox').or(page.getByRole('dialog', { name: /command/i }).getByRole('textbox')).first();
+    await paletteInput.waitFor();
+    await paletteInput.fill('failed requests');
     await page.getByRole('dialog', { name: /command/i }).getByText('Show failed requests').click();
     const shown = page.getByRole('button', { name: 'Request result' });
     if (!(await shown.isVisible())) await page.getByRole('button', { name: 'More filters' }).click();

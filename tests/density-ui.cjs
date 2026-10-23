@@ -69,6 +69,18 @@ const path = require('node:path');
     assert.equal(await page.evaluate(() => document.documentElement.dataset.density), 'compact', 'remembered after reload');
     assert.equal(await page.locator('.sidebar-density-selector').getByRole('button', { name: 'Compact' }).getAttribute('aria-pressed'), 'true');
 
+    // Activity: the chart and breakdown stay, their explanations go, and panels size to their content.
+    await page.locator('.sidebar').getByRole('button', { name: 'Activity' }).click();
+    await page.locator('.usage-token-donut').waitFor();
+    for (const hidden of ['.usage-token-notes', '.usage-records-page .response-times', '.usage-collector-state > strong ~ span']) {
+      assert.equal(await visible(hidden), false, `${hidden} is hidden in compact`);
+    }
+    for (const kept of ['.usage-trend-chart', '.usage-token-donut']) {
+      assert.equal(await visible(kept), true, `${kept} stays in compact`);
+    }
+    const trendHeight = await page.evaluate(() => document.querySelector('.usage-trend-panel').getBoundingClientRect().height);
+    assert.ok(trendHeight <= 360, `trend panel sizes to its chart (${trendHeight}px)`);
+
     assert.deepEqual(errors, []);
     console.log('Compact density packs the screen while controls stay clickable.');
   } finally {

@@ -69,7 +69,10 @@ const path = require('node:path');
     // The palette and settings search both reach it.
     await page.locator('nav').getByRole('button', { name: /^Overview/ }).first().click();
     await page.keyboard.press('Control+k');
-    await page.keyboard.type('storage');
+    // Type only once the palette is open: keys pressed before it appears are lost on a busy machine.
+    const paletteInput = page.getByRole('dialog', { name: /command/i }).getByRole('combobox').or(page.getByRole('dialog', { name: /command/i }).getByRole('textbox')).first();
+    await paletteInput.waitFor();
+    await paletteInput.fill('storage');
     await page.getByRole('dialog', { name: /command/i }).getByRole('option', { name: /Storage/ }).first().click();
     await panel.waitFor();
     await page.getByRole('searchbox', { name: 'Search settings' }).fill('shrink');

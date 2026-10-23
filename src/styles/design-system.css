@@ -726,6 +726,27 @@ svg.lucide {
 /* Switches keep their own size; the 28px control height is for buttons with a label. */
 :root[data-density='compact'] [role='switch'] { min-height: 0; }
 
+/* Activity: the stored-record count, the response-times panel (Model Health has it), and in the token breakdown the
+   repeated totals, performance and price-coverage boxes; request rows lose the date under today's time, the effort
+   badge and the input/output split. Failure reasons stay. Charts get shorter. */
+:root[data-density='compact'] .usage-collector-state > strong ~ span,
+:root[data-density='compact'] .usage-records-page .response-times,
+:root[data-density='compact'] .usage-token-notes,
+:root[data-density='compact'] .usage-records-page .usage-token-context,
+:root[data-density='compact'] .usage-td-time small,
+:root[data-density='compact'] .usage-model-effort,
+:root[data-density='compact'] .usage-td-token .usage-event-metrics,
+:root[data-density='compact'] .project-usage-head p,
+:root[data-density='compact'] .usage-pricing-summary > span { display: none !important; }
+/* The overview panels size to their content instead of stretching to the window. */
+:root[data-density='compact'] .usage-records-page .usage-overview-layout { grid-template-rows: max-content max-content; align-content: start; }
+:root[data-density='compact'] .usage-records-page .usage-overview-reflow > .usage-overview-canvas { height: auto; min-height: 0; }
+:root[data-density='compact'] .usage-records-page .usage-token-content { grid-template-rows: auto; }
+:root[data-density='compact'] .usage-records-page .usage-trend-panel { min-height: 0; }
+:root[data-density='compact'] .usage-records-page .usage-trend-chart { grid-template-rows: minmax(120px, 200px) 20px; }
+:root[data-density='compact'] .usage-records-page .usage-token-donut { width: 132px; height: 132px; }
+:root[data-density='compact'] .usage-records-page .usage-token-donut-label strong { font-size: 18px; }
+
 /* Overview footer: activity detail, the runway explanation, the last-checked line and proxy details. */
 :root[data-density='compact'] .glance-accounts,
 :root[data-density='compact'] .glance-latest,
