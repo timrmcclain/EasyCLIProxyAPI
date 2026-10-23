@@ -9283,7 +9283,7 @@ textarea:focus-visible {
 .usage-token-context-metrics dd {
   margin: 0;
   color: var(--text-primary);
-  font-size: 20px;
+  font-size: calc(20px * var(--type-scale, 1));
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.025em;
@@ -9377,7 +9377,7 @@ textarea:focus-visible {
   }
 
   .usage-token-notes b {
-    font-size: 14px;
+    font-size: calc(14px * var(--type-scale, 1));
   }
 
   .usage-token-context {
@@ -9405,7 +9405,7 @@ textarea:focus-visible {
   }
 
   .usage-token-context-metrics dd {
-    font-size: 16px;
+    font-size: calc(16px * var(--type-scale, 1));
   }
 
   .usage-token-results .usage-token-context-metrics dt {

@@ -1,4 +1,4 @@
-.proxy-log-intro { margin: 0 0 10px; color: var(--text-muted); font-size: 13px; }
+.proxy-log-intro { margin: 0 0 10px; color: var(--text-muted); font-size: calc(13px * var(--type-scale, 1)); }
 .proxy-log-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
 .proxy-log-toolbar input[type="search"] { flex: 1 1 14rem; min-width: 0; }
 .proxy-log-lines {
@@ -11,14 +11,14 @@
   border-radius: 6px;
   background: var(--surface-subtle, var(--bg-secondary));
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .proxy-log-line.proxy-log-warn { color: var(--warning-color); }
 .proxy-log-line.proxy-log-error { color: var(--danger-color); font-weight: 600; }
-.proxy-log-empty, .proxy-log-note, .proxy-log-message { color: var(--text-muted); font-size: 12px; }
+.proxy-log-empty, .proxy-log-note, .proxy-log-message { color: var(--text-muted); font-size: calc(12px * var(--type-scale, 1)); }
 .proxy-log-note { margin: 6px 0 0; }
 @media (forced-colors: active) {
   .proxy-log-line.proxy-log-warn, .proxy-log-line.proxy-log-error { color: CanvasText; }

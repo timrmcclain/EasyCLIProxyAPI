@@ -1,10 +1,10 @@
 .config-page { gap: 20px; min-width: 0; }
 .config-settings-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-width: 0; }
-.config-settings-header h1 { margin: 0; font-size: 24px; letter-spacing: -.035em; }
+.config-settings-header h1 { margin: 0; font-size: calc(24px * var(--type-scale, 1)); letter-spacing: -.035em; }
 .config-settings-search { display: flex; align-items: center; gap: 10px; flex: 0 1 370px; min-width: 0; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-tertiary); }
 .config-settings-search:focus-within { border-color: var(--primary-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent); }
 .config-settings-search > svg { flex: none; }
-.config-settings-search input { width: 100%; min-width: 0; padding: 4px 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 13px; }
+.config-settings-search input { width: 100%; min-width: 0; padding: 4px 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: calc(13px * var(--type-scale, 1)); }
 .config-settings-search input::-webkit-search-cancel-button { display: none; }
 .config-settings-search button { flex: none; width: 26px; height: 26px; }
 .config-settings-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; min-width: 0; }
@@ -12,7 +12,7 @@
 .config-settings-navigation.config-subpage-tabs { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; max-width: 100%; padding: 0 0 4px; margin: 0; border: 0; border-bottom: 1px solid var(--border-color); background: none; border-radius: 0; overflow: visible; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; scroll-padding-inline: 4px; }
 .config-settings-navigation::-webkit-scrollbar { height: 5px; }
 .config-settings-navigation::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border-color); }
-.config-page .config-settings-navigation.config-subpage-tabs button { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; min-width: 0; width: auto; height: auto; min-height: 44px; margin: 0; padding: 10px 12px; border: 1px solid transparent; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; background: transparent; color: var(--text-secondary); text-align: center; white-space: nowrap; font-size: 12px; line-height: 1.5; font-weight: 500; box-shadow: none; }
+.config-page .config-settings-navigation.config-subpage-tabs button { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; min-width: 0; width: auto; height: auto; min-height: 44px; margin: 0; padding: 10px 12px; border: 1px solid transparent; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; background: transparent; color: var(--text-secondary); text-align: center; white-space: nowrap; font-size: calc(12px * var(--type-scale, 1)); line-height: 1.5; font-weight: 500; box-shadow: none; }
 .config-page .config-settings-navigation.config-subpage-tabs button:hover { background: var(--bg-hover); color: var(--text-primary); }
 .config-page .config-settings-navigation.config-subpage-tabs button.active { border-bottom-color: var(--primary-color); background: var(--ui-accent-soft); color: var(--primary-color); font-weight: 600; box-shadow: none; }
 .config-page .config-settings-navigation.config-subpage-tabs button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -3px; }
@@ -80,7 +80,7 @@
 .config-settings-content .config-settings-cards:empty + #config-template-panel .template-config-section { margin-top: 0; }
 .config-search-results { min-width: 0; }
 .config-search-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.config-search-heading h2 { margin: 0; font-size: 20px; }
+.config-search-heading h2 { margin: 0; font-size: calc(20px * var(--type-scale, 1)); }
 .config-search-heading > span { padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; color: var(--text-secondary); }
 .config-search-result-list { display: grid; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; background: var(--bg-card); }
 .config-search-result-list > button { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; padding: 16px 18px; border: 0; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; }
@@ -88,10 +88,10 @@
 .config-search-result-list > button:hover { background: var(--bg-hover); }
 .config-search-result-list > button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -3px; }
 .config-search-result-copy { display: grid; min-width: 0; gap: 6px; overflow-wrap: anywhere; }
-.config-search-result-copy strong { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.config-search-result-copy strong { font-size: calc(13px * var(--type-scale, 1)); font-weight: 600; color: var(--text-primary); }
 .config-search-result-copy small { font-size: 11px; color: var(--text-tertiary); }
 .config-search-result-list > button > svg { flex: none; }
-.config-search-empty { padding: 40px 20px; border: 1px dashed var(--border-color); border-radius: 12px; color: var(--text-secondary); font-size: 13px; text-align: center; }
+.config-search-empty { padding: 40px 20px; border: 1px dashed var(--border-color); border-radius: 12px; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); text-align: center; }
 
 .config-field-label { display: flex; align-items: center; gap: 6px; min-width: 0; line-height: 1.5; }
 .config-field-label > label { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -103,14 +103,14 @@
 .config-settings-content .config-software-setting-icon { width: 28px; height: 28px; border: 0; background: transparent; }
 .config-settings-content .config-diagnostics-field { padding: 0; border: 0; background: transparent; gap: 10px; }
 .config-settings-content .config-management-form { padding: 0; border: 0; background: transparent; }
-.config-settings-content .config-management-content > p { margin: 0; font-size: 12px; color: var(--text-secondary); }
+.config-settings-content .config-management-content > p { margin: 0; font-size: calc(12px * var(--type-scale, 1)); color: var(--text-secondary); }
 .config-settings-content .config-software-setting-row { min-height: 66px; padding: 14px 16px; gap: 16px; }
 .settings-help { display: inline-flex; flex: none; vertical-align: middle; }
 .settings-help-trigger { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-tertiary); cursor: pointer; }
 .settings-help-trigger:hover,
 .settings-help-trigger[aria-expanded="true"] { background: var(--bg-hover); color: var(--text-primary); }
 .settings-help-trigger:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-.settings-help-popover { position: fixed; z-index: 1000; display: block; width: min(320px, calc(100vw - 24px)); max-height: min(360px, calc(100vh - 24px)); overflow-y: auto; box-sizing: border-box; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); box-shadow: var(--shadow-lg); color: var(--text-secondary); font-size: 12px; font-weight: 400; line-height: 1.7; overflow-wrap: anywhere; }
+.settings-help-popover { position: fixed; z-index: 1000; display: block; width: min(320px, calc(100vw - 24px)); max-height: min(360px, calc(100vh - 24px)); overflow-y: auto; box-sizing: border-box; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); box-shadow: var(--shadow-lg); color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); font-weight: 400; line-height: 1.7; overflow-wrap: anywhere; }
 
 @media (max-width: 1150px) {
   .config-settings-layout { gap: 20px; }
@@ -121,7 +121,7 @@
   .config-page { gap: 20px; }
   .config-settings-header { flex-direction: column; align-items: stretch; gap: 16px; }
   .config-settings-search { flex-basis: auto; }
-  .config-settings-header h1 { font-size: 24px; }
+  .config-settings-header h1 { font-size: calc(24px * var(--type-scale, 1)); }
   .config-settings-navigation button > svg { display: none; }
   .config-page .config-settings-navigation.config-subpage-tabs button { padding: 10px 12px; }
   .config-settings-content .config-network-grid { grid-template-columns: minmax(0, 1fr); }
@@ -335,8 +335,8 @@
   .config-page .config-settings-content :is(.config-settings-save-row, .template-config-actions, .config-management-actions, .config-diagnostics-actions) { justify-content: flex-start; }
 }
 .config-page .config-settings-cards > section > :is(.config-panel-heading, .config-network-section-heading) { margin-bottom: 0; }
-.config-page .config-settings-content :is(.config-heading-title h2, .config-network-section-title h3, .template-config-heading h3) { font-size: 14px; font-weight: 600; line-height: 1.5; }
-.config-page .config-settings-content :is(.config-network-label, .config-field-label, .config-management-field > span) { font-size: 13px; font-weight: 500; }
+.config-page .config-settings-content :is(.config-heading-title h2, .config-network-section-title h3, .template-config-heading h3) { font-size: calc(14px * var(--type-scale, 1)); font-weight: 600; line-height: 1.5; }
+.config-page .config-settings-content :is(.config-network-label, .config-field-label, .config-management-field > span) { font-size: calc(13px * var(--type-scale, 1)); font-weight: 500; }
 .config-page .config-settings-content .primary-button:disabled { background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-tertiary); opacity: 1; box-shadow: none; }
 .config-page .config-settings-content .config-proxy-heading { max-width: 420px; }
 .config-page .config-settings-content :is(.config-settings-save-row, .template-config-actions) { margin-top: 4px; }
@@ -560,11 +560,11 @@
 .config-rotation-pending { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--c-warning-border); border-radius: var(--radius-md); background: var(--c-warning-soft); }
 .config-rotation-pending span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .config-rotation-pending strong { font: 600 12px ui-monospace, monospace; color: var(--c-warning); }
-.config-rotation-pending small { font-size: 12px; color: var(--text-secondary); }
+.config-rotation-pending small { font-size: calc(12px * var(--type-scale, 1)); color: var(--text-secondary); }
 /* One Save bar per tab replaces the per-card Save buttons it covers. */
 .config-page .config-settings-content .config-card-save { display: none; }
 .config-save-bar { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); box-shadow: var(--shadow-md, 0 4px 14px rgba(0, 0, 0, 0.12)); }
-.config-save-bar > span { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.config-save-bar > span { display: inline-flex; align-items: center; gap: 8px; font-size: calc(13px * var(--type-scale, 1)); font-weight: 500; }
 .config-save-bar .config-nav-dirty { margin: 0; }
 
 /* Settings → Storage: data management spans the row, like the other embedded pages. */

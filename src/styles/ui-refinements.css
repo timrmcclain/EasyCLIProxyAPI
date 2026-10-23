@@ -1123,4 +1123,4 @@ body, html, #root {
 
 /* A setting edited on another page: its summary and a link there. */
 .owned-setting { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.owned-setting-summary { color: var(--text-secondary); font-size: 13px; }
+.owned-setting-summary { color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }

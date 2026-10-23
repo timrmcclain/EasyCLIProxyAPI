@@ -24,7 +24,7 @@
 
 .usage-activity-title h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: calc(14px * var(--type-scale, 1));
   font-weight: 600;
   line-height: 1.5;
 }
@@ -32,7 +32,7 @@
 .usage-activity-title p {
   margin: 4px 0 0;
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   line-height: 1.5;
 }
 
@@ -45,7 +45,7 @@
 }
 
 .usage-activity-summary > strong {
-  font-size: 13px;
+  font-size: calc(13px * var(--type-scale, 1));
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
@@ -179,7 +179,7 @@
   display: grid;
   place-items: center;
   color: var(--text-quaternary);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   pointer-events: none;
 }
 

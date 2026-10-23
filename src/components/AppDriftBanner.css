@@ -10,7 +10,7 @@
   color: var(--c-warning);
 }
 .app-drift-copy { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
-.app-drift-copy strong { font-size: 13px; }
-.app-drift-copy small { color: var(--text-secondary); font-size: 12px; }
+.app-drift-copy strong { font-size: calc(13px * var(--type-scale, 1)); }
+.app-drift-copy small { color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
 .app-drift-copy .app-drift-manual { color: var(--c-warning); }
 .app-drift-actions { display: flex; flex-shrink: 0; gap: 8px; }

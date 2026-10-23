@@ -141,7 +141,7 @@
 }
 
 .credential-quota-dense .credential-quota-label strong {
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   line-height: 1;
 }
 

@@ -40,7 +40,7 @@
   min-height: 24px;
   padding: 2px 24px 2px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
 }
 
 #browser-mock-toolbar span {

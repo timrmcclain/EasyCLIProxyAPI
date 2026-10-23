@@ -50,7 +50,7 @@
   background: var(--usage-log-surface);
   color: var(--usage-log-muted);
   box-shadow: none;
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;

@@ -7,14 +7,14 @@
 .ad-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .ad-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .17em; color: var(--ad-accent); }
 .ad-heading h2 { margin: 0 0 4px; font-size: var(--font-size-panel-title); font-weight: 600; }
-.ad-heading p, .ad-footnote { color: var(--text-secondary); font-size: 12px; line-height: 1.6; margin: 0; }
+.ad-heading p, .ad-footnote { color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); line-height: 1.6; margin: 0; }
 .ad-heading button { flex-shrink: 0; display: flex; gap: 8px; align-items: center; }
 .ad-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-secondary); }
 .ad-metrics > div { position: relative; display: grid; gap: 8px; padding: 20px 24px; }
 .ad-metrics > div + div { border-left: 1px solid var(--border-primary); }
 .ad-metrics svg { position: absolute; right: 22px; top: 21px; color: var(--text-tertiary); }
-.ad-metrics span { color: var(--text-secondary); font-size: 12px; padding-right: 22px; }
-.ad-metrics strong { font-size: 28px; letter-spacing: -.045em; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ad-metrics span { color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); padding-right: 22px; }
+.ad-metrics strong { font-size: calc(28px * var(--type-scale, 1)); letter-spacing: -.045em; font-variant-numeric: tabular-nums; font-weight: 600; }
 .ad-metrics small { color: var(--text-tertiary); font-size: 11px; }
 .ad-toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--text-secondary); }
 .ad-routing { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
@@ -28,8 +28,8 @@
 .ad-provider { color: var(--text-secondary); font-size: 11px; }
 .ad-quota-list { display: grid; gap: 18px; margin: 24px 0; }
 .ad-quota-title, .ad-quota-reset { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.ad-quota-title { font-size: 12px; }
-.ad-quota-title strong { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-quota-title { font-size: calc(12px * var(--type-scale, 1)); }
+.ad-quota-title strong { font-size: calc(13px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ad-quota meter { display: block; width: 100%; height: 8px; margin: 8px 0; border: 0; border-radius: 6px; background: var(--bg-tertiary); }
 .ad-quota meter::-webkit-meter-bar { border: 0; border-radius: 6px; background: var(--bg-tertiary); }
 .ad-quota meter::-webkit-meter-optimum-value { background: var(--success-color); border-radius: var(--radius-md); }
@@ -49,14 +49,14 @@
 .ad-freshness { margin-left: auto; font-size: 11px; color: var(--text-tertiary); }
 .ad-card-note { color: var(--text-secondary); font-size: 11px; line-height: 1.6; margin: 8px 0; overflow-wrap: anywhere; }
 .ad-card-note.credential-quota-just-reset { color: var(--quota-green, var(--p-green-600)); font-weight: 600; }
-.ad-notice { padding: 16px; border: 1px solid var(--border-primary); border-radius: 8px; font-size: 12px; margin: 0; background: var(--bg-secondary); }
+.ad-notice { padding: 16px; border: 1px solid var(--border-primary); border-radius: 8px; font-size: calc(12px * var(--type-scale, 1)); margin: 0; background: var(--bg-secondary); }
 .ad-error { color: var(--p-orange-600); }
 .ad-eyebrow { color: var(--p-orange-700); }
 :root[data-theme='dark'] .ad-eyebrow,
 :root[data-theme='dark'] .ad-error { color: var(--p-orange-300); }
 .ad-footnote { display: grid; gap: 4px; font-size: 11px; }
 @media (max-width: 1000px) { .ad-accounts { grid-template-columns: 1fr; } .ad-freshness { margin-left: 0; } }
-@media (max-width: 720px) { .ad-heading { align-items: start; flex-direction: column; } .ad-metrics > div { padding: 16px 10px; } .ad-metrics svg { display: none; } .ad-metrics span { padding: 0; } .ad-metrics strong { font-size: 24px; } .ad-card { padding: 16px; } }
+@media (max-width: 720px) { .ad-heading { align-items: start; flex-direction: column; } .ad-metrics > div { padding: 16px 10px; } .ad-metrics svg { display: none; } .ad-metrics span { padding: 0; } .ad-metrics strong { font-size: calc(24px * var(--type-scale, 1)); } .ad-card { padding: 16px; } }
 
 /* Healthy accounts collapse into one line so problems are what you see first. */
 .ad-healthy-toggle {

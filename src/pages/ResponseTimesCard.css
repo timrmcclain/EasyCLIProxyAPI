@@ -1,12 +1,12 @@
 .response-times { flex: none; padding: 12px 20px; }
 .response-times details[open] { display: flex; flex-direction: column; gap: 10px; }
 .response-times summary { display: flex; align-items: baseline; gap: 10px; cursor: pointer; }
-.response-times summary h3 { margin: 0; font-size: 15px; }
-.response-times summary span, .response-times details > p { margin: 0; color: var(--text-tertiary); font-size: 12px; }
+.response-times summary h3 { margin: 0; font-size: calc(15px * var(--type-scale, 1)); }
+.response-times summary span, .response-times details > p { margin: 0; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); }
 .response-times-scroll { overflow-x: auto; }
-.response-times table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.response-times table { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; }
 .response-times th, .response-times td { padding: 7px 8px; border-top: 1px solid var(--border-color); text-align: right; white-space: nowrap; }
-.response-times thead th { border-top: 0; color: var(--text-tertiary); font-size: 12px; font-weight: 500; }
+.response-times thead th { border-top: 0; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); font-weight: 500; }
 .response-times th[scope='row'], .response-times thead th:first-child { max-width: 260px; overflow: hidden; color: var(--text-primary); font-weight: 500; text-align: left; text-overflow: ellipsis; }
 .response-times td { color: var(--text-secondary); }
 .response-times-bar { position: relative; width: 30%; min-width: 120px; }

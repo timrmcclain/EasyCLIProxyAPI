@@ -1,22 +1,22 @@
 .connectors-page { display: flex; flex-direction: column; gap: 18px; min-width: 0; margin: 0 auto; padding: 8px 0 32px; }
 .connectors-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
-.connectors-heading h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.4px; }
+.connectors-heading h1 { margin: 0 0 6px; font-size: calc(24px * var(--type-scale, 1)); letter-spacing: -.4px; }
 .connectors-heading p { margin: 0; max-width: 760px; color: var(--text-tertiary); line-height: 1.7; }
 .connectors-heading .connector-hint-details { margin-top: var(--space-1); }
 .connectors-heading-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .connectors-page .connectors-heading-actions > button { width: auto; flex: none; }
-.connectors-profile { margin: 0; font-size: 13px; color: var(--text-secondary); }
-.connectors-notice { margin: 0; padding: 12px 16px; border-radius: 8px; background: color-mix(in srgb, var(--primary-color) 10%, transparent); color: var(--text-primary); font-size: 13px; }
-.connectors-error { margin: 0; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--p-red-600) 10%, transparent); color: var(--text-primary); font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.connectors-profile { margin: 0; font-size: calc(13px * var(--type-scale, 1)); color: var(--text-secondary); }
+.connectors-notice { margin: 0; padding: 12px 16px; border-radius: 8px; background: color-mix(in srgb, var(--primary-color) 10%, transparent); color: var(--text-primary); font-size: calc(13px * var(--type-scale, 1)); }
+.connectors-error { margin: 0; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--p-red-600) 10%, transparent); color: var(--text-primary); font-size: calc(13px * var(--type-scale, 1)); white-space: pre-wrap; overflow-wrap: anywhere; }
 .connectors-loading { display: flex; align-items: center; gap: var(--space-2); margin: 0; padding: var(--space-3) var(--space-4); border: 1px dashed var(--border-color); border-radius: var(--radius-lg); color: var(--text-secondary); font-size: var(--font-size-meta); }
 .connectors-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-2); align-items: start; }
 .connector-card { min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); }
 .connector-card-header { display: flex; gap: 12px; align-items: flex-start; }
-.connector-card-header h2 { margin: 0 0 4px; font-size: 16px; }
-.connector-card-header p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.connector-card-header h2 { margin: 0 0 4px; font-size: calc(16px * var(--type-scale, 1)); }
+.connector-card-header p { margin: 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); line-height: 1.6; }
 .connector-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 34px; border-radius: 8px; background: var(--bg-tertiary); color: var(--primary-color); }
-.connector-note { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
-.connector-unavailable { margin: 0; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--p-orange-500) 12%, transparent); color: var(--text-primary); font-size: 12px; }
+.connector-note { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); line-height: 1.6; }
+.connector-unavailable { margin: 0; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--p-orange-500) 12%, transparent); color: var(--text-primary); font-size: calc(12px * var(--type-scale, 1)); }
 /* Claude Code / Claude Desktop sit side by side; each tile is a switch, a status chip and its test. */
 .connector-targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: var(--space-2); }
 .connector-target { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); min-width: 0; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); }
@@ -25,11 +25,11 @@
 .connector-status { max-width: 100%; padding: 2px var(--space-2); border-radius: var(--radius-full); background: var(--bg-tertiary); font-size: var(--font-size-caption); line-height: 1.5; color: var(--text-tertiary); overflow-wrap: anywhere; }
 .connector-status.on { background: color-mix(in srgb, var(--p-green-600) 12%, transparent); color: var(--text-secondary); }
 .connector-card .connector-target > button, .connector-card .connector-actions > button, .connector-card .connector-secrets-status > button { width: auto; flex: none; }
-.connector-test { flex-basis: 100%; margin: 0; font-size: 12px; color: var(--text-secondary); white-space: pre-wrap; overflow-wrap: anywhere; }
+.connector-test { flex-basis: 100%; margin: 0; font-size: calc(12px * var(--type-scale, 1)); color: var(--text-secondary); white-space: pre-wrap; overflow-wrap: anywhere; }
 .connector-test.ok { color: var(--p-green-600); }
 .connector-test.warn { color: var(--p-orange-600); }
 .connector-test.failed { color: var(--p-red-700); }
-.connector-field { display: grid; gap: 6px; font-size: 13px; color: var(--text-secondary); }
+.connector-field { display: grid; gap: 6px; font-size: calc(13px * var(--type-scale, 1)); color: var(--text-secondary); }
 .connector-field select, .connector-field input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-primary); font: inherit; }
 .connector-services { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .connector-services legend { padding: 0; margin-bottom: 4px; }
@@ -37,11 +37,11 @@
 .connector-service { display: inline-flex; align-items: center; gap: 6px; color: var(--text-primary); }
 .connector-field .connector-service input { padding: 0; width: auto; }
 .connector-secrets { display: flex; flex-direction: column; gap: 10px; }
-.connector-secrets-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text-secondary); }
-.connector-hint { margin: 0; font-size: 12px; color: var(--text-tertiary); }
+.connector-secrets-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: calc(13px * var(--type-scale, 1)); color: var(--text-secondary); }
+.connector-hint { margin: 0; font-size: calc(12px * var(--type-scale, 1)); color: var(--text-tertiary); }
 .connector-actions { display: flex; gap: 10px; }
 .connectors-heading-actions { align-items: center; }
-.connectors-checked { color: var(--text-secondary); font-size: 13px; }
+.connectors-checked { color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }
 
 .connector-ai-test {
   display: grid;
@@ -59,7 +59,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--type-scale, 1));
   color: var(--text-secondary);
 }
 
@@ -125,9 +125,9 @@
 .connector-card-header { display: block; }
 .connector-row-toggle { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 12px; }
 .connector-row-toggle:hover { background: color-mix(in srgb, var(--primary-color) 5%, transparent); }
-.connector-row-toggle h2 { margin: 0; font-size: 15px; flex: 0 1 auto; min-width: 0; }
+.connector-row-toggle h2 { margin: 0; font-size: calc(15px * var(--type-scale, 1)); flex: 0 1 auto; min-width: 0; }
 .connector-row-states { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; justify-content: flex-end; }
-.connector-row-state { padding: 2px 8px; border-radius: 999px; font-size: 12px; color: var(--text-secondary); background: color-mix(in srgb, var(--text-secondary) 8%, transparent); white-space: nowrap; }
+.connector-row-state { padding: 2px 8px; border-radius: 999px; font-size: calc(12px * var(--type-scale, 1)); color: var(--text-secondary); background: color-mix(in srgb, var(--text-secondary) 8%, transparent); white-space: nowrap; }
 .connector-row-state.on { color: var(--text-primary); background: color-mix(in srgb, var(--primary-color) 14%, transparent); }
 .connector-row-state.warn { color: var(--warning-text, #b45309); background: color-mix(in srgb, #f59e0b 14%, transparent); }
 .connector-row-chevron { flex: none; transition: transform .15s; }
@@ -143,7 +143,7 @@
 .connector-card-teaser { display: none; }
 .connectors-grid:not(:has(.connector-card.is-open)) .connector-card-teaser { display: -webkit-box; margin: 0 16px 14px; padding: 0; overflow: hidden; color: var(--text-secondary); font-size: var(--font-size-meta); line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .connector-card-body[hidden] { display: none; }
-.connector-card-description { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.connector-card-description { margin: 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) { .connector-row-chevron { transition: none; } }
 div.connector-test p { margin: 0; }
 

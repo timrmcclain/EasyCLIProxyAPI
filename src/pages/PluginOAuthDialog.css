@@ -17,7 +17,7 @@
 .plugin-oauth-body form { display: grid; gap: 12px; }
 .plugin-oauth-body form > button { justify-self: start; }
 .plugin-oauth-code { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--line-5); border-radius: 8px; }
-.plugin-oauth-code strong { font-family: ui-monospace, monospace; font-size: 24px; letter-spacing: .1em; overflow-wrap: anywhere; }
+.plugin-oauth-code strong { font-family: ui-monospace, monospace; font-size: calc(24px * var(--type-scale, 1)); letter-spacing: .1em; overflow-wrap: anywhere; }
 .plugin-oauth-code button { justify-self: start; }
 .plugin-oauth-error { color: var(--ink-red-2); }
 .plugin-oauth-notice { color: var(--tint-1); }

@@ -2,8 +2,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
-// Compact fits more on screen by tightening spacing, not by shrinking: text keeps its size,
-// rows get shorter, and the choice is remembered.
+// Compact fits as much on screen as possible: half the spacing, one step smaller text, shorter rows and controls,
+// a narrower sidebar, no zoom; controls stay at least 28px tall, and the choice is remembered.
 (async () => {
   const { createServer } = await import('vite');
   const react = (await import('@vitejs/plugin-react')).default;
@@ -36,6 +36,9 @@ const path = require('node:path');
         rowHeight: card.getBoundingClientRect().height,
         textSize: getComputedStyle(name).fontSize,
         contentHeight: document.querySelector('.workspace .content').scrollHeight,
+        sidebarWidth: document.querySelector('.sidebar').getBoundingClientRect().width,
+        shortestControl: Math.min(...[...document.querySelectorAll('.workspace .content button, .workspace .content select')]
+          .filter(node => node.offsetParent && !node.closest('p, li > small')).map(node => node.getBoundingClientRect().height)),
         zoom: getComputedStyle(document.querySelector('.workspace .content')).zoom,
       };
     });
@@ -44,10 +47,14 @@ const path = require('node:path');
     await page.locator('.sidebar-density-selector').getByRole('button', { name: 'Compact' }).click();
     await page.waitForFunction(() => document.documentElement.dataset.density === 'compact');
     const compact = await measure();
-    assert.equal(compact.textSize, roomy.textSize, 'text keeps its size');
+    assert.ok(parseFloat(compact.textSize) < parseFloat(roomy.textSize), `text is a step smaller (${roomy.textSize} -> ${compact.textSize})`);
+    assert.ok(parseFloat(compact.textSize) >= 11, `text stays readable (${compact.textSize})`);
     assert.ok(compact.zoom === '1' || compact.zoom === 'normal', `no zoom (${compact.zoom})`);
-    assert.ok(compact.rowHeight < roomy.rowHeight, `rows are shorter (${roomy.rowHeight} -> ${compact.rowHeight})`);
-    assert.ok(compact.contentHeight < roomy.contentHeight - 80, `more fits on screen (${roomy.contentHeight} -> ${compact.contentHeight})`);
+    assert.ok(compact.rowHeight <= roomy.rowHeight * 0.8, `rows are much shorter (${roomy.rowHeight} -> ${compact.rowHeight})`);
+    assert.ok(compact.contentHeight <= roomy.contentHeight * 0.8, `far more fits on screen (${roomy.contentHeight} -> ${compact.contentHeight})`);
+    assert.ok(compact.sidebarWidth < roomy.sidebarWidth, `sidebar is narrower (${roomy.sidebarWidth} -> ${compact.sidebarWidth})`);
+    assert.ok(compact.shortestControl >= 24, `controls stay clickable (${compact.shortestControl}px)`);
+    console.log(`roomy ${JSON.stringify(roomy)}\ncompact ${JSON.stringify(compact)}`);
 
     await page.reload();
     await row.waitFor();
@@ -55,7 +62,7 @@ const path = require('node:path');
     assert.equal(await page.locator('.sidebar-density-selector').getByRole('button', { name: 'Compact' }).getAttribute('aria-pressed'), 'true');
 
     assert.deepEqual(errors, []);
-    console.log('Compact density tightens spacing without shrinking text.');
+    console.log('Compact density packs the screen while controls stay clickable.');
   } finally {
     await browser?.close();
     await server.close();

@@ -160,7 +160,7 @@
   }
 
   .usage-overview-layout .usage-stat-card-value {
-    font-size: 24px;
+    font-size: calc(24px * var(--type-scale, 1));
   }
 }
 
@@ -286,7 +286,7 @@
   border-radius: 6px;
   background: var(--bg-secondary);
   color: var(--text-quaternary);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   line-height: 18px;
   text-align: center;
 }
@@ -383,7 +383,7 @@
 
 .api-access-page .provider-row-title strong {
   max-width: 100%;
-  font-size: 14px;
+  font-size: calc(14px * var(--type-scale, 1));
   line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -394,7 +394,7 @@
   max-width: 100%;
   overflow: hidden;
   color: var(--text-quaternary);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -408,7 +408,7 @@
 
 .api-access-page .provider-row-main > .provider-row-url {
   overflow: hidden;
-  font-size: 13px;
+  font-size: calc(13px * var(--type-scale, 1));
   line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -430,13 +430,13 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   color: var(--text-quaternary);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
 }
 
 .api-access-page .provider-row-meta span {
   flex: none;
   color: var(--text-quaternary);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
 }
 
 .api-access-page .provider-row-actions {
@@ -475,7 +475,7 @@
   .api-access-page .provider-category-panel span {
     grid-column: 1 / -1;
     grid-row: 2;
-    font-size: 12px;
+    font-size: calc(12px * var(--type-scale, 1));
     text-align: center;
     white-space: normal;
     overflow-wrap: normal;
@@ -1259,4 +1259,4 @@
 .api-provider-dialog .field-required::after { content: "*" / ""; margin-left: 3px; color: var(--c-danger); font-weight: 600; }
 
 /* The notifications switch is on, but Windows blocks delivery. */
-.config-setting-warning { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; font-size: 12px; color: var(--amber-text); }
+.config-setting-warning { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; font-size: calc(12px * var(--type-scale, 1)); color: var(--amber-text); }

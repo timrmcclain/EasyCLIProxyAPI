@@ -586,68 +586,98 @@ svg.lucide {
   margin-top: var(--space-2);
 }
 
-/* Compact density: more on screen by tightening spacing and row heights. Text stays the same size,
-   so nothing gets harder to read or to click. */
-:root[data-density='compact'] .workspace .content {
-  --space-2: 6px;
-  --space-3: 9px;
-  --space-4: 12px;
-  --space-5: 15px;
-  --space-6: 18px;
-  --space-8: 24px;
-  padding: 18px 22px 28px;
+/* Compact density: as much on screen as possible. Spacing is halved, text drops one step, controls and rows
+   get shorter and the sidebar narrower. Controls stay at least 28px tall, above the 24px accessibility minimum. */
+:root[data-density='compact'] {
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-8: 16px;
+  --font-size-caption: 11px;
+  --font-size-meta: 12px;
+  --font-size-label: 12.5px;
+  --font-size-body: 13px;
+  --font-size-section: 14px;
+  --font-size-panel-title: 15px;
+  --font-size-dialog-title: 17px;
+  --font-size-page-title: 19px;
+  --font-size-metric-compact: 19px;
+  --font-size-display: 22px;
+  --type-scale: 0.92;
 }
 
-:root[data-density='compact'] .workspace .panel {
-  padding: 16px;
-}
+:root[data-density='compact'] body { font-size: 13px; line-height: 1.4; }
+
+/* Shell: narrower sidebar, shorter nav items, tighter page edges. */
+:root[data-density='compact'] .app-shell { grid-template-columns: 196px minmax(0, 1fr); }
+:root[data-density='compact'] .sidebar { padding: 12px 8px 10px; }
+:root[data-density='compact'] .sidebar-brand { margin-bottom: 14px; }
+:root[data-density='compact'] .nav-section { gap: 1px; }
+:root[data-density='compact'] .nav-section button { min-height: 28px; padding-top: 3px; padding-bottom: 3px; margin-bottom: 0; font-size: 12.5px; }
+:root[data-density='compact'] .workspace .content { padding: 10px 14px 18px; }
+:root[data-density='compact'] .workspace .panel,
+:root[data-density='compact'] .panel { padding: 10px 12px; border-radius: 8px; }
+:root[data-density='compact'] .panel-heading h2 { font-size: var(--font-size-section); }
+
+/* Controls: 28px tall instead of 32-40. */
+:root[data-density='compact'] button,
+:root[data-density='compact'] select,
+:root[data-density='compact'] input:not([type='checkbox']):not([type='radio']),
+:root[data-density='compact'] .compact-button,
+:root[data-density='compact'] .primary-button,
+:root[data-density='compact'] .secondary-button { min-height: 28px; font-size: var(--font-size-meta); }
+:root[data-density='compact'] .primary-button,
+:root[data-density='compact'] .secondary-button,
+:root[data-density='compact'] .compact-button { padding-top: 3px; padding-bottom: 3px; }
+:root[data-density='compact'] textarea { font-size: var(--font-size-meta); }
 
 /* Overview: summary numbers and account rows. */
-:root[data-density='compact'] .ad-metrics > div {
-  padding: 12px 16px;
-}
+:root[data-density='compact'] .account-dashboard { gap: 8px; }
+:root[data-density='compact'] .ad-metrics > div { padding: 6px 10px; }
+:root[data-density='compact'] .ad-card { padding: 8px; }
+:root[data-density='compact'] .account-dashboard.quota-ledger .ad-row-card { min-height: 32px; padding-top: 2px; padding-bottom: 2px; }
 
-:root[data-density='compact'] .ad-card {
-  padding: 14px;
-}
-
-:root[data-density='compact'] .account-dashboard.quota-ledger .ad-row-card {
-  min-height: 44px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
+/* Overview sections: the fixed 12-32px gaps between blocks are halved. */
+:root[data-density='compact'] .account-dashboard > * { margin-bottom: 8px; }
+:root[data-density='compact'] .account-dashboard > .home-glance { margin-top: 10px; margin-bottom: 12px; }
+:root[data-density='compact'] .ad-accounts { gap: 6px; }
+:root[data-density='compact'] .quota-account-group + .quota-account-group { margin-top: 8px; }
+/* One line per account: the provider and plan sit beside the name instead of under it. */
+:root[data-density='compact'] .ad-row-name { display: flex; flex-wrap: nowrap; align-items: baseline; gap: 6px; min-width: 0; }
+:root[data-density='compact'] .ad-row-name > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root[data-density='compact'] .ad-row-name > :first-child { flex: 0 1 auto; }
+:root[data-density='compact'] .ad-row-name > :not(:first-child) { flex: 0 10 auto; }
+:root[data-density='compact'] .ad-row-actions button,
+:root[data-density='compact'] .ad-row-card summary { min-height: 28px; }
+:root[data-density='compact'] .ad-row-logo { width: 18px; height: 18px; }
+:root[data-density='compact'] .ad-row-card .ad-row { min-height: 28px; }
+:root[data-density='compact'] .ad-row-card .ad-menu-button,
+:root[data-density='compact'] .ad-row-card details > summary { height: 28px; min-height: 28px; }
+:root[data-density='compact'] .account-dashboard.quota-ledger .ad-row-card > .ad-account-details > summary { top: 2px; min-width: 28px; }
+:root[data-density='compact'] input:not([type='checkbox']):not([type='radio']) { padding-top: 4px; padding-bottom: 4px; }
 
 /* Accounts list. */
-:root[data-density='compact'] .auth-credential-row {
-  min-height: 54px;
-  padding: 6px 0;
-}
-
-:root[data-density='compact'] .auth-file-card-grid {
-  gap: 4px;
-}
+:root[data-density='compact'] .auth-credential-row { min-height: 38px; padding: 2px 0; }
+:root[data-density='compact'] .auth-file-card-grid { gap: 2px; }
 
 /* Activity: request rows. */
 :root[data-density='compact'] .usage-events-table th,
-:root[data-density='compact'] .usage-events-table td {
-  height: 34px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
+:root[data-density='compact'] .usage-events-table td { height: 26px; padding-top: 2px; padding-bottom: 2px; }
 
 /* Connectors, Secret Guard, JEV and other card lists. */
-:root[data-density='compact'] .connector-row-toggle {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
-:root[data-density='compact'] .jev-card {
-  padding: 12px 14px;
-}
-
-:root[data-density='compact'] .sg-finding {
-  padding: 7px 0;
-}
+:root[data-density='compact'] .connector-row-toggle { padding-top: 4px; padding-bottom: 4px; }
+:root[data-density='compact'] .connector-card-body { gap: 8px; padding: 6px 12px 12px; }
+:root[data-density='compact'] .connector-card { border-radius: 8px; }
+:root[data-density='compact'] .connector-icon { width: 26px; height: 26px; }
+:root[data-density='compact'] .connector-row-toggle { gap: 8px; padding-left: 10px; padding-right: 10px; }
+:root[data-density='compact'] .connectors-grid:not(:has(.connector-card.is-open)) { gap: 6px; }
+:root[data-density='compact'] .connectors-grid:not(:has(.connector-card.is-open)) .connector-row-toggle { row-gap: 4px; padding: 6px 10px 4px; }
+:root[data-density='compact'] .connectors-grid:not(:has(.connector-card.is-open)) .connector-card-teaser { margin: 0 10px 8px; -webkit-line-clamp: 1; }
+:root[data-density='compact'] .jev-card { padding: 6px 10px; }
+:root[data-density='compact'] .sg-finding { padding: 3px 0; }
 
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {

@@ -2,12 +2,12 @@
 .provider-group-heading p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale, 1));
   line-height: 1.65;
 }
 .provider-group-keys { display: grid; gap: 10px; min-width: 0; }
 .provider-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.provider-group-heading strong { font-size: 13px; }
+.provider-group-heading strong { font-size: calc(13px * var(--type-scale, 1)); }
 .api-provider-dialog .provider-group-heading button { flex-shrink: 0; width: auto; }
 .provider-group-heading > div { min-width: 0; }
 .provider-group-key {
@@ -15,13 +15,13 @@
   border: 1px solid var(--line-3); border-radius: 8px;
   background: var(--bg-tertiary);
 }
-.provider-group-key legend { padding: 0 6px; font-size: 12px; font-weight: 600; }
+.provider-group-key legend { padding: 0 6px; font-size: calc(12px * var(--type-scale, 1)); font-weight: 600; }
 .provider-group-key-main { display: flex; align-items: end; gap: 6px; }
 .provider-group-key-main > label { flex: 1; min-width: 0; }
 .provider-group-key-main input { width: 100%; min-width: 0; }
 .api-provider-dialog .provider-group-key-main button { flex-shrink: 0; margin-bottom: 2px; width: auto; }
 .provider-key-settings { margin-top: 8px; }
-.provider-key-settings summary { font-size: 12px; color: var(--text-secondary); cursor: pointer; padding: 4px 0; }
+.provider-key-settings summary { font-size: calc(12px * var(--type-scale, 1)); color: var(--text-secondary); cursor: pointer; padding: 4px 0; }
 .provider-key-settings[open] > .provider-dialog-basic-grid { margin-top: 8px; }
 .provider-health-key-selector { display: flex; align-items: center; gap: 10px; padding: 0 20px 12px; }
 .provider-health-key-selector select { min-width: 0; flex: 1; }
@@ -31,18 +31,18 @@
   background: var(--bg-primary); color: var(--text-primary); padding: 4px 8px; font: inherit;
 }
 .api-provider-dialog .provider-group-key-main .icon-button { width: 32px; min-width: 32px; height: 32px; }
-.provider-row-title > span { color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.provider-row-title > span { color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); overflow-wrap: anywhere; }
 .config-dialog.management-dialog.api-provider-dialog { width: min(640px, 100%); }
 .api-provider-dialog .provider-dialog-section {
   min-width: 0; display: grid; gap: 10px; padding: 12px 0;
   border-top: 1px solid var(--line-3);
 }
 .api-provider-dialog .provider-dialog-section > h3 {
-  margin: 0; color: var(--text-primary); font-size: 13px; font-weight: 600;
+  margin: 0; color: var(--text-primary); font-size: calc(13px * var(--type-scale, 1)); font-weight: 600;
 }
 .api-provider-dialog details.provider-dialog-section { display: block; }
 .api-provider-dialog .provider-dialog-section > summary {
-  cursor: pointer; color: var(--text-secondary); font-size: 13px; font-weight: 600;
+  cursor: pointer; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); font-weight: 600;
 }
 .api-provider-dialog details.provider-dialog-section[open] > :not(summary) { margin-top: 12px; }
 .provider-dialog-basic-grid {

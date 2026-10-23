@@ -7,24 +7,24 @@
 .glance-tile { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 18px 20px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-primary); }
 :root[data-theme='light'] .glance-tile { background: var(--bg-card); border-color: var(--border-color); }
 .glance-tile header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.glance-tile h3 { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.glance-tile h3 { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-size: calc(13px * var(--type-scale, 1)); font-weight: 600; color: var(--text-secondary); }
 .glance-count { min-width: 20px; padding: 1px 7px; border-radius: 10px; background: var(--c-danger-soft); color: var(--c-danger); font-size: 11px; font-weight: 600; text-align: center; }
-.glance-open { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--text-tertiary); font-size: 12px; cursor: pointer; }
+.glance-open { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); cursor: pointer; }
 .glance-open:hover { background: var(--bg-tertiary); color: var(--text-primary); }
 .glance-figure { display: flex; align-items: baseline; gap: 6px; margin: 0; }
-.glance-figure strong { font-size: 26px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
-.glance-figure span { color: var(--text-secondary); font-size: 13px; }
-.glance-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; color: var(--text-secondary); font-size: 12px; }
+.glance-figure strong { font-size: calc(26px * var(--type-scale, 1)); font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.glance-figure span { color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }
+.glance-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
 .glance-accounts { margin: 12px 0 0; }
 .glance-accounts h4 { margin: 0 0 6px; color: var(--text-tertiary); font-size: 11px; font-weight: 500; }
 .glance-accounts ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
-.glance-accounts li { display: grid; grid-template-columns: minmax(0, 1fr) 72px auto; align-items: center; gap: 10px; font-size: 12px; }
+.glance-accounts li { display: grid; grid-template-columns: minmax(0, 1fr) 72px auto; align-items: center; gap: 10px; font-size: calc(12px * var(--type-scale, 1)); }
 .glance-accounts li > span { overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; }
 .glance-accounts li > i { height: 5px; border-radius: 3px; background: var(--border-primary); overflow: hidden; }
 .glance-accounts li > i > b { display: block; height: 100%; border-radius: 3px; background: var(--personal-accent, #3fb3a5); }
 .glance-accounts li > strong { min-width: 2.5em; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-.glance-latest { margin: auto 0 0; overflow: hidden; color: var(--text-tertiary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.glance-muted { margin: 0; color: var(--text-tertiary); font-size: 13px; }
+.glance-latest { margin: auto 0 0; overflow: hidden; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); text-overflow: ellipsis; white-space: nowrap; }
+.glance-muted { margin: 0; color: var(--text-tertiary); font-size: calc(13px * var(--type-scale, 1)); }
 .glance-warn { color: var(--warning-color); }
 .glance-bad { color: var(--error-color); }
 
@@ -39,10 +39,10 @@
 
 .glance-clear { display: flex; align-items: center; gap: 10px; color: var(--c-success); }
 .glance-clear span { display: flex; flex-direction: column; gap: 2px; }
-.glance-clear strong { color: var(--text-primary); font-size: 15px; font-weight: 600; }
-.glance-clear small { color: var(--text-tertiary); font-size: 12px; }
+.glance-clear strong { color: var(--text-primary); font-size: calc(15px * var(--type-scale, 1)); font-weight: 600; }
+.glance-clear small { color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); }
 .glance-attention-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.glance-attention-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: 30px; font-size: 13px; }
+.glance-attention-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: 30px; font-size: calc(13px * var(--type-scale, 1)); }
 .glance-attention-list li > svg, .glance-attention-list li > img { width: 16px; height: 16px; }
 .glance-attention-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
 .glance-attention-state { display: flex; flex-direction: column; align-items: flex-end; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -65,7 +65,7 @@
 /* Account availability: the heading carries the attention count as a filter, and the way to Accounts. */
 .ad-list-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 12px; }
 .ad-list-heading .ad-manage { margin-left: auto; }
-.ad-all-clear { color: var(--text-tertiary); font-size: 13px; }
+.ad-all-clear { color: var(--text-tertiary); font-size: calc(13px * var(--type-scale, 1)); }
 .ad-attention-filter.worst-blocked { border-color: color-mix(in srgb, var(--c-status-danger) 45%, var(--border-color)); color: var(--c-status-danger); }
 .ad-attention-filter.worst-low { border-color: color-mix(in srgb, var(--c-status-warning) 50%, var(--border-color)); color: var(--c-warning); }
 .ad-attention-filter[aria-pressed='true'] { background: color-mix(in srgb, currentColor 10%, var(--bg-card)); }
@@ -74,13 +74,13 @@
 .ad-card.ad-needs-attention { box-shadow: inset 3px 0 0 var(--c-status-warning); }
 .ad-card.ad-needs-attention.quota-account-exhausted, .ad-card.ad-needs-attention.quota-account-unavailable { box-shadow: inset 3px 0 0 var(--c-status-danger); }
 .ad-display-options { position: relative; }
-.ad-display-options > summary { min-height: 36px; display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--border-primary); border-radius: 8px; color: var(--text-secondary); font-size: 14px; cursor: pointer; list-style: none; }
+.ad-display-options > summary { min-height: 36px; display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--border-primary); border-radius: 8px; color: var(--text-secondary); font-size: calc(14px * var(--type-scale, 1)); cursor: pointer; list-style: none; }
 .ad-display-options > summary::-webkit-details-marker { display: none; }
 .ad-display-options > summary { gap: 6px; }
 .ad-display-options > summary svg { transition: transform var(--dur-base, 150ms) ease; }
 .ad-display-options[open] > summary svg { transform: rotate(180deg); }
 .ad-display-options > div { position: absolute; z-index: 5; top: calc(100% + 6px); right: 0; display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border-primary); border-radius: 10px; background: var(--bg-card); box-shadow: 0 8px 24px rgb(0 0 0 / 12%); }
-.ad-list-heading h3 { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; }
+.ad-list-heading h3 { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: calc(15px * var(--type-scale, 1)); font-weight: 600; }
 .ad-list-heading h3 span { color: var(--text-tertiary); font-weight: 500; }
 .account-dashboard .ad-footnote { margin: 16px 0 0; color: var(--text-tertiary); font-size: 11px; }
 
@@ -93,16 +93,16 @@
 .home-status-accounts .home-status-chip, .home-status-latest { flex: none; white-space: nowrap; }
 .home-status-verdict.clear strong { color: var(--c-success); }
 /* A tinted pill rather than red text: amber when the worst is running low, red only when blocked. */
-.home-status-verdict.attention strong { padding: 2px 10px; border: 1px solid var(--c-danger-border); border-radius: 999px; background: var(--c-danger-soft); color: var(--c-danger); font-size: 13px; }
+.home-status-verdict.attention strong { padding: 2px 10px; border: 1px solid var(--c-danger-border); border-radius: 999px; background: var(--c-danger-soft); color: var(--c-danger); font-size: calc(13px * var(--type-scale, 1)); }
 .home-status-verdict.severity-low strong { border-color: var(--c-warning-border); background: var(--c-warning-soft); color: var(--c-warning); }
 .home-status-verdict.severity-unconfirmed strong { border-color: var(--c-border); background: var(--bg-tertiary); color: var(--text-secondary); }
-.home-status-verdict span { color: var(--text-secondary); font-size: 13px; }
+.home-status-verdict span { color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }
 
 @media (max-width: 1400px) { .home-glance { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 640px) { .home-glance { grid-template-columns: minmax(0, 1fr); } }
 /* Runway & resets: one line per provider, then the next windows to give quota back. */
 .glance-runway-list, .glance-runway-resets { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.glance-runway-list li, .glance-runway-resets li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 28px; font-size: 13px; }
+.glance-runway-list li, .glance-runway-resets li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 28px; font-size: calc(13px * var(--type-scale, 1)); }
 .glance-runway-list li > svg, .glance-runway-list li > img, .glance-runway-resets li > svg, .glance-runway-resets li > img { width: 16px; height: 16px; }
 .glance-runway-verdict { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
 .glance-runway-verdict small { display: block; color: var(--text-tertiary); font-size: 11px; font-weight: 400; }
@@ -112,8 +112,8 @@
 .runway-unknown { color: var(--text-tertiary); font-weight: 500; }
 .glance-runway-subhead { margin: 4px 0 0; padding-top: 8px; border-top: 1px solid var(--border-color); color: var(--text-tertiary); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
 .glance-runway-resets .glance-attention-name small { display: block; color: var(--text-tertiary); font-size: 11px; }
-.glance-runway-list li.glance-runway-more { display: block; min-height: 0; color: var(--text-tertiary); font-size: 12px; }
-.glance-runway-resets time { color: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.glance-runway-list li.glance-runway-more { display: block; min-height: 0; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); }
+.glance-runway-resets time { color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; }
 
 /* Narrow windows: the account verdict gets its own row and may wrap, instead of overlapping its neighbours. */
 @media (max-width: 1100px) {
@@ -141,15 +141,15 @@
 /* Provider cards are compact filters above the ledger: name, how many are available, and one bar per account. */
 .account-dashboard.quota-ledger .quota-provider-summary { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); margin-bottom: 16px; }
 .account-dashboard.quota-ledger .quota-provider-summary-cell { padding: 10px 14px 12px; border-top: 0; }
-.account-dashboard.quota-ledger .quota-summary-heading { margin-bottom: 4px; font-size: 14px; flex-wrap: nowrap; }
+.account-dashboard.quota-ledger .quota-summary-heading { margin-bottom: 4px; font-size: calc(14px * var(--type-scale, 1)); flex-wrap: nowrap; }
 /* "N credentials" repeats the "of N" line below it. */
 .account-dashboard.quota-ledger .quota-summary-heading > span { display: none; }
 .account-dashboard.quota-ledger .quota-summary-total { gap: 6px; }
-.account-dashboard.quota-ledger .quota-summary-total > span { font-size: 12px; }
-.account-dashboard.quota-ledger .quota-summary-value { font-size: 20px; line-height: 1.2; }
+.account-dashboard.quota-ledger .quota-summary-total > span { font-size: calc(12px * var(--type-scale, 1)); }
+.account-dashboard.quota-ledger .quota-summary-value { font-size: calc(20px * var(--type-scale, 1)); line-height: 1.2; }
 .account-dashboard.quota-ledger .quota-account-states { margin: 6px 0 0; }
 
 /* Antigravity's paid fallback, beside its quota: amber when on, because it means real spending. Opens its one setting. */
-.quota-group-heading .ad-paid-fallback { margin-left: 8px; padding: 2px 8px; border: 1px solid var(--border-primary); border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.quota-group-heading .ad-paid-fallback { margin-left: 8px; padding: 2px 8px; border: 1px solid var(--border-primary); border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: calc(12px * var(--type-scale, 1)); font-weight: 500; cursor: pointer; }
 .quota-group-heading .ad-paid-fallback.is-on { border-color: color-mix(in srgb, var(--c-status-warning) 50%, var(--border-color)); color: var(--c-warning); }
 .quota-group-heading .ad-paid-fallback:hover { text-decoration: underline; text-underline-offset: 2px; }
