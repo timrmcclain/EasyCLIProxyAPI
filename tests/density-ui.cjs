@@ -202,6 +202,23 @@ const path = require('node:path');
     assert.equal(await visible('.thinking-alias-route-source small > span'), false, 'the alias source note is hidden in compact');
     assert.equal(await visible('.thinking-alias-route-source small > em'), true, 'the alias kind stays in compact');
     assert.ok((await aliasRow.boundingBox()).height <= 44, `each alias is one line (${(await aliasRow.boundingBox()).height}px)`);
+    // Routing & reliability: all three strategies stay at control height; empty save rows go until something changes.
+    await tabs.locator('button', { hasText: 'Routing & reliability' }).click();
+    const strategy = page.locator('.routing-segmented button');
+    await strategy.first().waitFor();
+    assert.equal(await strategy.count(), 3, 'all three routing strategies stay in compact');
+    assert.ok((await strategy.first().boundingBox()).height <= 32, `strategy buttons are control height (${(await strategy.first().boundingBox()).height}px)`);
+    assert.equal(await visible('#config-native-routing .config-settings-save-row'), false, 'an empty save row is hidden in compact');
+    // Models & requests: a closed payload rule is one line; sensitive words share rows and stay editable.
+    await tabs.locator('button', { hasText: 'Models & requests' }).click();
+    const rule = page.locator('.template-config-field-wide:has(> details.template-config-custom)').first();
+    await rule.waitFor();
+    assert.ok((await rule.boundingBox()).height <= 40, `a closed payload rule is one line (${(await rule.boundingBox()).height}px)`);
+    const words = page.locator('.config-sensitive-words-row');
+    await words.first().waitFor();
+    const wordTops = await words.evaluateAll(rows => rows.slice(0, 2).map(row => Math.round(row.getBoundingClientRect().top)));
+    assert.equal(wordTops[0], wordTops[1], 'sensitive words share a row in compact');
+    assert.equal(await words.first().locator('input').isEditable(), true, 'sensitive words stay editable');
 
     // Sidebar: every page and control fits without scrolling, including with Advanced tools open.
     await page.evaluate(() => { const fold = document.querySelector('.sidebar .personal-advanced'); if (fold) fold.open = true; });
