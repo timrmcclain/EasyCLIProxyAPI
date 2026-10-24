@@ -967,6 +967,20 @@ svg.lucide {
 :root[data-density='compact'] .config-sensitive-words-panel .config-sensitive-words-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 12px; }
 :root[data-density='compact'] .config-sensitive-words-panel :is(.config-sensitive-words-composer, .config-sensitive-words-row) .icon-button { width: 30px; height: 30px; min-height: 28px; }
 
+/* Upstreams & credentials: a setting owned by another page (Model aliases, Excluded models, Native plugins) is one line,
+   its name beside its current value and the button that edits it, like a closed payload rule. */
+:root[data-density='compact'] .config-page .template-config-field:has(> .template-config-control > .owned-setting) { display: grid; grid-template-columns: minmax(160px, 220px) minmax(0, 1fr); align-items: center; column-gap: 12px; }
+
+/* Proxy plugins: each card keeps its name, ID, what it does, its trust and install state and every action; the
+   version/author/licence, source and platform lines go (the source badge and Update already say what matters). The
+   installed count goes unless config-only plugins are counted beside it. In Plugin settings the "official source is
+   always included" note goes; the warning not to enter tokens stays, and the sources box starts shorter. */
+:root[data-density='compact'] .plugins-page .plugin-card .plugin-meta,
+:root[data-density='compact'] .plugins-page .plugin-summary > span:last-child:not(:has(strong ~ strong)),
+:root[data-density='compact'] .plugins-page .plugin-settings label.plugin-field > small { display: none; }
+:root[data-density='compact'] .plugins-page .plugin-settings textarea { min-height: 0; height: 64px; }
+:root[data-density='compact'] .plugins-page .plugin-card { gap: 6px; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }

@@ -144,6 +144,12 @@ const path = require('node:path');
     await page.locator('.home-runtime-details').waitFor();
     assert.equal(await visible('.home-runtime-details [data-runtime="pid"]'), false, 'process ID is hidden in compact');
     assert.equal(await visible('.home-access-panel .home-field-label > span:first-child'), true, 'field labels stay in compact');
+    // Proxy plugins: version, source and platform lines go; each plugin's name, what it does and its actions stay.
+    await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'plugins'); });
+    await page.reload();
+    await page.locator('.plugins-page .plugin-card').first().waitFor();
+    assert.equal(await visible('.plugins-page .plugin-card .plugin-meta'), false, 'plugin version and source lines are hidden in compact');
+    assert.equal(await visible('.plugins-page .plugin-card .plugin-card-actions button'), true, 'plugin actions stay in compact');
     await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'home'); });
 
     // Command palette: the key hints go; the list stays.
@@ -219,6 +225,13 @@ const path = require('node:path');
     const wordTops = await words.evaluateAll(rows => rows.slice(0, 2).map(row => Math.round(row.getBoundingClientRect().top)));
     assert.equal(wordTops[0], wordTops[1], 'sensitive words share a row in compact');
     assert.equal(await words.first().locator('input').isEditable(), true, 'sensitive words stay editable');
+    // Upstreams & credentials: a setting owned by another page is one line with its edit button.
+    await tabs.locator('button', { hasText: 'Upstreams & credentials' }).click();
+    await page.locator('.config-extension-guide-actions button', { hasText: 'Show advanced' }).click();
+    const owned = page.locator('.template-config-field:has(> .template-config-control > .owned-setting)').first();
+    await owned.waitFor();
+    assert.ok((await owned.boundingBox()).height <= 40, `an owned setting is one line (${(await owned.boundingBox()).height}px)`);
+    assert.equal(await owned.locator('button').isVisible(), true, 'its edit button stays in compact');
 
     // Sidebar: every page and control fits without scrolling, including with Advanced tools open.
     await page.evaluate(() => { const fold = document.querySelector('.sidebar .personal-advanced'); if (fold) fold.open = true; });
