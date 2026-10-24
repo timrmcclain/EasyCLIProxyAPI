@@ -981,6 +981,19 @@ svg.lucide {
 :root[data-density='compact'] .plugins-page .plugin-settings textarea { min-height: 0; height: 64px; }
 :root[data-density='compact'] .plugins-page .plugin-card { gap: 6px; }
 
+/* Updates: both cards keep every version, the update status and all three actions; they size to their content, the
+   version tiles and figures shrink, and the download source's explanation goes (the channel picker and Add stay).
+   Jev: the "Status" heading is visual repetition of the status card under it; it stays for screen readers. */
+:root[data-density='compact'] .version-management-page .version-card-grid { gap: 8px; }
+:root[data-density='compact'] .version-management-page .version-list-item { min-height: 0; gap: 8px; padding: 10px 12px; }
+:root[data-density='compact'] .version-management-page .version-metrics-comparison { gap: 8px; margin-top: 6px; }
+:root[data-density='compact'] .version-management-page .version-metric-tile { gap: 2px; padding: 6px 10px; }
+:root[data-density='compact'] .version-management-page .app-module-card .version-metric-value { font-size: calc(15px * var(--type-scale, 1)); }
+:root[data-density='compact'] .version-management-page .version-source-copy { display: none; }
+:root[data-density='compact'] .version-management-page .version-source-row { min-height: 0; padding-top: 4px; padding-bottom: 4px; }
+:root[data-density='compact'] .version-management-page .version-source-control :is(select, button) { height: 30px; min-height: 28px; }
+:root[data-density='compact'] .jev-page #jev-status-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 /* A status that changes pulses once instead of silently jumping. */
 @keyframes status-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-accent) 45%, transparent); }

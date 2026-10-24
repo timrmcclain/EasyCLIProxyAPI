@@ -150,6 +150,20 @@ const path = require('node:path');
     await page.locator('.plugins-page .plugin-card').first().waitFor();
     assert.equal(await visible('.plugins-page .plugin-card .plugin-meta'), false, 'plugin version and source lines are hidden in compact');
     assert.equal(await visible('.plugins-page .plugin-card .plugin-card-actions button'), true, 'plugin actions stay in compact');
+    // Updates: the cards size to their content; every version and action stays.
+    await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'versions'); });
+    await page.reload();
+    const core = page.locator('.version-management-page .core-module-card');
+    await core.waitFor();
+    assert.ok((await core.boundingBox()).height <= 170, `the proxy engine card sizes to its content (${(await core.boundingBox()).height}px)`);
+    assert.equal(await core.locator('.version-metric-tile').count(), 2, 'current and latest versions stay in compact');
+    assert.equal(await core.locator('.version-card-actions button').count(), 3, 'all three update actions stay in compact');
+    // Jev: the Status heading is for screen readers only; the status card shows.
+    await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'jev'); });
+    await page.reload();
+    await page.locator('.jev-page .jev-card').first().waitFor();
+    assert.ok((await page.locator('#jev-status-title').boundingBox()).height <= 1, 'the Status heading is visually hidden in compact');
+    assert.equal(await page.locator('#jev-status-title').innerText(), 'Status', 'it is still read out');
     await page.evaluate(() => { localStorage.setItem('personal.lastPage', 'home'); });
 
     // Command palette: the key hints go; the list stays.
