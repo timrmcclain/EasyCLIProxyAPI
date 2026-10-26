@@ -4,6 +4,7 @@ import { loadDashboardActivity, type DashboardRequest } from '../services/dashbo
 import { subscribeActivity } from '../services/activitySubscription';
 import { resetCountdown } from '../services/accountDashboard';
 import { ConnectionOverview } from '../components/ConnectionOverview';
+import { AppDriftBanner } from '../components/AppDriftBanner';
 import { ConnectionError } from '../components/ConnectionError';
 import { DesktopModelPickerDialog } from '../components/DesktopModelPickerDialog';
 import { DesktopModelPresetControls } from '../components/DesktopModelPresetControls';
@@ -497,6 +498,15 @@ const listStateText = (status: AgentConfigStatus | undefined, items: DashboardRe
     : translate(locale, 'agents.list.installed');
 };
 
+const UNDO_BACKUPS_KEY = 'personal.agentUndoBackups';
+const readUndoBackups = (): Record<string, string> => {
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(UNDO_BACKUPS_KEY) ?? '{}');
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value).filter(([, id]) => typeof id === 'string')) as Record<string, string> : {};
+  } catch { return {}; }
+};
+
 /** The list's hover text: the version, which the one-line state leaves out. */
 const listStatusDetail = (status: AgentConfigStatus | undefined) => status?.version
   ? translate(getCurrentLocale(), 'agents.list.installedVersion', { version: status.version }) : undefined;
@@ -622,7 +632,11 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
   const [modelError, setModelError] = useState('');
   const [modelSelectionError, setModelSelectionError] = useState('');
   const [backupsOpen, setBackupsOpen] = useState(false);
-  const [undoBackupByClient, setUndoBackupByClient] = useState<Record<string, string>>({});
+  // The last save's snapshot per app, kept across restarts so Undo is still there tomorrow.
+  const [undoBackupByClient, setUndoBackupByClient] = useState<Record<string, string>>(readUndoBackups);
+  useEffect(() => {
+    try { window.localStorage.setItem(UNDO_BACKUPS_KEY, JSON.stringify(undoBackupByClient)); } catch { /* storage unavailable */ }
+  }, [undoBackupByClient]);
   const [restoreInitialId, setRestoreInitialId] = useState<string | undefined>();
   const [defaultError, setDefaultError] = useState('');
   const [clearError, setClearError] = useState('');
@@ -1839,6 +1853,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
       ) : null}
 
       {proxyDown ? <p className="agent-inline-message warning agent-proxy-down" role="status">{t('agents.proxyDown')}</p> : null}
+      {!embedded ? <AppDriftBanner coreReady={Boolean(coreStatus?.ready)} /> : null}
 
       <div className="agent-workbench">
         <AgentClientList clients={agentDefinitions.map((agent) => {
@@ -1848,6 +1863,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
             name: agent.name,
             icon: <AgentMark definition={agent} />,
             summary: listStatusText(status, listActivity, listNow),
+            light: status?.installed ? listConnectionState(status, listActivity, listNow)?.key : undefined,
             detail: listStatusDetail(status),
             installed: Boolean(status?.installed),
             detected: Boolean(status && (status.installed || status.configExists || status.configured

@@ -4,6 +4,7 @@ import { routingOrderEn, routingOrderJa, routingOrderZhCN } from './routingOrder
 import { switchboardEn, switchboardJa, switchboardZhCN } from './switchboard';
 import { activityFeedEn, activityFeedJa, activityFeedZhCN } from './activityFeed';
 import { accountIdentityEn, accountIdentityJa, accountIdentityZhCN } from './accountIdentity';
+import { appsSafetyEn, appsSafetyJa, appsSafetyZhCN } from './appsSafety';
 import { jevEn, jevJa, jevZhCN } from './jev';
 import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
@@ -16,6 +17,7 @@ export const accountDashboardEn = {
   ...switchboardEn,
   ...activityFeedEn,
   ...accountIdentityEn,
+  ...appsSafetyEn,
   ...jevEn,
   ...secretGuardEn,
   ...projectUsageEn,
@@ -95,6 +97,7 @@ export const accountDashboardZhCN = {
   ...switchboardZhCN,
   ...activityFeedZhCN,
   ...accountIdentityZhCN,
+  ...appsSafetyZhCN,
   ...jevZhCN,
   ...secretGuardZhCN,
   ...projectUsageZhCN,
@@ -174,6 +177,7 @@ export const accountDashboardJa = {
   ...switchboardJa,
   ...activityFeedJa,
   ...accountIdentityJa,
+  ...appsSafetyJa,
   ...jevJa,
   ...secretGuardJa,
   ...projectUsageJa,

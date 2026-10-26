@@ -1,0 +1,22 @@
+/* An app's light in the AI apps list: green when a request went through lately, blue when connected, grey when only installed. */
+.agent-light { position: relative; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--surface-34); }
+.agent-light.light-verified { background: var(--c-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-success) 22%, transparent); }
+.agent-light.light-connected { background: var(--primary-color); }
+.agent-light.light-attention { background: var(--c-danger); }
+@media (prefers-reduced-motion: no-preference) {
+  .agent-light.light-verified { animation: agent-light-pulse 2.4s ease-out infinite; }
+}
+@keyframes agent-light-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--c-success) 0%, transparent); } }
+.connection-test { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.connection-test-ok { color: var(--c-success); }
+.connection-test-failed { color: var(--c-danger); }
+
+/* Connectors: in use first, then available; each says what it can reach. */
+.connectors-section-heading { grid-column: 1 / -1; margin: 8px 0 0; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.connectors-section-heading:first-child { margin-top: 0; }
+.connector-trust { padding: 0 7px; border-radius: 999px; background: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px; font-weight: 500; line-height: 18px; white-space: nowrap; }
+.connector-trust.trust-account { color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 10%, transparent); }
+.connector-trust.trust-cloud { color: var(--c-warning); background: var(--c-warning-soft); }
+.connector-trust.trust-control { color: var(--c-danger); background: var(--c-danger-soft); }
+.connector-trust-hint, .connector-last-test { margin: 4px 0 0; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
+.connector-last-test.failed { color: var(--c-danger); }

@@ -5,6 +5,7 @@ import { Check, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useConfirmation } from '../components/ConfirmationDialog';
 import { readableError } from '../services/readableError';
+import { wordsFoundIn } from '../services/secretSeverity';
 
 type SensitiveWordsSettings = {
   antigravitySensitiveWords: string[];
@@ -32,6 +33,8 @@ type WordEditorProps = {
 function WordEditor({ provider, entries, composer, disabled, onAdd, onCompose, onChange, onRemove, onPaste }: WordEditorProps) {
   const { t } = useI18n();
   const title = t(provider === 'antigravity' ? 'config.sensitiveWords.antigravity' : 'config.sensitiveWords.devin');
+  const [sample, setSample] = useState('');
+  const found = sample.trim() ? wordsFoundIn(sample, entries.map(entry => entry.value)) : null;
 
   return (
     <section className="config-sensitive-words-card">
@@ -94,6 +97,18 @@ function WordEditor({ provider, entries, composer, disabled, onAdd, onCompose, o
           ))}
         </div>
       )}
+      <details className="config-sensitive-words-test">
+        <summary>{t('as.words.test')}</summary>
+        <textarea className="config-network-input" rows={3} aria-label={`${title}: ${t('as.words.testLabel')}`}
+          placeholder={t('as.words.testPlaceholder')} value={sample} onChange={(event) => setSample(event.currentTarget.value)} />
+        {found && (
+          <p className={`config-sensitive-words-result${found.length ? ' has-matches' : ''}`} role="status">
+            {found.length
+              ? t('as.words.matches', { count: found.length, words: found.join(', ') })
+              : t('as.words.none')}
+          </p>
+        )}
+      </details>
     </section>
   );
 }

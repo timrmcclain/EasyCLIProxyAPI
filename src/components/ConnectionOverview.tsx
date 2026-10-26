@@ -10,6 +10,8 @@ import { managementApi, normalizeAuthIndex, responseList } from '../services/man
 import { providerForFile, type AuthFile } from '../services/quotaService';
 import { privateAccountLabel } from '../services/accountPrivacy';
 import { readAccountNames } from '../services/accountNames';
+import { checkCoreModelHealth, type CoreModelHealthResult } from '../services/coreHealthCheck';
+import '../pages/AppsSafety.css';
 
 export function ConnectionOverview({ status, busy, detectionFailed, onReview, onDetect, configuredModels = [] }: {
   configuredModels?: ConfiguredModel[]; status: ConnectionStatus | null; busy: boolean; detectionFailed: boolean; onReview: () => void; onDetect: () => void;
@@ -26,6 +28,16 @@ export function ConnectionOverview({ status, busy, detectionFailed, onReview, on
   const reload = useRef<() => void>(() => {});
   const [names] = useState(readAccountNames);
   const [hidden] = useState(() => readDashboardPreference('hideEmails', ['true', 'false'], 'false') === 'true');
+  const [testing, setTesting] = useState(false);
+  const [test, setTest] = useState<CoreModelHealthResult | null>(null);
+  const testModel = configuredModels[0]?.model;
+  // A real request for this app's model, through the hub's route; the app's own light follows its next request.
+  const runTest = async () => {
+    if (!testModel) return;
+    setTesting(true); setTest(null);
+    try { setTest(await checkCoreModelHealth(testModel)); reload.current(); }
+    finally { setTesting(false); }
+  };
   useEffect(() => {
     let active = true;
     setLoaded(false); setError(false); setItems([]); setFiles([]);
@@ -71,6 +83,15 @@ export function ConnectionOverview({ status, busy, detectionFailed, onReview, on
       {latest?.failed && <div className="ux-failure"><p>{t(`ux.${failureKind(latest)}`)}</p><RequestFailureAction record={latest} /></div>}
       {error && <small role="status">{t('ux.connectionStale')}</small>}
       <button type="button" className="secondary-button compact-button" disabled={busy || refreshing} onClick={() => reload.current()}>{t(refreshing ? 'accountDashboard.refreshing' : 'ux.connectionRefresh')}</button>
+      {status?.connectionState === 'configured' && !status.codexNativeOauth && <div className="connection-test">
+        <button type="button" className="secondary-button compact-button" disabled={busy || testing || !testModel}
+          title={testModel ? t('as.test.hint') : t('as.test.noModel')} onClick={() => void runTest()}>{t(testing ? 'as.test.running' : 'as.test.run')}</button>
+        {test && <small role="status" className={test.success ? 'connection-test-ok' : 'connection-test-failed'}>
+          {test.success
+            ? t('as.test.ok', { model: privateText(test.model, hidden), time: `${((test.responseLatencyMs ?? 0) / 1000).toFixed(1)} s` })
+            : t('as.test.failed', { model: privateText(test.model, hidden), error: test.error ?? '' })}
+        </small>}
+      </div>}
       <small>{t('connection.evidenceHint')}</small>
     </div>
   </section>;

@@ -184,6 +184,21 @@ function savePendingRotation(fingerprint: string | null) {
   try { if (fingerprint) localStorage.setItem(PENDING_ROTATION_KEY, fingerprint); else localStorage.removeItem(PENDING_ROTATION_KEY); } catch { /* Only the reminder is lost. */ }
 }
 
+/**
+ * When the hub first saw each key apps use, by one-way fingerprint. The hub can't know when a key was created,
+ * so its age reads "since at least", and a rotation reminder appears once it's older than KEY_ROTATE_DAYS.
+ */
+const KEY_FIRST_SEEN_KEY = 'personal.keyFirstSeen';
+const KEY_ROTATE_DAYS = 90;
+function keyFirstSeen(fingerprint: string, now: number): number {
+  try {
+    const seen = JSON.parse(localStorage.getItem(KEY_FIRST_SEEN_KEY) ?? '{}') as Record<string, number>;
+    if (typeof seen[fingerprint] === 'number') return seen[fingerprint];
+    localStorage.setItem(KEY_FIRST_SEEN_KEY, JSON.stringify({ ...seen, [fingerprint]: now }));
+  } catch { /* Only the age is lost. */ }
+  return now;
+}
+
 export function ConfigPanelPage() {
   const { t, locale } = useI18n();
   const { askConfirmation, confirmationDialog } = useConfirmation();
@@ -242,6 +257,14 @@ export function ConfigPanelPage() {
     })();
     return () => { cancelled = true; };
   }, [settings, rotation]);
+  const [primaryKeySince, setPrimaryKeySince] = useState<number | null>(null);
+  useEffect(() => {
+    const key = settings?.apiKeys[0]?.apiKey;
+    if (!key) { setPrimaryKeySince(null); return; }
+    let cancelled = false;
+    void keyFingerprint(key).then(fingerprint => { if (!cancelled) setPrimaryKeySince(keyFirstSeen(fingerprint, Date.now())); });
+    return () => { cancelled = true; };
+  }, [settings]);
   const managementFeedback = useAppNotice();
   const loggingFeedback = useAppNotice();
   const networkFeedback = useAppNotice();
@@ -1410,6 +1433,11 @@ export function ConfigPanelPage() {
               </button>
             </div>
           </div>
+
+          {primaryKeySince !== null && <p className="config-key-age">
+            {t('as.key.age', { date: new Date(primaryKeySince).toLocaleDateString(locale) })}
+            {Date.now() - primaryKeySince > KEY_ROTATE_DAYS * 86_400_000 ? <strong> {t('as.key.rotateDue', { days: KEY_ROTATE_DAYS })}</strong> : null}
+          </p>}
 
           {rotation && settings?.apiKeys.some(entry => entry.apiKey === rotation.previousKey) && <div className="config-rotation-pending">
             <span><strong>{maskApiKey(rotation.previousKey)}</strong><small>{t('rotate.removeOldHint')}</small></span>

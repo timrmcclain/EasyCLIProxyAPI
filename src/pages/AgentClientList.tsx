@@ -3,6 +3,7 @@ import { RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
 import { MessageNotice } from '../appNotice';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { useI18n } from '../i18n';
+import './AppsSafety.css';
 
 const VISIBLE_CLIENTS_KEY = 'cpa-gui.agent-visible-clients.v1';
 
@@ -15,6 +16,8 @@ type Client<Id extends string> = {
   detail?: string;
   installed: boolean;
   detected: boolean;
+  /** Working, connected, installed or needs attention, from the same evidence as the one-line summary. */
+  light?: 'verified' | 'connected' | 'installed' | 'attention';
 };
 
 function readVisibleClients<Id extends string>(clients: Client<Id>[]): Id[] | null {
@@ -130,7 +133,9 @@ export function AgentClientList<Id extends string>({
           <span className="agent-client-icon">{client.icon}</span>
           <span><strong title={client.name}>{client.name}</strong><small title={client.detail ? `${client.summary}
 ${client.detail}` : client.summary}>{client.summary}</small></span>
-          {client.installed ? <i className="agent-installed-indicator" title={t('agents.clientDetected')} aria-hidden="true" /> : null}
+          {client.light
+            ? <i className={`agent-light light-${client.light}`} title={t(`as.light.${client.light}`)}><span className="sr-only">{t(`as.light.${client.light}`)}</span></i>
+            : client.installed ? <i className="agent-installed-indicator" title={t('agents.clientDetected')} aria-hidden="true" /> : null}
         </button>)}
       </div>
       <div className="agent-client-list-footer">

@@ -570,3 +570,11 @@
 /* Settings → Storage: data management spans the row, like the other embedded pages. */
 .config-page .config-settings-content > #config-native-storage { grid-column: 1 / -1; min-width: 0; }
 .config-page #config-native-storage > .usage-data-management-panel { width: 100%; margin: 0; }
+/* "Try it": paste text and see which of the list's words it contains. */
+.config-sensitive-words-test { margin-top: 12px; }
+.config-sensitive-words-test > summary { min-height: 32px; display: inline-flex; align-items: center; color: var(--text-secondary); cursor: pointer; }
+.config-sensitive-words-test textarea { width: 100%; margin-top: 6px; resize: vertical; font: inherit; }
+.config-sensitive-words-result { margin: 6px 0 0; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
+.config-sensitive-words-result.has-matches { color: var(--text-primary); }
+.config-key-age { margin: 0 0 10px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
+.config-key-age strong { color: var(--c-warning); font-weight: 600; }

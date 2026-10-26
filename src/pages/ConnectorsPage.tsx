@@ -32,6 +32,28 @@ import './ConnectorsPage.css';
 import { StateMessage } from '../components/StateMessage';
 import { ChromeConnectorCard } from './ChromeConnectorCard';
 import { useUnsavedChangesGuard } from '../services/unsavedChanges';
+import { resetCountdown } from '../services/accountDashboard';
+import './AppsSafety.css';
+
+/** What a connector can reach: this PC only, your account, an outside web service, or control of this PC. */
+const TRUST: Record<ConnectorId, 'local' | 'account' | 'cloud' | 'control'> = {
+  google: 'account', microsoft365: 'account', github: 'account', playwright: 'control', windows: 'control',
+  firecrawl: 'cloud', codegraph: 'local', markitdown: 'local',
+};
+const inUse = (item: ConnectorOverviewItem) => item.claudeCode.enabled || item.claudeDesktop.enabled;
+
+/** The last connection check per connector, so the result is still there after the page or app restarts. */
+const LAST_TESTS_KEY = 'personal.connectorLastTests';
+type LastTest = { at: number; ok: boolean; count: number | null };
+function readLastTests(): Record<string, LastTest> {
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(LAST_TESTS_KEY) ?? '{}');
+    return value && typeof value === 'object' ? value as Record<string, LastTest> : {};
+  } catch { return {}; }
+}
+function saveLastTest(id: string, test: LastTest) {
+  try { window.localStorage.setItem(LAST_TESTS_KEY, JSON.stringify({ ...readLastTests(), [id]: test })); } catch { /* storage unavailable */ }
+}
 
 type TestState = { running: boolean; result?: ConnectorTestResult; error?: string };
 
@@ -84,7 +106,7 @@ function openLink(url: string) {
 }
 
 export function ConnectorsPage() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const ct = (key: ConnectorTextKey) => connectorText(key, locale);
   const [overview, setOverview] = useState<ConnectorOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -194,15 +216,22 @@ export function ConnectorsPage() {
         <StateMessage kind="loading" size="inline" title={ct('loadingConnectors')} />
       ) : null}
       <div className="connectors-grid">
-        {overview?.connectors.map(item => (
-          <ConnectorCard
-            key={item.id}
-            item={item}
-            reloadCount={reloadCount}
-            onUnsavedChange={setCardUnsaved}
-            onSaved={(next) => { setOverview(next); setError(null); setNotice(ct('saved')); }}
-          />
-        ))}
+        {overview ? (['inUse', 'available'] as const).flatMap(section => {
+          const items = overview.connectors.filter(item => inUse(item) === (section === 'inUse'));
+          if (!items.length && section === 'inUse') return [];
+          return [
+            <h2 key={`section-${section}`} className="connectors-section-heading">{t(`as.conn.${section}`)}</h2>,
+            ...items.map(item => (
+              <ConnectorCard
+                key={item.id}
+                item={item}
+                reloadCount={reloadCount}
+                onUnsavedChange={setCardUnsaved}
+                onSaved={(next) => { setOverview(next); setError(null); setNotice(ct('saved')); }}
+              />
+            )),
+          ];
+        }) : null}
         {overview ? <ChromeConnectorCard reloadCount={reloadCount} /> : null}
       </div>
       {confirmationDialog}
@@ -218,7 +247,14 @@ type ConnectorCardProps = {
 };
 
 function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: ConnectorCardProps) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
+  const [lastTest, setLastTest] = useState<LastTest | undefined>(() => readLastTests()[item.id]);
+  const remember = (result: ConnectorTestResult | null) => {
+    if (result?.status === 'needsSignIn' || result?.status === 'builtIn') return;
+    const next = { at: Date.now(), ok: result?.status === 'ok', count: result?.toolCount ?? null };
+    saveLastTest(item.id, next); setLastTest(next);
+  };
+  const trust = TRUST[item.id as ConnectorId];
   const ct = (key: ConnectorTextKey) => connectorText(key, locale);
   const dt = (key: string) => connectorDynamicText(key, locale);
   const [draft, setDraft] = useState<ConnectorDraft>(() => draftFromItem(item));
@@ -295,8 +331,10 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
     try {
       const result = await connectorsApi.test(item.id, target);
       setTests(current => ({ ...current, [target]: { running: false, result } }));
+      remember(result);
     } catch (error) {
       setTests(current => ({ ...current, [target]: { running: false, error: errorText(error) } }));
+      remember(null);
     }
   };
 
@@ -333,6 +371,7 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
           <span className="connector-icon" aria-hidden="true"><Icon size={18} /></span>
           <h2 id={`connector-${item.id}-title`}>{dt(`${item.id}_name`)}</h2>
           <span className="connector-row-states">
+            {trust ? <span className={`connector-trust trust-${trust}`} title={t(`as.conn.badgeHint.${trust}`)}>{t(`as.conn.badge.${trust}`)}</span> : null}
             {connectorTargets.map(target => (
               codeSignInMissing(item, target)
                 ? <span key={target} className="connector-row-state on warn">{ct(target)} · {ct('needsSignInShort')}</span>
@@ -356,6 +395,13 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       ) : note ? <p className="connector-note">{note}</p> : null}
       {unavailable ? <p className="connector-unavailable">{unavailable}</p> : null}
 
+      {trust ? <p className="connector-trust-hint">{t(`as.conn.badgeHint.${trust}`)}</p> : null}
+      {lastTest && !Object.values(tests).some(Boolean) ? <p className={`connector-last-test${lastTest.ok ? ' ok' : ' failed'}`}>
+        {t('as.conn.lastTest', {
+          time: resetCountdown(Date.now() + Math.max(60_000, Date.now() - lastTest.at), Date.now()),
+          result: lastTest.ok ? (lastTest.count === null ? t('as.conn.lastTestOkNoCount') : t('as.conn.lastTestOk', { count: lastTest.count })) : t('as.conn.lastTestFailed'),
+        })}
+      </p> : null}
       <div className="connector-targets">
         {connectorTargets.map(target => {
           const state = item[target];

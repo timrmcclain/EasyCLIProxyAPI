@@ -1,11 +1,13 @@
 import { MessageNotice } from '../appNotice';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { AlertTriangle, CircleCheck, CircleSlash, ExternalLink, FlaskConical, KeyRound, RefreshCw } from 'lucide-react';
 import { requestRequestDetail } from '../usageNavigation';
 import { useI18n } from '../i18n';
 import type { MessageKey } from '../i18n/resources';
 import { resetCountdown } from '../services/accountDashboard';
 import { readableError } from '../services/readableError';
+import { rotateUrl, secretSeverity, weeklySafety } from '../services/secretSeverity';
 import {
   SECRET_GUARD_MODES, SECRET_GUARD_PROVIDERS, modeFor, openFindings, publishOpenCount, secretGuardApp, secretGuardKind, secretGuardService,
   type SecretGuardCheckHit, type SecretGuardFinding, type SecretGuardMode, type SecretGuardProvider, type SecretGuardStatus,
@@ -134,11 +136,14 @@ export function SecretGuardPage() {
     const allowed = policy.allow.includes(item.fingerprint);
     const isHandled = item.dismissedAt !== null || allowed;
     const apps = [...new Set(item.clients.map(secretGuardApp))].filter(Boolean);
-    return <li key={item.fingerprint} className={`sg-finding${isHandled ? ' handled' : ''}${item.actions.includes('blocked') ? ' blocked' : ''}`}>
+    const severity = secretSeverity(item.kind);
+    const rotatePage = rotateUrl(item.kind);
+    return <li key={item.fingerprint} className={`sg-finding severity-${severity}${isHandled ? ' handled' : ''}${item.actions.includes('blocked') ? ' blocked' : ''}`}>
       <KeyRound size={18} aria-hidden="true" className="sg-finding-icon" />
       <div className="sg-finding-body">
         <div className="sg-finding-title">
           <strong>{t(`sg.kind.${kind}` as MessageKey)}</strong>
+          <span className={`sg-severity sg-severity-${severity}`} title={t(`as.sg.severityHint.${severity}`)}>{t(`as.sg.severity.${severity}`)}</span>
           {item.actions.map(action => <span key={action} className={`sg-action sg-action-${action}`}>{t(`sg.action.${action}` as MessageKey)}</span>)}
           {isHandled && <span className="sg-action sg-action-handled">{t(allowed ? 'sg.finding.handledSafe' : 'sg.finding.handledRotated')}</span>}
         </div>
@@ -148,8 +153,11 @@ export function SecretGuardPage() {
           <span className="sg-fingerprint">{t('sg.finding.fingerprint', { fingerprint: item.fingerprint })}</span>
         </p>
         {!isHandled && <p className="sg-rotate">{t(`sg.rotate.${kind}` as MessageKey)}</p>}
+        {!isHandled && <p className="sg-severity-hint">{t(`as.sg.severityHint.${severity}`)}</p>}
       </div>
       <div className="sg-finding-actions">
+        {!isHandled && rotatePage && <button type="button" className="secondary-button compact-button" title={rotatePage}
+          onClick={() => void invoke('open_external_url', { url: rotatePage }).catch(() => undefined)}><ExternalLink size={14} aria-hidden="true" />{t('as.sg.rotate')}</button>}
         {item.requestIds?.length ? <button type="button" className="secondary-button compact-button" title={t('sg.finding.viewRequestHint')}
           onClick={() => requestRequestDetail(item.requestIds![0])}><ExternalLink size={14} aria-hidden="true" />{t('sg.finding.viewRequest')}</button> : null}
         {isHandled
@@ -215,6 +223,16 @@ export function SecretGuardPage() {
           {showHandled ? t('sg.findings.hideHandled') : t('sg.findings.showHandled', { count: handled.length })}
         </button>}
       </header>
+      {(() => {
+        const week = weeklySafety(all, now);
+        if (week.caught === 0) return <p className="sg-week">{t('as.sg.weekNone')}</p>;
+        return <p className="sg-week">
+          <strong>{t('as.sg.week', { caught: week.caught, s: week.caught === 1 ? '' : 's' })}</strong>
+          <span>{t('as.sg.weekStopped', { stopped: week.stopped })}</span>
+          <span>{t('as.sg.weekReported', { reported: week.reported })}</span>
+          {week.critical > 0 && <span className="sg-week-critical">{t('as.sg.weekCritical', { critical: week.critical })}</span>}
+        </p>;
+      })()}
       {all.length === 0 ? <p className="glance-muted">{t('sg.findings.none')}</p>
         : <>
           {open.length === 0 && <p className="glance-muted">{t('sg.findings.allHandled')}</p>}
