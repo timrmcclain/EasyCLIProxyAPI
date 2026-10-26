@@ -577,6 +577,7 @@ export const jaOverrides = {
   'app.nav.home': 'ホーム',
   'app.nav.proxy': 'プロキシ',
   'home.proxyStatus.running': 'プロキシ稼働中 · ポート {port}',
+  'home.proxyStatus.runningShort': 'プロキシ稼働中',
   'home.proxyStatus.open': 'プロキシの操作と接続情報を開く',
   'app.nav.versions': 'バージョン管理',
   'personal.advanced.proxy': 'プロキシ',

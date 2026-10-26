@@ -32,6 +32,7 @@ import { readDashboardPreference, saveDashboardPreference } from '../services/da
 import { readAccountNames, saveAccountNames } from '../services/accountNames';
 import { accountDisplayName, privateAccountLabel } from '../services/accountPrivacy';
 import { ACCOUNT_SEARCH_EVENT, takePendingAccountSearch } from '../accountNavigation';
+import { Switchboard, SwitchboardHistory } from './Switchboard';
 import { ProviderLogo, SignInAgainButton, needsSignIn, openSignIn } from './AuthFileProviderIcon';
 import { requestAccountRequests } from '../usageNavigation';
 import { loadPlanBlocks, withPlanBlocks, type PlanBlock } from '../services/planBlock';
@@ -315,6 +316,8 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     {/* Before the first list arrives, an empty list means "still loading", never "no accounts". */}
     {ready && !listLoaded && !error ? <p className="ad-notice" role="status">{t('glance.attention.loadingAccounts')}</p> : null}
     {ready && listLoaded && !error && !files.length ? <p className="ad-notice">{t('accountDashboard.empty')}</p> : null}
+    {listLoaded && files.length > 0 && <Switchboard ready={ready && !error} files={files} quotas={quotas} now={now} items={activity?.items} routing={routingState}
+      labelFor={labelFor} providerName={(provider) => providerNames[provider] ?? provider} />}
     <div className="quota-provider-summary">
       {providerList.filter((provider) => files.some((file) => dashboardProvider(file) === provider)).map((provider) => {
         const accounts = files.filter((file) => dashboardProvider(file) === provider);
@@ -370,6 +373,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
       </div>}
       {!visible.length && !hiddenFine && files.length > 0 && <div className="quota-no-results" role="status"><span>{t('availability.noMatches')}</span>{filtered && <button type="button" className="secondary-button compact-button" onClick={clearFilters}>{t('availability.clearFilters')}</button>}</div>}
     </div>
+    {ready && !error && files.length > 0 && <SwitchboardHistory files={files} quotas={quotas} now={now} routing={routingState} labelFor={labelFor} />}
     {/* The ledger comes first so accounts are visible without scrolling; activity and provider pace follow it.
         Each row carries its own recovery time, so there's no separate recovery list. */}
     <HomeGlance usage={usage} usageLoading={usageLoading} activity={activity} now={now} providerOf={dashboardProvider} latestAccount={latestFile ? labelFor(latestFile) : undefined} files={files} quotas={quotas} stale={stale} nameFor={(provider) => providerNames[provider] ?? provider} labelFor={labelFor} />

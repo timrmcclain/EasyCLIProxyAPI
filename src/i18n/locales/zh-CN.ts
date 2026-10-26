@@ -563,6 +563,7 @@ export const zhCN = {
   'app.nav.home': '首页',
   'app.nav.proxy': '代理',
   'home.proxyStatus.running': '代理运行中 · 端口 {port}',
+  'home.proxyStatus.runningShort': '代理运行中',
   'home.proxyStatus.open': '打开代理控制和连接信息',
   'app.nav.versions': '版本管理',
   'personal.advanced.proxy': '代理',

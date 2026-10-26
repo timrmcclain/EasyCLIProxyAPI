@@ -357,7 +357,8 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
         <section className="home-status" aria-label={t('home.status.label')}>
           <span key={statusTone} className={`home-status-proxy ${statusTone} status-changed`} role="status" title={statusError || undefined}>
             {coreProcessBusy ? <LoaderCircle size={14} className="spin" aria-hidden="true" /> : <span className="home-runtime-dot" aria-hidden="true" />}
-            <strong>{coreRunning ? t('home.proxyStatus.running', { port: customPort }) : statusLabel}</strong>
+            {/* The port only matters when something can't connect, so it lives in the tooltip. */}
+            <strong title={coreRunning ? t('home.proxyStatus.running', { port: customPort }) : undefined}>{coreRunning ? t('home.proxyStatus.runningShort') : statusLabel}</strong>
           </span>
           <button type="button" className={coreRunning ? 'secondary-button compact-button' : 'primary-button compact-button'}
             disabled={!coreInstalled || coreProcessBusy} onClick={toggleProxy}>

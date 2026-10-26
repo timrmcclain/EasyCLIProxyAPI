@@ -564,6 +564,7 @@ export const en: Record<MessageKey, string> = {
   'app.nav.home': 'Overview',
   'app.nav.proxy': 'Proxy',
   'home.proxyStatus.running': 'Proxy running · port {port}',
+  'home.proxyStatus.runningShort': 'Proxy running',
   'home.proxyStatus.open': 'Open proxy controls and connection details',
   'app.nav.versions': 'Updates',
   'personal.advanced.proxy': 'Proxy',

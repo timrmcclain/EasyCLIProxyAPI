@@ -1,0 +1,85 @@
+/* Overview's switchboard: apps → hub → the account each provider is spending. One colour per account throughout. */
+.switchboard { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-primary); }
+.switchboard h3 { margin: 0 0 6px; color: var(--text-tertiary); font-size: calc(11px * var(--type-scale, 1)); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.sb-muted { margin: 0; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); }
+
+.sb-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.sb-state { display: inline-flex; flex: none; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--c-success-soft); color: var(--c-success); font-size: calc(12px * var(--type-scale, 1)); font-weight: 700; }
+.sb-state-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.sb-state.state-reserve { background: var(--c-warning-soft); color: var(--c-warning); }
+.sb-state.state-blocked, .sb-state.state-down { background: var(--c-danger-soft); color: var(--c-danger); }
+.sb-sentence { flex: 1 1 280px; margin: 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); line-height: 1.4; }
+.switchboard.state-blocked { border-color: var(--c-danger-border); }
+.switchboard.state-reserve { border-color: var(--c-warning-border); }
+
+.sb-flow { display: grid; grid-template-columns: minmax(120px, 170px) 30px minmax(0, 1fr); align-items: stretch; gap: 0; }
+.sb-apps ul, .sb-lanes ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+/* Two lanes a row on wide windows keeps the accounts list on the first screen. */
+.sb-lanes ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
+.sb-apps li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 3px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 8px); background: var(--bg-secondary); }
+.sb-apps li.live { border-color: color-mix(in srgb, var(--primary-color) 45%, var(--border-color)); }
+.sb-app-name { font-size: calc(12.5px * var(--type-scale, 1)); font-weight: 600; }
+.sb-app-count { color: var(--text-tertiary); font-size: calc(11.5px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; }
+
+/* The hub is a spine between the two columns; it brightens while any lane carries traffic. */
+.sb-hub { position: relative; display: flex; align-items: center; justify-content: center; }
+.sb-hub::before { content: ''; position: absolute; top: 4px; bottom: 4px; left: 50%; width: 2px; background: var(--border-color); transform: translateX(-50%); }
+.sb-hub span { position: relative; padding: 2px 4px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-tertiary); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; writing-mode: vertical-rl; }
+.sb-hub.live::before { background: color-mix(in srgb, var(--primary-color) 55%, var(--border-color)); }
+
+.sb-lane { position: relative; display: flex; align-items: stretch; }
+.sb-wire { display: none; }
+.sb-lane.live .sb-lane-body { border-color: color-mix(in srgb, var(--primary-color) 45%, var(--border-color)); box-shadow: inset 3px 0 0 var(--primary-color); }
+.sb-lane-body { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; padding: 3px 8px; border: 1px solid var(--border-color); border-radius: var(--radius-md, 8px); background: var(--bg-primary); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sb-lane-body:hover { background: var(--bg-secondary); }
+.sb-lane.out .sb-lane-body { border-color: var(--c-danger-border); background: var(--c-danger-soft); }
+.sb-lane-text { display: flex; flex: 1; flex-direction: column; gap: 0; min-width: 0; }
+.sb-lane-title { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
+.sb-lane-account { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: calc(13px * var(--type-scale, 1)); }
+.sb-lane-title svg, .sb-lane-title img { width: 14px; height: 14px; }
+.sb-lane-account strong { overflow: hidden; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.sb-lane-meta { display: flex; flex-wrap: wrap; gap: 0 8px; color: var(--text-secondary); font-size: calc(11.5px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; }
+.sb-lane-kept { color: var(--text-tertiary); font-size: calc(11.5px * var(--type-scale, 1)); }
+.sb-good { color: var(--c-success); }
+.sb-warn { color: var(--c-warning); }
+.sb-live { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--primary-color); }
+.sb-swatch { display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 3px; }
+
+.sb-gauge { flex: none; }
+.sb-gauge-track { fill: none; stroke: var(--bg-tertiary, var(--border-color)); }
+.sb-gauge-fill { fill: none; stroke-linecap: round; }
+.sb-gauge circle:nth-of-type(n+3) { opacity: 0.75; }
+
+.sb-strip-bars { position: relative; display: grid; grid-template-columns: repeat(24, 1fr); align-items: end; gap: 2px; height: 56px; padding-bottom: 16px; }
+.sb-strip-hour { display: flex; align-items: flex-end; height: 100%; min-width: 0; padding: 0; border: 0; border-bottom: 1px solid var(--border-color); background: none; cursor: pointer; }
+.sb-strip-hour:disabled { cursor: default; }
+.sb-strip-hour:not(:disabled):hover .sb-strip-stack { outline: 2px solid color-mix(in srgb, var(--primary-color) 40%, transparent); }
+.sb-strip-stack { display: flex; flex-direction: column-reverse; width: 100%; overflow: hidden; border-radius: 3px 3px 0 0; }
+.sb-strip-stack span { min-height: 2px; }
+.sb-strip-axis { position: absolute; right: 0; bottom: 0; left: 0; display: flex; justify-content: space-between; color: var(--text-tertiary); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+
+.sb-calendar ol { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.sb-calendar li { display: flex; flex-direction: column; gap: 3px; min-width: 0; min-height: 44px; padding: 4px 6px; border-radius: 6px; background: var(--bg-secondary); }
+.sb-calendar li.has-marks { background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary)); }
+.sb-calendar-day { color: var(--text-tertiary); font-size: 10.5px; font-weight: 600; text-transform: uppercase; }
+.sb-calendar-mark { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: calc(11.5px * var(--type-scale, 1)); }
+.sb-calendar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A short pulse travels down a live lane's wire. Hidden for anyone who prefers less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .sb-hub.live::after { content: ''; position: absolute; top: 4px; left: 50%; width: 4px; height: 14px; border-radius: 2px; background: var(--primary-color); transform: translateX(-50%); animation: sb-pulse 1.6s linear infinite; }
+  .sb-live { animation: sb-blink 1.4s ease-in-out infinite; }
+  .sb-apps li.live .sb-app-name::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--primary-color); vertical-align: middle; animation: sb-blink 1.4s ease-in-out infinite; }
+}
+@keyframes sb-pulse { from { top: 4px; opacity: 1; } to { top: calc(100% - 18px); opacity: 0.2; } }
+@keyframes sb-blink { 50% { opacity: 0.25; } }
+
+@media (max-width: 900px) {
+  .sb-flow { grid-template-columns: 1fr; gap: 10px; }
+  .sb-hub { display: none; }
+  .sb-apps ul { flex-direction: row; flex-wrap: wrap; }
+  .sb-calendar ol { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .sb-calendar-name { display: none; }
+}
+:root[data-density='compact'] .switchboard { gap: 6px; padding: 8px 10px; }
+:root[data-density='compact'] .sb-lane-body { padding: 2px 6px; }
