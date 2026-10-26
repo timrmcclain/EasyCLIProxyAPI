@@ -51,7 +51,8 @@ const os = require('node:os');
     const details = page.locator('.ad-account-details').first();
     assert.equal(await details.getAttribute('open'), null);
     await details.locator('summary').click();
-    assert.equal(await details.getByRole('spinbutton').isVisible(), true);
+    // Priority is set in Settings > Routing now; the details link there instead of a number field.
+    assert.equal(await details.getByRole('button', { name: 'Change order', exact: true }).isVisible(), true);
     assert.equal(await page.locator('.sidebar-contact').count(), 0);
     await nav.getByRole('button', { name: 'Accounts', exact: true }).click();
     await page.getByRole('heading', { name: 'Saved accounts' }).waitFor();
