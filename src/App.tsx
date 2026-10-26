@@ -72,6 +72,7 @@ import { canOpenAppPage, isAlwaysAvailablePage } from './navigation';
 import { useThemePreference } from './theme';
 import { useDialogFocusTrap } from './components/useDialogFocusTrap';
 import { CommandPalette, type PaletteCommand } from './components/CommandPalette';
+import './components/MiniHub.css';
 import { confirmLeave } from './services/unsavedChanges';
 import { readableError } from './services/readableError';
 
@@ -203,6 +204,19 @@ const advancedNav: PageId[] = advancedGroups.flatMap((group) => group.ids);
 // Icons for the prototype groups whose first page's icon doesn't describe the group.
 const groupIcons: Partial<Record<string, typeof House>> = { 'ai-apps': Bot, tools: Plug, safety: ShieldCheck, diagnostics: Stethoscope };
 const LAST_PAGE_KEY = 'personal.lastPage';
+// Pages pinned to the top of the sidebar, and the page last used in each navigation group, kept across restarts.
+const PINNED_PAGES_KEY = 'personal.pinnedPages';
+const LAST_IN_GROUP_KEY = 'personal.lastInGroup';
+function readStoredJson<T>(key: string, fallback: T, valid: (value: unknown) => value is T): T {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(key) ?? 'null');
+    return valid(value) ? value : fallback;
+  } catch { return fallback; }
+}
+const isPageList = (value: unknown): value is PageId[] => Array.isArray(value)
+  && value.every((id) => typeof id === 'string' && pages.some((page) => page.id === id));
+const isStringMap = (value: unknown): value is Record<string, string> => Boolean(value) && typeof value === 'object'
+  && !Array.isArray(value) && Object.values(value as object).every((id) => typeof id === 'string');
 
 function initialPage(): PageId {
   try {
@@ -273,10 +287,29 @@ function AppContent() {
     window.addEventListener(NEW_NAVIGATION_EVENT, changed);
     return () => window.removeEventListener(NEW_NAVIGATION_EVENT, changed);
   }, []);
-  const lastInGroup = useRef<Record<string, string>>({});
+  const lastInGroup = useRef<Record<string, string>>(readStoredJson(LAST_IN_GROUP_KEY, {}, isStringMap));
   useEffect(() => {
     const group = groupForPage(active);
-    if (group) lastInGroup.current[group.id] = active;
+    if (group) {
+      lastInGroup.current[group.id] = active;
+      try { localStorage.setItem(LAST_IN_GROUP_KEY, JSON.stringify(lastInGroup.current)); } catch { /* Only the memory is lost. */ }
+    }
+  }, [active]);
+  const [pinned, setPinned] = useState<PageId[]>(() => readStoredJson(PINNED_PAGES_KEY, [], isPageList));
+  const togglePin = (id: PageId) => setPinned((current) => {
+    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+    try { localStorage.setItem(PINNED_PAGES_KEY, JSON.stringify(next)); } catch { /* Only the pin is lost. */ }
+    return next;
+  });
+  // Each page comes back scrolled where you left it. Pages load their data after they mount, so the position is
+  // put back once more a moment later, when the page has its full height.
+  const scrollMemory = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const remember = () => { scrollMemory.current[active] = window.scrollY; };
+    window.addEventListener('scroll', remember, { passive: true });
+    const saved = scrollMemory.current[active] ?? 0;
+    const timers = saved > 0 ? [0, 400].map((delay) => window.setTimeout(() => window.scrollTo({ top: saved }), delay)) : [];
+    return () => { window.removeEventListener('scroll', remember); timers.forEach((timer) => window.clearTimeout(timer)); };
   }, [active]);
   // Ctrl+1–7 open the six main groups and Settings, or the old primary pages with the switch off.
   const shortcutTargets = (): PageId[] => newNav
@@ -765,6 +798,13 @@ function AppContent() {
         keywords: paletteKeywords[id], disabled: !canOpenAppPage(id, coreReady), run: () => select(id),
       };
     }),
+    {
+      id: 'pin-page', group: t('palette.pages'),
+      label: t(pinned.includes(active) ? 'nd.unpin' : 'nd.pin', { page: t(pages.find((item) => item.id === active)!.labelKey) }),
+      keywords: ['pin', 'favourite', 'favorite', 'sidebar', '固定', 'ピン'], run: () => togglePin(active),
+    },
+    { id: 'mini-window', label: t('nd.mini.openCommand'), group: t('nd.window'), keywords: ['mini', 'compact', 'always on top', 'status', '迷你', 'ミニ'],
+      run: () => void invoke('open_mini_window').catch(() => undefined) },
     { id: 'theme-light', label: t('app.theme.switchToLight'), group: t('palette.appearance'), run: () => setTheme('light') },
     { id: 'theme-dark', label: t('app.theme.switchToDark'), group: t('palette.appearance'), run: () => setTheme('dark') },
     { id: 'theme-system', label: t('app.theme.switchToSystem'), group: t('palette.appearance'), run: () => setTheme('system') },
@@ -903,6 +943,10 @@ function AppContent() {
               {mainNavGroups.map(renderNavigationGroup)}
               <div className="nav-utility-groups" role="group" aria-label={t('navGroup.utility')}>{utilityNavGroups.map(renderNavigationGroup)}</div>
             </> : <>
+            {pinned.length > 0 ? <div className="nav-pinned" role="group" aria-label={t('nd.pinned')}>
+              <span className="personal-advanced-heading" aria-hidden="true">{t('nd.pinned')}</span>
+              {pinned.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
+            </div> : null}
             {primaryNav.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
             <details className="personal-advanced" open={advancedOpen || advancedNav.includes(active)}
               onToggle={(event) => {
@@ -1050,6 +1094,15 @@ function AppContent() {
 
         <div className="workspace">
           <main className="content" id="main-content" tabIndex={-1}>
+            {(() => {
+              // An Advanced tools page says where it sits, since its sidebar entry may be folded away.
+              const group = newNav ? undefined : advancedGroups.find((item) => item.ids.includes(active));
+              return group ? <nav className="page-breadcrumb" aria-label={t('nd.breadcrumb')}><ol>
+                <li>{t('personal.advanced')}</li>
+                <li>{t(group.labelKey)}</li>
+                <li aria-current="page">{t(activePage.labelKey)}</li>
+              </ol></nav> : null;
+            })()}
             {activeGroup && activeGroup.pages.length > 1 ? (
               <nav className="nav-group-sections" aria-label={t(activeGroup.labelKey as Parameters<typeof t>[0])}>
                 {activeGroup.pages.map((id) => {

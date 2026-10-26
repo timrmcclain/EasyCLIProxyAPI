@@ -1,6 +1,7 @@
 #[derive(Clone, Copy)]
 pub(crate) enum NativeText {
     OpenMainWindow,
+    MiniWindow,
     Quit,
     CoreStatusWorking,
     CoreStatusNotInstalled,
@@ -23,6 +24,7 @@ pub(crate) fn native_text(locale: &str, text: NativeText) -> &'static str {
     match super::normalize_app_locale(locale) {
         "zh-CN" => match text {
             NativeText::OpenMainWindow => "打开主界面",
+            NativeText::MiniWindow => "迷你窗口",
             NativeText::Quit => "退出",
             NativeText::CoreStatusWorking => "内核状态：处理中",
             NativeText::CoreStatusNotInstalled => "内核状态：未安装",
@@ -42,6 +44,7 @@ pub(crate) fn native_text(locale: &str, text: NativeText) -> &'static str {
         },
         "zh-TW" => match text {
             NativeText::OpenMainWindow => "開啟主介面",
+            NativeText::MiniWindow => "迷你視窗",
             NativeText::Quit => "退出",
             NativeText::CoreStatusWorking => "核心狀態：處理中",
             NativeText::CoreStatusNotInstalled => "核心狀態：未安裝",
@@ -61,6 +64,7 @@ pub(crate) fn native_text(locale: &str, text: NativeText) -> &'static str {
         },
         "ja" => match text {
             NativeText::OpenMainWindow => "メイン画面を開く",
+            NativeText::MiniWindow => "ミニウィンドウ",
             NativeText::Quit => "終了",
             NativeText::CoreStatusWorking => "コア状態：処理中",
             NativeText::CoreStatusNotInstalled => "コア状態：未インストール",
@@ -80,6 +84,7 @@ pub(crate) fn native_text(locale: &str, text: NativeText) -> &'static str {
         },
         _ => match text {
             NativeText::OpenMainWindow => "Open Main Window",
+            NativeText::MiniWindow => "Mini Window",
             NativeText::Quit => "Quit",
             NativeText::CoreStatusWorking => "Core status: Working",
             NativeText::CoreStatusNotInstalled => "Core status: Not installed",

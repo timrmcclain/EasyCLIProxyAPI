@@ -40,6 +40,7 @@ mod claude_fallback;
 mod project_usage;
 mod proxy_listen;
 mod config_history;
+mod mini_window;
 mod core_log;
 mod deleted_accounts;
 mod provider_status;
@@ -2765,6 +2766,9 @@ fn main() {
             delete_core_api_key,
             promote_core_api_key,
             tray::set_tray_quota_summary,
+            mini_window::get_hub_summary,
+            mini_window::open_mini_window,
+            mini_window::show_main_from_mini,
             statusline::claude_statusline_state,
             statusline::enable_claude_statusline,
             claude_fallback::claude_fallback_state,

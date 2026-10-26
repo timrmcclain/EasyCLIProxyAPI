@@ -1,0 +1,19 @@
+/* The mini window: one status line in the colour of the tray badge, a few detail lines, a way back. */
+.mini-hub { display: flex; flex-direction: column; gap: 8px; min-height: 100vh; box-sizing: border-box; padding: 12px 14px; background: var(--bg-primary); color: var(--text-primary); font-size: calc(13px * var(--type-scale, 1)); }
+.mini-hub header { display: flex; align-items: center; gap: 8px; }
+.mini-hub header strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.mini-hub-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c-success); }
+.mini-hub.level-low .mini-hub-dot { background: var(--c-warning); }
+.mini-hub.level-out .mini-hub-dot, .mini-hub.level-error .mini-hub-dot { background: var(--c-danger); }
+.mini-hub.level-unknown .mini-hub-dot { background: var(--surface-34); }
+.mini-hub ul { margin: 0; padding: 0; list-style: none; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; }
+.mini-hub li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-hub button { align-self: flex-start; margin-top: auto; }
+
+/* Breadcrumb above an Advanced tools page, so it's clear where it sits. */
+.page-breadcrumb ol { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; padding: 0; list-style: none; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); }
+.page-breadcrumb li + li::before { content: '›'; margin-right: 4px; color: var(--text-tertiary); }
+.page-breadcrumb li[aria-current='page'] { color: var(--text-secondary); }
+
+/* Pages pinned to the top of the sidebar. */
+.nav-pinned { display: flex; flex-direction: column; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); }

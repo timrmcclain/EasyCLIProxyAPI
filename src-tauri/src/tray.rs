@@ -190,6 +190,8 @@ const WINDOWS_TRAY_ID: &str = "windows-tray";
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 const WINDOWS_TRAY_OPEN_MENU_ID: &str = "windows-tray-open-main-window";
 #[cfg(any(target_os = "linux", target_os = "windows"))]
+const WINDOWS_TRAY_MINI_MENU_ID: &str = "windows-tray-mini-window";
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 const WINDOWS_TRAY_STATUS_MENU_ID: &str = "windows-tray-core-status";
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 const WINDOWS_TRAY_QUOTA_MENU_ID: &str = "windows-tray-quota";
@@ -605,6 +607,7 @@ pub(crate) fn windows_tray_tooltip(base: &str, quota: &str) -> String {
 /// Called by the window's quota watcher with a localized summary for the tray menu and tooltip.
 #[tauri::command]
 pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String, level: Option<String>, gauge: Option<f64>) {
+    crate::mini_window::remember_summary(&app, &menu_text, &tooltip_text, level.as_deref());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         let Some(tray_state) = app.try_state::<WindowsTrayState>() else {
@@ -790,6 +793,13 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         true,
         None::<&str>,
     )?;
+    let mini_window = MenuItem::with_id(
+        app,
+        WINDOWS_TRAY_MINI_MENU_ID,
+        native_text(&locale, NativeText::MiniWindow),
+        true,
+        None::<&str>,
+    )?;
     let status_item = MenuItem::with_id(
         app,
         WINDOWS_TRAY_STATUS_MENU_ID,
@@ -831,6 +841,7 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         app,
         &[
             &open_main_window,
+            &mini_window,
             &separator_one,
             &status_item,
             &quota_item,
@@ -856,6 +867,11 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         .show_menu_on_left_click(false)
         .on_menu_event(move |app_handle, event| match event.id().as_ref() {
             WINDOWS_TRAY_OPEN_MENU_ID => show_windows_main_window(app_handle),
+            WINDOWS_TRAY_MINI_MENU_ID => {
+                if let Err(error) = crate::mini_window::show_mini_window(app_handle) {
+                    eprintln!("Failed to open the mini window: {error}");
+                }
+            }
             WINDOWS_TRAY_TOGGLE_CORE_MENU_ID => {
                 run_windows_tray_core_action(app_handle, WindowsTrayCoreAction::Toggle)
             }

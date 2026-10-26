@@ -1607,9 +1607,14 @@ export function createBrowserMockRuntime(
       case 'get_lan_ipv4': return ['192.168.100.100'];
       case 'set_tray_quota_summary': {
         // No tray in a browser; keep the last summary where tests can read it.
-        (window as unknown as { __mockTray?: unknown }).__mockTray = { menuText: payload.menuText, tooltipText: payload.tooltipText };
+        (window as unknown as { __mockTray?: unknown }).__mockTray = { menuText: payload.menuText, tooltipText: payload.tooltipText, level: payload.level ?? null };
         return null;
       }
+      // The mini window reads the last tray summary; tests open it as ?mini=1 and seed it here.
+      case 'get_hub_summary': return (window as unknown as { __mockTray?: unknown }).__mockTray
+        ?? (window as unknown as { __mockHubSummary?: unknown }).__mockHubSummary ?? null;
+      case 'open_mini_window': return null;
+      case 'show_main_from_mini': return null;
       case 'write_claude_quota_line': {
         (window as unknown as { __mockQuotaLine?: unknown }).__mockQuotaLine = payload.text;
         return null;
