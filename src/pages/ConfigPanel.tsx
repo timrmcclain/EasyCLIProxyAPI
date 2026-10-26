@@ -40,6 +40,7 @@ import {
   X, Bell, BellRing, Keyboard, LoaderCircle, PanelLeft, Activity, RotateCw } from 'lucide-react';
 import { useCoreRuntime, type CoreStatus } from '../coreRuntime';
 import { useI18n } from '../i18n';
+import type { MessageKey } from '../i18n/resources';
 import { MessageNotice, FeedbackNotice, useAppNotice } from '../appNotice';
 import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 import { webUiManagementUrl } from '../services/clientAccess';
@@ -61,6 +62,7 @@ import {
   allSettingsTemplateGroups, settingsMessages, type SettingsCategory,
   SETTING_FIELD_EVENT, SETTINGS_CATEGORY_EVENT, settingFieldLocation, takePendingSettingField, takePendingSettingsCategory,
 } from '../services/settingsNavigation';
+import { AUTOSAVE_TABS, UNDOABLE_TABS, settingsSummary } from '../services/settingsSummary';
 
 type CoreConfigSettings = {
   managementSecretConfigured: boolean;
@@ -170,6 +172,12 @@ const ROUTING_OPTIONS = [
 ] as const;
 
 const PENDING_ROTATION_KEY = 'personal.pendingKeyRotation';
+const SETTINGS_EXPERT_KEY = 'personal.settingsExpert';
+const SETTINGS_AUTOSAVE_KEY = 'personal.settingsAutosave';
+const readFlag = (key: string) => { try { return localStorage.getItem(key) === 'true'; } catch { return false; } };
+const saveFlag = (key: string, value: boolean) => { try { localStorage.setItem(key, String(value)); } catch { /* Only the preference is lost. */ } };
+// How long after the last change Save as I go waits, so a half-typed value isn't saved.
+const AUTOSAVE_DELAY_MS = 1500;
 
 async function keyFingerprint(key: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
@@ -275,9 +283,18 @@ export function ConfigPanelPage() {
   // Results float and auto-dismiss; failures stay inline in the card that failed.
   const renderFeedback = (feedback: ReturnType<typeof useAppNotice>) => <FeedbackNotice feedback={feedback} />;
   const [activeSubpage, setActiveSubpage] = useState<ConfigSubpage>('general');
-  const [showPluginAdvanced, setShowPluginAdvanced] = useState(false);
+  // Expert mode opens every advanced section and the expert-only groups, and is remembered.
+  const [expert, setExpert] = useState(() => readFlag(SETTINGS_EXPERT_KEY));
+  const [showPluginAdvanced, setShowPluginAdvanced] = useState(expert);
   // Upstreams & credentials is expert-only; it stays folded until asked for (or a search lands in it).
-  const [showUpstreamAdvanced, setShowUpstreamAdvanced] = useState(false);
+  const [showUpstreamAdvanced, setShowUpstreamAdvanced] = useState(expert);
+  const toggleExpert = (value: boolean) => {
+    setExpert(value); saveFlag(SETTINGS_EXPERT_KEY, value);
+    setShowPluginAdvanced(value); setShowUpstreamAdvanced(value);
+  };
+  const [autosave, setAutosave] = useState(() => readFlag(SETTINGS_AUTOSAVE_KEY));
+  const [autosaveState, setAutosaveState] = useState<{ status: 'saving' | 'saved' | 'undoing' | 'undone' | 'failed'; at: number; tab: ConfigSubpage; undo?: string; error?: string } | null>(null);
+  const [embeddedReload, setEmbeddedReload] = useState(0);
   const [overviewAlerts, setOverviewAlerts] = useState(() => readOverviewAlertsPreference());
   const [desktopAlerts, setDesktopAlerts] = useState(() => readDesktopAlertsPreference());
   // Whether Windows lets the hub's notifications through; null until known (or outside the desktop app).
@@ -1361,6 +1378,42 @@ export function ConfigPanelPage() {
     }
   };
   const saveIncomplete = tabBarDirty && !savingTab && savedTab === activeSubpage;
+  // Save as I go: on tabs that only rewrite settings, save a moment after the last change. Every render is a
+  // possible change, so the timer restarts on each one. The config.yaml version from before the save is kept
+  // so Undo can put it back.
+  const autosaveHere = autosave && AUTOSAVE_TABS.includes(activeSubpage);
+  const saveTabRef = useRef(saveTab);
+  saveTabRef.current = saveTab;
+  useEffect(() => {
+    if (!autosaveHere || !tabBarDirty || savingTab || busyAction !== null || saveIncomplete) return;
+    const tab = activeSubpage;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setAutosaveState({ status: 'saving', at: Date.now(), tab });
+        let undo: string | undefined;
+        if (UNDOABLE_TABS.includes(tab)) {
+          const versions = await invoke<{ name: string; current: boolean }[]>('list_core_config_history').catch(() => []);
+          undo = versions.find(version => version.current)?.name;
+        }
+        await saveTabRef.current();
+        setAutosaveState({ status: 'saved', at: Date.now(), tab, undo });
+      })();
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  });
+  const undoAutosave = async () => {
+    if (!autosaveState?.undo) return;
+    const { undo, at, tab } = autosaveState;
+    setAutosaveState({ status: 'undoing', at, tab, undo });
+    try {
+      await invoke('restore_core_config_history', { name: undo });
+      // Settings reload on their own when config.yaml changes; the embedded word lists reload here.
+      setEmbeddedReload(value => value + 1);
+      setAutosaveState({ status: 'undone', at, tab });
+    } catch (error) {
+      setAutosaveState({ status: 'failed', at, tab, error: readableError(error) });
+    }
+  };
   const categoryDirty = (id: ConfigSubpage) => nativeCategoryDirty[id]
     || settingsTemplateGroups[id].some(group => dirtyTemplateGroups.includes(group.id));
   // Lets the shell ask before leaving Settings with edits that have not been saved.
@@ -1387,6 +1440,16 @@ export function ConfigPanelPage() {
       {confirmationDialog}
       <header className="config-settings-header">
         <h1>{st('title')}</h1>
+        <div className="config-settings-modes">
+          <label className="switch-field" title={t('sp.expertHint')}>
+            <span className="switch-control"><input type="checkbox" role="switch" checked={expert} onChange={event => toggleExpert(event.currentTarget.checked)} /><span className="switch-track" /></span>
+            <span>{t('sp.expert')}</span>
+          </label>
+          <label className="switch-field" title={t('sp.autosaveHint')}>
+            <span className="switch-control"><input type="checkbox" role="switch" checked={autosave} onChange={event => { const value = event.currentTarget.checked; setAutosave(value); saveFlag(SETTINGS_AUTOSAVE_KEY, value); }} /><span className="switch-track" /></span>
+            <span>{t('sp.autosave')}</span>
+          </label>
+        </div>
         <div className="config-settings-search"><Search size={18} aria-hidden="true" /><input ref={searchRef} type="search" aria-label={st('search')} placeholder={st('searchHint')} value={settingsSearch} onChange={event => setSettingsSearch(event.currentTarget.value)} onKeyDown={event => { if (event.key === 'Escape') setSettingsSearch(''); }} />{searching ? <button type="button" className="icon-button quiet" aria-label={st('clearSearch')} onClick={() => { setSettingsSearch(''); searchRef.current?.focus(); }}><X size={16} /></button> : null}</div>
       </header>
       <div className="config-settings-layout">
@@ -1401,6 +1464,24 @@ export function ConfigPanelPage() {
         </div>
         <div className="config-settings-content" id="config-subpage-panel" role="tabpanel" aria-labelledby={`config-subpage-tab-${activeSubpage}`}>
           {searching ? <section className="config-search-results" aria-label={st('results')}><div className="config-search-heading"><h2>{st('results')}</h2><span role="status">{searchResults.length}</span></div>{searchResults.length ? <div className="config-search-result-list">{searchResults.map(entry => <button type="button" key={`${entry.target}-${entry.field ?? ''}`} onClick={() => navigateToSetting(entry)}><span className="config-search-result-copy"><strong>{entry.title}</strong><small>{templateText(settingsCategories.find(item => item.id === entry.category)!.title, locale)}{entry.context ? ` / ${entry.context}` : ''}</small></span><ChevronRight size={16} aria-hidden="true" /></button>)}</div> : <p className="config-search-empty">{st('noResults')}</p>}</section> : null}
+          {!searching ? <section className="config-tab-summary" aria-label={t('sp.summaryLabel')}>
+            {settingsSummary(activeSubpage, {
+              core: settings ? { ...settings, apiKeys: settings.apiKeys.length } : null,
+              tls: tlsSettings?.enabled ?? null,
+              software: softwareSettings,
+            }).map((line, index) => index === 0
+              ? <p key={line.key} className="config-tab-purpose">{t(line.key as MessageKey, line.vars)}</p>
+              : <span key={line.key}>{t(line.key as MessageKey, line.vars)} </span>)}
+            {autosave && !AUTOSAVE_TABS.includes(activeSubpage) ? <p className="config-tab-autosave-note">{t('sp.autosaveNotHere')}</p> : null}
+            {autosaveState && autosaveState.tab === activeSubpage ? <p className="config-autosave-status" role="status">
+              {autosaveState.status === 'saving' ? t('sp.autosaving')
+                : autosaveState.status === 'undoing' ? t('sp.undoing')
+                : autosaveState.status === 'undone' ? t('sp.undone', { time: new Date(autosaveState.at).toLocaleTimeString(locale) })
+                : autosaveState.status === 'failed' ? t('sp.undoFailed', { error: autosaveState.error ?? '' })
+                : t('sp.autosaved', { time: new Date(autosaveState.at).toLocaleTimeString(locale) })}
+              {autosaveState.status === 'saved' && autosaveState.undo ? <button type="button" className="secondary-button compact-button" onClick={() => void undoAutosave()}>{t('sp.undo')}</button> : null}
+            </p> : null}
+          </section> : null}
           <div className="config-settings-cards">
 <section id="config-native-keys" tabIndex={-1} hidden={searching || activeSubpage !== 'general'} className="panel config-keys-panel">
           <div className="config-panel-heading">
@@ -1952,7 +2033,7 @@ export function ConfigPanelPage() {
               </div>
             </div>
 
-            <details className="config-advanced-details">
+            <details className="config-advanced-details" open={expert || undefined}>
               <summary>{t('config.advanced.title')}</summary>
               <div className="config-network-grid">
               <div className="config-network-field">
@@ -2069,7 +2150,7 @@ export function ConfigPanelPage() {
 
             </div>
 
-            <details className="config-advanced-details">
+            <details className="config-advanced-details" open={expert || undefined}>
               <summary>{t('config.advanced.title')}</summary>
               <div className="config-network-grid">
               <div className="config-network-field config-network-toggle">
@@ -2277,7 +2358,7 @@ export function ConfigPanelPage() {
             </div>
           </div>
 
-          <details className="config-advanced-details">
+          <details className="config-advanced-details" open={expert || undefined}>
             <summary>{t('config.advanced.title')}</summary>
             <div className="config-diagnostics-toggle-grid">
               <div className="config-diagnostics-setting">
@@ -2652,7 +2733,7 @@ export function ConfigPanelPage() {
           <div id="config-template-panel" hidden={searching || templateGroups.length === 0}><TemplateConfigSection groups={allSettingsTemplateGroups} visibleGroups={templateGroups.map(group => group.id)} onDirtyGroupsChange={setDirtyTemplateGroups} saveAllRef={templateSaveAll} hideGroupSave /></div>
           <div id="config-native-storage" tabIndex={-1} role="region" aria-label={t('usage.dataManagement.title')} hidden={searching || activeSubpage !== 'storage'}>{storageVisited ? <UsageDataManagement /> : null}</div>
           <div id="config-native-aliases" tabIndex={-1} role="region" aria-label={t('app.nav.thinkingAliases')} hidden={searching || activeSubpage !== 'aliases'}>{aliasesVisited ? <ThinkingAliasesPage embedded /> : null}</div>
-          <div id="config-native-sensitive-words" tabIndex={-1} role="region" aria-label={t('config.sensitiveWords.title')} hidden={searching || activeSubpage !== 'requests'}>{sensitiveWordsVisited ? <SensitiveWordsPage onDirtyChange={setSensitiveWordsDirty} saveRef={sensitiveWordsSave} /> : null}</div>
+          <div id="config-native-sensitive-words" tabIndex={-1} role="region" aria-label={t('config.sensitiveWords.title')} hidden={searching || activeSubpage !== 'requests'}>{sensitiveWordsVisited ? <SensitiveWordsPage key={embeddedReload} onDirtyChange={setSensitiveWordsDirty} saveRef={sensitiveWordsSave} /> : null}</div>
           {tabBarDirty ? <div className="config-save-bar" role="region" aria-label={t('config.saveBar.label')}>
             {saveIncomplete
               ? <span role="alert"><span className="config-nav-dirty" aria-hidden="true" />{t('config.saveBar.incomplete')}</span>

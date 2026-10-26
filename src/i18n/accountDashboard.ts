@@ -5,6 +5,7 @@ import { switchboardEn, switchboardJa, switchboardZhCN } from './switchboard';
 import { activityFeedEn, activityFeedJa, activityFeedZhCN } from './activityFeed';
 import { accountIdentityEn, accountIdentityJa, accountIdentityZhCN } from './accountIdentity';
 import { appsSafetyEn, appsSafetyJa, appsSafetyZhCN } from './appsSafety';
+import { settingsPlainEn, settingsPlainJa, settingsPlainZhCN } from './settingsPlain';
 import { jevEn, jevJa, jevZhCN } from './jev';
 import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
@@ -18,6 +19,7 @@ export const accountDashboardEn = {
   ...activityFeedEn,
   ...accountIdentityEn,
   ...appsSafetyEn,
+  ...settingsPlainEn,
   ...jevEn,
   ...secretGuardEn,
   ...projectUsageEn,
@@ -98,6 +100,7 @@ export const accountDashboardZhCN = {
   ...activityFeedZhCN,
   ...accountIdentityZhCN,
   ...appsSafetyZhCN,
+  ...settingsPlainZhCN,
   ...jevZhCN,
   ...secretGuardZhCN,
   ...projectUsageZhCN,
@@ -178,6 +181,7 @@ export const accountDashboardJa = {
   ...activityFeedJa,
   ...accountIdentityJa,
   ...appsSafetyJa,
+  ...settingsPlainJa,
   ...jevJa,
   ...secretGuardJa,
   ...projectUsageJa,

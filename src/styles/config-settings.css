@@ -578,3 +578,10 @@
 .config-sensitive-words-result.has-matches { color: var(--text-primary); }
 .config-key-age { margin: 0 0 10px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
 .config-key-age strong { color: var(--c-warning); font-weight: 600; }
+/* Expert mode and Save as I go sit beside the search box. */
+.config-settings-modes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-left: auto; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }
+/* Each tab opens with what it is for and how it is set now, in sentences. */
+.config-tab-summary { grid-column: 1 / -1; margin: 0 0 14px; padding: 12px 14px; border-radius: 8px; background: color-mix(in srgb, var(--primary-color) 5%, var(--bg-card)); color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); line-height: 1.55; }
+.config-tab-summary .config-tab-purpose { margin: 0 0 4px; color: var(--text-primary); font-weight: 600; }
+.config-tab-autosave-note, .config-autosave-status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 0; }
+.config-autosave-status { color: var(--text-primary); }
