@@ -33,6 +33,7 @@ import { readAccountNames, saveAccountNames } from '../services/accountNames';
 import { accountDisplayName, privateAccountLabel } from '../services/accountPrivacy';
 import { ACCOUNT_SEARCH_EVENT, takePendingAccountSearch } from '../accountNavigation';
 import { Switchboard, SwitchboardHistory } from './Switchboard';
+import { AccountAvatar, AccountHealthSparkline, AccountIdentityEditor, useAccountIdentity } from './AccountIdentity';
 import { ProviderLogo, SignInAgainButton, needsSignIn, openSignIn } from './AuthFileProviderIcon';
 import { requestAccountRequests } from '../usageNavigation';
 import { loadPlanBlocks, withPlanBlocks, type PlanBlock } from '../services/planBlock';
@@ -68,6 +69,8 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
   const [sort, setSort] = useState(() => readDashboardPreference('quotaSort', ['priority', 'reset', 'recovery'] as const, 'priority'));
   const [filter, setFilter] = useState(() => readDashboardPreference('quotaProvider', ['all', ...providers, 'devin', 'gemini', 'other'], 'all'));
   const [layout, setLayout] = useState(() => readDashboardPreference('quotaLayout', ['ledger', 'compact'] as const, 'compact'));
+  const [groupBy, setGroupBy] = useState(() => readDashboardPreference('quotaGroupBy', ['provider', 'purpose'] as const, 'provider'));
+  const { groups: accountGroups } = useAccountIdentity();
   const [search, setSearch] = useState(() => takePendingAccountSearch() ?? '');
   const [stateFilter, setStateFilter] = useState(() => readDashboardPreference('quotaState', ['all', 'available', 'attention'] as const, 'attention'));
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null);
@@ -325,7 +328,8 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
           selected={filter === provider} onSelect={() => selectProvider(provider)} provider={provider} />;
       })}
     </div>
-    {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)} />}
+    {alternatives && summaryCounts.problems > 0 && <AlternativeComparison files={files} quotas={quotas} now={now} stale={stale} labelFor={labelFor} onClose={() => setAlternatives(false)}
+      onUse={file => { setAlternatives(false); void changeFocus(file); }} />}
     {/* The ledger answers "can I work?": problems first, every other account one click away. */}
     {(() => {
       const focused = focus && Date.now() < focus.until ? files.find(item => fileName(item) === focus.name) : undefined;
@@ -347,17 +351,24 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
           <select className="quota-layout-select" aria-label={t('quotaLedger.layout')} value={layout} onChange={event => { const value = event.target.value as 'ledger' | 'compact'; setLayout(value); saveDashboardPreference('quotaLayout', value); }}>
             <option value="ledger">{t('quotaLedger.ledger')}</option><option value="compact">{t('quotaLedger.compact')}</option>
           </select>
+          <select className="quota-group-select" aria-label={t('ai.groupBy')} value={groupBy} onChange={event => { const value = event.target.value as 'provider' | 'purpose'; setGroupBy(value); saveDashboardPreference('quotaGroupBy', value); }}>
+            <option value="provider">{t('ai.groupBy.provider')}</option><option value="purpose">{t('ai.groupBy.purpose')}</option>
+          </select>
           <label className="ledger-privacy"><input type="checkbox" checked={hideEmails} onChange={(event) => { setHideEmails(event.target.checked); if (event.target.checked) setSearch(''); saveDashboardPreference('hideEmails', String(event.target.checked)); }} />{t('ledger.hideEmails')}</label>
         </div>
       </details>
       <span className="quota-result-count" role="status">{t('availability.results', { shown: visible.length, total: files.length })}</span>
     </div>}
     <div className="ad-accounts">
-      {providerList.map((provider) => {
-        const group = visible.filter((file) => dashboardProvider(file) === provider);
+      {(groupBy === 'purpose'
+        // Your own groups ("Work", "Personal") in name order, with ungrouped accounts last.
+        ? [...new Set(visible.map(file => accountGroups[quotaKey(file)] ?? ''))].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || a.localeCompare(b))
+          .map(name => ({ key: `group:${name}`, provider: '', label: name || t('ai.noGroup'), files: visible.filter(file => (accountGroups[quotaKey(file)] ?? '') === name) }))
+        : providerList.map(provider => ({ key: provider, provider, label: providerNames[provider] ?? provider, files: visible.filter((file) => dashboardProvider(file) === provider) }))
+      ).map(({ key, provider, label, files: group }) => {
         const columns = ledgerWindows(group, quotas).slice(0, 3);
-        return group.length > 0 ? <section className="quota-account-group" key={provider} aria-label={providerNames[provider] ?? provider}>
-      <h3 className="quota-group-heading"><ProviderLogo provider={provider} />{providerNames[provider] ?? provider}<span>{group.length}</span>
+        return group.length > 0 ? <section className="quota-account-group" key={key} aria-label={label}>
+      <h3 className="quota-group-heading">{provider && <ProviderLogo provider={provider} />}{label}<span>{group.length}</span>
         {provider === 'antigravity' && paidFallback !== null && <button type="button" className={`ad-paid-fallback${paidFallback ? ' is-on' : ''}`} title={t('glance.paidFallback.hint')}
           onClick={() => requestSettingField(ANTIGRAVITY_PAID_FALLBACK_PATH)}>{t(paidFallback ? 'glance.paidFallback.on' : 'glance.paidFallback.off')}</button>}</h3>
       {group.map((file) => <AccountCard key={quotaKey(file)} file={file} quota={quotas[quotaKey(file)] ?? idleQuota()} now={now}
@@ -510,7 +521,7 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
   const detailsLabel = detailRows.length ? t('accountDashboard.moreLimits', { count: detailRows.length }) : t('quotaLedger.details');
   return <article className={`ad-card ad-row-card quota-account-${availability.kind} ${needsAttention ? 'ad-needs-attention ' : ''}${stale || quota.status === 'error' ? 'quota-row-stale' : ''}`} aria-label={displayLabel} data-account-key={quotaKey(file)} tabIndex={-1}>
     <div className="ad-row">
-      <ProviderLogo provider={provider} className="ad-row-logo" />
+      <AccountAvatar file={file} provider={provider} />
       <div className="ad-row-name"><h3 title={hideEmails ? displayLabel : `${displayLabel}\n${fileName(file)}`}>{displayLabel}</h3>
         <span className="ad-provider">{providerLabel}{quota.plan ? ` · ${quota.plan}` : ''}</span></div>
       <PulseOnChange as="div" className="ad-row-status" value={availability.kind}>
@@ -543,6 +554,8 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
           {lastSuccess && <><span>{t('ledger.lastSuccess')}</span><time dateTime={lastSuccess.timestamp}>{new Date(lastSuccess.timestamp).toLocaleString()}</time><span>{requestClient(lastSuccess) ?? t('ledger.unknownClient')}</span></>}
           {activityStale && <span>{t('ledger.stale')}</span>}
         </div>
+        <AccountHealthSparkline file={file} active={detailsOpen} />
+        <AccountIdentityEditor file={file} label={displayLabel} />
         <AccountValueLine file={file} active={detailsOpen} />
         <div className="ad-card-footer">{routing
           ? <span className="ad-routing-position">{t('ro.card.position', { position: routing.position, total: routing.total, provider: providerNames[routing.provider] ?? routing.provider, role: t(`ro.role.${routing.role}`) })}</span>

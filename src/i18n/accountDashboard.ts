@@ -2,6 +2,8 @@ import { uxImprovementsEn, uxImprovementsJa, uxImprovementsZhCN } from './uxImpr
 import { homeGlanceEn, homeGlanceJa, homeGlanceZhCN } from './homeGlance';
 import { routingOrderEn, routingOrderJa, routingOrderZhCN } from './routingOrder';
 import { switchboardEn, switchboardJa, switchboardZhCN } from './switchboard';
+import { activityFeedEn, activityFeedJa, activityFeedZhCN } from './activityFeed';
+import { accountIdentityEn, accountIdentityJa, accountIdentityZhCN } from './accountIdentity';
 import { jevEn, jevJa, jevZhCN } from './jev';
 import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
@@ -12,6 +14,8 @@ export const accountDashboardEn = {
   ...homeGlanceEn,
   ...routingOrderEn,
   ...switchboardEn,
+  ...activityFeedEn,
+  ...accountIdentityEn,
   ...jevEn,
   ...secretGuardEn,
   ...projectUsageEn,
@@ -89,6 +93,8 @@ export const accountDashboardZhCN = {
   ...homeGlanceZhCN,
   ...routingOrderZhCN,
   ...switchboardZhCN,
+  ...activityFeedZhCN,
+  ...accountIdentityZhCN,
   ...jevZhCN,
   ...secretGuardZhCN,
   ...projectUsageZhCN,
@@ -166,6 +172,8 @@ export const accountDashboardJa = {
   ...homeGlanceJa,
   ...routingOrderJa,
   ...switchboardJa,
+  ...activityFeedJa,
+  ...accountIdentityJa,
   ...jevJa,
   ...secretGuardJa,
   ...projectUsageJa,

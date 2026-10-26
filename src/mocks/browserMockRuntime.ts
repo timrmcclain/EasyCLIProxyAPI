@@ -281,6 +281,9 @@ function createUsageEvents() {
       api_key_hash: 'mock-key-hash',
       api_key_display: 'sk-mock••••••••2026',
       api_key_remark: 'Browser Mock key',
+      // Most requests are priced (about Sonnet's rates); every fifth isn't, like a model without a saved price.
+      cost: failed || index === 9 || index % 5 === 4 ? null
+        : { total: Math.round((input * 3 + output * 15 + reasoning * 15 + cacheRead * 0.3) / 10_000) / 100, pricing_model: models[index % models.length] },
       tokens: {
         input_tokens: input,
         output_tokens: output,

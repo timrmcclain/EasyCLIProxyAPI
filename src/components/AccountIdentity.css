@@ -1,0 +1,28 @@
+/* An account's colour ring, colour/group editor, and seven-day health bars. */
+.account-avatar { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: color-mix(in srgb, var(--account-color) 12%, var(--bg-primary)); box-shadow: inset 0 0 0 2px var(--account-color); }
+.account-avatar svg, .account-avatar img { width: 16px; height: 16px; }
+:root[data-density='compact'] .account-avatar { width: 24px; height: 24px; }
+:root[data-density='compact'] .account-avatar svg, :root[data-density='compact'] .account-avatar img { width: 14px; height: 14px; }
+
+.account-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+.account-colors { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; }
+.account-colors legend { float: left; margin-right: 6px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
+.account-color { width: 20px; height: 20px; padding: 0; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
+.account-color[aria-pressed='true'] { border-color: var(--bg-primary); box-shadow: 0 0 0 2px var(--text-primary); }
+.account-group { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
+.account-group input { width: 160px; min-height: 28px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); }
+
+.account-health { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: calc(12px * var(--type-scale, 1)); }
+.account-health-title { color: var(--text-secondary); }
+.account-health-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 24px; }
+.account-health-day { display: flex; flex-direction: column-reverse; width: 8px; height: 100%; border-radius: 2px; background: var(--bg-secondary); overflow: hidden; }
+.account-health-day .ok { background: var(--c-success); opacity: 0.7; }
+.account-health-day .bad { background: var(--c-danger); }
+.account-health-sum { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.account-health-sum.has-failures { color: var(--c-danger); }
+/* In a ledger row the avatar fills the row's 24px logo column. */
+.ad-row > .account-avatar { width: 24px; height: 24px; box-shadow: inset 0 0 0 2px var(--account-color); }
+.ad-row > .account-avatar svg, .ad-row > .account-avatar img { width: 13px; height: 13px; }
+:root[data-density='compact'] .ad-row > .account-avatar { width: 20px; height: 20px; }
+:root[data-density='compact'] .ad-row > .account-avatar svg, :root[data-density='compact'] .ad-row > .account-avatar img { width: 11px; height: 11px; }
+.ux-best { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--primary-color) 8%, transparent); }

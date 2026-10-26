@@ -1,4 +1,5 @@
 import { ProjectUsageView } from './ProjectUsageView';
+import { ActivityFeed } from './ActivityFeed';
 import { ErrorCausesCard } from './ErrorCausesCard';
 import { ResponseTimesCard } from './ResponseTimesCard';
 import type { TimedRequest } from '../services/responseTimes';
@@ -50,11 +51,11 @@ import { UsageAnalysisView, type UsageAnalysis, type UsageCategory } from './Usa
 import { readableError } from '../services/readableError';
 import { requestSettingsCategory } from '../services/settingsNavigation';
 
-type UsageTab = 'overview' | 'events' | 'projects' | 'pricing';
+type UsageTab = 'overview' | 'conversations' | 'events' | 'projects' | 'pricing';
 type UsageRange = '4h' | '24h' | 'today' | '7d' | '30d' | 'all' | 'custom';
 
 // Data management is housekeeping, opened from its own button rather than as one of the tabs.
-const USAGE_TABS: readonly UsageTab[] = ['overview', 'events', 'projects', 'pricing'];
+const USAGE_TABS: readonly UsageTab[] = ['overview', 'conversations', 'events', 'projects', 'pricing'];
 
 type CollectorStatus = {
   state: 'waiting-core' | 'collecting' | 'error';
@@ -654,6 +655,19 @@ export function UsageRecordsPage() {
           </button>
           <button
             type="button"
+            id="usage-tab-conversations"
+            role="tab"
+            className={activeTab === 'conversations' ? 'active' : ''}
+            aria-selected={activeTab === 'conversations'}
+            aria-controls="usage-tab-panel"
+            tabIndex={activeTab === 'conversations' ? 0 : -1}
+            onClick={() => setActiveTab('conversations')}
+            onKeyDown={(event) => handleTabKeyDown(event, 'conversations')}
+          >
+            <span>{t('usage.tab.conversations')}</span>
+          </button>
+          <button
+            type="button"
             id="usage-tab-events"
             role="tab"
             className={activeTab === 'events' ? 'active' : ''}
@@ -737,6 +751,7 @@ export function UsageRecordsPage() {
       >
       {activeTab !== 'projects' ? filterPanel : null}
       {activeTab === 'projects' ? <ProjectUsageView /> : null}
+      {activeTab === 'conversations' ? <ActivityFeed query={buildQueries().query} /> : null}
 
       {showInitialLoading && activeTab !== 'events' ? (
         <div className="usage-initial-loading">

@@ -2,6 +2,7 @@ import { navigateHelp } from '../services/uxNavigation';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 import { quotaAvailability } from '../services/quotaAvailability';
+import { primaryQuotaRow, quotaPercentLeft } from '../services/quotaLedger';
 import { fileName, quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
 import { recoveredAccounts, failureIdentity } from '../services/overviewInsights';
 import { readOverviewAlertsPreference } from '../services/dashboardPreferences';
@@ -11,12 +12,21 @@ import { isRecord, managementApi } from '../services/managementApi';
 
 type Props = { files: AuthFile[]; quotas: Record<string, QuotaState>; now: number; stale: boolean; labelFor: (file: AuthFile) => string };
 
-export function AlternativeComparison({ files, quotas, now, stale, labelFor, onClose }: Props & { onClose: () => void }) {
+export function AlternativeComparison({ files, quotas, now, stale, labelFor, onClose, onUse }: Props & { onClose: () => void; onUse?: (file: AuthFile) => void }) {
   const { t } = useI18n();
-  const candidates = files.filter(file => ['available', 'limited', 'creditBacked'].includes(quotaAvailability(file, quotas[quotaKey(file)], now, stale).kind));
+  // Ranked: fully available before partly available before credit-backed, then the most quota left.
+  const rank = { available: 0, limited: 1, creditBacked: 2 } as Record<string, number>;
+  const left = (file: AuthFile) => quotaPercentLeft(primaryQuotaRow(quotas[quotaKey(file)]?.rows ?? [], []))?.percent ?? -1;
+  const candidates = files.filter(file => ['available', 'limited', 'creditBacked'].includes(quotaAvailability(file, quotas[quotaKey(file)], now, stale).kind))
+    .sort((a, b) => rank[quotaAvailability(a, quotas[quotaKey(a)], now, stale).kind] - rank[quotaAvailability(b, quotas[quotaKey(b)], now, stale).kind] || left(b) - left(a));
+  const best = candidates[0];
   return <section className="ux-insight ux-alternatives" aria-label={t('ux.alternatives')}>
     <header><h3>{t('ux.alternatives')}</h3><button className="secondary-button compact-button" onClick={onClose}>{t('common.close')}</button></header>
     <p>{t('ux.alternativesHint')}</p>
+    {best && <p className="ux-best">
+      <strong>{left(best) >= 0 ? t('ai.best', { account: labelFor(best), percent: Math.round(left(best)) }) : t('ai.bestUnknown', { account: labelFor(best) })}</strong>
+      {onUse && <button type="button" className="primary-button compact-button" onClick={() => onUse(best)}>{t('ai.useBest')}</button>}
+    </p>}
     {candidates.length ? <div className="ux-comparison">{candidates.map(file => {
       const quota = quotas[quotaKey(file)]; const state = quotaAvailability(file, quota, now, stale);
       return <article key={quotaKey(file)}><h4>{labelFor(file)}</h4>
