@@ -5,9 +5,11 @@
 :root[data-density='compact'] .account-avatar svg, :root[data-density='compact'] .account-avatar img { width: 14px; height: 14px; }
 
 .account-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
-.account-colors { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; }
+.account-colors { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 0; border: 0; }
 .account-colors legend { float: left; margin-right: 6px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
-.account-color { width: 20px; height: 20px; padding: 0; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
+.account-color { position: relative; width: 24px; height: 24px; padding: 0; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
+/* A 32px click target around the 24px swatch. */
+.account-color::before { content: ''; position: absolute; top: -4px; right: -4px; bottom: -4px; left: -4px; border-radius: 50%; }
 .account-color[aria-pressed='true'] { border-color: var(--bg-primary); box-shadow: 0 0 0 2px var(--text-primary); }
 .account-group { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
 .account-group input { width: 160px; min-height: 28px; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); }
