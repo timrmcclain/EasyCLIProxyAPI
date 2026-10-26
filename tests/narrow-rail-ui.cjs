@@ -40,6 +40,29 @@ const path = require('node:path');
       const contentWidth = await page.locator('.workspace .content').evaluate(node => node.getBoundingClientRect().width);
       assert.ok(contentWidth >= 570, `${density}: the page keeps nearly the whole window (${contentWidth}px)`);
 
+      // Overview: the account controls share one row under their heading, and Model Health stays beside Stop proxy;
+      // the buttons drawn as icons keep their names.
+      const overview = await page.evaluate(() => {
+        const top = node => Math.round(node.getBoundingClientRect().top + node.getBoundingClientRect().height / 2);
+        const controls = [...document.querySelectorAll('.account-dashboard .ad-heading button')].filter(node => node.offsetParent);
+        const stop = document.querySelector('.home-status > button');
+        const health = document.querySelector('.home-status .core-health-open');
+        const refresh = document.querySelector('.account-dashboard .quota-refresh');
+        return {
+          spread: Math.max(...controls.map(top)) - Math.min(...controls.map(top)), count: controls.length,
+          healthBesideStop: Math.abs(top(health) - top(stop)) <= 4,
+          healthName: health.textContent.trim(), refreshName: refresh.textContent.trim(),
+          refreshTitle: refresh.title, healthTitle: health.title,
+        };
+      });
+      assert.ok(overview.count >= 3, `${density}: Overview heading controls are shown (${overview.count})`);
+      assert.ok(overview.spread <= 4, `${density}: Overview heading controls share one row (centres ${overview.spread}px apart)`);
+      assert.equal(overview.healthBesideStop, true, `${density}: Model Health stays beside Stop proxy`);
+      assert.equal(overview.refreshName, 'Refresh accounts', `${density}: Refresh keeps its name`);
+      assert.equal(overview.healthName, 'Model Health', `${density}: Model Health keeps its name`);
+      assert.match(overview.refreshTitle, /Refresh accounts/, `${density}: Refresh names itself on hover`);
+      assert.match(overview.healthTitle, /^Model Health/, `${density}: Model Health names itself on hover`);
+
       // Every page is a visible, named icon button, including the Advanced tools under the wrench.
       await page.locator('.sidebar .personal-advanced > summary').click();
       const navButtons = page.locator('.sidebar .nav-section button');

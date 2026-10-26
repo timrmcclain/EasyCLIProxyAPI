@@ -303,8 +303,9 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
         <button type="button" className="secondary-button compact-button ad-manage" onClick={() => requestOAuthSubpage('authFiles')}>{t('glance.list.manage')}</button>
       </div>}
       <div className="quota-heading-actions">{summaryCounts.problems > 0 && <button type="button" className="secondary-button quota-compare" onClick={() => setAlternatives(value => !value)} aria-expanded={alternatives}>{t('ux.alternatives')}</button>}
-      <button data-page-refresh className="secondary-button quota-refresh" disabled={!ready || loading || saving || refreshingKey !== null} onClick={() => void refresh(true)}>
-        <RefreshCw size={16} aria-hidden="true" className={loading ? 'spin' : undefined} /> {loading ? t('accountDashboard.refreshing') : t('accountDashboard.refresh')}
+      <button data-page-refresh className="secondary-button quota-refresh" disabled={!ready || loading || saving || refreshingKey !== null} onClick={() => void refresh(true)}
+        title={loading ? t('accountDashboard.refreshing') : t('accountDashboard.refresh')}>
+        <RefreshCw size={16} aria-hidden="true" className={loading ? 'spin' : undefined} /> <span className="quota-refresh-label">{loading ? t('accountDashboard.refreshing') : t('accountDashboard.refresh')}</span>
       </button></div>
     </div>
     {!ready ? <p className="ad-notice">{t('accountDashboard.start')}</p> : null}

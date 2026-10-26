@@ -233,7 +233,7 @@ export function CoreHealthPanel({
   return (
     <>
       <div className={`core-health-entry${compact ? ' compact' : ''}`}>
-        <button type="button" className="secondary-button core-health-open" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} aria-controls={dialogId} aria-describedby={`${dialogId}-entry-status`} title={summary}>
+        <button type="button" className="secondary-button core-health-open" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} aria-controls={dialogId} aria-describedby={`${dialogId}-entry-status`} title={`${t('home.health.title')}: ${summary}`}>
           <Activity size={16} aria-hidden="true" /><span>{t('home.health.title')}</span>{!compact && <ChevronRight size={14} aria-hidden="true" />}
         </button>
         <span id={`${dialogId}-entry-status`} className="core-health-entry-status" aria-live="polite">{entryStatus}</span>

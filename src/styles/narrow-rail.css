@@ -185,4 +185,19 @@
   :root:root .sidebar .personal-runtime > div { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   :root:root .app-shell > .workspace .content { padding-inline: 16px; }
+
+  /* Overview: "Accounts & quota" gets its own line and every control after it shares one row, Refresh as its icon;
+     on the proxy status line Model Health is its icon too, so it stays beside Stop proxy. Both names stay as hover
+     text and for screen readers. */
+  :root:root .account-dashboard .ad-heading { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+  :root:root .account-dashboard .ad-heading > h2 { flex: 1 0 100%; margin: 0; }
+  :root:root .account-dashboard .ad-heading > .ad-list-heading { flex: 0 1 auto; flex-wrap: wrap; gap: 8px; }
+  :root:root .account-dashboard .quota-heading-actions { flex-wrap: nowrap; gap: 8px; }
+  :root:root .account-dashboard .ad-heading button { min-height: 30px; height: 30px; padding-block: 0; }
+  /* "Last request" follows the account line, so its changing length never pushes Model Health onto a row of its own. */
+  :root:root .home-page .home-status-latest { order: 2; }
+  :root:root .account-dashboard .quota-refresh { width: 34px; padding: 0; justify-content: center; }
+  :root:root .quota-refresh-label,
+  :root:root .home-status-actions .core-health-open > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :root:root .home-status-actions .core-health-open { width: 34px; padding: 0; justify-content: center; }
 }
