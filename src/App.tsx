@@ -39,7 +39,7 @@ import { dashboardProvider } from './components/AccountDashboard';
 import { useConfirmation } from './components/ConfirmationDialog';
 import { noticeStillInTray, startProxyWatcher, startQuotaWatcher } from './services/quotaWatcher';
 import { endAccountFocus, readAccountFocus } from './services/accountFocus';
-import { applyQuotaRouting, readQuotaRoutingPreference } from './services/quotaRoutingControl';
+import { applyQuotaRouting } from './services/quotaRoutingControl';
 import { startSecretGuardWatcher } from './services/secretGuardWatcher';
 import { readOpenCount, SECRET_GUARD_COUNT_EVENT } from './services/secretGuard';
 import { readDashboardPreference, readGlobalHotkeyPreference, saveGlobalHotkeyPreference } from './services/dashboardPreferences';
@@ -333,9 +333,9 @@ function AppContent() {
       if (running || !focus || Date.now() < focus.until) return;
       running = true;
       try {
-        const routing = readQuotaRoutingPreference();
-        await endAccountFocus(routing);
-        if (routing) await applyQuotaRouting();
+        // Put the account's own priority back, then let a saved routing order take over again.
+        await endAccountFocus();
+        await applyQuotaRouting();
       } catch { /* the proxy is unreachable: try again on the next tick */ }
       finally { running = false; }
     };

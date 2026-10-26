@@ -1,0 +1,61 @@
+/* Settings → Routing: one card per provider; the order is the list, top to bottom. */
+.config-routing-order-section { grid-column: 1 / -1; }
+.routing-order-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); align-items: start; gap: 12px; }
+.routing-order { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; }
+.routing-order-head .config-field-label { display: inline-flex; align-items: center; gap: 6px; }
+.routing-order-note { margin: 0; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); }
+.routing-order-warning { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; padding: 8px 10px; border: 1px solid var(--c-warning-border); border-radius: var(--radius-md, 8px); background: var(--c-warning-soft); color: var(--text-primary); font-size: calc(12px * var(--type-scale, 1)); line-height: 1.5; }
+
+.routing-order-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-primary); }
+.routing-order-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.routing-order-card-head h4 { margin: 0; font-size: calc(14px * var(--type-scale, 1)); font-weight: 600; }
+.routing-order-mode { display: inline-flex; padding: 2px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); }
+.routing-order-mode button { min-height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); cursor: pointer; }
+.routing-order-mode button.active { background: var(--primary-color); color: var(--text-on-primary, #fff); font-weight: 600; }
+.routing-order-next { margin: 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }
+.routing-order-next.none { color: var(--c-danger); }
+
+.routing-order-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.routing-order-row { position: relative; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); }
+.routing-order-row.dragging { box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16); }
+.routing-order-row.role-primary { border-color: color-mix(in srgb, var(--primary-color) 45%, var(--border-color)); }
+.routing-order-row.role-reserve, .routing-order-row.role-held { background: var(--bg-secondary); }
+.routing-order-main { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 6px; }
+.routing-order-handle { flex: none; width: 24px; height: 28px; cursor: grab; touch-action: none; }
+.routing-order-handle.placeholder { display: inline-block; cursor: default; }
+.routing-order-position { flex: none; width: 18px; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; text-align: center; }
+.routing-order-name { display: flex; flex: 1 1 auto; flex-direction: column; gap: 2px; min-width: 0; }
+.routing-order-name strong { overflow: hidden; font-size: calc(13px * var(--type-scale, 1)); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.routing-order-name small { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--text-tertiary); font-size: calc(11.5px * var(--type-scale, 1)); }
+.routing-order-role { font-weight: 600; }
+.routing-order-role.role-primary { color: var(--primary-color); }
+.routing-order-role.role-reserve { color: var(--text-secondary); }
+.routing-order-role.role-held { color: var(--c-warning); }
+.routing-order-reason.reason-low, .routing-order-reason.reason-floor, .routing-order-reason.reason-hours { color: var(--c-warning); }
+.routing-order-reason.reason-out { color: var(--c-danger); }
+.routing-order-focus { color: var(--primary-color); }
+.routing-order-actions { display: inline-flex; flex: none; align-items: center; gap: 2px; }
+.routing-order-actions .icon-button { width: 28px; height: 28px; }
+.routing-order-reserve { min-height: 26px; margin: 0 2px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 999px; background: none; color: var(--text-tertiary); font-size: calc(11.5px * var(--type-scale, 1)); cursor: pointer; }
+.routing-order-reserve[aria-pressed='true'] { border-color: var(--text-secondary); background: var(--bg-tertiary); color: var(--text-primary); font-weight: 600; }
+.routing-order-reserve:disabled { cursor: default; opacity: 0.6; }
+.routing-order-divider { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; color: var(--text-tertiary); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
+.routing-order-divider::before, .routing-order-divider::after { content: ''; flex: 1; border-top: 1px dashed var(--border-color); }
+.routing-order-rules { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px 10px 10px 56px; border-top: 1px solid var(--border-color); font-size: calc(12px * var(--type-scale, 1)); }
+.routing-order-rules label, .routing-order-hours { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+.routing-order-rules select { min-height: 28px; }
+.routing-order-save { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--primary-color) 8%, transparent); font-size: calc(12.5px * var(--type-scale, 1)); }
+.routing-order-save > span { flex: 1 1 220px; }
+.routing-order-history summary { color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); cursor: pointer; }
+.routing-order-history ul { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; font-size: calc(12px * var(--type-scale, 1)); }
+.routing-order-history li { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--text-secondary); }
+.routing-order-history time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .routing-order-rules { padding-left: 10px; }
+  .routing-order-name small { gap: 2px 8px; }
+}
+:root[data-density='compact'] .routing-order-card { gap: 6px; padding: 8px 10px; }
+:root[data-density='compact'] .routing-order-main { min-height: 36px; padding: 2px 4px; }
+
+.routing-order-warning > span { flex: 1 1 260px; }

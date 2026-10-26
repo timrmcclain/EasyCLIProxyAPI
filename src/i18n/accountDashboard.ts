@@ -1,5 +1,6 @@
 import { uxImprovementsEn, uxImprovementsJa, uxImprovementsZhCN } from './uxImprovements';
 import { homeGlanceEn, homeGlanceJa, homeGlanceZhCN } from './homeGlance';
+import { routingOrderEn, routingOrderJa, routingOrderZhCN } from './routingOrder';
 import { jevEn, jevJa, jevZhCN } from './jev';
 import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
@@ -8,6 +9,7 @@ import { claudeExtensionsEn, claudeExtensionsJa, claudeExtensionsZhCN } from './
 export const accountDashboardEn = {
   ...uxImprovementsEn,
   ...homeGlanceEn,
+  ...routingOrderEn,
   ...jevEn,
   ...secretGuardEn,
   ...projectUsageEn,
@@ -83,6 +85,7 @@ export const accountDashboardEn = {
 export const accountDashboardZhCN = {
   ...uxImprovementsZhCN,
   ...homeGlanceZhCN,
+  ...routingOrderZhCN,
   ...jevZhCN,
   ...secretGuardZhCN,
   ...projectUsageZhCN,
@@ -158,6 +161,7 @@ export const accountDashboardZhCN = {
 export const accountDashboardJa = {
   ...uxImprovementsJa,
   ...homeGlanceJa,
+  ...routingOrderJa,
   ...jevJa,
   ...secretGuardJa,
   ...projectUsageJa,

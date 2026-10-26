@@ -6,15 +6,15 @@ import { AccountStatusSection } from './AccountStatusSection';
 import { AccountValueLine } from './AccountValueLine';
 import { AlternativeComparison, OverviewAlerts } from './OverviewInsights';
 import { subscribeActivity } from '../services/activitySubscription';
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, useMemo } from 'react';
 import { ChevronDown, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { accountSummary, nextAccountReset, resetCountdown } from '../services/accountDashboard';
-import { dedupeAuthFiles, normalizeAuthFilePriorityInput } from '../services/authFiles';
+import { dedupeAuthFiles } from '../services/authFiles';
 import { managementApi, responseList, readString } from '../services/managementApi';
 import { useQuotaCache } from '../services/quotaCache';
 import { refreshDashboardQuotas } from '../services/accountDashboardRefresh';
-import { applyQuotaRouting, readQuotaRoutingPreference } from '../services/quotaRoutingControl';
+import { applyQuotaRouting } from '../services/quotaRoutingControl';
 import { fileName, idleQuota, providerForFile, quotaKey, type AuthFile, type QuotaRow, type QuotaState } from '../services/quotaService';
 import { useQuotaClock } from '../services/quotaTime';
 import { ledgerWindows, orderedQuotaRows, primaryQuotaRow, quotaTone, remaining } from '../services/quotaLedger';
@@ -24,7 +24,8 @@ import { QuotaProviderSummary } from './QuotaProviderSummary';
 import { HomeGlance, UnconfirmedLines } from './HomeGlance';
 import { requestOAuthSubpage } from '../oauthNavigation';
 import { ANTIGRAVITY_PAID_FALLBACK_PATH, loadAntigravityPaidFallback } from '../services/antigravityPaidFallback';
-import { requestSettingField } from '../services/settingsNavigation';
+import { requestSettingField, requestSettingsCategory } from '../services/settingsNavigation';
+import { readRoutingState, routingPlans, type Role } from '../services/routingOrder';
 import { attentionItems, canRecheck, type AttentionSeverity } from '../services/homeGlance';
 import type { HomeUsageSummary } from '../services/homeOverview';
 import { readDashboardPreference, saveDashboardPreference } from '../services/dashboardPreferences';
@@ -148,19 +149,20 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     return () => { active = false; subscription.dispose(); };
   }, [ready]);
 
-  const savePriority = async (file: AuthFile, priority: number) => {
-    // Polls and writes share one lock so a late snapshot cannot undo a saved priority.
-    if (busy.current) throw new Error('Account refresh in progress');
-    busy.current = true;
-    setSaving(true);
-    try {
-      await managementApi.patch('/credentials/fields', { name: fileName(file), priority });
-      setFiles((current) => current.map((item) => quotaKey(item) === quotaKey(file) ? { ...item, priority } : item));
-    } finally {
-      busy.current = false;
-      setSaving(false);
+  // Where each account sits in its provider's routing order (Settings → Routing owns the priorities).
+  const [routingState, setRoutingState] = useState(readRoutingState);
+  useEffect(() => {
+    const sync = () => setRoutingState(readRoutingState());
+    window.addEventListener('app:routing-order', sync);
+    return () => window.removeEventListener('app:routing-order', sync);
+  }, []);
+  const routingPositions = useMemo(() => {
+    const positions = new Map<string, { position: number; total: number; role: Role; provider: string }>();
+    for (const plan of routingPlans(files, quotas, now, routingState)) {
+      plan.entries.forEach((entry, index) => positions.set(entry.key, { position: index + 1, total: plan.entries.length, role: entry.role, provider: plan.provider }));
     }
-  };
+    return positions;
+  }, [files, quotas, now, routingState]);
 
   const [focus, setFocus] = useState<AccountFocus | null>(() => readAccountFocus());
   const [focusError, setFocusError] = useState('');
@@ -179,9 +181,9 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     try {
       if (file) await startAccountFocus(file);
       else {
-        const routing = readQuotaRoutingPreference();
-        await endAccountFocus(routing);
-        if (routing) await applyQuotaRouting();
+        // Put the account's own priority back, then let a saved routing order take over again.
+        await endAccountFocus();
+        await applyQuotaRouting();
       }
     } catch { setFocusError(t('accountFocus.failed')); }
     finally { busy.current = false; setSaving(false); }
@@ -360,7 +362,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
         friendlyName={names[privateAccountLabel(file, dashboardProvider(file))] ?? ''} onName={saveName} onAlternatives={viewAlternatives}
         columns={columns} layout={layout} needsAttention={urgentKeys.has(quotaKey(file))}
         focused={Boolean(focus && Date.now() < focus.until && focus.name === fileName(file))} onFocus={(target, on) => void changeFocus(on ? target : null)}
-        disabled={!ready || saving || loading || refreshingKey !== null || Boolean(error)} onSave={savePriority} onRefresh={refreshAccount} refreshing={refreshingKey === quotaKey(file)} stale={stale} />)}
+        disabled={!ready || saving || loading || refreshingKey !== null || Boolean(error)} routing={routingPositions.get(quotaKey(file))} onRefresh={refreshAccount} refreshing={refreshingKey === quotaKey(file)} stale={stale} />)}
       </section> : null; })}
       {hiddenFine > 0 && <div className="ad-more-fine" role="status">
         <span>{t(visible.length ? 'glance.list.moreFine' : 'glance.list.healthy', { count: hiddenFine })}</span>
@@ -419,7 +421,7 @@ function AccountMenu({ label, items }: { label: string; items: MenuItem[] }) {
   </div>;
 }
 
-export function AccountCard({ needsAttention = false, file, quota, now, disabled, stale = false, onSave, onRefresh, refreshing = false, columns, label, hideEmails = false, requests, activityStale = false, friendlyName = '', onName, onAlternatives, layout = 'compact', focused = false, onFocus }: {
+export function AccountCard({ needsAttention = false, file, quota, now, disabled, stale = false, routing, onRefresh, refreshing = false, columns, label, hideEmails = false, requests, activityStale = false, friendlyName = '', onName, onAlternatives, layout = 'compact', focused = false, onFocus }: {
   focused?: boolean; onFocus?: (file: AuthFile, on: boolean) => void;
   friendlyName?: string; onName?: (file: AuthFile, value: string) => boolean; onAlternatives?: (file: AuthFile) => void;
   /** Counted under "N need attention", so the row is marked to match. */
@@ -427,7 +429,7 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
   columns?: string[]; refreshing?: boolean; onRefresh?: (file: AuthFile) => Promise<void>;
   label?: string; hideEmails?: boolean; requests?: DashboardRequest[]; activityStale?: boolean;
   file: AuthFile; quota: QuotaState; now: number; disabled: boolean; stale?: boolean; layout?: 'compact' | 'ledger';
-  onSave: (file: AuthFile, priority: number) => Promise<void>;
+  routing?: { position: number; total: number; role: Role; provider: string };
 }) {
   const { t } = useI18n();
   const summary = accountSummary(file);
@@ -437,7 +439,6 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
   const successCount = requests?.filter(successfulRequest).length ?? 0;
   const failureCount = requests?.filter((request) => request.failed && !request.canceled).length ?? 0;
   const canceledCount = requests?.filter((request) => request.canceled).length ?? 0;
-  const [draft, setDraft] = useState(String(summary.priority));
   const [nameDraft, setNameDraft] = useState(friendlyName);
   const [nameFeedback, setNameFeedback] = useState('');
   useEffect(() => { setNameDraft(friendlyName); }, [friendlyName]);
@@ -445,12 +446,11 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
   const [pending, setPending] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const trends = useQuotaTrends();
-  const [focusTarget, setFocusTarget] = useState<'name' | 'priority' | null>(null);
+  const [focusTarget, setFocusTarget] = useState<'name' | null>(null);
   const nameInput = useRef<HTMLInputElement>(null);
-  const priorityInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!detailsOpen || !focusTarget) return;
-    const input = focusTarget === 'name' ? nameInput.current : priorityInput.current;
+    const input = focusTarget === 'name' ? nameInput.current : null;
     input?.focus(); input?.select();
     setFocusTarget(null);
   }, [detailsOpen, focusTarget]);
@@ -465,21 +465,12 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
   const detailRows = orderedRows.filter(row => !faceRows.includes(row));
   const signIn = needsSignIn(file);
   const providerLabel = providerNames[provider ?? ''] ?? t('ledger.other');
-  useEffect(() => { setDraft(String(summary.priority)); }, [summary.priority]);
-  const save = async () => {
-    const priority = normalizeAuthFilePriorityInput(draft);
-    if (priority === null) { setFeedback(t('accountDashboard.invalidPriority')); return; }
-    setPending(true); setFeedback('');
-    try { await onSave(file, priority); setFeedback(t('accountDashboard.saved')); }
-    catch { setFeedback(t('accountDashboard.saveError')); }
-    finally { setPending(false); }
-  };
-  const openEditor = (target: 'name' | 'priority') => { setDetailsOpen(true); setFocusTarget(target); };
+  const openEditor = (target: 'name') => { setDetailsOpen(true); setFocusTarget(target); };
   const canRefresh = !disabled && Boolean(onRefresh) && Boolean(providerForFile(file)) && !summary.health.disabled;
   const menuItems: MenuItem[] = [
     { key: 'details', label: t(detailsOpen ? 'accountDashboard.hideDetails' : 'accountDashboard.showDetails'), onSelect: () => setDetailsOpen(value => !value) },
     ...(onName && !hideEmails ? [{ key: 'rename', label: t('accountDashboard.rename'), onSelect: () => openEditor('name'), movesFocus: true }] : []),
-    { key: 'priority', label: t('accountDashboard.setPriority'), onSelect: () => openEditor('priority'), movesFocus: true },
+    { key: 'priority', label: `${t('ro.card.change')}…`, onSelect: () => requestSettingsCategory('routing') },
     { key: 'refresh', label: t(refreshing ? 'accountDashboard.refreshing' : 'accountDashboard.refreshQuota'), disabled: !canRefresh, onSelect: () => void onRefresh?.(file) },
     ...(needsSignIn(file) ? [{ key: 'sign-in', label: t('authFiles.signInAgain'), onSelect: () => openSignIn(String(file.provider ?? file.type ?? '')) }] : []),
     // Activity's Account filter matches the email the proxy records as each request's source.
@@ -549,10 +540,11 @@ export function AccountCard({ needsAttention = false, file, quota, now, disabled
           {activityStale && <span>{t('ledger.stale')}</span>}
         </div>
         <AccountValueLine file={file} active={detailsOpen} />
-        <div className="ad-card-footer"><label>{t('accountDashboard.priority')}<input ref={priorityInput} type="number" step="1" value={draft} onChange={(event) => { setDraft(event.target.value); setFeedback(''); }} aria-label={t('accountDashboard.priorityLabel', { account: displayLabel })} disabled={disabled || pending} /></label>
-          <button className="secondary-button" disabled={disabled || pending || draft === String(summary.priority)} onClick={() => void save()}>{pending ? t('accountDashboard.saving') : t('accountDashboard.save')}</button>
+        <div className="ad-card-footer">{routing
+          ? <span className="ad-routing-position">{t('ro.card.position', { position: routing.position, total: routing.total, provider: providerNames[routing.provider] ?? routing.provider, role: t(`ro.role.${routing.role}`) })}</span>
+          : null}
+          <button type="button" className="secondary-button" onClick={() => requestSettingsCategory('routing')}>{t('ro.card.change')}</button>
           <span className="ad-freshness" title={quota.refreshError}>{quota.fetchedAt ? t(quota.refreshError ? 'accountDashboard.quotaKept' : 'accountDashboard.quotaChecked', { time: new Date(quota.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('accountDashboard.noSnapshot')}</span></div>
-        {readQuotaRoutingPreference() && <p className="ad-card-note">{t('qrouting.manualNote')}</p>}
         {feedback && <p role="status" className="ad-card-note">{feedback}</p>}
       </div>
     </details>

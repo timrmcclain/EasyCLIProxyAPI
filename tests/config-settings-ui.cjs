@@ -256,10 +256,10 @@ const viewports = [{ width: 640, height: 600 }, { width: 964, height: 700 }, { w
         await templateVisible('routing-advanced');
         await templateVisible('extensions-concurrency');
         if (viewport.width >= 964) {
-          // Session affinity's switch; the soonest-reset switch is checked in quota-routing-ui.
+          // Session affinity's switch; the routing order itself is checked in quota-routing-ui.
           const toggle = await page.locator('#config-native-routing .config-network-toggle .switch-control').boundingBox();
-          const routingToggle = await page.locator('#config-native-routing .qrouting .switch-control').boundingBox();
-          assert.ok(routingToggle.width > 0, `${label}: the soonest-reset switch stays visible inside its card`);
+          const orderMode = await page.locator('#config-routing-order .routing-order-mode').first().boundingBox();
+          assert.ok(orderMode.width > 0, `${label}: the routing order's mode choice stays visible inside its card`);
           const ttl = await page.locator('#config-input-config-network-sessionTtl').boundingBox();
           assert.ok(toggle.width > 0 && ttl.width > 0, `${label}: controls remain visible inside their card`);
           assert.ok(ttl.width <= 200, `${label}: duration input stays compact`);

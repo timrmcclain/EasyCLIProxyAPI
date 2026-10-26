@@ -15,7 +15,7 @@ const tierRank: Record<RoutingTier, number> = { ready: 0, low: 1, out: 2 };
 /** States the hub can act on; anything else (not yet checked, stale, failed) means "don't reorder this provider". */
 const decisive = new Set(['available', 'creditBacked', 'exhausted', 'limited', 'unavailable', 'resetDue']);
 
-function rankAccount(file: AuthFile, quota: QuotaState | undefined, now: number) {
+export function rankAccount(file: AuthFile, quota: QuotaState | undefined, now: number) {
   const state = quotaAvailability(file, quota, now);
   if (!decisive.has(state.kind)) return null;
   const rows = quota?.rows ?? [];

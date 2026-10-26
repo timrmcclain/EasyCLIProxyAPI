@@ -40,18 +40,13 @@ const path = require('node:path');
         return original(command, args, ...rest);
       };
     });
-    // Priority editing now lives behind the card's actions menu.
+    // The order lives in Settings → Routing now; the card shows where the account sits and links there.
     await card.getByRole('button', { name: /^Actions for / }).click();
-    await page.getByRole('menu').getByRole('menuitem', { name: 'Set priority…' }).click();
-    assert.equal(await card.locator('.ad-account-details').evaluate((el) => el.open), true, 'Set priority should open the card details');
-    await card.getByRole('spinbutton').fill('8');
-    await card.getByRole('button', { name: 'Save priority' }).click();
-    await page.waitForFunction(() => window.dashboardSavePending);
-    await page.clock.runFor(31_000);
-    assert.equal(await page.evaluate(() => window.dashboardPollsDuringSave), 0, 'Polling raced with the pending priority write');
-    await page.evaluate(() => window.finishDashboardSave());
-    await page.getByRole('status').filter({ hasText: 'Priority saved.' }).waitFor();
-    assert.equal(await card.getByRole('spinbutton').inputValue(), '8');
+    await page.getByRole('menu').getByRole('menuitem', { name: 'Change order…' }).click();
+    await page.locator('#config-subpage-tab-routing[aria-selected="true"]').waitFor();
+    await page.locator('.routing-order').waitFor();
+    await page.locator('.nav-section').getByRole('button', { name: /^Overview/ }).click();
+    await page.locator('.account-dashboard').waitFor();
     await page.getByLabel('Sort', { exact: true }).selectOption('reset');
     assert.equal(await page.getByLabel('Sort', { exact: true }).inputValue(), 'reset');
     const dashboard = await page.locator('.account-dashboard').boundingBox();
@@ -72,7 +67,7 @@ const path = require('node:path');
     await page.getByText('Start the proxy to load live accounts and quota.').waitFor();
     assert.equal(await page.getByRole('button', { name: 'Refresh accounts', exact: true }).isDisabled(), true);
     assert.deepEqual(errors, []);
-    console.log('PASS: account/quota rendering, priority save, display sorting, narrow layout, offline state, no JS errors');
+    console.log('PASS: account/quota rendering, order link, display sorting, narrow layout, offline state, no JS errors');
   } finally {
     await browser?.close();
     await server.close();

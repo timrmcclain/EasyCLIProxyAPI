@@ -95,10 +95,12 @@ describe('account dashboard evidence', () => {
     expect(html).not.toContain('<meter');
     expect(render({ status: 'error', rows: [] })).toContain('Couldn&#x27;t read this account&#x27;s quota.');
   });
-  it('labels stale status and disables priority edits while offline', () => {
+  it('labels stale status, and links to the routing order instead of editing a priority number', () => {
     const html = render({ status: 'idle', rows: [] }, true);
     expect(html).toContain('Status stale');
-    expect(html).toMatch(/<input[^>]*disabled/);
+    // Settings → Routing owns the priorities, so the card has nothing to type into that the hub would overwrite.
+    expect(html).not.toMatch(/<input[^>]*type="number"/);
+    expect(html).toContain('Change order');
     expect(html).not.toContain('>Active<');
   });
   it('explains an empty successful quota once', () => {

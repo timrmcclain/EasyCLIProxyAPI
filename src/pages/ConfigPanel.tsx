@@ -53,7 +53,7 @@ import { ConfigHistorySection } from '../components/ConfigHistorySection';
 import { ProxyLogSection } from '../components/ProxyLogSection';
 import { TemplateConfigSection } from '../components/TemplateConfigSection';
 import { SettingsHelp } from '../components/SettingsHelp';
-import { QuotaRoutingSetting } from '../components/QuotaRoutingSetting';
+import { RoutingOrderSetting } from '../components/RoutingOrderSetting';
 import { templateMessages, templateText } from '../i18n/templateConfig';
 import { readableError } from '../services/readableError';
 import {
@@ -1277,6 +1277,7 @@ export function ConfigPanelPage() {
     { category: 'general', target: 'config-native-management', title: t('config.webuiKey.title'), context: '', keywords: 'WebUI secret-key 密钥 管理接口 面板 密码 management security' },
     { category: 'general', target: 'config-native-network', title: st('nativeNetwork'), context: '', keywords: [t('config.network.port'), t('config.network.listenHost'), t('config.network.proxyUrl'), t('config.network.systemProxy'), 'server host port proxy URL 8317 127.0.0.1 0.0.0.0 监听 地址 系统代理'].join(' ') },
     { category: 'general', target: 'config-native-tls', title: t('config.tls.enable'), context: '', keywords: [t('config.tls.cert'), t('config.tls.key'), 'TLS HTTPS cert key certificate 证书 私钥 加密'].join(' ') },
+    { category: 'routing', target: 'config-routing-order', title: t('ro.title'), context: '', keywords: [t('ro.mode.manual'), t('ro.mode.smart'), t('ro.reserve'), 'order priority reserve account primary smart 顺序 备用 優先 予備'].join(' ') },
     { category: 'routing', target: 'config-native-routing', title: st('nativeRouting'), context: '', keywords: [t('config.network.sessionAffinity'), t('config.network.sessionTtl'), t('config.routing.title'), 'session affinity ttl routing strategy round-robin 会话 粘性 加权 轮询'].join(' ') },
     { category: 'routing', target: 'config-native-retry', title: st('nativeRetry'), context: '', keywords: [t('config.network.cooling'), t('config.network.requestRetry'), t('config.network.maxRetryCredentials'), t('config.network.maxRetryInterval'), t('config.network.streamingBootstrapRetries'), 'retry retries cooldown 重试 冷却 流式 失败 fallback'].join(' ') },
     { category: 'storage', target: 'config-native-storage', title: t('usage.dataManagement.storageTitle'), context: '', keywords: [t('usage.dataManagement.storageDescription'), t('usage.dataManagement.shrinkTitle'), t('usage.dataManagement.actionTitle'), 'storage database size limit shrink repair activity history disk 存储 数据库 容量 压缩 修复 ストレージ データベース 容量 縮小 修復'].join(' ') },
@@ -1854,6 +1855,11 @@ export function ConfigPanelPage() {
                 {busyAction === 'tls' ? t('common.saving') : t('common.save')}
               </button></div>
         </section>
+{/* Who pays for each request: the first thing on Routing, across the full width. */}
+<section id="config-routing-order" tabIndex={-1} hidden={searching || activeSubpage !== 'routing'} className="config-network-section config-routing-order-section" aria-label={t('ro.title')}>
+            <RoutingOrderSetting strategy={settings?.routingStrategy} sessionAffinity={settings?.routingSessionAffinity} disabled={controlsDisabled}
+              onUseFillFirst={() => void changeRoutingStrategy('fill-first')} />
+          </section>
 <section id="config-native-routing" tabIndex={-1} hidden={searching || activeSubpage !== 'routing'}
             className="config-network-section"
             aria-labelledby="config-routing-section-title"
@@ -1916,7 +1922,6 @@ export function ConfigPanelPage() {
                       : routingStrategyLabel(settings.routingStrategy, t, locale)}
                 </small>
               </div>
-              <QuotaRoutingSetting strategy={settings?.routingStrategy} disabled={controlsDisabled} />
             </div>
 
             <details className="config-advanced-details">

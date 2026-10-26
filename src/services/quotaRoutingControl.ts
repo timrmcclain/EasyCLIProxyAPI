@@ -1,49 +1,23 @@
-import { dedupeAuthFiles, parseAuthFilePriority } from './authFiles';
+import { dedupeAuthFiles } from './authFiles';
 import { focusHoldsProvider, providerOf, readAccountFocus } from './accountFocus';
 import { demotedNames } from './blockedRouting';
-import { readDashboardPreference, saveDashboardPreference } from './dashboardPreferences';
 import { managementApi, responseList } from './managementApi';
 import { getQuotaCacheSnapshot } from './quotaCache';
-import { priorityChanges, routingPlan } from './quotaRouting';
-import { fileName, providerForFile, quotaKey, type AuthFile } from './quotaService';
+import type { AuthFile } from './quotaService';
+import {
+  priorityWrites, readRoutingState, recordSmartChange, routingPlans, withProviderChange, writeRoutingState,
+  type ProviderPlan, type RoutingSnapshot, type RoutingState,
+} from './routingOrder';
 
-/** Your own priorities, saved when the switch goes on so switching it off can put them back. */
-const BACKUP_KEY = 'personal.manualPriorities';
-
-/** Accounts (by quota key) that soonest-reset routing keeps at the bottom, e.g. your primary account. */
-const LAST_KEY = 'personal.routingLast';
-
-export function readSavedForLast(): Set<string> {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(LAST_KEY) ?? '[]');
-    return new Set(Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : []);
-  } catch { return new Set(); }
-}
-
-/** Saves or clears one account's "save for last" mark and, when routing is on, applies the new order now. */
-export async function setSavedForLast(key: string, saved: boolean): Promise<Set<string>> {
-  const keys = readSavedForLast();
-  if (saved) keys.add(key); else keys.delete(key);
-  localStorage.setItem(LAST_KEY, JSON.stringify([...keys]));
-  await applyQuotaRouting();
-  return keys;
-}
-
-export const readQuotaRoutingPreference = () => readDashboardPreference('quotaRouting', ['true', 'false'], 'false') === 'true';
+/**
+ * Keeps the proxy's account priorities in step with the routing order in Settings → Routing: in "Your order" it
+ * writes the order you saved, in Smart it rewrites it as quota and reset times change.
+ */
 
 const loadFiles = async () => dedupeAuthFiles(responseList(await managementApi.get('/credentials'), 'files'));
-const setPriority = (file: AuthFile, priority: number) => managementApi.patch('/credentials/fields', { name: fileName(file), priority });
-const currentPriority = (file: AuthFile) => parseAuthFilePriority(file.priority) ?? 0;
+const setPriority = (name: string, priority: number) => managementApi.patch('/credentials/fields', { name, priority });
 
-function readBackup(): Record<string, number> {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(BACKUP_KEY) ?? '{}');
-    return parsed && typeof parsed === 'object' ? parsed as Record<string, number> : {};
-  } catch { return {}; }
-}
-
-// Priority writes run one batch at a time: otherwise a background pass still writing could overwrite the
-// priorities that switching routing off has just put back.
+// Priority writes run one batch at a time, so a background pass can't interleave with a change you just saved.
 let queue: Promise<unknown> = Promise.resolve();
 function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
   const run = queue.then(task, task);
@@ -51,54 +25,50 @@ function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-/** Writes the soonest-reset-first order as account priorities, only where it changed. Returns how many changed. */
-export function applyQuotaRouting(files?: AuthFile[]): Promise<number> {
-  return oneAtATime(async () => {
-    if (!readQuotaRoutingPreference()) return 0;
-    const now = Date.now();
-    const focus = readAccountFocus();
-    const demoted = demotedNames();
+async function writePlans(plans: ProviderPlan[], state: RoutingState, now: number, logSmart: boolean): Promise<number> {
+  const focus = readAccountFocus();
+  const demoted = demotedNames();
+  let written = 0;
+  let next = state;
+  for (const plan of plans) {
     // An account in use for the hour keeps its raised priority: leave its provider alone until the hour ends.
-    const changes = priorityChanges(routingPlan(files ?? await loadFiles(), getQuotaCacheSnapshot(), now, readSavedForLast()))
-      .filter(change => !focusHoldsProvider(focus, providerOf(change.file), now))
-      // An account the provider refuses stays at the bottom until that clears.
-      .filter(change => !demoted.has(fileName(change.file)));
-    let written = 0;
-    for (const change of changes) {
-      // Switched off mid-pass: stop, and leave the priorities to the restore.
-      if (!readQuotaRoutingPreference()) break;
-      await setPriority(change.file, change.priority);
+    if (plan.entries.some(entry => focusHoldsProvider(focus, providerOf(entry.file), now))) continue;
+    // An account the provider refuses stays at the bottom until that clears.
+    const writes = priorityWrites(plan).filter(write => !demoted.has(write.name));
+    for (const write of writes) {
+      await setPriority(write.name, write.priority);
       written += 1;
     }
-    return written;
-  });
-}
-
-export async function enableQuotaRouting(): Promise<number> {
-  const files = await loadFiles();
-  // Keep the first backup if the switch is flipped on twice, so the original priorities are never lost.
-  if (!localStorage.getItem(BACKUP_KEY)) {
-    const backup = Object.fromEntries(files.filter(file => providerForFile(file)).map(file => [quotaKey(file), currentPriority(file)]));
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(backup));
+    if (writes.length && logSmart && plan.mode === 'smart') next = recordSmartChange(next, plan.provider, plan.entries.map(entry => entry.key), now);
   }
-  saveDashboardPreference('quotaRouting', 'true');
-  return applyQuotaRouting(files);
+  if (next !== state) writeRoutingState(next);
+  return written;
 }
 
-/** Turns the switch off and restores the priorities saved when it went on. Returns how many were restored. */
-export function disableQuotaRouting(): Promise<number> {
-  // Saved before waiting, so a pass already running stops at its next write.
-  saveDashboardPreference('quotaRouting', 'false');
+/** Writes the current order for every provider, only where the proxy's order differs. Returns how many changed. */
+export function applyQuotaRouting(files?: AuthFile[]): Promise<number> {
   return oneAtATime(async () => {
-    const backup = readBackup();
-    let restored = 0;
-    for (const file of await loadFiles()) {
-      const saved = backup[quotaKey(file)];
-      if (typeof saved !== 'number' || saved === currentPriority(file)) continue;
-      await setPriority(file, saved);
-      restored += 1;
-    }
-    localStorage.removeItem(BACKUP_KEY);
-    return restored;
+    const now = Date.now();
+    const state = readRoutingState();
+    return writePlans(routingPlans(files ?? await loadFiles(), getQuotaCacheSnapshot(), now, state), state, now, true);
   });
+}
+
+/** Saves your choices for one provider and applies them now. */
+export function saveProviderRouting(provider: string, next: RoutingSnapshot, order: string[]): Promise<number> {
+  return oneAtATime(async () => {
+    const now = Date.now();
+    const state = withProviderChange(readRoutingState(), provider, next, 'you', order, now);
+    writeRoutingState(state);
+    const plans = routingPlans(await loadFiles(), getQuotaCacheSnapshot(), now, state).filter(plan => plan.provider === provider);
+    return writePlans(plans, state, now, false);
+  });
+}
+
+/** Puts one provider back the way it was before your last change to it. */
+export async function undoProviderRouting(provider: string): Promise<boolean> {
+  const last = [...readRoutingState().history].reverse().find(entry => entry.provider === provider && entry.by === 'you' && entry.before);
+  if (!last?.before) return false;
+  await saveProviderRouting(provider, last.before, last.before.provider.order);
+  return true;
 }
