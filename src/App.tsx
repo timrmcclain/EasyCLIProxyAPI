@@ -23,7 +23,7 @@ import {
   X,
   Search,
   Shrink,
-  Blocks, KeyRound, ShieldCheck, Stethoscope, Bell, BookOpen,
+  Blocks, KeyRound, ShieldCheck, Stethoscope, Bell, BookOpen, SlidersHorizontal, Wrench,
 } from 'lucide-react';
 import { PERSONAL_APP_NAME, PERSONAL_APP_INITIAL } from './personalEdition';
 import { CoreRuntimeProvider, useCoreRuntime, type CoreStatus } from './coreRuntime';
@@ -243,6 +243,8 @@ function VersionManagementPageWrapper() {
   return <VersionManagementPage />;
 }
 
+const NARROW_RAIL_QUERY = '(max-width: 900px)';
+
 function App() {
   return (
     <AppUpdateProvider>
@@ -299,6 +301,11 @@ function AppContent() {
     try { return localStorage.getItem('personal.density') === 'compact' ? 'compact' : 'comfortable'; } catch { return 'comfortable'; }
   });
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  // Narrow windows show the sidebar as an icon rail; theme, density and language move into one menu at its foot.
+  const [narrowRail, setNarrowRail] = useState(() => window.matchMedia(NARROW_RAIL_QUERY).matches);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const preferencesRef = useRef<HTMLDivElement>(null);
+  const preferencesButtonRef = useRef<HTMLButtonElement>(null);
   const [theme, setTheme] = useThemePreference();
   const [windowsClosePrompt, setWindowsClosePrompt] = useState<WindowsClosePrompt | null>(null);
   const closeDialogRef = useDialogFocusTrap<HTMLElement>({
@@ -492,6 +499,35 @@ function AppContent() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [coreReady, active]);
+
+  useEffect(() => {
+    const query = window.matchMedia(NARROW_RAIL_QUERY);
+    const update = () => {
+      setNarrowRail(query.matches);
+      if (!query.matches) setPreferencesOpen(false);
+    };
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (!preferencesOpen) return undefined;
+    const closeFromOutside = (event: PointerEvent) => {
+      if (!preferencesRef.current?.contains(event.target as Node)) setPreferencesOpen(false);
+    };
+    // The language list closes first; a second Escape closes the menu.
+    const closeFromKeyboard = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || languageMenuOpen) return;
+      setPreferencesOpen(false);
+      preferencesButtonRef.current?.focus();
+    };
+    document.addEventListener('pointerdown', closeFromOutside);
+    document.addEventListener('keydown', closeFromKeyboard);
+    return () => {
+      document.removeEventListener('pointerdown', closeFromOutside);
+      document.removeEventListener('keydown', closeFromKeyboard);
+    };
+  }, [preferencesOpen, languageMenuOpen]);
 
   useEffect(() => {
     if (!languageMenuOpen) return undefined;
@@ -788,7 +824,7 @@ function AppContent() {
                     .join(' ')}
                   aria-current={page.id === active ? 'page' : undefined}
                   disabled={locked}
-                  title={locked ? t('app.nav.lockedHint') : undefined}
+                  title={locked ? t('app.nav.lockedHint') : narrowRail ? t(page.labelKey) : undefined}
                   onClick={() => select(page.id)}
                 >
                   <Icon size={16} aria-hidden="true" />
@@ -828,7 +864,8 @@ function AppContent() {
     const updateIndicator = group.pages.includes('versions') ? appUpdateIndicatorState(hasUpdate, coreHasUpdate, appUpdateProcessing) : null;
     return (
       <button key={group.id} type="button" className={[current ? 'active' : '', locked ? 'locked' : ''].filter(Boolean).join(' ')}
-        aria-current={current ? 'page' : undefined} disabled={locked} title={locked ? t('app.nav.lockedHint') : undefined}
+        aria-current={current ? 'page' : undefined} disabled={locked}
+        title={locked ? t('app.nav.lockedHint') : narrowRail ? t(group.labelKey as Parameters<typeof t>[0]) : undefined}
         onClick={() => select(pageForGroup(group, lastInGroup.current) as PageId)}>
         <Icon size={16} aria-hidden="true" />
         <span>{t(group.labelKey as Parameters<typeof t>[0])}</span>
@@ -857,7 +894,8 @@ function AppContent() {
             </div>
           </div>
 
-          <button type="button" className="sidebar-command-button" onClick={() => setPaletteOpen(true)} aria-keyshortcuts="Control+K">
+          <button type="button" className="sidebar-command-button" onClick={() => setPaletteOpen(true)} aria-keyshortcuts="Control+K"
+            title={narrowRail ? `${t('palette.open')} (${t('palette.shortcut')})` : undefined}>
             <Search size={14} aria-hidden="true" /><span>{t('palette.open')}</span><kbd>{t('palette.shortcut')}</kbd>
           </button>
           <nav ref={navSectionRef} className={`nav-section${navMoreBelow ? ' nav-more-below' : ''}${newNav ? ' nav-grouped' : ''}`} aria-label={t('app.navigation')} onScroll={updateNavMoreBelow}>
@@ -873,7 +911,7 @@ function AppContent() {
                 setAdvancedOpen(open);
                 localStorage.setItem('personal.advancedNavOpen', String(open));
               }}>
-              <summary>{t('personal.advanced')}</summary>
+              <summary title={narrowRail ? t('personal.advanced') : undefined}><Wrench size={16} aria-hidden="true" className="personal-advanced-icon" /><span>{t('personal.advanced')}</span></summary>
               <div>{advancedGroups.map((group) => <div key={group.labelKey} className="personal-advanced-group" role="group" aria-label={t(group.labelKey)}>
                 <span className="personal-advanced-heading" aria-hidden="true">{t(group.labelKey)}</span>
                 {group.ids.map((id) => pages.find((page) => page.id === id)!).map(renderNavigationPage)}
@@ -884,6 +922,13 @@ function AppContent() {
           </nav>
 
           <div className="sidebar-bottom">
+            <div ref={preferencesRef} className={`sidebar-preferences${preferencesOpen ? ' open' : ''}`}>
+            <button ref={preferencesButtonRef} type="button" className="sidebar-preferences-toggle" aria-expanded={preferencesOpen}
+              aria-controls="sidebar-preferences-panel" aria-label={t('app.displayPreferences')} title={t('app.displayPreferences')}
+              onClick={() => setPreferencesOpen((open) => !open)}>
+              <SlidersHorizontal size={16} aria-hidden="true" />
+            </button>
+            <div id="sidebar-preferences-panel" className="sidebar-preferences-panel" role="group" aria-label={t('app.displayPreferences')}>
             <div
               className="sidebar-theme-selector"
               role="group"
@@ -920,19 +965,6 @@ function AppContent() {
             <div className="sidebar-theme-selector sidebar-density-selector" role="group" aria-label={t('density.label')}>
               <button type="button" className={density === 'comfortable' ? 'active' : ''} aria-pressed={density === 'comfortable'} onClick={() => setDensity('comfortable')}>{t('density.comfortable')}</button>
               <button type="button" className={density === 'compact' ? 'active' : ''} aria-pressed={density === 'compact'} onClick={() => setDensity('compact')}>{t('density.compact')}</button>
-            </div>
-            {/* One row for both, so the sidebar keeps fitting without scrolling. */}
-            <div className="sidebar-links">
-              <button type="button" className={`sidebar-alerts-link${unreadAlerts ? ' has-unread' : ''}`} onClick={() => setAlertsOpen(true)}
-                aria-label={unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}
-                title={unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}>
-                <Bell size={13} aria-hidden="true" />
-                {/* Hidden in the narrow top bar, where only the bell (and its dot) fits. */}
-                <span className="sidebar-alerts-label" aria-hidden="true">{unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}</span>
-              </button>
-              <button type="button" className="sidebar-glossary-link" onClick={() => setGlossaryOpen(true)} title={t('glossary.open')}>
-                <BookOpen size={13} aria-hidden="true" className="sidebar-link-icon" /><span>{t('glossary.open')}</span>
-              </button>
             </div>
             <div ref={languageMenuRef} className="sidebar-language">
               <button
@@ -993,7 +1025,22 @@ function AppContent() {
                 </div>
               ) : null}
             </div>
-            <div className="personal-runtime" role="status">
+            </div>
+            </div>
+            {/* One row for both, so the sidebar keeps fitting without scrolling. */}
+            <div className="sidebar-links">
+              <button type="button" className={`sidebar-alerts-link${unreadAlerts ? ' has-unread' : ''}`} onClick={() => setAlertsOpen(true)}
+                aria-label={unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}
+                title={unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}>
+                <Bell size={13} aria-hidden="true" />
+                {/* Hidden in the narrow top bar, where only the bell (and its dot) fits. */}
+                <span className="sidebar-alerts-label" aria-hidden="true">{unreadAlerts ? t('alerts.openUnread', { count: unreadAlerts }) : t('alerts.open')}</span>
+              </button>
+              <button type="button" className="sidebar-glossary-link" onClick={() => setGlossaryOpen(true)} title={t('glossary.open')}>
+                <BookOpen size={13} aria-hidden="true" className="sidebar-link-icon" /><span>{t('glossary.open')}</span>
+              </button>
+            </div>
+            <div className="personal-runtime" role="status" title={narrowRail ? (coreReady ? t('personal.running') : t('personal.notReady')) : undefined}>
               <span className={`ad-dot ${coreReady ? 'online' : ''}`} aria-hidden="true" />
               <div><strong>{coreReady ? t('personal.running') : t('personal.notReady')}</strong><small>{t('personal.routing')}</small></div>
             </div>

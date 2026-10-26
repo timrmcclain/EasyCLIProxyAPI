@@ -138,8 +138,11 @@ const path = require('node:path');
 
     await page.setViewportSize({ width: 640, height: 600 });
     await page.locator('.nav-section').getByRole('button', { name: '首页' }).click();
-    const sidebarHeight = await page.locator('.sidebar').evaluate((element) => element.getBoundingClientRect().height);
-    assert.ok(sidebarHeight < 150, `compact sidebar is too tall: ${sidebarHeight}px`);
+    // Small windows turn the sidebar into an icon rail, so the shell costs a narrow strip instead of the top of the page.
+    const sidebarWidth = await page.locator('.sidebar').evaluate((element) => element.getBoundingClientRect().width);
+    assert.ok(sidebarWidth <= 64, `compact sidebar is too wide: ${sidebarWidth}px`);
+    const contentWidth = await page.locator('.workspace .content').evaluate((element) => element.getBoundingClientRect().width);
+    assert.ok(contentWidth >= 570, `the page should keep the rest of the window: ${contentWidth}px`);
 
     await page.locator('.personal-advanced summary').click();
     // Easy mode was removed; the compact shell must still expose every advanced page as a reachable button.

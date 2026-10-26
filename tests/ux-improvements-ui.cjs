@@ -67,7 +67,7 @@ const path = require('node:path');
   await page.waitForFunction(()=>document.querySelector('.agent-backup-modal footer .primary-button')&&!document.querySelector('.agent-backup-modal footer .primary-button').disabled);
   assert.equal((await page.evaluate(()=>window.uxWrites)).length,2,'Undo previews before any restore');
   await page.locator('.agent-backup-modal footer').getByRole('button',{name:'Cancel',exact:true}).click();
-  for(const theme of ['Light','Dark']){await page.getByRole('button',{name:theme,exact:true}).click();for(const width of [1440,960,640]){await page.setViewportSize({width,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${theme} overflow ${width}`);}}
+  for(const theme of ['Light','Dark']){await page.setViewportSize({width:1440,height:1000});await page.getByRole('button',{name:theme,exact:true}).click();for(const width of [1440,960,640]){await page.setViewportSize({width,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${theme} overflow ${width}`);}}
   if(process.env.UI_OUTPUT){await page.setViewportSize({width:1440,height:1000});await page.getByRole('button',{name:'Light',exact:true}).click();await page.locator('.connection-overview').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(process.env.UI_OUTPUT,'ux-connections.png')});}
   assert.deepEqual(errors,[]);console.log('PASS: alternatives/capabilities, recovery explanation, opt-in deduped alerts, live request evidence, explicit vs recorded reasoning, refresh failure downgrade, preview, backup-before-save, Undo preview, responsive light/dark.');
  }finally{await browser?.close();await server.close();}

@@ -1,0 +1,188 @@
+/* Sidebar preferences: in the wide sidebar, theme, density and language sit in the footer as before; the wrappers that
+   turn them into a menu on the narrow rail lay out nothing, and CSS order keeps alerts above the language picker. */
+.sidebar-preferences,
+.sidebar-preferences-panel { display: contents; }
+.sidebar-preferences-toggle,
+.personal-advanced-icon { display: none; }
+.sidebar-bottom > .sidebar-links { order: 1; }
+.sidebar-preferences-panel > .sidebar-language { order: 2; }
+.sidebar-bottom > .personal-runtime { order: 3; }
+
+/* Narrow windows, in both densities: the sidebar is a 56px icon rail that stays put while the page scrolls. Every page
+   is one icon (its name is the hover text and stays in the accessible name), Advanced tools folds under a wrench, search
+   opens the command palette, and the footer is the alerts bell, one menu for theme, density and language, and the
+   proxy status dot. Rules start with :root:root so they win over the stacked top bar and the compact sidebar. */
+@media (max-width: 900px) {
+  :root:root .app-shell { grid-template-columns: 56px minmax(0, 1fr); }
+  :root:root .app-shell > .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 56px;
+    height: 100vh;
+    height: 100dvh;
+    padding: 8px 6px;
+    border-right: 1px solid var(--border-color);
+    border-bottom: 0;
+    overflow: visible;
+  }
+  :root:root .app-shell > .sidebar > .sidebar-brand { display: none; }
+
+  /* Search: the magnifier alone. */
+  :root:root .sidebar .sidebar-command-button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 36px;
+    min-height: 36px;
+    margin: 0;
+    padding: 0;
+  }
+  :root:root .sidebar .sidebar-command-button > :not(svg) { display: none; }
+
+  /* Pages: one column of icon buttons that scrolls on its own if the window is very short. */
+  :root:root .sidebar .nav-section {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 2px;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  :root:root .sidebar .nav-section > * { flex: 0 0 auto; align-self: stretch; }
+  :root:root .sidebar .nav-section button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    min-width: 0;
+    height: 36px;
+    min-height: 36px;
+    margin: 0;
+    padding: 0;
+    font-size: inherit;
+  }
+  /* Names stay in the accessible name; they're just not drawn. */
+  :root:root .sidebar .nav-section button > span:not(.nav-count-badge),
+  :root:root .sidebar .nav-section button > .nav-count-badge > span[aria-hidden='true'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  :root:root .sidebar .nav-section button > .nav-lock-icon { position: absolute; right: 2px; bottom: 2px; width: 10px; height: 10px; }
+  /* Attention, update and Secret Guard markers become a dot in the icon's corner. */
+  :root:root .sidebar .nav-section button > :is(.nav-attention-dot, .nav-update-indicator, .nav-count-badge) {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+  }
+  :root:root .sidebar .nav-section button > .nav-count-badge { background: var(--danger, #dc2626); }
+
+  :root:root .sidebar .personal-advanced { flex-basis: auto; margin: 4px 0 0; padding: 4px 0 0; border: 0; border-top: 1px solid var(--border-color); }
+  :root:root .sidebar .personal-advanced > summary {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    list-style: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  :root:root .sidebar .personal-advanced > summary::-webkit-details-marker { display: none; }
+  :root:root .sidebar .personal-advanced > summary::marker { content: ''; }
+  :root:root .sidebar .personal-advanced > summary > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :root:root .sidebar .personal-advanced-icon { display: block; }
+  :root:root .sidebar .personal-advanced[open] > summary { color: var(--primary-color); }
+  :root:root .sidebar .personal-advanced > div,
+  :root:root .sidebar .personal-advanced-group { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 2px; padding: 0; }
+  :root:root .sidebar .personal-advanced-group + .personal-advanced-group { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border-color); }
+  :root:root .sidebar .personal-advanced-heading { display: none; }
+  /* The grouped navigation (Try the new navigation) has a utility row; it stacks under a divider the same way. */
+  :root:root .sidebar .nav-utility-groups { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 0; padding: 4px 0 0; border-left: 0; border-top: 1px solid var(--border-color); }
+
+  /* Footer: bell, the preferences menu, then the proxy status dot. */
+  :root:root .sidebar .sidebar-bottom {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 6px 0 0;
+    border-top: 1px solid var(--border-color);
+  }
+  :root:root .sidebar .sidebar-bottom > .sidebar-links { order: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  :root:root .sidebar .sidebar-links > :is(.sidebar-alerts-link, .sidebar-glossary-link) {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 32px;
+    min-height: 28px;
+    padding: 0;
+  }
+  :root:root .sidebar .sidebar-links .sidebar-alerts-label,
+  :root:root .sidebar .sidebar-links > .sidebar-glossary-link > span { display: none; }
+  :root:root .sidebar .sidebar-links .sidebar-link-icon { display: inline; }
+  :root:root .sidebar .sidebar-alerts-link.has-unread::after { content: ''; position: absolute; top: 5px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger, #dc2626); }
+
+  :root:root .sidebar .sidebar-preferences { position: relative; display: block; order: 1; }
+  :root:root .sidebar .sidebar-preferences-toggle {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 32px;
+    min-height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  :root:root .sidebar .sidebar-preferences-toggle:hover,
+  :root:root .sidebar .sidebar-preferences.open > .sidebar-preferences-toggle { background: var(--bg-hover); color: var(--text-primary); }
+  /* The menu opens beside the rail, above the window's bottom edge. */
+  :root:root .sidebar .sidebar-preferences-panel {
+    position: fixed;
+    left: 60px;
+    bottom: 10px;
+    z-index: 60;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 220px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-card, var(--bg-primary));
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  }
+  :root:root .sidebar .sidebar-preferences.open > .sidebar-preferences-panel { display: flex; }
+  :root:root .sidebar .sidebar-preferences-panel > * { width: 100%; margin: 0; }
+  :root:root .sidebar .sidebar-preferences-panel .sidebar-language { flex: none; }
+  :root:root .sidebar .sidebar-preferences-panel .sidebar-language-list { top: auto; left: 0; right: 0; bottom: calc(100% + 4px); width: auto; max-height: 360px; overflow-y: auto; }
+
+  /* The proxy status keeps its dot; its words become the hover text and stay readable to screen readers. */
+  :root:root .sidebar .sidebar-bottom > .personal-runtime { order: 2; display: grid; place-items: center; width: 36px; min-height: 20px; margin: 0; padding: 0; border: 0; }
+  :root:root .sidebar .personal-runtime > div { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  :root:root .app-shell > .workspace .content { padding-inline: 16px; }
+}

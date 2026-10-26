@@ -550,6 +550,7 @@ export const en: Record<MessageKey, string> = {
   'apiAccess.models.aliasPlaceholder': 'Model alias (optional)',
   'apiAccess.models.remove': 'Remove model',
   'app.language': 'Language',
+  'app.displayPreferences': 'Theme, density and language',
   'app.theme.light': 'Light',
   'app.theme.dark': 'Dark',
   'app.theme.label': 'Appearance',

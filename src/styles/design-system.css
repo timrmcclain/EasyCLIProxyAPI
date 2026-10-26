@@ -825,7 +825,7 @@ svg.lucide {
 :root[data-density='compact'] .agent-client-list-footer > small,
 :root[data-density='compact'] .agent-desktop-model-notice { display: none !important; }
 :root[data-density='compact'] .agents-page .agent-client-list .agent-list-items button { min-height: 0; height: auto; padding-top: 4px; padding-bottom: 4px; }
-:root[data-density='compact'] .agents-page .agent-client-list .agent-list-items { grid-auto-rows: auto; grid-template-rows: none; min-height: 0; }
+:root[data-density='compact'] .agents-page .agent-client-list .agent-list-items { grid-auto-rows: max-content; grid-template-rows: none; min-height: 0; }
 :root[data-density='compact'] .agents-page .connection-overview { padding: 10px 12px; }
 :root[data-density='compact'] .agents-page .agent-core-setting-section { padding: 10px 12px; gap: 8px; }
 

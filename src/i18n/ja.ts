@@ -563,6 +563,7 @@ export const jaOverrides = {
   'apiAccess.models.aliasPlaceholder': 'モデル別名（任意）',
   'apiAccess.models.remove': 'モデルを削除',
   'app.language': '言語',
+  'app.displayPreferences': '外観・表示密度・言語',
   'app.theme.light': 'ライト',
   'app.theme.dark': 'ダーク',
   'app.theme.label': '外観モード',

@@ -549,6 +549,7 @@ export const zhCN = {
   'apiAccess.models.aliasPlaceholder': '模型别名（可选）',
   'apiAccess.models.remove': '删除模型',
   'app.language': '语言',
+  'app.displayPreferences': '外观、密度和语言',
   'app.theme.light': '亮色',
   'app.theme.dark': '暗色',
   'app.theme.label': '外观模式',
