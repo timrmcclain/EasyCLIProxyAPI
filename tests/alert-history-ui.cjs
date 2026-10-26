@@ -93,7 +93,7 @@ const path = require('node:path');
       await page.locator('#config-subpage-tab-app, [id^="config-subpage-tab-"]').filter({ hasText: /App|preferences/i }).first().click().catch(() => undefined);
     }
     await settings.waitFor();
-    assert.equal(await settings.locator('.alert-kind-option input[type="checkbox"]').count(), 7, 'six kinds and quiet hours');
+    assert.equal(await settings.locator('.alert-kind-option input[type="checkbox"]').count(), 8, 'seven kinds (with the morning summary) and quiet hours');
     await settings.getByLabel('Updates available').uncheck();
     await settings.getByLabel('Quiet hours').check();
     await settings.locator('input[type="time"]').first().fill('21:30');

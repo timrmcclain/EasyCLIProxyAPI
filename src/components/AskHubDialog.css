@@ -1,0 +1,15 @@
+/* Ask the hub: a question, the answer in plain words, and which of your models gave it. */
+.ask-hub-dialog { width: min(560px, calc(100vw - 32px)); padding: 18px 20px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); color: var(--text-primary); box-shadow: var(--shadow-lg, 0 18px 48px rgb(0 0 0 / 18%)); }
+.ask-hub-dialog::backdrop { background: rgb(20 16 10 / 35%); }
+.ask-hub-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ask-hub-dialog h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: calc(16px * var(--type-scale, 1)); }
+.ask-hub-hint { margin: 6px 0 10px; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); }
+.ask-hub-dialog textarea { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; resize: vertical; }
+.ask-hub-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; color: var(--text-tertiary); }
+.ask-hub-error { margin: 10px 0 0; color: var(--c-danger); }
+.ask-hub-answer { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--primary-color); border-radius: 0 8px 8px 0; background: var(--bg-secondary); }
+.ask-hub-answer p { margin: 0 0 6px; white-space: pre-wrap; line-height: 1.55; }
+.ask-hub-answer small { color: var(--text-tertiary); }
+
+/* Numbers line up in columns wherever they are compared: quotas, costs, counts, times. */
+:is(table, time, meter, .ad-row, .quota-ledger, .glance-runway, .af-summary, .af-card, .sb-lane, .usage-records-page, .config-key-age, .mini-hub, .home-glance) { font-variant-numeric: tabular-nums; }

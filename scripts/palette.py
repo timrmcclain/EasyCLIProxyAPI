@@ -26,7 +26,9 @@ HUES = {
     'violet': (295, .18),
     'orange': (48, .17),
 }
-NEUTRAL_HUE = 215
+# Warm, like ink on paper: cream surfaces and brown-black text, so the one teal accent and the status colours
+# are the only cool or saturated things on screen.
+NEUTRAL_HUE = 75
 NEUTRAL_STEPS = {0: 1.0, 25: .985, 50: .97, 75: .955, 100: .935, 150: .905, 200: .875, 300: .80, 350: .75, 400: .70,
                  500: .60, 600: .51, 700: .43, 800: .355, 850: .31, 875: .285, 900: .26, 925: .237, 950: .215,
                  975: .195, 1000: .17}
@@ -91,8 +93,8 @@ def contrast(a, b):
 def palette():
     tokens = {}
     for step, L in NEUTRAL_STEPS.items():
-        # A whisper of tint on the light end, a little more in the dark greys where it reads as depth.
-        chroma = 0 if step == 0 else .003 if L >= .9 else .007 if L >= .5 else .011
+        # Paper on the light end (white stays white for text on the accent), warm ink in the dark greys.
+        chroma = 0 if step == 0 else .008 if L >= .9 else .010 if L >= .5 else .012
         tokens[f'neutral-{step}'] = fit(L, chroma, NEUTRAL_HUE)
     for name, (hue, peak) in HUES.items():
         for step, L in STEPS.items():

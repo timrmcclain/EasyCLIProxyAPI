@@ -7,6 +7,7 @@ import { readAccountNames } from './accountNames';
 import { dedupeAuthFiles } from './authFiles';
 import { readDashboardPreference } from './dashboardPreferences';
 import { notify } from './notifications';
+import { LAST_QUOTA_LINE_KEY } from './morningDigest';
 import { attentionItems } from './homeGlance';
 import { driftedApps, loadAppStatuses, newlyInstalledApps } from './connectedApps';
 import { managementApi, readString, responseList } from './managementApi';
@@ -73,6 +74,8 @@ async function updateTray(files: AuthFile[], attention: ReturnType<typeof attent
   await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · '), level: trayQuotaLevel(tallies), gauge: trayQuotaGauge(tallies) }).catch(() => undefined);
   // Read by the Claude Code status line wrapper, when switched on in Settings.
   await invoke('write_claude_quota_line', { text: menuText }).catch(() => undefined);
+  // And by the morning summary and Ask the hub, which say how quota stands now.
+  try { localStorage.setItem(LAST_QUOTA_LINE_KEY, menuText); } catch { /* Only that line is lost. */ }
 }
 
 /** The tray icon's dot: "out" when every account of a provider is out, "low" when any is low or out. */

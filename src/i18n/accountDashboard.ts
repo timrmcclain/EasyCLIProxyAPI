@@ -7,6 +7,7 @@ import { accountIdentityEn, accountIdentityJa, accountIdentityZhCN } from './acc
 import { appsSafetyEn, appsSafetyJa, appsSafetyZhCN } from './appsSafety';
 import { settingsPlainEn, settingsPlainJa, settingsPlainZhCN } from './settingsPlain';
 import { navDesktopEn, navDesktopJa, navDesktopZhCN } from './navDesktop';
+import { visualHelpEn, visualHelpJa, visualHelpZhCN } from './visualHelp';
 import { jevEn, jevJa, jevZhCN } from './jev';
 import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
@@ -22,6 +23,7 @@ export const accountDashboardEn = {
   ...appsSafetyEn,
   ...settingsPlainEn,
   ...navDesktopEn,
+  ...visualHelpEn,
   ...jevEn,
   ...secretGuardEn,
   ...projectUsageEn,
@@ -104,6 +106,7 @@ export const accountDashboardZhCN = {
   ...appsSafetyZhCN,
   ...settingsPlainZhCN,
   ...navDesktopZhCN,
+  ...visualHelpZhCN,
   ...jevZhCN,
   ...secretGuardZhCN,
   ...projectUsageZhCN,
@@ -186,6 +189,7 @@ export const accountDashboardJa = {
   ...appsSafetyJa,
   ...settingsPlainJa,
   ...navDesktopJa,
+  ...visualHelpJa,
   ...jevJa,
   ...secretGuardJa,
   ...projectUsageJa,

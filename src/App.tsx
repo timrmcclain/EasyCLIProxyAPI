@@ -73,6 +73,8 @@ import { useThemePreference } from './theme';
 import { useDialogFocusTrap } from './components/useDialogFocusTrap';
 import { CommandPalette, type PaletteCommand } from './components/CommandPalette';
 import './components/MiniHub.css';
+import { AskHubDialog } from './components/AskHubDialog';
+import { runMorningDigest } from './services/morningDigest';
 import { confirmLeave } from './services/unsavedChanges';
 import { readableError } from './services/readableError';
 
@@ -327,6 +329,13 @@ function AppContent() {
     return () => window.removeEventListener(SECRET_GUARD_COUNT_EVENT, onCount);
   }, []);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  // The morning summary: checked at start and every ten minutes; it sends at most once a day.
+  useEffect(() => {
+    void runMorningDigest().catch(() => undefined);
+    const timer = window.setInterval(() => { void runMorningDigest().catch(() => undefined); }, 10 * 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const unreadAlerts = useAlertHistory().filter(entry => !entry.read).length;
@@ -803,6 +812,7 @@ function AppContent() {
       label: t(pinned.includes(active) ? 'nd.unpin' : 'nd.pin', { page: t(pages.find((item) => item.id === active)!.labelKey) }),
       keywords: ['pin', 'favourite', 'favorite', 'sidebar', '固定', 'ピン'], run: () => togglePin(active),
     },
+    { id: 'ask-hub', label: t('v7.ask.open'), group: t('nd.window'), keywords: ['ask', 'question', 'help', 'why', 'chat', '询问', '質問'], run: () => setAskOpen(true) },
     { id: 'mini-window', label: t('nd.mini.openCommand'), group: t('nd.window'), keywords: ['mini', 'compact', 'always on top', 'status', '迷你', 'ミニ'],
       run: () => void invoke('open_mini_window').catch(() => undefined) },
     { id: 'theme-light', label: t('app.theme.switchToLight'), group: t('palette.appearance'), run: () => setTheme('light') },
@@ -1201,6 +1211,7 @@ function AppContent() {
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <AlertHistoryDialog open={alertsOpen} onClose={() => setAlertsOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
+      {askOpen ? <AskHubDialog page={t(activePage.labelKey)} proxyRunning={coreReady} onClose={() => setAskOpen(false)} /> : null}
       {confirmationDialog}
       <FloatingNotice key={paletteFeedback.revision} notice={paletteFeedback.notice} onDismiss={paletteFeedback.clearNotice} />
     </>

@@ -6,7 +6,7 @@ import { readDesktopAlertsPreference } from './dashboardPreferences';
  * Every Windows notification the hub raises goes through here. Each one is kept in the hub's alert history,
  * whether or not it popped up, so an alert silenced by a switch or quiet hours can still be found later.
  */
-export const ALERT_KINDS = ['quota', 'pace', 'apps', 'proxy', 'secrets', 'updates'] as const;
+export const ALERT_KINDS = ['quota', 'pace', 'apps', 'proxy', 'secrets', 'updates', 'digest'] as const;
 export type AlertKind = typeof ALERT_KINDS[number];
 export type AlertMessage = { title: string; body: string; /** The page the alert is about. */ page?: string };
 export type AlertEntry = AlertMessage & {
@@ -27,7 +27,7 @@ export const ALERT_HISTORY_EVENT = 'app:alert-history';
 
 /** Where each kind of alert sends you from the history. */
 export const ALERT_PAGES: Record<AlertKind, string> = {
-  quota: 'home', pace: 'home', apps: 'agents', proxy: 'home', secrets: 'secret-guard', updates: 'versions',
+  quota: 'home', pace: 'home', apps: 'agents', proxy: 'home', secrets: 'secret-guard', updates: 'versions', digest: 'home',
 };
 
 const readJson = <T,>(key: string, fallback: T): T => {
@@ -38,7 +38,8 @@ const readJson = <T,>(key: string, fallback: T): T => {
 };
 
 export function readAlertKinds(): Record<AlertKind, boolean> {
-  return readJson(KINDS_KEY, Object.fromEntries(ALERT_KINDS.map(kind => [kind, true])) as Record<AlertKind, boolean>);
+  // Every kind is on until switched off, except the morning summary, which is off until asked for.
+  return readJson(KINDS_KEY, Object.fromEntries(ALERT_KINDS.map(kind => [kind, kind !== 'digest'])) as Record<AlertKind, boolean>);
 }
 export function saveAlertKind(kind: AlertKind, on: boolean) {
   localStorage.setItem(KINDS_KEY, JSON.stringify({ ...readAlertKinds(), [kind]: on }));
