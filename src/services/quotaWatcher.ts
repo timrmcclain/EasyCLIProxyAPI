@@ -14,6 +14,7 @@ import { managementApi, readString, responseList } from './managementApi';
 import { paceAlerts, providerTallies, quotaAlerts, type AlertMemory, type PaceAlert, type PaceMemory, type QuotaAlert } from './quotaAlerts';
 import { invoke } from '@tauri-apps/api/core';
 import { getQuotaCacheSnapshot } from './quotaCache';
+import { miniProviders } from './miniSummary';
 import { getQuotaHistory, recordQuotaSamples, setQuotaHistory } from './quotaForecast';
 import { getQuotaTrends, recordQuotaTrends, setQuotaTrends } from './quotaTrend';
 import { getResetHistory, recordResetHistory, setResetHistory } from './resetHistory';
@@ -60,7 +61,7 @@ export function alertText(alert: QuotaAlert, now: number): { title: string; body
 }
 
 /** "Quota: Codex all out · Claude 1 low · Grok ok" for the tray menu and tooltip. */
-async function updateTray(files: AuthFile[], attention: ReturnType<typeof attentionItems>) {
+async function updateTray(files: AuthFile[], attention: ReturnType<typeof attentionItems>, quotas: ReturnType<typeof getQuotaCacheSnapshot>) {
   const locale = getCurrentLocale();
   const parts = providerTallies(files, attention, providerOf).map(tally => {
     const provider = providerNames[tally.provider] ?? tally.provider;
@@ -71,7 +72,9 @@ async function updateTray(files: AuthFile[], attention: ReturnType<typeof attent
   });
   const menuText = parts.length ? translate(locale, 'tray.quota', { summary: parts.join(' · ') }) : translate(locale, 'tray.none');
   const tallies = providerTallies(files, attention, providerOf);
-  await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · '), level: trayQuotaLevel(tallies), gauge: trayQuotaGauge(tallies) }).catch(() => undefined);
+  // The mini window draws these as one bar per provider; the tray only uses the text.
+  const providers = miniProviders(files, attention, quotas, providerOf, providerNames);
+  await invoke('set_tray_quota_summary', { menuText, tooltipText: parts.join(' · '), level: trayQuotaLevel(tallies), gauge: trayQuotaGauge(tallies), providers }).catch(() => undefined);
   // Read by the Claude Code status line wrapper, when switched on in Settings.
   await invoke('write_claude_quota_line', { text: menuText }).catch(() => undefined);
   // And by the morning summary and Ask the hub, which say how quota stands now.
@@ -145,7 +148,7 @@ export function startQuotaWatcher(): () => void {
       const current = rerouted ? dedupeAuthFiles(responseList(await managementApi.get('/credentials'), 'files')) : files;
       await loadPlanBlocks(current).then(blocks => syncBlockedRouting(current, blocks)).catch(() => undefined);
       const attention = attentionItems(files, quotas, now, false);
-      await updateTray(files, attention);
+      await updateTray(files, attention, quotas);
       const result = quotaAlerts(memory, files, attention, providerOf, labelFor);
       memory = result.memory;
       const pace = paceAlerts(paceMemory, files, getQuotaHistory(), attention, now, providerOf, labelFor);

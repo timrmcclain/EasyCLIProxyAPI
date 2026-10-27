@@ -16,13 +16,15 @@ pub(crate) struct HubSummary {
     menu_text: String,
     tooltip_text: String,
     level: Option<String>,
+    /// Per provider: name, best percent left, one state per account (see miniSummary.ts). Passed through as is.
+    providers: Option<serde_json::Value>,
 }
 
 static LAST_SUMMARY: Mutex<Option<HubSummary>> = Mutex::new(None);
 
 /// Keeps the newest tray summary and passes it to the mini window when one is open.
-pub(crate) fn remember_summary(app: &tauri::AppHandle, menu_text: &str, tooltip_text: &str, level: Option<&str>) {
-    let summary = HubSummary { menu_text: menu_text.to_string(), tooltip_text: tooltip_text.to_string(), level: level.map(str::to_string) };
+pub(crate) fn remember_summary(app: &tauri::AppHandle, menu_text: &str, tooltip_text: &str, level: Option<&str>, providers: Option<serde_json::Value>) {
+    let summary = HubSummary { menu_text: menu_text.to_string(), tooltip_text: tooltip_text.to_string(), level: level.map(str::to_string), providers };
     if let Ok(mut last) = LAST_SUMMARY.lock() {
         *last = Some(summary.clone());
     }
@@ -53,8 +55,8 @@ pub(crate) fn show_mini_window(app: &tauri::AppHandle) -> Result<(), String> {
     }
     builder
         .title("Tim’s AI Hub")
-        .inner_size(340.0, 150.0)
-        .min_inner_size(260.0, 120.0)
+        .inner_size(320.0, 236.0)
+        .min_inner_size(260.0, 140.0)
         .always_on_top(true)
         .skip_taskbar(true)
         .build()

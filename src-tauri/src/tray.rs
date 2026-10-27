@@ -606,8 +606,8 @@ pub(crate) fn windows_tray_tooltip(base: &str, quota: &str) -> String {
 
 /// Called by the window's quota watcher with a localized summary for the tray menu and tooltip.
 #[tauri::command]
-pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String, level: Option<String>, gauge: Option<f64>) {
-    crate::mini_window::remember_summary(&app, &menu_text, &tooltip_text, level.as_deref());
+pub(crate) fn set_tray_quota_summary(app: tauri::AppHandle, menu_text: String, tooltip_text: String, level: Option<String>, gauge: Option<f64>, providers: Option<serde_json::Value>) {
+    crate::mini_window::remember_summary(&app, &menu_text, &tooltip_text, level.as_deref(), providers);
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         let Some(tray_state) = app.try_state::<WindowsTrayState>() else {

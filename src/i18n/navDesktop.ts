@@ -11,6 +11,14 @@ export const navDesktopEn = {
   'nd.mini.level.low': 'Some accounts are running low',
   'nd.mini.level.out': 'A provider is out of quota',
   'nd.mini.open': 'Open the hub',
+  'nd.mini.head.ok': 'All good',
+  'nd.mini.head.low': 'Running low',
+  'nd.mini.head.out': 'A provider is out',
+  'nd.mini.head.outNamed': '{provider} is out',
+  'nd.mini.out': 'Out',
+  'nd.mini.outBack': 'Out · back in {time}',
+  'nd.mini.ready': 'Ready',
+  'nd.mini.barLabel': '{provider}: {usable} of {total} accounts can take requests',
 };
 
 export const navDesktopZhCN: Record<keyof typeof navDesktopEn, string> = {
@@ -26,6 +34,14 @@ export const navDesktopZhCN: Record<keyof typeof navDesktopEn, string> = {
   'nd.mini.level.low': '部分账号额度不足',
   'nd.mini.level.out': '有服务商的额度已用完',
   'nd.mini.open': '打开中枢',
+  'nd.mini.head.ok': '一切正常',
+  'nd.mini.head.low': '额度偏低',
+  'nd.mini.head.out': '有服务商额度已用完',
+  'nd.mini.head.outNamed': '{provider} 额度已用完',
+  'nd.mini.out': '已用完',
+  'nd.mini.outBack': '已用完 · {time}后恢复',
+  'nd.mini.ready': '可用',
+  'nd.mini.barLabel': '{provider}：{total} 个账号中有 {usable} 个可以接收请求',
 };
 
 export const navDesktopJa: Record<keyof typeof navDesktopEn, string> = {
@@ -41,4 +57,12 @@ export const navDesktopJa: Record<keyof typeof navDesktopEn, string> = {
   'nd.mini.level.low': '残量が少ないアカウントがあります',
   'nd.mini.level.out': '残量がなくなったプロバイダーがあります',
   'nd.mini.open': 'ハブを開く',
+  'nd.mini.head.ok': '問題なし',
+  'nd.mini.head.low': '残量が少なめ',
+  'nd.mini.head.out': '残量切れのプロバイダーがあります',
+  'nd.mini.head.outNamed': '{provider} の残量が切れました',
+  'nd.mini.out': '残量なし',
+  'nd.mini.outBack': '残量なし · {time}後に回復',
+  'nd.mini.ready': '利用可能',
+  'nd.mini.barLabel': '{provider}：{total} 件中 {usable} 件のアカウントが利用可能',
 };

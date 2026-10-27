@@ -91,14 +91,39 @@ const path = require('node:path');
     await seeded.goto(`${base}/?mock=running&mini=1`, { timeout: 60000 });
     await checkSeeded(seeded);
 
+    // With per-provider data: a row per provider, worst first, each bar with one segment per account.
+    const rows = await browser.newPage({ viewport: { width: 320, height: 236 } });
+    rows.on('pageerror', error => errors.push(String(error)));
+    await rows.addInitScript(() => {
+      localStorage.setItem('easy-cli-proxy-api.locale', 'en');
+      window.__mockHubSummary = { menuText: 'Quota: Codex all out · Claude 1 low', tooltipText: 'Codex all out · Claude 1 low', level: 'out', providers: [
+        { provider: 'codex', name: 'Codex', percent: null, resetAt: Date.now() + 4 * 3_600_000 + 60_000, accounts: [{ state: 'out', percent: 0 }, { state: 'out', percent: 0 }] },
+        { provider: 'claude', name: 'Claude', percent: 62, accounts: [{ state: 'ok', percent: 62 }, { state: 'low', percent: 8 }] },
+        { provider: 'xai', name: 'Grok', percent: 90, accounts: [{ state: 'ok', percent: 90 }] },
+      ] };
+    });
+    await rows.goto(`${base}/?mock=running&mini=1`, { timeout: 60000 });
+    await rows.getByText('Codex is out', { exact: true }).waitFor();
+    assert.deepEqual(await rows.locator('.mini-hub-name').allInnerTexts(), ['Codex', 'Claude', 'Grok']);
+    assert.deepEqual(await rows.locator('.mini-hub-value').allInnerTexts(), ['Out · back in 4h 1m', '62%', '90%']);
+    assert.deepEqual(await rows.locator('.mini-hub-bar').evaluateAll(bars => bars.map(bar => bar.children.length)), [2, 2, 1]);
+    assert.equal(await rows.getByRole('img', { name: 'Claude: 2 of 2 accounts can take requests' }).count(), 1);
+    assert.equal(await rows.getByRole('img', { name: 'Codex: 0 of 2 accounts can take requests' }).count(), 1);
+    assert.equal(await rows.locator('.mini-hub-seg.seg-low > span').getAttribute('style'), 'width: 8%;');
+    assert.equal(await rows.locator('.mini-hub-lines').count(), 0, 'no text lines when the rows are there');
+    const fits = await rows.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight);
+    assert.ok(fits, 'three providers fit the window without scrolling');
+    await rows.screenshot({ path: path.resolve(__dirname, '..', 'bin-work', 'mini-window.png') }).catch(() => undefined);
+
     assert.deepEqual(errors, []);
     console.log('PASS: pages pin from the palette, Advanced pages show where they sit, scroll is remembered, and the mini window shows the hub status.');
   } finally { await browser?.close(); await server.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });
 
 async function checkSeeded(mini) {
-    await mini.getByText('A provider is out of quota').waitFor();
-    assert.deepEqual(await mini.locator('.mini-hub li').allInnerTexts(), ['Codex all out', 'Claude 1 low']);
+    // A summary without per-provider rows (from an older hub) falls back to the tray's text.
+    await mini.getByText('A provider is out', { exact: true }).waitFor();
+    assert.deepEqual(await mini.locator('.mini-hub-lines li').allInnerTexts(), ['Codex all out', 'Claude 1 low']);
     await mini.evaluate(() => { window.__mockCalls = []; });
     // The browser mock's toolbar covers this tiny page, so press the button from the keyboard.
     await mini.getByRole('button', { name: 'Open the hub' }).focus();

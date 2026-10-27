@@ -1,14 +1,30 @@
-/* The mini window: one status line in the colour of the tray badge, a few detail lines, a way back. */
-.mini-hub { display: flex; flex-direction: column; gap: 8px; min-height: 100vh; box-sizing: border-box; padding: 12px 14px; background: var(--bg-primary); color: var(--text-primary); font-size: calc(13px * var(--type-scale, 1)); }
+/* The mini window: a one-line verdict, then one row per provider. Each row's bar has a segment per account, filled to
+   the quota that account has left, so "two of three Claude accounts are empty" is visible without reading. */
+.mini-hub { display: flex; flex-direction: column; gap: 10px; height: 100vh; box-sizing: border-box; padding: 12px 14px 10px; background: var(--bg-primary); color: var(--text-primary); font-size: calc(13px * var(--type-scale, 1)); user-select: none; }
 .mini-hub header { display: flex; align-items: center; gap: 8px; }
-.mini-hub header strong { font-weight: 600; font-variant-numeric: tabular-nums; }
-.mini-hub-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c-success); }
-.mini-hub.level-low .mini-hub-dot { background: var(--c-warning); }
-.mini-hub.level-out .mini-hub-dot, .mini-hub.level-error .mini-hub-dot { background: var(--c-danger); }
-.mini-hub.level-unknown .mini-hub-dot { background: var(--surface-34); }
-.mini-hub ul { margin: 0; padding: 0; list-style: none; color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; }
-.mini-hub li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mini-hub button { align-self: flex-start; margin-top: auto; }
+.mini-hub header strong { font-size: calc(14px * var(--type-scale, 1)); font-weight: 600; }
+.mini-hub-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--c-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-success) 22%, transparent); }
+.mini-hub.level-low .mini-hub-dot { background: var(--c-warning); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-warning) 22%, transparent); }
+.mini-hub.level-out .mini-hub-dot { background: var(--c-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-danger) 22%, transparent); }
+.mini-hub.level-unknown .mini-hub-dot { background: var(--surface-34); box-shadow: none; }
+.mini-hub ul { margin: 0; padding: 0; list-style: none; }
+.mini-hub-providers { display: grid; align-content: start; gap: 9px; min-height: 0; overflow-y: auto; }
+.mini-hub-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; grid-template-rows: auto 6px; align-items: center; column-gap: 8px; row-gap: 4px; }
+.mini-hub-logo { grid-row: 1 / span 2; width: 16px; height: 16px; object-fit: contain; align-self: center; }
+.mini-hub-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.mini-hub-value { color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mini-hub-row.state-out .mini-hub-value { color: var(--c-danger); }
+.mini-hub-row.state-low .mini-hub-value { color: var(--c-warning); }
+.mini-hub-bar { grid-column: 2 / span 2; display: flex; gap: 3px; height: 6px; }
+.mini-hub-seg { flex: 1; min-width: 6px; overflow: hidden; border-radius: 3px; background: color-mix(in srgb, var(--text-primary) 12%, transparent); }
+.mini-hub-seg > span { display: block; height: 100%; border-radius: inherit; background: var(--c-success); }
+.mini-hub-seg.seg-low > span { background: var(--c-warning); }
+.mini-hub-seg.seg-out { background: color-mix(in srgb, var(--c-danger) 45%, transparent); }
+.mini-hub-lines { color: var(--text-secondary); font-size: calc(12px * var(--type-scale, 1)); font-variant-numeric: tabular-nums; }
+.mini-hub-lines li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-hub-open { align-self: flex-end; margin-top: auto; padding: 2px 4px; border: 0; border-radius: 4px; background: none; color: var(--text-secondary); font: inherit; font-size: calc(12px * var(--type-scale, 1)); cursor: pointer; }
+.mini-hub-open:hover { color: var(--text-primary); }
+.mini-hub-open:focus-visible { outline: 2px solid var(--accent-color, var(--c-success)); outline-offset: 1px; }
 
 /* Breadcrumb above an Advanced tools page, so it's clear where it sits. */
 .page-breadcrumb ol { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; padding: 0; list-style: none; color: var(--text-tertiary); font-size: calc(12px * var(--type-scale, 1)); }
