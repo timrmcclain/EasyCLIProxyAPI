@@ -48,6 +48,14 @@ enum ConnectorId {
     MarkItDown,
 }
 
+/// The connector an MCP server name belongs to, in either app's spelling (`github`, `GitHub`), for reading
+/// when it was last used. None for servers the hub didn't add.
+pub(crate) fn connector_for_server(server: &str) -> Option<&'static str> {
+    ConnectorId::ALL.into_iter()
+        .find(|id| [Target::Code, Target::Desktop].into_iter().any(|target| id.entry_name(target).eq_ignore_ascii_case(server)))
+        .map(ConnectorId::key)
+}
+
 impl ConnectorId {
     const ALL: [ConnectorId; 8] = [
         ConnectorId::Google,

@@ -11,7 +11,11 @@ const policy = (allow: string[] = []) => ({ defaultMode: 'report' as const, mode
 describe('Secret Guard', () => {
   it('reads the plugin config, ignoring values it does not understand', () => {
     const read = readPolicy({ default_mode: 'redact', modes: { xai: 'block', openai: 'nonsense', unknown: 'block' }, allow: ['aaaa0001', 7] });
-    expect(read).toEqual({ defaultMode: 'redact', modes: { xai: 'block' }, allow: ['aaaa0001'] });
+    expect(read).toEqual({ defaultMode: 'redact', modes: { xai: 'block' }, allow: ['aaaa0001'], clientModes: {}, alwaysRedact: [], context: false });
+    // Per-app modes, always-mask and context, from plugin 0.3; anything not understood is dropped, and context is off unless exactly true.
+    expect(readPolicy({ client_modes: { codex: 'redact', pi: 'loud' }, always_redact: ['bbbb0002', null], context: 'yes' }))
+      .toMatchObject({ clientModes: { codex: 'redact' }, alwaysRedact: ['bbbb0002'], context: false });
+    expect(readPolicy({ context: true }).context).toBe(true);
     expect(modeFor(read, 'xai')).toBe('block');
     expect(modeFor(read, 'openai')).toBe('redact');
     expect(readPolicy({}).defaultMode).toBe('report');

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { useI18n } from '../i18n';
-import { openFindings, readPolicy, secretGuardService } from '../services/secretGuard';
+import { EMPTY_POLICY, openFindings, readPolicy, secretGuardService } from '../services/secretGuard';
 import { pluginsApi } from '../services/plugins';
 import { navigateHelp } from '../services/uxNavigation';
 import './AppDriftBanner.css';
@@ -25,7 +25,7 @@ export function SecretGuardBanner({ coreReady }: { coreReady: boolean }) {
         }
         const allow = lastAllow.current;
         if (allow === null) return;
-        if (alive) setCount(openFindings(findings, { defaultMode: 'report', modes: {}, allow }).length);
+        if (alive) setCount(openFindings(findings, { ...EMPTY_POLICY, allow }).length);
       } catch {
         if (alive) setCount(0);
       }

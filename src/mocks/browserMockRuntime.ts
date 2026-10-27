@@ -1665,7 +1665,8 @@ export function createBrowserMockRuntime(
         const minutes = (count: number) => Date.now() - count * 60_000;
         const findings = [
           { fingerprint: '3f9a2b1c', kind: 'github_token', firstSeen: minutes(42), lastSeen: minutes(3), sightings: 4, providers: ['anthropic'], models: ['claude-opus-5-5'], clients: ['claude-cli/2.1.280 (external, cli)'], actions: ['reported'], requestIds: ['req-mock-2', 'req-mock-4'] },
-          { fingerprint: '7c41d0e8', kind: 'connection_string_password', firstSeen: minutes(60 * 26), lastSeen: minutes(60 * 20), sightings: 2, providers: ['anthropic', 'openai'], models: ['sonnet', 'gpt-6-astra'], clients: ['claude-cli/2.1 (claude-desktop-3p)', 'codex/1.0'], actions: ['redacted', 'reported'] },
+          { fingerprint: '7c41d0e8', kind: 'connection_string_password', firstSeen: minutes(60 * 26), lastSeen: minutes(60 * 20), sightings: 2, providers: ['anthropic', 'openai'], models: ['sonnet', 'gpt-6-astra'], clients: ['claude-cli/2.1 (claude-desktop-3p)', 'codex/1.0'], apps: ['claude-desktop', 'codex'], actions: ['redacted', 'reported'],
+            context: '…migrate with DATABASE_URL=postgres://app:[connection_string_password]@db.internal:5432/app then run the…' },
           { fingerprint: 'a09b33f2', kind: 'aws_access_key', firstSeen: minutes(60 * 50), lastSeen: minutes(60 * 49), sightings: 1, providers: ['xai'], models: ['grok-5'], clients: ['opencode/0.9'], actions: ['blocked'], requestIds: ['req-mock-gone'] },
         ];
         return findings.map(item => {
@@ -1673,6 +1674,8 @@ export function createBrowserMockRuntime(
           return { ...item, dismissedAt: at !== undefined && at >= item.lastSeen ? at : null };
         });
       }
+      // When Claude Code last used each connector: GitHub this morning, Firecrawl last week.
+      case 'connector_last_used': return { github: new Date(Date.now() - 3 * 3_600_000).toISOString(), firecrawl: new Date(Date.now() - 6 * 86_400_000).toISOString() };
       case 'secret_guard_check': {
         // The browser mock knows one pattern, enough to exercise the Test box.
         const text = String(payload.text ?? '');

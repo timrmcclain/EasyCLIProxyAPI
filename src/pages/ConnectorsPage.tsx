@@ -33,6 +33,7 @@ import { StateMessage } from '../components/StateMessage';
 import { ChromeConnectorCard } from './ChromeConnectorCard';
 import { useUnsavedChangesGuard } from '../services/unsavedChanges';
 import { resetCountdown } from '../services/accountDashboard';
+import { formatAgo } from '../services/relativeTime';
 import './AppsSafety.css';
 
 /** What a connector can reach: this PC only, your account, an outside web service, or control of this PC. */
@@ -118,6 +119,9 @@ export function ConnectorsPage() {
   const [reloadCount, setReloadCount] = useState(0);
   const unsavedCards = useRef(new Set<string>());
   const { askConfirmation, confirmationDialog } = useConfirmation();
+  // When Claude Code last called each connector's tools, from its own logs; read once per visit.
+  const [lastUsed, setLastUsed] = useState<Record<string, string> | null>(null);
+  useEffect(() => { invoke<Record<string, string>>('connector_last_used').then(setLastUsed).catch(() => setLastUsed(null)); }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -225,6 +229,7 @@ export function ConnectorsPage() {
               <ConnectorCard
                 key={item.id}
                 item={item}
+                lastUsed={lastUsed === null ? undefined : lastUsed[item.id] ?? null}
                 reloadCount={reloadCount}
                 onUnsavedChange={setCardUnsaved}
                 onSaved={(next) => { setOverview(next); setError(null); setNotice(ct('saved')); }}
@@ -241,12 +246,14 @@ export function ConnectorsPage() {
 
 type ConnectorCardProps = {
   item: ConnectorOverviewItem;
+  /** When Claude Code last used it (ISO); null for not in 90 days; undefined when that couldn't be read. */
+  lastUsed?: string | null;
   reloadCount: number;
   onUnsavedChange: (id: string, unsaved: boolean) => void;
   onSaved: (overview: ConnectorOverview) => void;
 };
 
-function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: ConnectorCardProps) {
+function ConnectorCard({ item, lastUsed, reloadCount, onUnsavedChange, onSaved }: ConnectorCardProps) {
   const { locale, t } = useI18n();
   const [lastTest, setLastTest] = useState<LastTest | undefined>(() => readLastTests()[item.id]);
   const remember = (result: ConnectorTestResult | null) => {
@@ -396,6 +403,8 @@ function ConnectorCard({ item, reloadCount, onUnsavedChange, onSaved }: Connecto
       {unavailable ? <p className="connector-unavailable">{unavailable}</p> : null}
 
       {trust ? <p className="connector-trust-hint">{t(`as.conn.badgeHint.${trust}`)}</p> : null}
+      {lastUsed !== undefined && item.claudeCode.enabled ? <p className="connector-last-used" title={t('cx.usageHint')}>
+        {lastUsed ? t('cx.lastUsed', { time: formatAgo(lastUsed, locale) }) : t('cx.notUsed')}</p> : null}
       {lastTest && !Object.values(tests).some(Boolean) ? <p className={`connector-last-test${lastTest.ok ? ' ok' : ' failed'}`}>
         {t('as.conn.lastTest', {
           time: resetCountdown(Date.now() + Math.max(60_000, Date.now() - lastTest.at), Date.now()),

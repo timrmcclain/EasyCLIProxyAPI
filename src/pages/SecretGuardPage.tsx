@@ -10,7 +10,7 @@ import { readableError } from '../services/readableError';
 import { rotateUrl, secretSeverity, weeklySafety } from '../services/secretSeverity';
 import {
   SECRET_GUARD_MODES, SECRET_GUARD_PROVIDERS, modeFor, openFindings, publishOpenCount, secretGuardApp, secretGuardKind, secretGuardService,
-  type SecretGuardCheckHit, type SecretGuardFinding, type SecretGuardMode, type SecretGuardProvider, type SecretGuardStatus,
+  type SecretGuardCheckHit, type SecretGuardFinding, type SecretGuardMode, type SecretGuardProvider, type SecretGuardStatus, EMPTY_POLICY, SECRET_GUARD_APPS, secretGuardAppName
 } from '../services/secretGuard';
 import './HealthCheckPage.css';
 import './JevPage.css';
@@ -105,7 +105,10 @@ export function SecretGuardPage() {
 
   if (loadError && !findings) return <div className="health-page sg-page"><MessageNotice inline message={t('sg.loadError', { error: loadError })} /></div>;
 
-  const policy = status?.policy ?? { defaultMode: 'report' as SecretGuardMode, modes: {}, allow: [] };
+  const policy = status?.policy ?? EMPTY_POLICY;
+  // The settings below need the 0.3 plugin; an older copy still loaded ignores them.
+  const oldPlugin = Boolean(status?.running && status.loadedVersion && status.loadedVersion !== status.info.bundledVersion);
+  const policyLocked = !status?.on || proxyDown || busy !== null;
   const all = findings ?? [];
   const open = openFindings(all, policy);
   const handled = all.filter(item => !open.includes(item));
@@ -135,7 +138,8 @@ export function SecretGuardPage() {
     const kind = kindKey(item.kind);
     const allowed = policy.allow.includes(item.fingerprint);
     const isHandled = item.dismissedAt !== null || allowed;
-    const apps = [...new Set(item.clients.map(secretGuardApp))].filter(Boolean);
+    const apps = item.apps?.length ? item.apps.map(secretGuardAppName) : [...new Set(item.clients.map(secretGuardApp))].filter(Boolean);
+    const alwaysMasked = policy.alwaysRedact.includes(item.fingerprint);
     const severity = secretSeverity(item.kind);
     const rotatePage = rotateUrl(item.kind);
     return <li key={item.fingerprint} className={`sg-finding severity-${severity}${isHandled ? ' handled' : ''}${item.actions.includes('blocked') ? ' blocked' : ''}`}>
@@ -146,12 +150,14 @@ export function SecretGuardPage() {
           <span className={`sg-severity sg-severity-${severity}`} title={t(`as.sg.severityHint.${severity}`)}>{t(`as.sg.severity.${severity}`)}</span>
           {item.actions.map(action => <span key={action} className={`sg-action sg-action-${action}`}>{t(`sg.action.${action}` as MessageKey)}</span>)}
           {isHandled && <span className="sg-action sg-action-handled">{t(allowed ? 'sg.finding.handledSafe' : 'sg.finding.handledRotated')}</span>}
+          {alwaysMasked && <span className="sg-action sg-action-always">{t('sm.always.badge')}</span>}
         </div>
         <p className="sg-finding-meta">{t('sg.finding.sentTo', { providers: item.providers.map(providerLabel).join(', '), apps: apps.join(', ') || '—' })}</p>
         <p className="sg-finding-meta">
           <span title={new Date(item.lastSeen).toLocaleString()}>{t('sg.finding.when', { first: ago(item.firstSeen, now), last: ago(item.lastSeen, now) })}</span>
           <span className="sg-fingerprint">{t('sg.finding.fingerprint', { fingerprint: item.fingerprint })}</span>
         </p>
+        {item.context && <p className="sg-context"><span>{t('sm.context.label')}</span> <code>{item.context}</code></p>}
         {!isHandled && <p className="sg-rotate">{t(`sg.rotate.${kind}` as MessageKey)}</p>}
         {!isHandled && <p className="sg-severity-hint">{t(`as.sg.severityHint.${severity}`)}</p>}
       </div>
@@ -172,6 +178,10 @@ export function SecretGuardPage() {
             <button type="button" className="secondary-button compact-button" disabled={busy !== null || proxyDown} title={t('sg.finding.safeHint')}
               onClick={() => void run(item.fingerprint, () => secretGuardService.setAllowed(item.fingerprint, true))}>{t('sg.finding.safe')}</button>
           </>}
+        {!allowed && <button type="button" className="secondary-button compact-button" disabled={policyLocked}
+          aria-pressed={alwaysMasked} title={alwaysMasked ? undefined : t('sm.always.onHint')}
+          onClick={() => void run(`always-${item.fingerprint}`, () => secretGuardService.setAlwaysRedact(item.fingerprint, !alwaysMasked))}>
+          {t(alwaysMasked ? 'sm.always.off' : 'sm.always.on')}</button>}
       </div>
     </li>;
   };
@@ -256,6 +266,29 @@ export function SecretGuardPage() {
           <dd>{modeSelect(provider, modeFor(policy, provider), providerLabel(provider))}</dd>
         </div>)}
       </dl>
+      {oldPlugin && <p className="sg-state level-warn" role="note"><AlertTriangle size={16} aria-hidden="true" />{t('sm.apps.needsUpdate', { version: status?.info.bundledVersion ?? '' })}</p>}
+      <h3 className="sg-policy-subtitle">{t('sm.apps.title')}</h3>
+      <p className="jev-subtitle">{t('sm.apps.subtitle')}</p>
+      <dl className="sg-policy sg-policy-apps">
+        {/* The four common apps, plus any other with its own mode or one that sent a finding. */}
+        {SECRET_GUARD_APPS.filter((app, index) => index < 4 || policy.clientModes[app.id] || all.some(item => item.apps?.includes(app.id))).map(app => <div key={app.id}>
+          <dt>{app.name}</dt>
+          <dd><select aria-label={app.name} value={policy.clientModes[app.id] ?? ''} disabled={policyLocked}
+            onChange={event => void run(`app-${app.id}`, () => secretGuardService.setAppMode(app.id, (event.currentTarget.value || null) as SecretGuardMode | null))}>
+            <option value="">{t('sm.apps.inherit')}</option>
+            {SECRET_GUARD_MODES.filter(mode => mode !== 'off').map(mode => <option key={mode} value={mode}>{t(`sg.mode.${mode}` as MessageKey)} — {t(`sg.mode.${mode}.hint` as MessageKey)}</option>)}
+          </select></dd>
+        </div>)}
+      </dl>
+      <div className="sg-switch-row sg-context-switch">
+        <span className="sg-switch-label">{t('sm.context.title')}</span>
+        <label className="switch-control" title={t('sm.context.title')}>
+          <input type="checkbox" role="switch" aria-label={t('sm.context.title')} checked={policy.context} disabled={policyLocked}
+            onChange={event => { const on = event.currentTarget.checked; void run('context', () => secretGuardService.setContext(on)); }} />
+          <span className="switch-track" />
+        </label>
+      </div>
+      <p className="jev-subtitle">{t('sm.context.hint')}</p>
     </section>
 
     <section aria-labelledby="sg-test-title" className="jev-card sg-test">

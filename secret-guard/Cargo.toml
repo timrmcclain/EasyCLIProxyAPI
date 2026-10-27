@@ -1,6 +1,6 @@
 [package]
 name = "secret-guard"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "CLIProxyAPI request interceptor that finds credentials in outgoing prompts"
 publish = false

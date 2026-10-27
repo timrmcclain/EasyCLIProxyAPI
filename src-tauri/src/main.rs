@@ -41,6 +41,7 @@ mod project_usage;
 mod proxy_listen;
 mod config_history;
 mod mini_window;
+mod connector_usage;
 mod core_log;
 mod deleted_accounts;
 mod provider_status;
@@ -2767,6 +2768,7 @@ fn main() {
             promote_core_api_key,
             tray::set_tray_quota_summary,
             mini_window::get_hub_summary,
+            connector_usage::connector_last_used,
             mini_window::open_mini_window,
             mini_window::show_main_from_mini,
             statusline::claude_statusline_state,

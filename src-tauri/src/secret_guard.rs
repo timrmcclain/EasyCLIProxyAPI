@@ -68,10 +68,16 @@ struct FindingLine {
     model: String,
     #[serde(default)]
     client: String,
+    /// The hub's id for the app (`claude-code`, `codex`, ...), from plugin 0.3.
+    #[serde(default)]
+    app: String,
     #[serde(default)]
     action: String,
     #[serde(default)]
     request_id: String,
+    /// A few words around the secret with every secret masked; only when context is turned on.
+    #[serde(default)]
+    context: String,
 }
 
 /// Everything known about one secret, across every request it appeared in.
@@ -87,7 +93,11 @@ pub(crate) struct SecretGuardFinding {
     providers: Vec<String>,
     models: Vec<String>,
     clients: Vec<String>,
+    /// The hub's app ids it came from, when the plugin could tell.
+    apps: Vec<String>,
     actions: Vec<String>,
+    /// The words around its latest sighting, masked; none unless context is on.
+    context: Option<String>,
     /// The proxy's request IDs it was seen in, newest first (at most a few).
     request_ids: Vec<String>,
     /// When the user said they rotated it. Hidden until it's seen again after that.
@@ -270,8 +280,10 @@ fn group_findings(text: &str, dismissed: &BTreeMap<String, u64>) -> Vec<SecretGu
         providers: BTreeSet<String>,
         models: BTreeSet<String>,
         clients: BTreeSet<String>,
+        apps: BTreeSet<String>,
         actions: BTreeSet<String>,
         requests: Vec<(u64, String)>,
+        context: Option<(u64, String)>,
     }
     let mut groups: BTreeMap<String, Group> = BTreeMap::new();
     for line in text.lines() {
@@ -286,10 +298,13 @@ fn group_findings(text: &str, dismissed: &BTreeMap<String, u64>) -> Vec<SecretGu
         group.last = group.last.max(entry.ts);
         group.sightings += 1;
         group.kind = entry.kind;
+        if !entry.context.is_empty() && group.context.as_ref().map_or(true, |(at, _)| entry.ts >= *at) {
+            group.context = Some((entry.ts, entry.context.clone()));
+        }
         if !entry.request_id.is_empty() && !group.requests.iter().any(|(_, id)| *id == entry.request_id) {
             group.requests.push((entry.ts, entry.request_id));
         }
-        for (set, value) in [(&mut group.providers, entry.provider), (&mut group.models, entry.model), (&mut group.clients, entry.client), (&mut group.actions, entry.action)] {
+        for (set, value) in [(&mut group.providers, entry.provider), (&mut group.models, entry.model), (&mut group.clients, entry.client), (&mut group.apps, entry.app), (&mut group.actions, entry.action)] {
             if !value.is_empty() {
                 set.insert(value);
             }
@@ -311,7 +326,9 @@ fn group_findings(text: &str, dismissed: &BTreeMap<String, u64>) -> Vec<SecretGu
             providers: g.providers.into_iter().collect(),
             models: g.models.into_iter().collect(),
             clients: g.clients.into_iter().collect(),
+            apps: g.apps.into_iter().collect(),
             actions: g.actions.into_iter().collect(),
+            context: g.context.map(|(_, text)| text),
         })
         .collect();
     out.sort_by(|a, b| b.last_seen.cmp(&a.last_seen));
@@ -440,6 +457,20 @@ mod tests {
         let groups = group_findings(&text, &BTreeMap::new());
         // Newest first, each ID once, empty IDs skipped, at most five.
         assert_eq!(groups[0].request_ids, vec!["req-7", "req-6", "req-5", "req-4", "req-2"]);
+    }
+
+    #[test]
+    fn findings_keep_their_apps_and_the_newest_context() {
+        let line = |ts: u64, app: &str, context: &str| format!(r#"{{"ts":{ts},"kind":"jwt","fingerprint":"dddd0004","app":"{app}","action":"reported","context":"{context}"}}"#);
+        let text = [line(100, "codex", "older [jwt] words"), line(300, "claude-code", "newest [jwt] words"), line(200, "", "")].join("\n");
+        let groups = group_findings(&text, &BTreeMap::new());
+        assert_eq!(groups[0].apps, vec!["claude-code", "codex"]);
+        assert_eq!(groups[0].context.as_deref(), Some("newest [jwt] words"));
+        // Lines from the 0.2 plugin have neither.
+        let old = r#"{"ts":1,"kind":"jwt","fingerprint":"eeee0005","action":"reported"}"#;
+        let groups = group_findings(old, &BTreeMap::new());
+        assert!(groups[0].apps.is_empty());
+        assert_eq!(groups[0].context, None);
     }
 
     #[test]

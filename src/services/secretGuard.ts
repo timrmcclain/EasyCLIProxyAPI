@@ -23,7 +23,20 @@ export type SecretGuardFinding = {
   providers: string[]; models: string[]; clients: string[]; actions: string[]; dismissedAt: number | null;
   /** The proxy's request IDs it was seen in, newest first. */
   requestIds?: string[];
+  /** The hub's app ids it came from (plugin 0.3 and later). */
+  apps?: string[];
+  /** The words around its latest sighting, every secret masked; only when context is on. */
+  context?: string | null;
 };
+
+/** Apps the plugin can tell apart (`client_app` in secret-guard/src/lib.rs); the first four get their own row. */
+export const SECRET_GUARD_APPS: { id: string; name: string }[] = [
+  { id: 'claude-code', name: 'Claude Code' }, { id: 'claude-desktop', name: 'Claude Desktop' }, { id: 'codex', name: 'Codex' },
+  { id: 'opencode', name: 'OpenCode' }, { id: 'openclaw', name: 'OpenClaw' }, { id: 'hermes', name: 'Hermes Agent' },
+  { id: 'kimi-code', name: 'Kimi Code' }, { id: 'grok-build', name: 'Grok Build' }, { id: 'antigravity-cli', name: 'Antigravity CLI' },
+  { id: 'zcode', name: 'ZCode' }, { id: 'workbuddy', name: 'WorkBuddy' }, { id: 'deepseek-harness', name: 'DeepSeek Harness' },
+];
+export const secretGuardAppName = (id: string) => SECRET_GUARD_APPS.find(app => app.id === id)?.name ?? id;
 /** What the local Test box found: the kind and a masked hint, never the secret. */
 export type SecretGuardCheckHit = { kind: string; hint: string };
 
@@ -39,7 +52,16 @@ export function publishOpenCount(count: number) {
   try { localStorage.setItem(OPEN_COUNT_KEY, String(count)); } catch { /* storage blocked */ }
   window.dispatchEvent(new CustomEvent(SECRET_GUARD_COUNT_EVENT, { detail: count }));
 }
-export type SecretGuardPolicy = { defaultMode: SecretGuardMode; modes: Partial<Record<SecretGuardProvider, SecretGuardMode>>; allow: string[] };
+export type SecretGuardPolicy = {
+  defaultMode: SecretGuardMode; modes: Partial<Record<SecretGuardProvider, SecretGuardMode>>; allow: string[];
+  /** Per app; it can only make a request stricter than its provider's mode. */
+  clientModes: Record<string, SecretGuardMode>;
+  /** Fingerprints masked even where the mode only reports. */
+  alwaysRedact: string[];
+  /** Log the masked words around each finding. Off unless switched on. */
+  context: boolean;
+};
+export const EMPTY_POLICY: SecretGuardPolicy = { defaultMode: 'report', modes: {}, allow: [], clientModes: {}, alwaysRedact: [], context: false };
 export type SecretGuardStatus = {
   info: SecretGuardInfo;
   /** The user switched it on (the plugin's config says enabled). */
@@ -58,10 +80,15 @@ export function readPolicy(config: PluginConfigObject): SecretGuardPolicy {
   const modes: SecretGuardPolicy['modes'] = {};
   const raw = config.modes && typeof config.modes === 'object' ? config.modes as Record<string, unknown> : {};
   for (const provider of SECRET_GUARD_PROVIDERS) if (isMode(raw[provider])) modes[provider] = raw[provider] as SecretGuardMode;
+  const strings = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  const rawApps = config.client_modes && typeof config.client_modes === 'object' ? config.client_modes as Record<string, unknown> : {};
   return {
     defaultMode: isMode(config.default_mode) ? config.default_mode : 'report',
     modes,
-    allow: Array.isArray(config.allow) ? config.allow.filter((item): item is string => typeof item === 'string') : [],
+    allow: strings(config.allow),
+    clientModes: Object.fromEntries(Object.entries(rawApps).filter(([, mode]) => isMode(mode))) as Record<string, SecretGuardMode>,
+    alwaysRedact: strings(config.always_redact),
+    context: config.context === true,
   };
 }
 
@@ -167,6 +194,23 @@ export const secretGuardService = {
     const current = await currentConfig();
     if (provider === 'default') return patch(current, { default_mode: mode });
     return patch(current, { modes: { ...readPolicy(current).modes, [provider]: mode } });
+  },
+
+  /** Null puts the app back on its provider's mode. */
+  async setAppMode(app: string, mode: SecretGuardMode | null) {
+    const current = await currentConfig();
+    const { [app]: _previous, ...rest } = readPolicy(current).clientModes;
+    return patch(current, { client_modes: mode ? { ...rest, [app]: mode } : rest });
+  },
+
+  async setAlwaysRedact(fingerprint: string, on: boolean) {
+    const current = await currentConfig();
+    const list = readPolicy(current).alwaysRedact;
+    return patch(current, { always_redact: on ? [...new Set([...list, fingerprint])] : list.filter(item => item !== fingerprint) });
+  },
+
+  async setContext(on: boolean) {
+    return patch(await currentConfig(), { context: on });
   },
 
   async setAllowed(fingerprint: string, allowed: boolean) {

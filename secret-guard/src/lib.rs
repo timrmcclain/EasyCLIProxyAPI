@@ -4,7 +4,8 @@
 //! For each request it either reports what it found (the default), replaces
 //! each secret with a stable placeholder, or refuses the request. Findings are
 //! appended to a JSON Lines file that the hub reads. The secret itself is never
-//! written anywhere: only its kind and a salted fingerprint.
+//! written anywhere: only its kind and a salted fingerprint, and (only when the
+//! user turns it on) a few words around it with every secret in them masked.
 
 pub mod detect;
 
@@ -27,7 +28,8 @@ const RELOG_AFTER: Duration = Duration::from_secs(15 * 60);
 /// Bodies larger than this are passed through unscanned (and reported as such).
 const MAX_SCAN_BYTES: usize = 32 * 1024 * 1024;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
+/// Ordered from least to most protective, so the stricter of two modes is the larger one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
     Off,
@@ -42,8 +44,16 @@ pub struct Config {
     pub default_mode: Mode,
     /// Mode per provider (`anthropic`, `openai`, `google`, `xai`, `meta`, `other`).
     pub modes: BTreeMap<String, Mode>,
+    /// Mode per app (`claude-code`, `codex`, ...; see `client_app`). It can only tighten: a request gets the
+    /// stricter of its app's mode and its provider's mode.
+    pub client_modes: BTreeMap<String, Mode>,
     /// Fingerprints the user marked as safe (test keys and the like).
     pub allow: Vec<String>,
+    /// Fingerprints the user asked to always mask, even where the mode only reports. Block still wins.
+    pub always_redact: Vec<String>,
+    /// Log a few words around each finding, with every secret in them masked. Off unless the user turns it on,
+    /// since those words are part of a prompt.
+    pub context: bool,
     pub findings_file: String,
     pub salt: String,
 }
@@ -53,7 +63,10 @@ impl Default for Config {
         Config {
             default_mode: Mode::Report,
             modes: BTreeMap::new(),
+            client_modes: BTreeMap::new(),
             allow: Vec::new(),
+            always_redact: Vec::new(),
+            context: false,
             findings_file: String::new(),
             salt: String::new(),
         }
@@ -63,12 +76,13 @@ impl Default for Config {
 struct State {
     config: Config,
     allow: HashSet<String>,
+    always: HashSet<String>,
     last_logged: HashMap<String, SystemTime>,
 }
 
 fn state() -> &'static Mutex<State> {
     static STATE: OnceLock<Mutex<State>> = OnceLock::new();
-    STATE.get_or_init(|| Mutex::new(State { config: Config::default(), allow: HashSet::new(), last_logged: HashMap::new() }))
+    STATE.get_or_init(|| Mutex::new(State { config: Config::default(), allow: HashSet::new(), always: HashSet::new(), last_logged: HashMap::new() }))
 }
 
 /// Maps the model the client asked for to the provider that will see the prompt.
@@ -150,6 +164,55 @@ fn client_name(headers: &Value) -> String {
     ua.chars().take(120).collect()
 }
 
+/// The hub's id for the app that sent a request, from its User-Agent; `other` when it isn't one the hub knows.
+/// Claude Desktop sends `claude-cli/… (claude-desktop-3p)`, so it is checked before Claude Code.
+pub fn client_app(user_agent: &str) -> &'static str {
+    let ua = user_agent.to_ascii_lowercase();
+    const APPS: &[(&str, &str)] = &[
+        ("claude-desktop", "claude-desktop"), ("claude-cli", "claude-code"), ("claude-code", "claude-code"),
+        ("opencode", "opencode"), ("openclaw", "openclaw"), ("codex", "codex"), ("hermes", "hermes"),
+        ("kimi", "kimi-code"), ("grok", "grok-build"), ("antigravity", "antigravity-cli"), ("zcode", "zcode"),
+        ("workbuddy", "workbuddy"), ("deepseek", "deepseek-harness"),
+    ];
+    APPS.iter().find(|(needle, _)| ua.contains(needle)).map_or("other", |(_, app)| app)
+}
+
+/// Characters kept on each side of a finding when context is on.
+const CONTEXT_CHARS: usize = 40;
+
+fn floor_boundary(text: &str, mut index: usize) -> usize {
+    while index > 0 && !text.is_char_boundary(index) { index -= 1; }
+    index
+}
+
+fn ceil_boundary(text: &str, mut index: usize) -> usize {
+    while index < text.len() && !text.is_char_boundary(index) { index += 1; }
+    index
+}
+
+/// A few words either side of `target`, with every finding that touches them (the target included) replaced by
+/// `[kind]`, so no secret, whole or cut off at the edge, is ever written.
+pub fn masked_context(text: &str, all: &[detect::Finding], target: &detect::Finding) -> String {
+    let start = floor_boundary(text, target.start.saturating_sub(CONTEXT_CHARS));
+    let end = ceil_boundary(text, (target.end + CONTEXT_CHARS).min(text.len()));
+    let mut touching: Vec<&detect::Finding> = all.iter().filter(|f| f.end > start && f.start < end).collect();
+    touching.sort_by_key(|f| f.start);
+    let mut out = String::new();
+    let mut cursor = start;
+    for finding in touching {
+        if finding.start > cursor { out.push_str(&text[cursor..finding.start]); }
+        if finding.end > cursor {
+            out.push_str(&format!("[{}]", finding.kind));
+            cursor = finding.end.min(end);
+        }
+    }
+    if cursor < end { out.push_str(&text[cursor..end]); }
+    // The body is JSON, so line breaks arrive escaped; show them as spaces and collapse runs of space.
+    let out = out.replace("\\n", " ").replace("\\t", " ").replace("\\\"", "\"");
+    let out = out.split_whitespace().collect::<Vec<_>>().join(" ");
+    format!("{}{}{}", if start > 0 { "…" } else { "" }, out, if end < text.len() { "…" } else { "" })
+}
+
 fn unix_ms() -> u128 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0)
 }
@@ -219,10 +282,15 @@ pub fn inspect(request: &Value) -> Verdict {
         .or_else(|| request.get("RequestedModel").and_then(Value::as_str)).unwrap_or("");
     let provider = provider_for(model);
 
-    let (mode, salt, findings_file) = {
+    let client = client_name(request.get("Headers").unwrap_or(&Value::Null));
+    let app = client_app(&client);
+
+    let (mode, salt, findings_file, always_any, context) = {
         let st = state().lock().unwrap_or_else(|p| p.into_inner());
-        let mode = st.config.modes.get(provider).copied().unwrap_or(st.config.default_mode);
-        (mode, st.config.salt.clone(), st.config.findings_file.clone())
+        let by_provider = st.config.modes.get(provider).copied().unwrap_or(st.config.default_mode);
+        // An app's own mode can only make it stricter.
+        let mode = st.config.client_modes.get(app).copied().map_or(by_provider, |by_app| by_app.max(by_provider));
+        (mode, st.config.salt.clone(), st.config.findings_file.clone(), !st.always.is_empty(), st.config.context)
     };
     if mode == Mode::Off {
         return Verdict::Pass;
@@ -232,6 +300,7 @@ pub fn inspect(request: &Value) -> Verdict {
     }
     let text = String::from_utf8_lossy(&body);
     let raw = detect::scan(&text);
+    let all: Vec<detect::Finding> = if context { detect::scan(&text) } else { Vec::new() };
     if raw.is_empty() {
         return Verdict::Pass;
     }
@@ -239,9 +308,10 @@ pub fn inspect(request: &Value) -> Verdict {
     let can_rewrite = std::str::from_utf8(&body).is_ok();
     // Signed reasoning (Anthropic thinking, Gemini thought signatures) must go back unchanged, or every later
     // turn of that conversation fails. A secret that appears there is reported instead of redacted.
-    let signed = if mode == Mode::Redact { signed_texts(&body) } else { Vec::new() };
+    let signed = if mode == Mode::Redact || (mode == Mode::Report && always_any) { signed_texts(&body) } else { Vec::new() };
 
-    let mut kept: Vec<(detect::Finding, String)> = Vec::new();
+    let mut to_redact: Vec<(detect::Finding, String)> = Vec::new();
+    let mut blocked: Vec<&'static str> = Vec::new();
     let mut log = Vec::new();
     {
         let mut st = state().lock().unwrap_or_else(|p| p.into_inner());
@@ -252,8 +322,10 @@ pub fn inspect(request: &Value) -> Verdict {
             if st.allow.contains(&fp) {
                 continue;
             }
+            // A secret you asked to always mask is masked even where the mode only reports.
+            let effective = if st.always.contains(&fp) { mode.max(Mode::Redact) } else { mode };
             let redactable = can_rewrite && !signed.iter().any(|signed| signed.contains(secret));
-            let action = match mode {
+            let action = match effective {
                 Mode::Redact if redactable => "redacted",
                 Mode::Block => "blocked",
                 _ => "reported",
@@ -267,20 +339,27 @@ pub fn inspect(request: &Value) -> Verdict {
                     st.last_logged.clear();
                 }
                 st.last_logged.insert(key, now);
-                log.push(json!({
+                let mut line = json!({
                     "ts": unix_ms() as u64,
                     "request_id": request.get("RequestID").and_then(Value::as_str).unwrap_or(""),
                     "model": model,
                     "provider": provider,
                     "source_format": request.get("SourceFormat").and_then(Value::as_str).unwrap_or(""),
-                    "client": client_name(request.get("Headers").unwrap_or(&Value::Null)),
+                    "client": client,
+                    "app": app,
                     "kind": finding.kind,
                     "fingerprint": fp,
                     "action": action,
-                }));
+                });
+                if context {
+                    line["context"] = json!(masked_context(&text, &all, &finding));
+                }
+                log.push(line);
             }
-            if mode != Mode::Redact || redactable {
-                kept.push((finding, fp));
+            match action {
+                "redacted" => to_redact.push((finding, fp)),
+                "blocked" => blocked.push(finding.kind),
+                _ => {}
             }
         }
     }
@@ -289,14 +368,13 @@ pub fn inspect(request: &Value) -> Verdict {
     log.retain(|line| seen.insert(line["fingerprint"].as_str().unwrap_or("").to_string()));
     append_findings(&findings_file, &log);
 
-    if kept.is_empty() {
+    if !blocked.is_empty() {
+        return Verdict::Refuse(block_message(&blocked));
+    }
+    if to_redact.is_empty() {
         return Verdict::Pass;
     }
-    match mode {
-        Mode::Redact => Verdict::Replace(redact(&text, &kept)),
-        Mode::Block => Verdict::Refuse(block_message(&kept.iter().map(|(f, _)| f.kind).collect::<Vec<_>>())),
-        _ => Verdict::Pass,
-    }
+    Verdict::Replace(redact(&text, &to_redact))
 }
 
 fn configure(request: &[u8]) -> Result<(), String> {
@@ -308,6 +386,7 @@ fn configure(request: &[u8]) -> Result<(), String> {
     let config: Config = if yaml.is_empty() { Config::default() } else { serde_yaml::from_slice(&yaml).map_err(|e| format!("secret-guard config: {e}"))? };
     let mut st = state().lock().unwrap_or_else(|p| p.into_inner());
     st.allow = config.allow.iter().map(|s| s.trim().to_ascii_lowercase()).collect();
+    st.always = config.always_redact.iter().map(|s| s.trim().to_ascii_lowercase()).collect();
     st.config = config;
     Ok(())
 }
@@ -443,6 +522,84 @@ mod tests {
     fn intercept(model: &str, body: &str) -> Value {
         let request = json!({"RequestID": "r1", "SourceFormat": "claude", "RequestedModel": model, "Body": B64.encode(body)});
         serde_json::from_str(&handle("request.intercept_before", request.to_string().as_bytes())).unwrap()
+    }
+
+    fn intercept_from(user_agent: &str, model: &str, body: &str) -> Value {
+        let request = json!({"RequestID": "r1", "SourceFormat": "claude", "RequestedModel": model, "Body": B64.encode(body),
+            "Headers": {"User-Agent": [user_agent]}});
+        serde_json::from_str(&handle("request.intercept_before", request.to_string().as_bytes())).unwrap()
+    }
+
+    fn findings_path(name: &str) -> (std::path::PathBuf, String) {
+        let dir = std::env::temp_dir().join(format!("sg-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("findings.jsonl");
+        let _ = std::fs::remove_file(&file);
+        let path = file.to_string_lossy().replace('\\', "/");
+        (dir, path)
+    }
+
+    #[test]
+    fn apps_are_named_from_the_user_agent() {
+        assert_eq!(client_app("claude-cli/2.1.0 (external, cli)"), "claude-code");
+        assert_eq!(client_app("claude-cli/2.1.0 (claude-desktop-3p)"), "claude-desktop");
+        assert_eq!(client_app("codex_cli_rs/0.50.0 (Windows 11)"), "codex");
+        assert_eq!(client_app("opencode/1.2"), "opencode");
+        assert_eq!(client_app("curl/8.5"), "other");
+        assert_eq!(client_app(""), "other");
+    }
+
+    #[test]
+    fn an_apps_mode_only_ever_makes_it_stricter() {
+        let _guard = TEST_LOCK.lock().unwrap();
+        set_config("default_mode: report\nmodes:\n  openai: block\nclient_modes:\n  codex: redact\n  claude-code: off\nsalt: apps\n");
+        let body = format!(r#"{{"messages":[{{"content":"use {} please"}}]}}"#, token());
+        assert!(intercept_from("codex_cli_rs/0.50.0", "claude-sonnet-5-5", &body)["result"]["Body"].is_string(), "Codex redacts where Anthropic only reports");
+        assert_eq!(intercept_from("claude-cli/2.1.0 (external, cli)", "claude-sonnet-5-5", &body)["result"], json!({}), "other apps keep the provider's report");
+        assert_eq!(intercept_from("codex_cli_rs/0.50.0", "gpt-6-astra", &body)["result"]["Terminate"], true, "OpenAI's block beats Codex's redact");
+        assert_eq!(intercept_from("claude-cli/2.1.0 (external, cli)", "gpt-6-astra", &body)["result"]["Terminate"], true, "an app set to off can't loosen a provider's block");
+    }
+
+    #[test]
+    fn a_secret_marked_always_mask_is_masked_where_the_mode_only_reports() {
+        let _guard = TEST_LOCK.lock().unwrap();
+        let (dir, path) = findings_path("always");
+        set_config(&format!("default_mode: report\nmodes:\n  xai: block\nsalt: always\nfindings_file: \"{path}\"\n"));
+        let body = format!(r#"{{"messages":[{{"content":"use {} please"}}]}}"#, token());
+        assert_eq!(intercept("claude-opus-5-5", &body)["result"], json!({}));
+        let log = std::fs::read_to_string(&dir.join("findings.jsonl")).unwrap();
+        let fp = serde_json::from_str::<Value>(log.lines().next().unwrap()).unwrap()["fingerprint"].as_str().unwrap().to_string();
+
+        set_config(&format!("default_mode: report\nmodes:\n  xai: block\nsalt: always\nfindings_file: \"{path}\"\nalways_redact: [\"{fp}\"]\n"));
+        let masked = intercept("claude-opus-5-5", &body);
+        let new_body = String::from_utf8(B64.decode(masked["result"]["Body"].as_str().unwrap()).unwrap()).unwrap();
+        assert!(!new_body.contains(&token()));
+        assert!(new_body.contains(&format!("[REDACTED:github_token:{fp}]")));
+        assert_eq!(intercept("grok-5", &body)["result"]["Terminate"], true, "block still wins");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn context_is_off_by_default_and_never_holds_a_secret() {
+        let _guard = TEST_LOCK.lock().unwrap();
+        let (dir, path) = findings_path("context");
+        let other = format!("{}{}", "sk-ant-api03-", "Zz9Yy8Xx7Ww6Vv5Uu4Tt3Ss2Rr1Qq0Pp9Oo8Nn7Mm6Ll5Kk4Jj3Ii2Hh1Gg0Ff9Ee8Dd7Cc6Bb5Aa4-AbCdEfAA");
+        let body = format!(r#"{{"content":"deploy\nwith {} and also {} for the test"}}"#, token(), other);
+        set_config(&format!("default_mode: report\nsalt: ctx\nfindings_file: \"{path}\"\n"));
+        intercept("claude-opus-5-5", &body);
+        let log = std::fs::read_to_string(&dir.join("findings.jsonl")).unwrap();
+        assert!(log.lines().all(|l| serde_json::from_str::<Value>(l).unwrap().get("context").is_none()), "off unless turned on");
+
+        let _ = std::fs::remove_file(&dir.join("findings.jsonl"));
+        set_config(&format!("default_mode: report\nsalt: ctx2\nfindings_file: \"{path}\"\ncontext: true\n"));
+        intercept("claude-opus-5-5", &body);
+        let log = std::fs::read_to_string(&dir.join("findings.jsonl")).unwrap();
+        assert!(!log.contains(&token()) && !log.contains(&other), "no secret, this one or its neighbour, is ever written");
+        let line: Value = serde_json::from_str(log.lines().next().unwrap()).unwrap();
+        let context = line["context"].as_str().unwrap();
+        assert!(context.contains("deploy with [github_token]"), "{context}");
+        assert!(!context.contains("\\n"), "escaped line breaks read as spaces: {context}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

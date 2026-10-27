@@ -120,7 +120,7 @@ const path = require('node:path');
 
     // Secret Guard: explanations go; the state and the reason the menus are locked stay.
     await page.locator('.sidebar').getByRole('button', { name: /^Secret Guard/ }).click();
-    await page.locator('.sg-policy').waitFor();
+    await page.locator('.sg-policy:not(.sg-policy-apps)').waitFor();
     // The state line appears once Secret Guard's status loads; waiting for it to be visible also proves compact keeps it.
     await page.locator('.sg-switch-card .sg-state').first().waitFor({ state: 'visible' });
     assert.equal(await visible('.sg-page .jev-subtitle'), false, 'Secret Guard explanations are hidden in compact');
