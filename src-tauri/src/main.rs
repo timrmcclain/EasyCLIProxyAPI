@@ -42,6 +42,7 @@ mod proxy_listen;
 mod config_history;
 mod mini_window;
 mod connector_usage;
+mod app_routing;
 mod core_log;
 mod deleted_accounts;
 mod provider_status;
@@ -2792,6 +2793,8 @@ fn main() {
             jev::open_jev_report,
             jev::set_jev_guards,
             secret_guard::secret_guard_info,
+            app_routing::app_routing_info,
+            app_routing::app_routing_install,
             secret_guard::secret_guard_install,
             secret_guard::secret_guard_findings,
             secret_guard::secret_guard_dismiss,

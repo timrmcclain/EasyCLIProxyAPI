@@ -161,7 +161,7 @@ fn configured_plugins_dir(core_dir: &Path) -> String {
 }
 
 /// The proxy looks in `<plugins>/<os>/<arch>/` first, named with Go's OS and architecture names.
-fn plugin_file(plugins_dir: &Path) -> PathBuf {
+pub(crate) fn plugin_file(plugins_dir: &Path, id: &str) -> PathBuf {
     let arch = match std::env::consts::ARCH {
         "x86_64" => "amd64",
         "aarch64" => "arm64",
@@ -172,13 +172,14 @@ fn plugin_file(plugins_dir: &Path) -> PathBuf {
         "macos" => ("darwin", "dylib"),
         other => (other, "so"),
     };
-    plugins_dir.join(os).join(arch).join(format!("{PLUGIN_ID}.{extension}"))
+    plugins_dir.join(os).join(arch).join(format!("{id}.{extension}"))
 }
 
-fn installed_plugin_file() -> Result<PathBuf, String> {
+/// Where the proxy will look for plugin `id`.
+pub(crate) fn installed_plugin_file(id: &str) -> Result<PathBuf, String> {
     let core_dir = core_install_dir()?;
     let home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(PathBuf::from);
-    Ok(plugin_file(&resolve_plugins_dir(&configured_plugins_dir(&core_dir), &core_dir, home)))
+    Ok(plugin_file(&resolve_plugins_dir(&configured_plugins_dir(&core_dir), &core_dir, home), id))
 }
 
 fn display(path: &Path) -> String {
@@ -187,7 +188,7 @@ fn display(path: &Path) -> String {
 
 #[tauri::command]
 pub(crate) fn secret_guard_info() -> Result<SecretGuardInfo, String> {
-    let file = installed_plugin_file()?;
+    let file = installed_plugin_file(PLUGIN_ID)?;
     Ok(SecretGuardInfo {
         bundled: !PLUGIN_LIBRARY.is_empty(),
         bundled_version: BUNDLED_VERSION.to_string(),
@@ -206,19 +207,19 @@ pub(crate) fn secret_guard_install() -> Result<SecretGuardInstall, String> {
         return Err("This build of the hub doesn't include Secret Guard.".to_string());
     }
     fs::create_dir_all(guard_dir()?).map_err(|err| format!("Couldn't create the Secret Guard folder: {err}"))?;
-    let replaced_loaded_copy = install_library(&installed_plugin_file()?, PLUGIN_LIBRARY)?;
+    let replaced_loaded_copy = install_library(&installed_plugin_file(PLUGIN_ID)?, PLUGIN_LIBRARY, PLUGIN_ID, "Secret Guard")?;
     Ok(SecretGuardInstall { findings_file: display(&findings_path()?), replaced_loaded_copy })
 }
 
 /// Writes `library` to `target` unless it's already there. A loaded DLL can't be overwritten on Windows but can be
 /// renamed, so an older copy is moved aside first. Returns whether an older copy was replaced.
-fn install_library(target: &Path, library: &[u8]) -> Result<bool, String> {
+pub(crate) fn install_library(target: &Path, library: &[u8], id: &str, name: &str) -> Result<bool, String> {
     let dir = target.parent().ok_or("Invalid plugins folder")?;
     fs::create_dir_all(dir).map_err(|err| format!("Couldn't create {}: {err}", display(dir)))?;
     // Old copies from earlier updates, once the proxy has let go of them.
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
-            if entry.file_name().to_string_lossy().starts_with(&format!("{PLUGIN_ID}.old-")) {
+            if entry.file_name().to_string_lossy().starts_with(&format!("{id}.old-")) {
                 let _ = fs::remove_file(entry.path());
             }
         }
@@ -226,15 +227,15 @@ fn install_library(target: &Path, library: &[u8]) -> Result<bool, String> {
     let replaced = match fs::read(target) {
         Ok(existing) if existing == library => return Ok(false),
         Ok(_) => {
-            let aside = dir.join(format!("{PLUGIN_ID}.old-{}", chrono::Local::now().format("%Y%m%d%H%M%S%3f")));
-            fs::rename(target, &aside).map_err(|err| format!("Couldn't move the old Secret Guard aside: {err}"))?;
+            let aside = dir.join(format!("{id}.old-{}", chrono::Local::now().format("%Y%m%d%H%M%S%3f")));
+            fs::rename(target, &aside).map_err(|err| format!("Couldn't move the old {name} aside: {err}"))?;
             true
         }
         Err(_) => false,
     };
-    let temp = dir.join(format!("{PLUGIN_ID}.tmp"));
-    fs::write(&temp, library).map_err(|err| format!("Couldn't write Secret Guard: {err}"))?;
-    fs::rename(&temp, target).map_err(|err| format!("Couldn't install Secret Guard: {err}"))?;
+    let temp = dir.join(format!("{id}.tmp"));
+    fs::write(&temp, library).map_err(|err| format!("Couldn't write {name}: {err}"))?;
+    fs::rename(&temp, target).map_err(|err| format!("Couldn't install {name}: {err}"))?;
     Ok(replaced)
 }
 
@@ -408,7 +409,7 @@ mod tests {
         assert_eq!(resolve_plugins_dir("", core, None), core.join("plugins"));
         assert_eq!(resolve_plugins_dir("plugins", core, None), core.join("plugins"));
         assert_eq!(resolve_plugins_dir("~/cpa-plugins", core, Some(PathBuf::from("C:/Users/me"))), PathBuf::from("C:/Users/me").join("cpa-plugins"));
-        let file = plugin_file(&core.join("plugins"));
+        let file = plugin_file(&core.join("plugins"), PLUGIN_ID);
         assert!(file.to_string_lossy().contains("secret-guard."));
     }
 
@@ -416,10 +417,10 @@ mod tests {
     fn install_skips_identical_copies_and_moves_old_ones_aside() {
         let dir = temp_dir();
         let target = dir.join("windows").join("amd64").join("secret-guard.dll");
-        assert!(!install_library(&target, b"v1").unwrap(), "fresh install");
+        assert!(!install_library(&target, b"v1", PLUGIN_ID, "Secret Guard").unwrap(), "fresh install");
         assert_eq!(fs::read(&target).unwrap(), b"v1");
-        assert!(!install_library(&target, b"v1").unwrap(), "same bytes: nothing to do");
-        assert!(install_library(&target, b"v2").unwrap(), "an older copy was replaced");
+        assert!(!install_library(&target, b"v1", PLUGIN_ID, "Secret Guard").unwrap(), "same bytes: nothing to do");
+        assert!(install_library(&target, b"v2", PLUGIN_ID, "Secret Guard").unwrap(), "an older copy was replaced");
         assert_eq!(fs::read(&target).unwrap(), b"v2");
         let names: Vec<String> = fs::read_dir(target.parent().unwrap()).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
         assert!(names.iter().any(|n| n.starts_with("secret-guard.old-")), "{names:?}");

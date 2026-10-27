@@ -81,6 +81,8 @@ import { AgentClientList } from './AgentClientList';
 import { AgentConfigManagementPanel, AgentConfigurationFeedback, AgentRunControls } from './AgentControls';
 import { useDialogFocusTrap } from '../components/useDialogFocusTrap';
 import { readableError } from '../services/readableError';
+import { AppRoutingCard } from '../components/AppRoutingCard';
+import { ROUTABLE_APPS } from '../services/appRouting';
 
 type AgentClientId =
   | 'claude-code'
@@ -2335,6 +2337,7 @@ export function AgentsPage({ embedded = false, onConfigurationApplied }: AgentsP
           {activeSubpage !== 'core' ? configurationFeedback : null}
           <ConnectionError message={configurationErrorMessage} onDismiss={() => { setConfigurationError(''); setModelSelectionError(''); setModelError(''); }} />
           {!configurationErrorMessage ? <FeedbackNotice feedback={resultFeedback} /> : null}
+          {!embedded && activeSubpage === 'core' && ROUTABLE_APPS.has(selected) ? <AppRoutingCard app={selected} appName={activeDefinition.name} /> : null}
           {activeSubpage === 'core' ? <AgentRunControls name={activeDefinition.name} dualTargets={hasIndependentCliAndApp}
             desktop={(hasIndependentCliAndApp && !isDeepSeekHarnessClient) || selected === 'claude-desktop' || selected === 'zcode' || selected === 'workbuddy'}
             targets={activeLaunchTargets} enabled={launchEnabled} busyAction={busyAction}

@@ -1,4 +1,5 @@
 import type { UsageRecord } from '../pages/UsageEventsView';
+import { ruleUses, type AppRule } from './appRouting';
 import type { ProviderPlan } from './routingOrder';
 
 /**
@@ -156,14 +157,18 @@ export function usageHeatmap(timeline: { hour: string; requests: number }[]): nu
 export type WhyAccount =
   | { kind: 'first'; position: number; total: number }
   | { kind: 'below'; position: number; total: number; reserve: boolean }
+  /** The app's own accounts (Who pays for this app) include it. */
+  | { kind: 'rule' }
   | { kind: 'unknown' };
 
-/** Where the account that served a request sits in its provider's order today; the proxy doesn't record why per request. */
-export function whyThisAccount(source: string, plans: ProviderPlan[]): WhyAccount {
+/** Where the account that served a request sits in its provider's order today, or that it's one the app was given; the
+ *  proxy doesn't record why per request. */
+export function whyThisAccount(source: string, plans: ProviderPlan[], appRule?: AppRule): WhyAccount {
   for (const plan of plans) {
     const index = plan.entries.findIndex(entry => String(entry.file.email ?? '').toLowerCase() === source.toLowerCase());
     if (index < 0) continue;
     const entry = plan.entries[index];
+    if (ruleUses(appRule, entry.name)) return { kind: 'rule' };
     if (index === 0 || entry === plan.next) return { kind: 'first', position: index + 1, total: plan.entries.length };
     return { kind: 'below', position: index + 1, total: plan.entries.length, reserve: entry.role === 'reserve' || entry.role === 'held' };
   }

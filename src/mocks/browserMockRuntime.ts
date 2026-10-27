@@ -7,6 +7,7 @@ let mockClaudeFallback: string | null = null;
 let mockJevGuards = { browserGuard: true, commandGuard: true, approvalHours: 24 };
 let mockJevRefreshed = false;
 let mockSecretGuardInstalled = false;
+let mockAppRoutingInstalled = false;
 const mockKeptAccounts = new Map<string, JsonObject>();
 const mockSecretGuardDismissed = new Map<string, number>();
 // Skills & plugins page: installs, switches and removals change what the next overview returns.
@@ -1659,6 +1660,12 @@ export function createBrowserMockRuntime(
         else pluginMock.markInstalled('secret-guard', '0.1.0');
         return { findingsFile: 'C:/demo/cpa-core/secret-guard/findings.jsonl', replacedLoadedCopy: replacing };
       }
+      case 'app_routing_info':
+        return { bundled: true, bundledVersion: '0.1.0', installed: mockAppRoutingInstalled, installedCurrent: true };
+      case 'app_routing_install':
+        mockAppRoutingInstalled = true;
+        pluginMock.markInstalled('app-routing', '0.1.0');
+        return { replacedLoadedCopy: false };
       case 'secret_guard_findings': {
         // Nothing is found until Secret Guard is switched on, so other pages' tests never see its banner.
         if (scenario === 'empty' || !mockSecretGuardInstalled) return [];

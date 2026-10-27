@@ -10,6 +10,7 @@ import { navDesktopEn, navDesktopJa, navDesktopZhCN } from './navDesktop';
 import { visualHelpEn, visualHelpJa, visualHelpZhCN } from './visualHelp';
 import { firstRunEn, firstRunJa, firstRunZhCN } from './firstRun';
 import { safetyMoreEn, safetyMoreJa, safetyMoreZhCN } from './safetyMore';
+import { appRoutingEn, appRoutingJa, appRoutingZhCN } from './appRouting';
 import { jevEn, jevJa, jevZhCN } from './jev';
 import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
@@ -28,6 +29,7 @@ export const accountDashboardEn = {
   ...visualHelpEn,
   ...firstRunEn,
   ...safetyMoreEn,
+  ...appRoutingEn,
   ...jevEn,
   ...secretGuardEn,
   ...projectUsageEn,
@@ -113,6 +115,7 @@ export const accountDashboardZhCN = {
   ...visualHelpZhCN,
   ...firstRunZhCN,
   ...safetyMoreZhCN,
+  ...appRoutingZhCN,
   ...jevZhCN,
   ...secretGuardZhCN,
   ...projectUsageZhCN,
@@ -198,6 +201,7 @@ export const accountDashboardJa = {
   ...visualHelpJa,
   ...firstRunJa,
   ...safetyMoreJa,
+  ...appRoutingJa,
   ...jevJa,
   ...secretGuardJa,
   ...projectUsageJa,

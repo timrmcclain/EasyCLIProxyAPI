@@ -46,6 +46,10 @@ Step 'Build Secret Guard' { cargo build --release --quiet --lib --manifest-path 
 # Loads the new DLL into a throwaway copy of the installed proxy; the running proxy isn't touched.
 $installedProxy = Join-Path $env:LOCALAPPDATA 'Programs\EasyCLIProxyAPI\cpa-core\cli-proxy-api.exe'
 if (Test-Path -LiteralPath $installedProxy) { Step 'Secret Guard in the proxy' { node secret-guard/e2e.cjs $installedProxy } }
+# App Routing, the scheduler plugin behind per-app routing, is embedded and checked the same way.
+Step 'App Routing tests' { cargo test --quiet --manifest-path app-routing/Cargo.toml }
+Step 'Build App Routing' { cargo build --release --quiet --lib --manifest-path app-routing/Cargo.toml }
+if (Test-Path -LiteralPath $installedProxy) { Step 'App Routing in the proxy' { node app-routing/e2e.cjs $installedProxy } }
 
 # Bump 0.3.12+personal-desk.N -> N+1 in Cargo.toml and Cargo.lock.
 $toml = Get-Content -Raw src-tauri/Cargo.toml

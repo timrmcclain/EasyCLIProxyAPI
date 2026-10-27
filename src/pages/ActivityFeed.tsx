@@ -8,6 +8,7 @@ import {
   anomalies, cacheSavings, costColumns, groupConversations, matchesSearch, recoveries, usageHeatmap, whyThisAccount,
   type Conversation, type CostBucket, type CostDimension, type PriceRow, type Recovery,
 } from '../services/activityFeed';
+import { appIdFromUserAgent, appRoutingService, type AppRule } from '../services/appRouting';
 import { dedupeAuthFiles } from '../services/authFiles';
 import { classifyFailure, failureMessage } from '../services/errorCauses';
 import { managementApi, responseList } from '../services/managementApi';
@@ -25,7 +26,7 @@ const HEAT_DAYS = 28;
 const PART_COLORS = ['#2f6fdb', '#c2571a', '#1f8a5b', '#8a4fc7', '#b8892a', '#c23a5e', '#2a8a96', '#6b7280'];
 
 type Query = Record<string, string | boolean | number | undefined>;
-type Loaded = { records: UsageRecord[]; total: number; prices: PriceRow[]; heat: { hour: string; requests: number }[]; files: AuthFile[] };
+type Loaded = { records: UsageRecord[]; total: number; prices: PriceRow[]; heat: { hour: string; requests: number }[]; files: AuthFile[]; rules: Record<string, AppRule> };
 
 const money = (value: number) => new Intl.NumberFormat(getCurrentLocale(), { style: 'currency', currency: 'USD', maximumFractionDigits: value < 1 ? 3 : 2 }).format(value);
 const clock = (time: number) => new Date(time).toLocaleString(getCurrentLocale(), { weekday: 'short', hour: 'numeric', minute: '2-digit' });
@@ -51,15 +52,16 @@ export function ActivityFeed({ query }: { query: Query }) {
     const { failed: _failed, canceled: _canceled, ...withoutResult } = scope;
     const now = Date.now();
     try {
-      const [events, pricing, heat, credentials] = await Promise.all([
+      const [events, pricing, heat, credentials, rules] = await Promise.all([
         invoke<{ items: UsageRecord[]; total: number }>('get_usage_events', { query: { ...scope, page: 1, page_size: SAMPLE } }),
         invoke<{ rows: PriceRow[] }>('get_usage_pricing', { query: scope }).catch(() => ({ rows: [] })),
         invoke<{ timeline?: { hour: string; requests: number }[] }>('get_usage_overview', {
           query: { ...withoutResult, start: new Date(now - HEAT_DAYS * 86_400_000).toISOString(), end: new Date(now).toISOString() },
         }).catch(() => ({ timeline: [] })),
         managementApi.get('/credentials').then(payload => dedupeAuthFiles(responseList(payload, 'files'))).catch(() => [] as AuthFile[]),
+        appRoutingService.status().then(status => status.rules, () => ({} as Record<string, AppRule>)),
       ]);
-      setData({ records: events.items ?? [], total: events.total ?? 0, prices: pricing.rows ?? [], heat: heat.timeline ?? [], files: credentials });
+      setData({ records: events.items ?? [], total: events.total ?? 0, prices: pricing.rows ?? [], heat: heat.timeline ?? [], files: credentials, rules });
     } catch (cause) { setError(readableError(cause)); }
   }, [queryKey]);
   useEffect(() => { setData(null); setShown(PAGE); void load(); }, [load]);
@@ -107,7 +109,8 @@ export function ActivityFeed({ query }: { query: Query }) {
       {!conversations.length ? <p className="af-note">{t('af.none')}</p> : <ol className="af-list">
         {conversations.slice(0, shown).map(conversation => <ConversationCard key={conversation.id} conversation={conversation} recovered={recovered}
           account={labelOf(conversation.source) || '—'} color={colorForSource(conversation.source)} app={appName(conversation.client)}
-          why={whyThisAccount(conversation.source, plans)} provider={conversation.provider} labelOf={labelOf} />)}
+          why={whyThisAccount(conversation.source, plans, data.rules[appIdFromUserAgent(conversation.items[0]?.user_agent ?? '')])}
+          provider={conversation.provider} labelOf={labelOf} />)}
       </ol>}
       {conversations.length > shown && <button type="button" className="secondary-button af-more" onClick={() => setShown(value => value + PAGE)}>
         {t('af.more', { count: Math.min(PAGE, conversations.length - shown) })}</button>}
@@ -146,7 +149,8 @@ function ConversationCard({ conversation, recovered, account, color, app, why, p
         ? recovery.otherAccount ? t('af.card.recoveredOther', { cause, account: labelOf(recovery.retried.source) }) : t('af.card.recoveredSame', { cause })
         : t('af.card.failedPlain', { cause, message: failureMessage(item.failure_body ?? '') || String(item.failure_status) })}</p>;
     })}
-    {why.kind !== 'unknown' && <p className="af-why">{why.kind === 'first'
+    {why.kind === 'rule' && <p className="af-why">{t('af.card.why.rule', { account, app })}</p>}
+    {why.kind !== 'unknown' && why.kind !== 'rule' && <p className="af-why">{why.kind === 'first'
       ? t('af.card.why.first', { account, provider: providerName, position: why.position, total: why.total })
       : t(why.reserve ? 'af.card.why.reserve' : 'af.card.why.below', { account, provider: providerName, position: why.position, total: why.total })}</p>}
     <button type="button" className="af-toggle" aria-expanded={open} onClick={() => setOpen(value => !value)}>{t(open ? 'af.card.hide' : 'af.card.open')}</button>

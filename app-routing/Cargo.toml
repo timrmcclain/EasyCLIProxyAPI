@@ -1,0 +1,21 @@
+[package]
+name = "app-routing"
+version = "0.1.0"
+edition = "2021"
+description = "CLIProxyAPI scheduler plugin that picks which account pays for each app's requests"
+publish = false
+
+[lib]
+name = "app_routing"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

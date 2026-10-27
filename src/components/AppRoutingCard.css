@@ -1,0 +1,21 @@
+/* Who pays for an app: account ticks grouped by provider, then what happens when none can take a request. */
+.app-routing-card { display: grid; gap: var(--space-2, 8px); }
+.app-routing-subtitle { margin: 2px 0 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); line-height: 1.5; }
+.app-routing-state { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); line-height: 1.5; }
+.app-routing-state svg { flex-shrink: 0; color: var(--text-tertiary); }
+.app-routing-state-ok svg { color: var(--c-success); }
+.app-routing-state-warn svg { color: var(--c-warning); }
+.app-routing-groups { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2, 8px) var(--space-3, 12px); }
+.app-routing-group, .app-routing-fallback { margin: 0; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; min-width: 0; }
+.app-routing-group legend, .app-routing-fallback legend { padding: 0 4px; color: var(--text-tertiary); font-size: var(--font-size-meta, 12px); }
+.app-routing-group { display: grid; gap: 4px; min-width: 180px; }
+.app-routing-account, .app-routing-fallback label { display: flex; align-items: flex-start; gap: 8px; color: var(--text-primary); font-size: calc(13px * var(--type-scale, 1)); line-height: 1.45; cursor: pointer; }
+.app-routing-account input, .app-routing-fallback input { margin-top: 3px; flex-shrink: 0; }
+.app-routing-account span { overflow-wrap: anywhere; }
+.app-routing-fallback { display: grid; gap: 6px; }
+.app-routing-fallback:disabled label, .app-routing-account:has(input:disabled) { cursor: default; opacity: .7; }
+.app-routing-hint { margin: 0; color: var(--text-secondary); font-size: var(--font-size-caption, 12px); line-height: 1.5; }
+.app-routing-note { margin: 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }
+.app-routing-actions { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); }
+.app-routing-notice { margin: 0; color: var(--text-secondary); font-size: calc(13px * var(--type-scale, 1)); }
+.app-routing-error { margin: 0; color: var(--c-danger); font-size: calc(13px * var(--type-scale, 1)); }
