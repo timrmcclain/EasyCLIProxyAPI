@@ -25,7 +25,7 @@ const assert = require('node:assert/strict');
       await backup();
       assert.equal((await calls('create_agent_config_backup')).length, 2);
       assert.deepEqual((await calls('create_agent_config_backup'))[1].args, { client: 'codex' });
-      await page.getByRole('button', { name: '应用 ezcpa 模板', exact: true }).click();
+      await page.getByRole('button', { name: '重置设置文件', exact: true }).click();
       await page.getByRole('alertdialog').getByRole('button', { name: '覆盖', exact: true }).waitFor();
       assert.equal(await page.locator('.agent-template-files li').count(), 3);
       assert.equal((await calls('apply_agent_config_template')).length, 0);
@@ -61,7 +61,7 @@ const assert = require('node:assert/strict');
     await open('state=invalid');
     assert.ok(await page.getByRole('button', { name: '更新配置', exact: true }).isDisabled());
     await manage();
-    assert.ok(await page.getByRole('button', { name: '应用 ezcpa 模板', exact: true }).isEnabled());
+    assert.ok(await page.getByRole('button', { name: '重置设置文件', exact: true }).isEnabled());
     await backup(); await choose();
     assert.ok(await page.getByRole('button', { name: '恢复此版本', exact: true }).isDisabled());
     assert.ok(await page.getByRole('button', { name: '删除此版本', exact: true }).isEnabled());
@@ -81,7 +81,7 @@ const assert = require('node:assert/strict');
       await page.goto('http://localhost:1421/tests/fixtures/agent-backups.html?' + query, { timeout: 60000 });
       await page.getByRole('button', { name: '更新配置', exact: true }).waitFor();
       await manage();
-      for (const name of ['手动备份', '恢复备份', '应用 ezcpa 模板']) {
+      for (const name of ['手动备份', '恢复备份', '重置设置文件']) {
         assert.equal(await page.getByRole('button', { name, exact: true }).count(), 0);
       }
     }
