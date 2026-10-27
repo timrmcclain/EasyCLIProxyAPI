@@ -867,11 +867,7 @@ pub(crate) fn setup_windows_tray(app: &mut tauri::App<tauri::Wry>) -> tauri::Res
         .show_menu_on_left_click(false)
         .on_menu_event(move |app_handle, event| match event.id().as_ref() {
             WINDOWS_TRAY_OPEN_MENU_ID => show_windows_main_window(app_handle),
-            WINDOWS_TRAY_MINI_MENU_ID => {
-                if let Err(error) = crate::mini_window::show_mini_window(app_handle) {
-                    eprintln!("Failed to open the mini window: {error}");
-                }
-            }
+            WINDOWS_TRAY_MINI_MENU_ID => crate::mini_window::open_mini_window_later(app_handle),
             WINDOWS_TRAY_TOGGLE_CORE_MENU_ID => {
                 run_windows_tray_core_action(app_handle, WindowsTrayCoreAction::Toggle)
             }

@@ -43,9 +43,15 @@ pub(crate) fn show_mini_window(app: &tauri::AppHandle) -> Result<(), String> {
         let _ = window.set_focus();
         return Ok(());
     }
-    WebviewWindowBuilder::new(app, MINI_WINDOW_LABEL, WebviewUrl::default())
+    let mut builder = WebviewWindowBuilder::new(app, MINI_WINDOW_LABEL, WebviewUrl::default())
         // The page reads this before rendering and shows the mini view instead of the whole app.
-        .initialization_script("window.__HUB_MINI__ = true;")
+        .initialization_script("window.__HUB_MINI__ = true;");
+    // WebView2 runs one browser per data folder and refuses a second window started with different options, so the
+    // mini window must use the main window's (tauri.conf.json); without them it failed to open at all.
+    if let Some(args) = main_window_browser_args(app) {
+        builder = builder.additional_browser_args(&args);
+    }
+    builder
         .title("Tim’s AI Hub")
         .inner_size(340.0, 150.0)
         .min_inner_size(260.0, 120.0)
@@ -56,8 +62,25 @@ pub(crate) fn show_mini_window(app: &tauri::AppHandle) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
+/// The main window's extra browser arguments, as configured in tauri.conf.json.
+fn main_window_browser_args(app: &tauri::AppHandle) -> Option<String> {
+    app.config().app.windows.iter().find(|window| window.label == "main").and_then(|window| window.additional_browser_args.clone())
+}
+
+/// Opens it from a menu or tray event. Creating a window inside those handlers (or a synchronous command) can
+/// deadlock on Windows, so the work goes to the async runtime; a failure is logged rather than lost.
+pub(crate) fn open_mini_window_later(app: &tauri::AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(error) = show_mini_window(&app) {
+            eprintln!("Failed to open the mini window: {error}");
+        }
+    });
+}
+
+/// Async so the window isn't built on the command's thread, which can deadlock on Windows.
 #[tauri::command]
-pub(crate) fn open_mini_window(app: tauri::AppHandle) -> Result<(), String> {
+pub(crate) async fn open_mini_window(app: tauri::AppHandle) -> Result<(), String> {
     show_mini_window(&app)
 }
 
