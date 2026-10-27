@@ -4,7 +4,7 @@ import { useI18n } from '../i18n';
 import { quotaAvailability } from '../services/quotaAvailability';
 import { primaryQuotaRow, quotaPercentLeft } from '../services/quotaLedger';
 import { fileName, quotaKey, type AuthFile, type QuotaState } from '../services/quotaService';
-import { recoveredAccounts, failureIdentity } from '../services/overviewInsights';
+import { ALERT_RANK, rankAlerts, recoveredAccounts, failureIdentity, type OverviewAlert } from '../services/overviewInsights';
 import { readOverviewAlertsPreference } from '../services/dashboardPreferences';
 import { requestClient, privateText, type DashboardRequest } from '../services/dashboardActivity';
 import { failureKind } from '../services/connectionPresentation';
@@ -67,7 +67,7 @@ export function OverviewAlerts({ files, quotas, now, stale, labelFor, items, act
   const previous = useRef<Record<string, string>>({});
   const seen = useRef(new Set<string>());
   const initialized = useRef(false);
-  const [alerts, setAlerts] = useState<{ key: string; text: string }[]>([]);
+  const [alerts, setAlerts] = useState<OverviewAlert[]>([]);
   useEffect(() => {
     const next = Object.fromEntries(files.map(file => [quotaKey(file), quotaAvailability(file, quotas[quotaKey(file)], now, stale).kind]));
     const recovered = stale ? [] : recoveredAccounts(previous.current, next);
@@ -79,18 +79,20 @@ export function OverviewAlerts({ files, quotas, now, stale, labelFor, items, act
     failures.forEach(item => seen.current.add(failureIdentity(item)));
     if (seen.current.size > 1000) seen.current = new Set(failures.map(failureIdentity));
     if (!enabled) return;
-    const messages = recovered.flatMap(key => {
+    const messages: OverviewAlert[] = recovered.flatMap(key => {
       const file = files.find(file => quotaKey(file) === key);
-      return file ? [{ key, text: t('ux.recovered', { account: labelFor(file) }) }] : [];
+      return file ? [{ key, text: t('ux.recovered', { account: labelFor(file) }), rank: ALERT_RANK.recovered, at: observedAt }] : [];
     });
     // Group a burst by client and failure category rather than flooding the user.
     const grouped = new Map(fresh.map(item => [`${requestClient(item)}-${failureKind(item)}`, item]));
-    grouped.forEach((item, key) => messages.push({ key, text: `${t('ux.failed', { client: requestClient(item) ?? t('ledger.unknownClient') })} ${t(`ux.${failureKind(item)}`)}` }));
-    if (messages.length) setAlerts(current => [...current.filter(a => !messages.some(b => b.key === a.key)), ...messages].slice(-5));
+    grouped.forEach((item, key) => messages.push({ key, text: `${t('ux.failed', { client: requestClient(item) ?? t('ledger.unknownClient') })} ${t(`ux.${failureKind(item)}`)}`,
+      rank: ALERT_RANK[failureKind(item)], at: observedAt }));
+    // Ranked rather than in arrival order, so a burst of good news can't push a rejected sign-in off the list.
+    if (messages.length) setAlerts(current => rankAlerts([...current.filter(a => !messages.some(b => b.key === a.key)), ...messages]));
   }, [files, quotas, now, stale, items, activityStale, enabled, labelFor, t]);
   // The on/off switch lives in Settings → App preferences; Overview only shows alerts that need attention.
   if (!enabled || !alerts.length) return null;
   return <div className="ux-alerts">
-    <div role="status" aria-live="polite"><ul>{alerts.map(a => <li key={a.key}>{a.text}</li>)}</ul><button className="secondary-button compact-button" onClick={() => navigateHelp('agents')}>{t('ux.reviewConnection')}</button><button className="secondary-button compact-button" onClick={() => setAlerts([])}>{t('ux.dismissAlerts')}</button></div>
+    <div role="status" aria-live="polite"><ul>{alerts.map(a => <li key={a.key} className={a.rank === ALERT_RANK.recovered ? 'ux-alert-good' : a.rank === ALERT_RANK.auth ? 'ux-alert-urgent' : undefined}>{a.text}</li>)}</ul><button className="secondary-button compact-button" onClick={() => navigateHelp('agents')}>{t('ux.reviewConnection')}</button><button className="secondary-button compact-button" onClick={() => setAlerts([])}>{t('ux.dismissAlerts')}</button></div>
   </div>;
 }

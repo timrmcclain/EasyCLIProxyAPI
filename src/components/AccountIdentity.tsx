@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Skeleton } from './Skeleton';
 import { invoke } from '@tauri-apps/api/core';
 import './AccountIdentity.css';
 import { useI18n } from '../i18n';
@@ -72,7 +73,7 @@ export function AccountHealthSparkline({ file, active }: { file: AuthFile; activ
   }, [active, source]);
   if (!source) return null;
   if (failed) return <p className="ad-card-note">{t('ai.health.unavailable')}</p>;
-  if (!days) return <p className="ad-card-note" role="status">{t('ai.health.loading')}</p>;
+  if (!days) return <Skeleton shape="bars" count={7} label={t('ai.health.loading')} />;
   const peak = Math.max(1, ...days.map(day => day.requests));
   const failures = days.reduce((sum, day) => sum + day.failures, 0);
   const requests = days.reduce((sum, day) => sum + day.requests, 0);

@@ -1,0 +1,27 @@
+/* Loading placeholders: quiet shapes in the surface colour, with a slow sheen only when motion is welcome. */
+.ui-skeleton i {
+  display: block;
+  border-radius: var(--radius-md, 8px);
+  background: linear-gradient(90deg, var(--bg-secondary), var(--bg-tertiary, var(--bg-secondary)), var(--bg-secondary));
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ui-skeleton i { animation: ui-skeleton-sheen 1.4s linear infinite; }
+}
+@keyframes ui-skeleton-sheen { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* Lines of text: the last one shorter, as a paragraph ends. */
+.ui-skeleton-line { display: grid; gap: 8px; padding: 2px 0; }
+.ui-skeleton-line i { height: 12px; }
+.ui-skeleton-line i:last-child:not(:first-of-type) { width: 60%; }
+
+/* Account cards: the same grid the cards arrive in. */
+.ui-skeleton-card { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3, 12px); }
+.ui-skeleton-card i { height: 112px; border-radius: var(--radius-xl, 12px); }
+
+/* Bar charts: bars of varying height along a baseline. */
+.ui-skeleton-bars { display: flex; align-items: flex-end; gap: 3px; height: 40px; }
+.ui-skeleton-bars i { flex: 1; height: 35%; border-radius: 2px; }
+.ui-skeleton-bars i:nth-child(3n) { height: 70%; }
+.ui-skeleton-bars i:nth-child(4n + 1) { height: 50%; }
+.ui-skeleton-bars i:nth-child(5n + 2) { height: 85%; }

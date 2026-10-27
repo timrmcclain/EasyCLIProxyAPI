@@ -18,3 +18,12 @@ export function recoveredAccounts(before: Record<string, string>, after: Record<
 export function failureIdentity(item: DashboardRequest) {
   return [item.timestamp, item.auth_index, item.model, item.user_agent, item.failure_status].join('|');
 }
+
+export type OverviewAlert = { key: string; text: string; rank: number; at: number };
+/** Most urgent first: what needs you (a rejected sign-in) before what will pass, and good news last. */
+export const ALERT_RANK = { auth: 0, limit: 1, model: 2, network: 3, other: 4, recovered: 9 } as const;
+
+/** Keeps the most important alerts when there are too many, newest first within the same rank. */
+export function rankAlerts(alerts: OverviewAlert[], max = 5): OverviewAlert[] {
+  return [...alerts].sort((a, b) => a.rank - b.rank || b.at - a.at).slice(0, max);
+}

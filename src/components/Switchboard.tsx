@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Skeleton } from './Skeleton';
 import { invoke } from '@tauri-apps/api/core';
 import './Switchboard.css';
 import { useI18n } from '../i18n';
@@ -178,7 +179,7 @@ function HourStrip({ files, now, labelFor, colorOf, byKey }: {
   return <div className="sb-strip">
     <h3>{t('sb.strip')}</h3>
     {failed ? <p className="sb-muted">{t('sb.strip.unavailable')}</p>
-      : !timelines ? <p className="sb-muted" role="status">{t('sb.strip.loading')}</p>
+      : !timelines ? <Skeleton shape="bars" count={24} label={t('sb.strip.loading')} />
         : <div className="sb-strip-bars">
           {slices.map(slice => {
             const ranked = Object.entries(slice.byKey).sort((a, b) => b[1] - a[1]);

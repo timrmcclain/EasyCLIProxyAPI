@@ -1,4 +1,5 @@
 import { MessageNotice } from '../appNotice';
+import { Skeleton } from './Skeleton';
 import { outageFor, useProviderStatus } from '../services/providerStatus';
 import { QuotaTrendChart } from './QuotaTrendChart';
 import { useQuotaTrends } from '../services/quotaTrend';
@@ -320,7 +321,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     {!ready ? <p className="ad-notice">{t('accountDashboard.start')}</p> : null}
     {error ? <MessageNotice inline className="ad-notice" message={`${error} ${t('accountDashboard.staleWarning')}`} /> : null}
     {/* Before the first list arrives, an empty list means "still loading", never "no accounts". */}
-    {ready && !listLoaded && !error ? <p className="ad-notice" role="status">{t('glance.attention.loadingAccounts')}</p> : null}
+    {ready && !listLoaded && !error ? <Skeleton shape="card" count={3} label={t('glance.attention.loadingAccounts')} /> : null}
     {ready && listLoaded && !error && !files.length ? <p className="ad-notice">{t('accountDashboard.empty')}</p> : null}
     {listLoaded && files.length > 0 && <Switchboard ready={ready && !error} files={files} quotas={quotas} now={now} items={activity?.items} routing={routingState}
       labelFor={labelFor} providerName={(provider) => providerNames[provider] ?? provider} />}

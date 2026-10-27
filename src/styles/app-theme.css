@@ -509,6 +509,9 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .ux-alerts { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; font-size:calc(12px * var(--type-scale, 1)); margin:8px 0 16px; }
 .ux-alerts > div { flex-basis:100%; border-left:3px solid var(--personal-accent-text); padding:10px 14px; background:var(--bg-secondary); }
 .ux-alerts ul { padding-left:18px; line-height:1.7; }
+.ux-alerts li.ux-alert-urgent { font-weight:600; }
+.ux-alerts li.ux-alert-urgent::marker { color:var(--c-danger); }
+.ux-alerts li.ux-alert-good::marker { color:var(--c-success); }
 .ux-change-preview dl { margin:0; }
 .ux-change-preview dl > div { display:grid; grid-template-columns:minmax(120px,1fr) 2fr; gap:12px; border-top:1px solid var(--border-primary); padding:8px 0; }
 .ux-change-preview dt { text-transform:capitalize; }

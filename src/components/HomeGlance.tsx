@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Skeleton } from './Skeleton';
 import { Activity, ArrowRight, Hourglass, Shrink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { compressionService, lifetimeSavingsPercent, type CompressionStats, type CompressionStatus } from '../services/compression';
@@ -131,7 +132,7 @@ function CompressionTile() {
   return <article className={`glance-tile glance-compression ${on ? '' : 'is-off'}`} aria-labelledby="glance-compression-title">
     <header><h3 id="glance-compression-title"><Shrink size={14} aria-hidden="true" />{t('glance.compression.title')}</h3>
       <button type="button" className="glance-open" onClick={() => navigateHelp('compression')}>{t('glance.open')}<ArrowRight size={12} aria-hidden="true" /></button></header>
-    {!status ? <p className="glance-muted">{t('common.loading')}</p>
+    {!status ? <Skeleton count={2} label={t('common.loading')} />
       : !on ? <><p className="glance-figure"><strong>{t('glance.compression.off')}</strong></p><p className="glance-muted">{t('glance.compression.offDetail')}</p></>
       : !status.routed ? <p className="glance-warn">{t('glance.compression.fallback')}</p>
       : !lifetime?.requests ? <p className="glance-muted">{t('glance.compression.waiting')}</p>
