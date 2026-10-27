@@ -114,6 +114,8 @@ const path = require('node:path');
     await page.locator('.connector-row-state').first().waitFor({ state: 'attached' });
     assert.equal(await visible('.connector-row-state:not(.on):not(.warn)'), false, 'Off pills are hidden in compact');
     assert.equal(await visible('.connector-row-state.on'), true, 'On pills stay in compact');
+    // The unavailable pill comes from a second, later load than the on/off pills, so wait for it to exist first.
+    await page.locator('.connector-row-state.warn').first().waitFor({ state: 'attached' });
     assert.equal(await visible('.connector-row-state.warn'), true, 'warnings stay in compact');
 
     // Secret Guard: explanations go; the state and the reason the menus are locked stay.
