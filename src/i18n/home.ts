@@ -1,12 +1,4 @@
 export const homeZhCN = {
-  'home.checklist.title': '开始使用',
-  'home.checklist.dismiss': '隐藏',
-  'home.checklist.proxy': '启动代理',
-  'home.checklist.account': '添加一个 AI 账号',
-  'home.checklist.accountAction': '添加账号',
-  'home.checklist.app': '连接一个应用并发送请求',
-  'home.checklist.appAction': '连接应用',
-  'home.checklist.done': '已完成',
   'density.label': '显示密度',
   'density.comfortable': '舒适',
   'density.compact': '紧凑',
@@ -127,14 +119,6 @@ export const homeZhCN = {
 } as const;
 
 export const homeEn: Record<keyof typeof homeZhCN, string> = {
-  'home.checklist.title': 'Get set up',
-  'home.checklist.dismiss': 'Hide',
-  'home.checklist.proxy': 'Start the proxy',
-  'home.checklist.account': 'Add an AI account',
-  'home.checklist.accountAction': 'Add account',
-  'home.checklist.app': 'Connect an app and send a request',
-  'home.checklist.appAction': 'Connect an app',
-  'home.checklist.done': 'Done',
   'density.label': 'Display density',
   'density.comfortable': 'Roomy',
   'density.compact': 'Compact',
@@ -255,14 +239,6 @@ export const homeEn: Record<keyof typeof homeZhCN, string> = {
 };
 
 export const homeJa: Record<keyof typeof homeZhCN, string> = {
-  'home.checklist.title': 'セットアップ',
-  'home.checklist.dismiss': '非表示',
-  'home.checklist.proxy': 'プロキシを起動する',
-  'home.checklist.account': 'AI アカウントを追加する',
-  'home.checklist.accountAction': 'アカウントを追加',
-  'home.checklist.app': 'アプリを接続してリクエストを送る',
-  'home.checklist.appAction': 'アプリを接続',
-  'home.checklist.done': '完了',
   'density.label': '表示密度',
   'density.comfortable': '標準',
   'density.compact': 'コンパクト',

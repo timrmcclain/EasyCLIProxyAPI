@@ -8,6 +8,7 @@ import { appsSafetyEn, appsSafetyJa, appsSafetyZhCN } from './appsSafety';
 import { settingsPlainEn, settingsPlainJa, settingsPlainZhCN } from './settingsPlain';
 import { navDesktopEn, navDesktopJa, navDesktopZhCN } from './navDesktop';
 import { visualHelpEn, visualHelpJa, visualHelpZhCN } from './visualHelp';
+import { firstRunEn, firstRunJa, firstRunZhCN } from './firstRun';
 import { jevEn, jevJa, jevZhCN } from './jev';
 import { secretGuardEn, secretGuardJa, secretGuardZhCN } from './secretGuard';
 import { projectUsageEn, projectUsageJa, projectUsageZhCN } from './projectUsage';
@@ -24,6 +25,7 @@ export const accountDashboardEn = {
   ...settingsPlainEn,
   ...navDesktopEn,
   ...visualHelpEn,
+  ...firstRunEn,
   ...jevEn,
   ...secretGuardEn,
   ...projectUsageEn,
@@ -107,6 +109,7 @@ export const accountDashboardZhCN = {
   ...settingsPlainZhCN,
   ...navDesktopZhCN,
   ...visualHelpZhCN,
+  ...firstRunZhCN,
   ...jevZhCN,
   ...secretGuardZhCN,
   ...projectUsageZhCN,
@@ -190,6 +193,7 @@ export const accountDashboardJa = {
   ...settingsPlainJa,
   ...navDesktopJa,
   ...visualHelpJa,
+  ...firstRunJa,
   ...jevJa,
   ...secretGuardJa,
   ...projectUsageJa,

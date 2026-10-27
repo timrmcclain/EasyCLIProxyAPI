@@ -296,7 +296,11 @@ function createUsageEvents() {
   });
 }
 
+// ?mockFresh=all: a new install with the hub running and nothing else; ?mockFresh=request: set up but no request yet.
+const mockFresh = () => typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('mockFresh') : null;
+
 function createAgentStatuses() {
+  const fresh = mockFresh() === 'all';
   // ?mockDrift=claude-code: that app still points at the hub but with an old key, as after a key change.
   const drifted = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('mockDrift') : null;
   const ids = [
@@ -343,8 +347,8 @@ function createAgentStatuses() {
     pluginVersion: id === 'pi' ? '0.4.2' : null,
     configExists: true,
     configValid: true,
-    configured: id !== 'openclaw' && id !== drifted,
-    connectionState: id === 'openclaw' ? 'not-configured' : id === drifted ? 'needs-update' : 'configured',
+    configured: !fresh && id !== 'openclaw' && id !== drifted,
+    connectionState: fresh || id === 'openclaw' ? 'not-configured' : id === drifted ? 'needs-update' : 'configured',
     configurationSynchronized: true,
     currentModel: id.startsWith('claude') ? 'claude-sonnet-4-6' : 'gpt-5.2-codex',
     oauthConfiguration: id === 'codex',
@@ -608,7 +612,7 @@ function createState(scenario: BrowserMockScenario) {
       section, scenario === 'empty' ? [] : groupProviderRecords(section, legacyProviderConfig[section]),
     ])) as Record<ProviderSection, JsonObject[]>,
     // Tests can add accounts and failed requests of their own.
-    authFiles: scenario === 'empty' ? [] : [...authFiles, ...clone(((globalThis as { mockExtraAuthFiles?: JsonObject[] }).mockExtraAuthFiles ?? []))],
+    authFiles: scenario === 'empty' || mockFresh() === 'all' ? [] : [...authFiles, ...clone(((globalThis as { mockExtraAuthFiles?: JsonObject[] }).mockExtraAuthFiles ?? []))],
     quotaApiCall: createQuotaMock(),
     oauthExcludedModels: { codex: [], claude: ['claude-legacy-*'], gemini: [] } as Record<string, string[]>,
     oauthSessions: new Map<string, string>(),
@@ -635,7 +639,7 @@ function createState(scenario: BrowserMockScenario) {
       pricedRequests: 296,
       timeline,
     },
-    usageEvents: [...clone(((globalThis as { mockExtraUsageEvents?: typeof events }).mockExtraUsageEvents ?? [])), ...events],
+    usageEvents: mockFresh() ? [] : [...clone(((globalThis as { mockExtraUsageEvents?: typeof events }).mockExtraUsageEvents ?? [])), ...events],
     usagePrices: [
       {
         model: 'gpt-5.2-codex', prompt: 1.25, completion: 10, cacheRead: 0.125, cacheCreation: 0,

@@ -1,13 +1,13 @@
-import { requestOAuthSubpage } from '../oauthNavigation';
 import { formatAgo } from "../services/relativeTime";
 import { AppDriftBanner } from '../components/AppDriftBanner';
 import { SecretGuardBanner } from '../components/SecretGuardBanner';
 import { ClaudeFallbackBanner } from '../components/ClaudeFallbackBanner';
+import { FirstRunSetup } from '../components/FirstRunSetup';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { Check, Download, LoaderCircle, Play, RefreshCw, RotateCw, Square } from 'lucide-react';
+import { Download, LoaderCircle, Play, RefreshCw, RotateCw, Square } from 'lucide-react';
 import { type CoreStatus, useCoreRuntime } from '../coreRuntime';
 import { clientApiProfiles } from '../services/clientAccess';
 import { useI18n } from '../i18n';
@@ -74,9 +74,6 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const [tlsEnabled, setTlsEnabled] = useState(false);
   const [accountStatus, setAccountStatus] = useState<AccountStatusSummary | null>(null);
   // The sidebar shows a dot on Overview while any account is limited.
-  const [setupState, setSetupState] = useState(() => {
-    try { return localStorage.getItem('personal.setupChecklist') ?? ''; } catch { return ''; }
-  });
   const publishAccountStatus = useCallback((summary: AccountStatusSummary) => {
     setAccountStatus(summary);
     window.dispatchEvent(new CustomEvent('app:account-problems', { detail: summary.problems }));
@@ -327,19 +324,6 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
   const processNotice = <FloatingNotice key={`process-${processFeedback.revision}`} notice={processFeedback.notice} onDismiss={processFeedback.clearNotice} />;
   const toggleProxy = () => void runCoreProcessCommand(coreRunning ? 'stop_core_process' : 'start_core_process');
 
-  // First-run checklist (replaces the old Easy mode): shown until every step has been done once.
-  const setupSteps = [
-    { id: 'proxy', done: coreRunning, action: coreInstalled && !coreRunning ? toggleProxy : undefined, actionKey: 'kernel.action.start' as const },
-    { id: 'account', done: (accountStatus?.total ?? 0) > 0, action: () => requestOAuthSubpage('login'), actionKey: 'home.checklist.accountAction' as const },
-    { id: 'app', done: Boolean(accountStatus?.latestAt), action: () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'agents' })), actionKey: 'home.checklist.appAction' as const },
-  ];
-  const setupComplete = setupSteps.every((step) => step.done);
-  const rememberSetup = (value: string) => {
-    setSetupState(value);
-    try { localStorage.setItem('personal.setupChecklist', value); } catch { /* Shown again next launch. */ }
-  };
-  useEffect(() => { if (setupComplete && !setupState) rememberSetup('done'); }, [setupComplete, setupState]);
-  const showChecklist = !setupState && !setupComplete && (accountStatus !== null || !coreRunning);
   const worstText = (worst: NonNullable<AccountStatusSummary['worst']>) => {
     const time = worst.resetAt ? resetCountdown(worst.resetAt, Date.now()) : '';
     if (worst.severity === 'blocked') return time ? t('glance.verdict.blocked', { account: worst.label, time }) : t('glance.verdict.blockedNoReset', { account: worst.label });
@@ -387,23 +371,8 @@ export function KernelPage({ view = 'home' }: { view?: KernelView }) {
         <AppDriftBanner coreReady={coreReady} />
         <SecretGuardBanner coreReady={coreReady} />
         <ClaudeFallbackBanner coreReady={coreReady} />
-        {showChecklist && <section className="home-checklist" aria-labelledby="home-checklist-title">
-          <header>
-            <h2 id="home-checklist-title">{t('home.checklist.title')}</h2>
-            <button type="button" className="secondary-button compact-button" onClick={() => rememberSetup('dismissed')}>{t('home.checklist.dismiss')}</button>
-          </header>
-          <ol>
-            {setupSteps.map((step, index) => (
-              <li key={step.id} className={step.done ? 'done' : undefined}>
-                <span className="home-checklist-mark" aria-hidden="true">{step.done ? <Check size={14} /> : index + 1}</span>
-                <span>{t(`home.checklist.${step.id}` as 'home.checklist.proxy')}</span>
-                {step.done
-                  ? <span className="home-checklist-state">{t('home.checklist.done')}</span>
-                  : step.action && <button type="button" className="secondary-button compact-button" onClick={step.action}>{t(step.actionKey)}</button>}
-              </li>
-            ))}
-          </ol>
-        </section>}
+        <FirstRunSetup coreInstalled={coreInstalled} coreRunning={coreRunning} coreBusy={coreProcessBusy} onStartProxy={toggleProxy}
+          accounts={coreReady && accountStatus?.loaded ? accountStatus.total : null} latestAt={accountStatus?.latestAt} models={overview.snapshot?.models ?? null} />
         <AccountDashboard ready={coreReady} onSummary={publishAccountStatus} usage={overview.snapshot?.usage ?? null} usageLoading={overview.loading} />
         <details className="home-proxy-details">
           <summary>{t('home.status.connectionDetails')}</summary>

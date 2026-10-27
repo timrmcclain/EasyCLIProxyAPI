@@ -75,6 +75,7 @@ import { CommandPalette, type PaletteCommand } from './components/CommandPalette
 import './components/MiniHub.css';
 import { AskHubDialog } from './components/AskHubDialog';
 import { runMorningDigest } from './services/morningDigest';
+import { requestSetupSteps } from './services/firstRunSetup';
 import { confirmLeave } from './services/unsavedChanges';
 import { readableError } from './services/readableError';
 
@@ -823,6 +824,7 @@ function AppContent() {
     { id: 'page-quota', label: t('app.nav.quota'), group: t('palette.pages'), keywords: paletteKeywords.quota,
       disabled: !canOpenAppPage('oauth', coreReady), run: () => select('quota') },
     { id: 'glossary', label: t('glossary.title'), group: t('palette.help'), run: () => setGlossaryOpen(true) },
+    { id: 'show-setup', label: t('fr.show'), group: t('palette.help'), keywords: ['setup', 'start', 'onboarding', 'checklist', 'first run', '设置', 'セットアップ'], run: requestSetupSteps },
     { id: 'shortcuts', label: t('shortcuts.title'), group: t('palette.help'), keywords: ['keyboard', 'keys', 'hotkeys'], run: () => setShortcutsOpen(true) },
     { id: 'alerts', label: t('alerts.title'), group: t('palette.help'), keywords: ['notifications', 'history', 'alerts'], run: () => setAlertsOpen(true) },
     { id: 'check-quota', label: t('palette.action.checkQuota'), group: t('palette.actions'), disabled: !coreReady,

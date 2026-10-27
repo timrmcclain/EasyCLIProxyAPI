@@ -49,6 +49,8 @@ export const dashboardProvider = (file: AuthFile) => providerForFile(file) ?? (r
 const attentionRank: Record<string, number> = { exhausted: 0, unavailable: 0, limited: 0, resetDue: 0, unknown: 1, creditBacked: 2, available: 3, disabled: 4 };
 export type AccountStatusSummary = {
   total: number; available: number; problems: number; unconfirmed: number; latestAt?: string;
+  /** The account list and recent activity have both loaded (or failed to): until then a count of 0 means not yet known. */
+  loaded?: boolean;
   /** The account most likely to stop work: blocked first, then the lowest one running low. */
   worst?: { label: string; severity: AttentionSeverity; percent: number | null; resetAt?: number };
 };
@@ -236,6 +238,7 @@ export function AccountDashboard({ ready, onSummary, usage = null, usageLoading 
     problems: urgent.length,
     unconfirmed: kinds.filter((kind) => kind === 'unknown').length,
     latestAt: activity?.latest?.timestamp,
+    loaded: listLoaded && (activity !== null || activityError),
     worst: urgent[0] ? { label: labelFor(urgent[0].file), severity: urgent[0].severity, percent: urgent[0].percent, resetAt: urgent[0].resetAt } : undefined,
   };
   const summaryKey = JSON.stringify(summaryCounts);

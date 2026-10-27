@@ -1,0 +1,48 @@
+/* First-run setup on Overview: one card, four steps, one next action at a time. */
+.first-run {
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--ui-accent);
+  border-radius: var(--radius-xl);
+}
+.first-run header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.first-run h2 { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--font-size-section); }
+.first-run h3 { margin: var(--space-4) 0 var(--space-2); font-size: var(--font-size-meta); color: var(--text-secondary); font-weight: var(--font-weight-semibold); }
+.first-run-intro { margin: var(--space-1) 0 var(--space-3); max-width: 68ch; color: var(--text-secondary); }
+
+/* Progress as four lights, lit as each step is done. */
+.first-run-lights { display: flex; align-items: center; gap: 6px; margin-bottom: var(--space-3); }
+.first-run-lights > span:not(.first-run-lights-label) { width: 28px; height: 6px; border-radius: var(--radius-full); background: var(--border-primary); transition: background-color 200ms var(--ease-standard, ease-out); }
+.first-run-lights > span.lit { background: var(--c-success); }
+.first-run-lights-label { margin-left: var(--space-2); color: var(--text-secondary); font-size: var(--font-size-meta); font-variant-numeric: tabular-nums; }
+
+.first-run ol { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.first-run-step { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg, 8px); }
+.first-run-step.current { background: var(--bg-secondary); }
+.first-run-text { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.first-run-text > span { color: var(--text-secondary); font-size: var(--font-size-meta); }
+.first-run-step.later .first-run-text { color: var(--text-tertiary); }
+.first-run-step.later .first-run-text > span { color: var(--text-tertiary); }
+.first-run-step.done strong { color: var(--text-secondary); font-weight: var(--font-weight-medium); }
+.first-run-aside { font-style: italic; }
+.first-run-error { color: var(--c-danger) !important; }
+
+.first-run-mark {
+  display: inline-grid; flex: none; place-items: center; width: 24px; height: 24px;
+  border: 1px solid var(--border-primary); border-radius: var(--radius-full);
+  font-size: var(--font-size-caption); font-weight: var(--font-weight-semibold); font-variant-numeric: tabular-nums;
+}
+.first-run-step.current .first-run-mark { border-color: var(--ui-accent); color: var(--ui-accent); }
+.first-run-step.done .first-run-mark { border-color: var(--c-success); background: var(--c-success-soft); color: var(--c-success); }
+.first-run-step .primary-button { flex: none; }
+
+.first-run-next { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.first-run-celebrate { border-left-color: var(--c-success); }
+.first-run-celebrate h2 svg { color: var(--c-success); }
+
+@media (prefers-reduced-motion: reduce) { .first-run-lights > span { transition: none; } }
+@media (max-width: 640px) {
+  .first-run-step { flex-wrap: wrap; }
+  .first-run-step .primary-button { margin-left: 36px; }
+}
