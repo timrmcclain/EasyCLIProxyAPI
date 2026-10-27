@@ -3,9 +3,13 @@ use super::*;
 struct Home(PathBuf);
 impl Home {
     fn new() -> Self {
+        // Tests run in parallel and Windows' clock is coarse, so two homes made at once could share a folder (and one
+        // test's cleanup delete the other's files); the counter keeps every home separate.
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let path = env::temp_dir().join(format!(
-            "cpa-antigravity-test-{}-{}",
+            "cpa-antigravity-test-{}-{}-{}",
             std::process::id(),
+            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
