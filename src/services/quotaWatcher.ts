@@ -28,7 +28,7 @@ import { providerForFile, type AuthFile } from './quotaService';
 const CHECK_EVERY_MS = 5 * 60_000;
 /** How often the proxy itself is checked; it counts as down after two failed checks in a row. */
 const PROXY_CHECK_EVERY_MS = 30_000;
-const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
+const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini', meta: 'Meta' };
 const providerOf = (file: AuthFile) => providerForFile(file) ?? (readString(file, 'provider', 'type') || 'other').toLowerCase();
 
 export function labelFor(file: AuthFile): string {

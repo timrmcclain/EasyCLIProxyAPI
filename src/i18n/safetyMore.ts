@@ -12,7 +12,7 @@ export const safetyMoreEn = {
   'sm.apps.needsUpdate': 'Per-app modes, always-mask and context need Secret Guard {version}. Update it above, then restart the proxy.',
   'cx.lastUsed': 'Last used in Claude Code {time}.',
   'cx.notUsed': 'Not used in Claude Code in the last 90 days.',
-  'cx.usageHint': "Read from Claude Code's own conversation logs on this computer: only tool names and times, never what was said. Claude Desktop keeps no such log.",
+  'cx.usageHint': "Read from Claude Code's own conversation logs on this computer, which include sessions in the desktop app's Code tab: only tool names and times, never what was said. Claude Desktop's chat keeps no such log.",
 };
 
 export const safetyMoreZhCN: Record<keyof typeof safetyMoreEn, string> = {
@@ -29,7 +29,7 @@ export const safetyMoreZhCN: Record<keyof typeof safetyMoreEn, string> = {
   'sm.apps.needsUpdate': '按应用设置、始终遮盖和上下文需要 Secret Guard {version}。请先在上方更新，然后重启代理。',
   'cx.lastUsed': '在 Claude Code 中最近使用：{time}。',
   'cx.notUsed': '最近 90 天未在 Claude Code 中使用。',
-  'cx.usageHint': '读取自这台电脑上 Claude Code 自己的对话日志：只读取工具名称和时间，从不读取对话内容。Claude Desktop 没有这样的日志。',
+  'cx.usageHint': '读取自这台电脑上 Claude Code 自己的对话日志（包括桌面应用 Code 标签页中的会话）：只读取工具名称和时间，从不读取对话内容。Claude Desktop 的聊天没有这样的日志。',
 };
 
 export const safetyMoreJa: Record<keyof typeof safetyMoreEn, string> = {
@@ -46,5 +46,5 @@ export const safetyMoreJa: Record<keyof typeof safetyMoreEn, string> = {
   'sm.apps.needsUpdate': 'アプリ別モード、常にマスク、前後の表示には Secret Guard {version} が必要です。上で更新してからプロキシを再起動してください。',
   'cx.lastUsed': 'Claude Code での最終使用：{time}。',
   'cx.notUsed': '過去 90 日間、Claude Code で使われていません。',
-  'cx.usageHint': 'このコンピューター上の Claude Code の会話ログから読み取ります。読むのはツール名と時刻だけで、会話の内容は読みません。Claude Desktop にはこのようなログがありません。',
+  'cx.usageHint': 'このコンピューター上の Claude Code の会話ログ（デスクトップアプリの Code タブのセッションを含む）から読み取ります。読むのはツール名と時刻だけで、会話の内容は読みません。Claude Desktop のチャットにはこのようなログがありません。',
 };

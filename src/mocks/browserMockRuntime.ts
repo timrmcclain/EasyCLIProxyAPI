@@ -1682,7 +1682,7 @@ export function createBrowserMockRuntime(
         });
       }
       // When Claude Code last used each connector: GitHub this morning, Firecrawl last week.
-      case 'connector_last_used': return { github: new Date(Date.now() - 3 * 3_600_000).toISOString(), firecrawl: new Date(Date.now() - 6 * 86_400_000).toISOString() };
+      case 'connector_last_used': return { github: new Date(Date.now() - 3 * 3_600_000).toISOString(), firecrawl: new Date(Date.now() - 6 * 86_400_000).toISOString(), playwright: new Date(Date.now() - 2 * 86_400_000).toISOString() };
       case 'secret_guard_check': {
         // The browser mock knows one pattern, enough to exercise the Test box.
         const text = String(payload.text ?? '');

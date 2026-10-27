@@ -403,7 +403,9 @@ function ConnectorCard({ item, lastUsed, reloadCount, onUnsavedChange, onSaved }
       {unavailable ? <p className="connector-unavailable">{unavailable}</p> : null}
 
       {trust ? <p className="connector-trust-hint">{t(`as.conn.badgeHint.${trust}`)}</p> : null}
-      {lastUsed !== undefined && item.claudeCode.enabled ? <p className="connector-last-used" title={t('cx.usageHint')}>
+      {/* The desktop app's Code tab runs Claude Code with Claude Desktop's connectors, so a connector that's only on
+          for Claude Desktop still shows up in Claude Code's logs. */}
+      {lastUsed !== undefined && inUse(item) ? <p className="connector-last-used" title={t('cx.usageHint')}>
         {lastUsed ? t('cx.lastUsed', { time: formatAgo(lastUsed, locale) }) : t('cx.notUsed')}</p> : null}
       {lastTest && !Object.values(tests).some(Boolean) ? <p className={`connector-last-test${lastTest.ok ? ' ok' : ' failed'}`}>
         {t('as.conn.lastTest', {

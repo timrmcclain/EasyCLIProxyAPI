@@ -7,9 +7,10 @@ import { Skeleton } from './Skeleton';
 import './AppRoutingCard.css';
 
 const PROVIDER_NAMES: Record<string, string> = {
-  claude: 'Claude', codex: 'Codex', kimi: 'Kimi', xai: 'Grok', antigravity: 'Antigravity', devin: 'Devin', gemini: 'Gemini',
+  claude: 'Claude', codex: 'Codex', kimi: 'Kimi', xai: 'Grok', antigravity: 'Antigravity', devin: 'Devin', gemini: 'Gemini', meta: 'Meta',
 };
-const providerName = (provider: string) => PROVIDER_NAMES[provider] ?? provider;
+// A provider not listed still gets a capital, so the groups read alike.
+const providerName = (provider: string) => PROVIDER_NAMES[provider] ?? provider.charAt(0).toUpperCase() + provider.slice(1);
 
 /**
  * Who pays for one app: tick the accounts it should use and what happens when none of them can take a request.

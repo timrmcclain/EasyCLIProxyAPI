@@ -70,10 +70,13 @@ const path = require('node:path');
     await used.waitFor();
     assert.match(await used.innerText(), /^Last used in Claude Code .*6.* ago\.$/);
     assert.match(await used.getAttribute('title'), /only tool names and times, never what was said/);
-    // On in Claude Code but never used there; and a connector Claude Code doesn't have says nothing.
+    // On in Claude Code but never used there; one on only for Claude Desktop still shows its use from the desktop
+    // app's Code tab, which runs Claude Code with Claude Desktop's connectors; and one not in use says nothing.
     await card('Google (personal)').locator('.connector-row-toggle').click();
     assert.equal(await card('Google (personal)').locator('.connector-last-used').innerText(), 'Not used in Claude Code in the last 90 days.');
     await card('GitHub').locator('.connector-row-toggle').click();
+    await card('Browser (Playwright)').locator('.connector-row-toggle').click();
+    assert.match(await card('Browser (Playwright)').locator('.connector-last-used').innerText(), /^Last used in Claude Code .*2.* ago\.$/);
     assert.equal(await card('GitHub').locator('.connector-last-used').count(), 0);
 
     assert.deepEqual(errors, []);
