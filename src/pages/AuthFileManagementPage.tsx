@@ -464,16 +464,22 @@ export function AuthFileManagementPage() {
     if (lastEnabled && !await askConfirmation({ title: t('common.disable'), message: t('authFiles.disableLastConfirm', { name: fileName(file) }), confirmText: t('common.disable'), variant: 'danger' })) return;
     setBusy(true);
     setError('');
+    // Show the change at once; the reload below confirms it, and a refusal puts the list back as the hub has it.
+    const name = fileName(file);
+    setFileSnapshot(current => ({ ...current, files: current.files.map(other => fileName(other) !== name ? other : {
+      ...other, disabled: disabling, status: disabling ? 'disabled' : String(other.status ?? '') === 'disabled' ? '' : other.status,
+    }) }));
     try {
-      await setOAuthCredentialFileDisabled(file, disabling);
+      const refused = await setOAuthCredentialFileDisabled(file, disabling).then(() => null, (requestError: unknown) => requestError ?? new Error());
+      // One background reload either way: it confirms the change, or puts the list back as the hub has it.
+      // It clears the error line as it starts, so a refusal is shown after it.
       await loadFiles(false);
-      if (!undo) {
+      if (refused) setError(readableError(refused));
+      else if (!undo) {
         showNotice({ key: disabling ? 'authFiles.disabledNotice' : 'authFiles.enabledNotice', variables: { name: fileName(file) } }, 'success', {
           action: { label: { key: 'common.undo' }, onAction: () => void toggleStatus(file, !disabling) },
         });
       }
-    } catch (requestError) {
-      setError(readableError(requestError));
     } finally {
       setBusy(false);
     }

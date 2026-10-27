@@ -23,6 +23,7 @@ import {
   type AccountRule, type OrderEntry, type ProviderPlan, type RoutingMode, type RoutingState,
 } from '../services/routingOrder';
 import { SettingsHelp } from './SettingsHelp';
+import { useFlipList } from './useFlipList';
 
 const providerNames: Record<string, string> = { claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity', xai: 'Grok', kimi: 'Kimi', devin: 'Devin', gemini: 'Gemini' };
 const KEEP_OPTIONS = [0, 10, 20, 30, 50];
@@ -178,8 +179,12 @@ function ProviderOrderCard({ provider, accounts, quotas, state, now, recentByKey
     setOrder(arrayMove(shown, index, target));
   };
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  // A drop is already animated by drag and drop; the arrow buttons, Smart reordering and Undo glide here instead.
+  const dropped = useRef(false);
+  const listRef = useFlipList<HTMLOListElement>(shown.join('|'), () => { const skip = dropped.current; dropped.current = false; return skip; });
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
+    dropped.current = true;
     setOrder(arrayMove(shown, shown.indexOf(String(active.id)), shown.indexOf(String(over.id))));
   };
   const toggleReserve = (key: string) => setDraft(current => ({
@@ -236,7 +241,7 @@ function ProviderOrderCard({ provider, accounts, quotas, state, now, recentByKey
       <p className={`routing-order-next${next ? '' : ' none'}`} role="status">{nextText}</p>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={shown} strategy={verticalListSortingStrategy}>
-          <ol className="routing-order-list">
+          <ol className="routing-order-list" ref={listRef}>
             {plan.entries.map((entry, index) => (
               <OrderRow key={entry.key} entry={entry} index={index} count={plan.entries.length}
                 label={labels.get(entry.key) ?? entry.name} manual={manual} disabled={disabled || busy}
@@ -289,7 +294,7 @@ function OrderRow({ entry, index, count, label, manual, disabled, divider, now, 
   return (
     <>
       {divider && <li className="routing-order-divider" aria-hidden="true"><span>{t('ro.reserveDivider')}</span></li>}
-      <li ref={setNodeRef} style={style} className={`routing-order-row role-${entry.role} tier-${entry.tier ?? 'unknown'}${isDragging ? ' dragging' : ''}`}>
+      <li ref={setNodeRef} style={style} data-flip-key={entry.key} className={`routing-order-row role-${entry.role} tier-${entry.tier ?? 'unknown'}${isDragging ? ' dragging' : ''}`}>
         <div className="routing-order-main">
           {manual
             ? <button type="button" className="icon-button quiet routing-order-handle" disabled={disabled} aria-label={t('ro.drag', { account: label })} title={t('ro.drag', { account: label })} {...attributes} {...listeners}>
